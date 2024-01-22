@@ -1,0 +1,368 @@
+Teradata OCF Connector: Install and Configure
+==============================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Prerequisites
+------------------
+
+Ports
+~~~~~~~~~~
+
+Open outbound TCP port **1025** to the Teradata server.
+
+
+Create Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sample SQL to create an account:
+
+.. code-block:: SQL
+
+      CREATE USER alation FROM [database] AS PASSWORD = [password] PERM = 20000000;
+
+Permissions for Metadata Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ensure the user ``alation`` has the following privileges on system tables.
+
+.. code-block:: SQL
+
+      GRANT SELECT ON dbc.dbase TO alation;
+      GRANT SELECT ON dbc.databasesv TO alation;
+      GRANT SELECT ON dbc.tablesv TO alation;
+      GRANT SELECT ON dbc.tabletextv TO alation;
+      GRANT SELECT ON dbc.tablesizev TO alation;
+      GRANT SELECT ON dbc.columnsv TO alation;
+      GRANT SELECT ON dbc.indicesv TO alation;
+      GRANT SELECT ON dbc.all_ri_parentsv to alation;
+      GRANT SELECT ON dbc.indexconstraintsv TO alation;
+      GRANT SELECT ON dbc.tvm TO alation;
+      GRANT SELECT ON dbc.tvfields TO alation;
+
+If permissions for the ``DBase`` table cannot be granted and only the ``DatabasesV`` view is allowed, then disable the **Extract Schemas From DBASE** parameter on the **Metadata Extraction** tab under **Connector Settings > Query Based Extraction**. This parameter is available from **connector version 1.0.10**.
+
+Permissions for Sampling and Profiling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For sampling and profiling, grant the service account the SELECT rights on all schemas and tables that you want to retrieve samples from.
+
+Access Rules
+^^^^^^^^^^^^^^^^^^
+
+Make sure that the service account user has the following access rules granted:
+
+.. code-block:: SQL
+
+      GRANT SELECT ON dbc.rolemembersv TO alation;
+      GRANT SELECT ON dbc.allRoleRightsv TO alation;
+      GRANT SELECT ON dbc.databasesv TO alation;
+      GRANT SELECT ON dbc.allrightsv TO alation;
+
+JDBC URI
+~~~~~~~~~~~~~~
+
+Format
+^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      teradata://<hostname_or_ip>/DBS_PORT=<port>,COP=OFF,CHARSET=UTF8
+
+Example
+^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      teradata://10.13.75.49/DBS_PORT=1025,COP=OFF,CHARSET=UTF8
+
+No additional parameters are required in the URI string when you are using an LDAP account for extraction, default sampling and profiling, and query log ingestion. In this case, the connector auto-appends the parameter LOGMECH=LDAP. However, when you are using an LDAP account for dynamic sampling or in Compose, you must explicitly append the parameter LOGMECH=LDAP to the JDBC URI.
+
+Example
+^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      teradata://10.13.65.112/DBS_PORT=1025,COP=OFF,CHARSET=UTF8,LOGMECH=LDAP
+
+
+Installation
+-------------------------------
+
+Step 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+Step 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In Alation, add a new data source:
+
+  1. Log in to Alation as a Server Admin.
+
+  2. Expand the **Apps** menu on the right of the main toolbar and select **Sources**.
+
+  3. On the **Sources** page, click **+Add** on the top right of the page and in the list that opens, click **Data Source**. This will open the **Add a Data Source wizard**.
+
+  4. On the first screen of the wizard, specify a name for your data source, assign more Data Source Admins, if necessary, and click the **Continue Setup** button on the bottom of the screen. The **Add a Data Source** screen will open.
+
+  5. The only field that you need to populate on the **Add a Data Source** screen is **Database Type**. From the **Database Type** dropdown, select the connector name. You will be navigated to the Settings page of your new data source.
+
+The name of this connector is **Teradata OCF Connector**.
+
+.. image:: ../../../_static/TeradataOCF_01.png
+    :width: 400px
+    :class: with-border
+
+Access
+----------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+-----------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab:
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Populate the data source connection information and save the values by clicking **Save** in this section.
+
+  +----------------------------+---------------------------------------------------------------+
+  | **Parameter**              | **Description**                                               |
+  +============================+===============================================================+
+  |                     **Data Source Connection**                                             |
+  +----------------------------+---------------------------------------------------------------+
+  | JDBC URI                   | Specify the `JDBC URI`_ in the required format.               |
+  +----------------------------+---------------------------------------------------------------+
+  | Use LDAP Server            | Select the Use LDAP Server checkbox to authenticate with the  |
+  |                            | LDAP protocol.                                                |
+  +----------------------------+---------------------------------------------------------------+
+  | Username                   | Specify the service account username.                         |
+  +----------------------------+---------------------------------------------------------------+
+  | Password                   | Specify the service account password.                         |
+  +----------------------------+---------------------------------------------------------------+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Obfuscate Literals** — Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+----------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+Metadata Extraction Queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use query-based metadata extraction, you will need to write custom queries to extract the metadata. Alation expects that these queries conform to a specific structure and use some reserved identifiers. After providing custom queries, save them by clicking Save in this section.
+
+Refer to :doc:`/sources/OpenConnectorFramework/Teradata/ExtractionQueriesforTeradata` for information about query customization.
+
+    .. image:: ../../../_static/TeradataOCF_02.png
+        :width: 650px
+        :class: with-border
+
+Compose
+-------------------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+.. note::
+
+     When you are using an LDAP account for connecting to your Teradata data source in Compose, you must 
+     append the parameter ``LOGMECH=LDAP`` to the JDBC URI.
+
+Sampling and Profiling
+-------------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+.. note::
+  
+      When you are using an LDAP account for dynamic sampling you must append the parameter 
+      ``LOGMECH=LDAP`` to the JDBC URI. 
+
+.. note::
+
+      Alation does not support profiling of Teradata Temporal tables.
+
+Query Log Ingestion
+--------------------------------
+
+You can choose to create a table or a view on your database to store the query history data or to provide a custom query to retrieve the query history data.
+
+Table-Based QLI
+~~~~~~~~~~~~~~~~~~~~
+
+Use the query format to create a new view and flush the query history from the data source. You can create the view in a schema of your choice. In the query below, substitute the placeholder value ``<schema_name.view_name>`` with an actual value.
+
+.. code-block:: SQL
+
+      CREATE VIEW <schema_name.view_name> AS
+      SELECT
+          s.ProcID,
+          s.CollectTimeStamp,
+          s.QueryID,
+          UserID,
+          AcctString,
+          ExpandAcctString,
+          SessionID,
+          LogicalHostID,
+          RequestNum,
+          InternalRequestNum,
+          LogonDateTime,
+          AcctStringTime,
+          AcctStringHour,
+          AcctStringDate,
+          LogonSource,
+          AppID,
+          ClientID,
+          ClientAddr,
+          QueryBand,
+          ProfileID,
+          StartTime,
+          FirstStepTime,
+          FirstRespTime,
+          LastStateChange,
+          NumSteps,
+          NumStepswPar,
+          MaxStepsInPar,
+          NumResultRows,
+          TotalIOCount,
+          AMPCPUTime,
+          ParserCPUTime,
+          UtilityByteCount,
+          UtilityRowCount,
+          ErrorCode,
+          ErrorText,
+          WarningOnly,
+          ((firstresptime - starttime) hour(4) to second) (Named ElapsedTime),
+              DelayTime,
+          AbortFlag,
+          CacheFlag,
+          StatementType,
+          StatementGroup,
+          sqltextinfo AS QueryText,
+          NumOfActiveAMPs,
+          MaxAMPCPUTime,
+          MaxCPUAmpNumber,
+          MinAmpCPUTime,
+          MaxAmpIO,
+          MaxIOAmpNumber,
+          MinAmpIO,
+          SpoolUsage,
+          WDID,
+          OpEnvID,
+          SysConID,
+          LSN,
+          NoClassification,
+          WDOverride,
+          ResponseTimeMet,
+          ExceptionValue,
+          FinalWDID,
+          TDWMEstMaxRows,
+          TDWMEstLastRows,
+          TDWMEstTotalTime,
+          TDWMAllAmpFlag,
+          TDWMConfLevelUsed,
+          TDWMRuleID,
+          UserName,
+          DefaultDatabase,
+          AMPCPUTimeNorm,
+          ParserCPUTimeNorm,
+          MaxAMPCPUTimeNorm,
+          MaxCPUAmpNumberNorm,
+          MinAmpCPUTimeNorm,
+          EstResultRows,
+          EstProcTime,
+          EstMaxRowCount,
+          ProxyUser,
+          ProxyRole,
+          SessionTemporalQualifier,
+          CalendarName,
+          SessionWDID,
+          DataCollectAlg,
+          ParserExpReq,
+          CallNestingLevel,
+          NumRequestCtx,
+          KeepFlag,
+          QueryRedriven,
+          ReDriveKind,
+          CPUDecayLevel,
+          IODecayLevel,
+          TacticalCPUException,
+          TacticalIOException,
+          SeqRespTime,
+          ReqIOKB,
+          ReqPhysIO,
+          ReqPhysIOKB,
+          r.sqlrowno
+      FROM dbc.dbqlsqltbl r,
+          dbc.dbqlogtbl s
+      WHERE r.queryid = s.queryid;
+
+
+Grant the service account permissions to access this view.
+
+In the **Table Name** field on the **Query Log Ingestion** tab of the Settings, specify the name of the view in the following format: ``schema_name.view_name``.
+
+Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_QLI_CustomQueryQLI.rst
+
+QLI Query Template
+^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: SQL
+
+      SELECT
+        SessionID AS "sessionId",
+        UserName AS "userName",
+        StartTime AS "startTime",
+        sqltextinfo AS "queryString",
+        ((firstresptime - starttime) hour(4) to second) AS "milliSeconds",
+        DefaultDatabase AS "defaultDatabases",
+        AbortFlag AS "cancelled",
+        LogonDateTime AS "sessionStartTime"
+      FROM dbc.dbqlsqltbl r,
+        dbc.dbqlogtbl s
+      WHERE r.queryid = s.queryid
+        AND r.procid = s.procid
+        AND sqltextinfo IS NOT null
+        AND LogonDateTime >= STARTTIME
+        AND LogonDateTime < ENDTIME
+
+Perform QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst
+
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting`.

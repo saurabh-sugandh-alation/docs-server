@@ -1,0 +1,282 @@
+Azure SQL DB OCF Connector: Install and Configure
+=====================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Prerequisite
+------------------
+
+Network Connectivity
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+​​Open the outbound TCP port **1433** to Azure SQL DB (default).
+
+    .. note::
+
+        Azure SQL DB instances can listen on non-standard ports. Open the appropriate outbound TCP ports from the Alation server.
+
+Service Account
+-------------------------
+
+Currently, only SQL authentication has been certified for this data source type by Alation. Kerberos authentication, NTLM, and SSL support will be certified with upcoming connector versions.
+
+For SQL authentication, create a service account for Alation on the ``master`` database.
+
+**Example**:
+
+    .. code-block:: SQL
+
+        CREATE LOGIN [login_value] WITH PASSWORD = [password];
+        CREATE USER [service_account] FOR LOGIN [login_value];
+
+Create the corresponding user account in Azure SQL DB.
+
+**Example**:
+
+    .. code-block:: SQL
+
+        CREATE USER [login_name] FOR LOGIN [login_name];
+
+Permissions for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Grant the service account the ``VIEW DEFINITION`` rights on all schemas you want to extract into the data catalog. This permission allows Alation to extract schema, table, and view metadata.
+
+**Example**:
+
+    .. code-block:: SQL
+
+        GRANT VIEW DEFINITION ON SCHEMA :: schema_name TO [login_name];
+
+Permissions for Sampling and Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to use sampling and profiling, grant the ``SELECT`` rights on schemas and tables you want to retrieve samples from.
+
+Permissions for Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For query log ingestion, the service account requires the ``CONTROL`` permission to access the ``sys.fn_get_audit_file`` file. See the details in `Query Log Ingestion`_ below.
+
+**Example**:
+
+    .. code-block:: SQL
+
+        GRANT CONTROL TO [login_name];
+
+JDBC URI
+-----------------------------
+
+Minimal Format
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+      sqlserver://<hostname_or_ip>:<port>
+
+Example
+^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      sqlserver://test-101303.database.windows.net:1433;
+
+Incremental MDE from Compose
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When users create tables and views in Compose, Alation triggers a background extraction job to make the new table and view objects available in the catalog. As a result, users will see the corresponding table or view metadata in the data catalog without re-running MDE on the **Settings** page of the data source.
+
+Azure SQL DB does not allow the database name in the CREATE VIEW queries. For the incremental MDE from Compose to work, add the database name as the ``database`` parameter to the JDBC URI.
+
+Format
+^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      sqlserver://<hostname_or_ip_address>:<port_number>;database=<database_name>;
+
+Example
+''''''''''''''
+
+.. code-block:: Bash
+
+      sqlserver://tf-test-101303.database.windows.net:1433;database=SqlServerAzDB_1;
+
+.. note::
+
+    If the main connection URI does not include the database name, however, in Compose users add the database name to their Compose connection URI, incremental MDE from Compose will fail with exception.
+
+Configuration in Alation
+----------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_Install_NoAgent.rst
+
+STEP 2: Create and Configure an New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **Azure SQL DB OCF Connector**.
+
+Access Tab
+----------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+----------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Datasource Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Populate the data source connection information and save the values by clicking **Save** in this section.
+
++---------------------------------+---------------------------------------------------+
+| Parameter                       | Description                                       |
++=================================+===================================================+
+| JDBC URI                        | Specify the JDBC URI in the required format.      |
++---------------------------------+---------------------------------------------------+
+| Username                        | Specify the service account username.             |
++---------------------------------+---------------------------------------------------+
+| Password                        | Specify the service account password.             |
++---------------------------------+---------------------------------------------------+
+| Enable SSL                      | Not supported yet                                 |
++---------------------------------+---------------------------------------------------+
+| Enable Kerberos Authentication  | Not supported yet                                 |
++---------------------------------+---------------------------------------------------+
+| Keytab                          | Not supported yet                                 |
++---------------------------------+---------------------------------------------------+
+| Enable NTLM                     | Not supported yet                                 |
++---------------------------------+---------------------------------------------------+
+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_ObfuscateLiterals.rst
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+------------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+The default queries that this connector uses to extract metadata can be found in :doc:`/sources/OpenConnectorFramework/AzureSQLDBOCFConnector/AzureSQLDB_ExtractionQueries`. You can customize these queries to adjust the extraction to your specific needs.
+
+
+Compose
+--------------------------------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+    .. note::
+
+        User impersonation in Compose with a kerberized account is not supported yet.
+
+Creating Tables and Views in Compose
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To ensure the successful incremental MDE from Compose, use fully qualified table names when creating tables. For Alation to incrementally extract views created in Compose, both the service account connection JDBC URI and the Compose connection URI should include the ``database`` parameter. For more information on the URI format, see `JDBC URI`_ above.
+
+**Example SQL for CREATE TABLE**:
+
+    .. code-block:: Bash
+
+        CREATE TABLE <DATABASE>.<SCHEMA>.<TABLE> ({column properties});
+
+**Example SQL for CREATE VIEW**:
+
+    .. code-block:: Bash
+
+        USE <DATABASE>;
+        CREATE VIEW <SCHEMA>.<VIEW> AS {view condition};
+
+Sampling and Profiling
+-------------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Query Log Ingestion
+---------------------------------
+
+The Azure SQL DB data source supports custom query-based query log ingestion (QLI). QLI requires that `auditing <https://learn.microsoft.com/en-us/azure/azure-sql/database/auditing-overview?view=azuresql>`_ should be enabled in Azure.
+
+    .. important::
+
+        To use the QLI functionality, ensure that the service account has the ``CONTROL`` permission as it needs to access the ``sys.fn_get_audit_file``. For details, refer to the corresponding Azure documentation: `sys.fn_get_audit_file (Transact-SQL) <https://learn.microsoft.com/en-us/sql/relational-databases/system-functions/sys-fn-get-audit-file-transact-sql?view=azure-sqldw-latest>`_.
+
+Enable Auditing in Azure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_EnableAzureAuditing.rst
+
+Configure QLI in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+QLI can be configured on the **Query Log Ingestion**  tab of the data source Settings page. The template for the QLI query is given below. You can customize it by adding, removing, or changing the filter, but the columns and their aliases must remain as is since Alation expects this query structure.
+
+    .. note::
+
+        - When using the example below, substitute the placeholder ``<container_URI>`` with the container URI you find in your container properties, for example: ``https://testaccountvipra.blob.core.windows.net/sqldbauditlogs/my_database/``.
+
+        - Do not substitute the ``STARTTIME`` and ``ENDTIME`` parameters in the WHERE filter. These parameters are not actual column names and should stay as is. They are expected by the connector and will be substituted with the start and end date of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+To configure query-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, in the **Custom QLI Query** field, specify the QLI query.
+
+3. Click **Save**.
+
+QLI Query Template
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. code-block:: SQL
+
+          SELECT
+            server_principal_name as userName,
+            event_time as startTime,
+            [statement] as queryString,
+            session_id as sessionId,
+            event_time as sessionStartTime,
+            duration_milliseconds as milliSeconds,
+            'N' as cancelled,
+            database_name as defaultDatabases
+        FROM sys.fn_get_audit_file('<container_URI>', default, default)
+        WHERE event_time BETWEEN (STARTTIME) AND (ENDTIME);
+
+
+Perform QLI
+~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst
+
+Log Location
+--------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting` for information about logs.

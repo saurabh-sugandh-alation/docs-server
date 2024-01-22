@@ -1,0 +1,284 @@
+SAP ECC OCF Connector: Overview
+=====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+
+The OCF Connector for SAP ECC was developed by Alation and is available as a Zip file that can be uploaded and installed in the Alation application. The connector is compiled together with the required database driver, so no additional effort is needed to procure and install the driver.
+
+To download the SAP ECC OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+Extraction from an SAP ECC data source requires the use of a separate tool—**Alation Rala**.
+
+    .. note::
+
+        Create a ticket with Alation Support about receiving the SAP ECC connector package, Alation Rala installer, and Rala documentation.
+
+Cataloging an SAP ECC data source in Alation includes two stages:
+
+    1. Using Alation Rala to extract metadata from SAP ECC and export it to JSON files.
+    2. Using the OCF Connector for SAP ECC to extract metadata from the source JSON files into Alation.
+
+    .. image:: ../../../_static/SAPECC_Overview.png
+        :width: 500px
+        :class: with-border
+
+The exported JSON files that you want ingested into the Alation catalog need to be placed onto a supported storage system. The connector can work with three storage systems:
+
+    - Amazon S3
+    - Azure Storage
+    - Windows SMB file share.
+
+The connector can be used on both Alation on-premise and Cloud Service instances. It extracts and catalogs such SAP ECC assets as:
+
+    - Schema
+    - Table
+    - View
+    - Column
+    - DataAsset
+    - DataAssetGroup
+
+
+Object Mapping Between SAP ECC and Alation
+-------------------------------------------------
+
+Refer to the table below for information on how the extracted SAP ECC objects are mapped onto Alation objects:
+
+    - Asset types are represented as schemas.
+    - Tables are inferred from Table asset names. The logical name and the full path to a table-level object will be extracted into the **Source Comments** field on the catalog page of this object.
+    - Columns are inferred from Column asset names.
+
++-------------------------------------------+-------------------------------------------+
+| SAP Asset Type                            | Alation object                            |
++===========================================+===========================================+
+| - Schema                                  | Schema                                    |
+| - Table                                   |                                           |
+| - View                                    |                                           |
+| - DataAsset                               |                                           |
+| - DataAssetGroup                          |                                           |
++-------------------------------------------+-------------------------------------------+
+| Table asset name                          | Table                                     |
++-------------------------------------------+-------------------------------------------+
+| Column asset name                         | Column                                    |
++-------------------------------------------+-------------------------------------------+
+
+Tables and columns are mapped to asset names. In the example below, the asset with ``assetName = /ABC1/NAME`` will be a table ``/ABC1/NAME`` under a schema named ``Table`` in Alation:
+
+.. code-block:: Bash
+
+      {
+       "assetType": "Table",
+       "assetName": "/ABC1/NAME",
+       "displayName": "/ABC1/NAME",
+       "attributes":
+          {
+           "PhysicalName": "/ABC1/NAME",
+           "LogicalName": "Shipped items",
+           "LongDescription": null,
+           "TableType": "Transparent",
+           "RowCount": 0,
+           "MetaDataChanged": "2004-02-10T13:59:10"
+          }
+      }
+
+In the next example, the asset with the ``assetName = /ABC1/NAME > DEF2`` will be a column with the name ``DEF2`` under the table ``/ABC1/NAME`` in Alation:
+
+.. code-block:: Bash
+
+      {
+        "assetType": "Column",
+        "assetName": "/ABC1/NAME > DEF2",
+        "displayName": "DEF2",
+        "attributes":
+          {
+            "PhysicalName": "DEF2",
+            "LogicalName": "Client",
+            "LongDescription": "A legally independent unit",
+            "ColumnPosition": 1,
+            "IsPrimaryKey": true,
+            "IsNullable": false,
+            "DataType": "CLNT",
+            "LogicalDataType": "String",
+            "DbmsDataType": "VARCHAR2(3)",
+            "Size": 3,
+            "DataElement": "DEF2",
+            "Domain": "DEF2"
+          }
+      }
+
+Supported Relationships
+------------------------------
+
+The connector processes asset-to-asset relationships in SAP exports in order to build foreign key and lineage relationships in the Alation catalog. The following relationships are analyzed:
+
++---------------------------------------+---------------------------+
+| Relationship                          | Used for                  |
++=======================================+===========================+
+| ColumnFKeyColumn                      | Table-level lineage or    |
+|                                       | foreign key relationships |
++---------------------------------------+---------------------------+
+| ViewComposedOfTable                   | Table-level lineage       |
++---------------------------------------+---------------------------+
+| ViewComposedOfView                    | Table-level lineage       |
++---------------------------------------+---------------------------+
+| ColumnViewLinkColumn                  | Table-level lineage or    |
+|                                       | foreign key relationships |
++---------------------------------------+---------------------------+
+| DataAssetGroupHierarchyRef            | Table-level lineage       |
++---------------------------------------+---------------------------+
+| DataAssetGroupToDataStructure         | Table-level lineage       |
++---------------------------------------+---------------------------+
+
+Supported Asset Attributes
+----------------------------------
+
++----------------------------+---------------+----------------------------+
+| Asset Attributes           | Is Supported? | Extracted as               |
++============================+===============+============================+
+| PhysicalName               | Yes           | Name of the Alation object |
++----------------------------+---------------+----------------------------+
+| LogicalName                | Yes           | Source Comments            |
++----------------------------+---------------+----------------------------+
+| LongDescription            | Yes           | Source Comments            |
++----------------------------+---------------+----------------------------+
+| ColumnPosition             | Yes           | Ordinal position of column |
+|                            |               | object                     |
++----------------------------+---------------+----------------------------+
+| IsPrimaryKey               | Yes           | Primary key information    |
++----------------------------+---------------+----------------------------+
+| IsNullable                 | Yes           | Column properties          |
++----------------------------+---------------+----------------------------+
+| DataType                   | Yes           | Column properties          |
++----------------------------+---------------+----------------------------+
+| LongDescription            | No                                         |
++----------------------------+---------------+----------------------------+
+| TableType                  | No                                         |
++----------------------------+---------------+----------------------------+
+| RowCount                   | No                                         |
++----------------------------+---------------+----------------------------+
+| Size                       | No                                         |
++----------------------------+---------------+----------------------------+
+| DecimalPlaces              | No                                         |
++----------------------------+---------------+----------------------------+
+| DataElement                | No                                         |
++----------------------------+---------------+----------------------------+
+| Domain                     | No                                         |
++----------------------------+---------------+----------------------------+
+| LogicalDataType            | No                                         |
++----------------------------+---------------+----------------------------+
+| DbmsDataType               | No                                         |
++----------------------------+---------------+----------------------------+
+| IsMarkedColumn             | No                                         |
++----------------------------+---------------+----------------------------+
+| IsLinkedToMarkedColumn     | No                                         |
++----------------------------+---------------+----------------------------+
+| IsMarkedOrLinkedColumn     | No                                         |
++----------------------------+---------------+----------------------------+
+| MetaDataChanged            | No                                         |
++----------------------------+---------------+----------------------------+
+
+Team
+-------------------
+
+You will need the assistance of your SAP administrators and your infrastructure administrator to configure the use of the SAP ECC connector end to end, which involves the following activities:
+
+    - Install Alation Rala in your network
+    - Provide a database as the Alation Rala Repository
+    - Grant the appropriate access rights for Alation Rala to connect to SAP ECC
+    - Extract metadata from SAP ECC into Alation Rala Repository
+    - Export metadata from Alation Rala to the JSON format
+    - Procure storage for the exported JSON files and collect access information for Alation
+    - Install the connector in Alation
+    - Create and configures an SAP ECC data source in Alation
+
+More details are available in :doc:`/sources/OpenConnectorFramework/SAPECC/SAPECC_OCFConnectorInstallConfigure`.
+
+Scope
+----------------
+
+The table below describes which metadata objects are extracted by the connector and which catalog functionality is supported.
+
++-------------------------------+---------------------------------------------------------------+-------------+
+| Feature                       | Scope                                                         | Availability|
++===============================+===============================================================+=============+
+| **Authentication**                                                                                          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Depends on the storage        |                                                               | Yes         |
+| system                        | - Azure Storage                                               |             |
+|                               |                                                               |             |
+|                               |      - Azure Storage account name                             |             |
+|                               |      - Azure Storage key                                      |             |
+|                               |                                                               |             |
+|                               | - Windows SMB                                                 |             |
+|                               |                                                               |             |
+|                               |      - SMB file share user                                    |             |
+|                               |      - SMB file share password                                |             |
+|                               |                                                               |             |
+|                               | - Amazon S3                                                   |             |
+|                               |                                                               |             |
+|                               |      - User access key ID                                     |             |
+|                               |      - User secret access key                                 |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+| SSL                           |                                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Kerberos                      | Not applicable                                                | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| LDAP                          | Not applicable                                                | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Metadata extraction (MDE)**                                                                               |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Default MDE                   | Extraction of metadata from JSON exports stored               | Yes         |
+| (full extraction)             | on a supported storage system.                                |             |
+|                               |                                                               |             |
+|                               | Selective MDE is not supported.                               |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based MDE        |  Not applicable                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Extracted metadata objects**                                                                              |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Data Source                   | Data source object in Alation that is parent to extracted     | Yes         |
+|                               | metadata                                                      |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Schemas                       | List of schemas                                               | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Tables                        | List of tables                                                | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Columns                       | List of columns                                               | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Views                         | List of views                                                 | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Source comments               | The ``LogicalName`` and  ``LongDescription`` field values are | Yes         |
+|                               | extracted as source comments.                                 |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Primary keys                  | Primary key information for extracted tables                  | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Foreign keys                  | Foreign key information for extracted tables                  | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Sampling and Profiling**    |                                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Query Log Ingestion (QLI)** |                                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Compose**                   |                                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Lineage**                                                                                                 |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Direct lineage based          | Alation calculates lineage based on the relationship files    | Yes         |
+| on MDE \*                     | exported from SAP ECC. The relations represent references     |             |
+|                               | between SAP ECC assets. Alation extracts the source           |             |
+|                               | asset names, target asset names, and relationship type,       |             |
+|                               | and builds lineage between source tables, target tables, and  |             |
+|                               | dataflow objects. The name of the relationship is added to    |             |
+|                               | the dataflow content. Lineage data is available on the        |             |
+|                               | **Lineage** tab on catalog pages of tables.                   |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+
+\* Direct lineage extraction from OCF data sources is enabled by default from version 2023.1. It is controlled by the **alation_conf** parameter ``alation.ocf.mde.direct_lineage.enable_extraction``. With this setting in ``True``, Alation will calculate the direct lineage data for your ECC data source during MDE.
+
+Limitations
+------------------
+
+- The connector does not support parallel streaming and only streams from one source at a time.
+
+- You may notice a delay in displaying lineage after a successful MDE, as the direct lineage calculation takes some time to complete. The delay is proportional to the size of the extracted data and may vary from several seconds to 1 minute.
+
+- Some ``assetName`` values may include the "greater than" special character ``>``. The connector splits such values and ingests the content after the "greater than" symbol as the column name. As the result, you may see an incorrect column name on the corresponding catalog page.

@@ -1,0 +1,74 @@
+MySQL
+========
+
+Required Information
+-----------------------
+
+To configure MySQL in Alation, you will need the following information:
+
+-  Hostname or IP address of your server
+-  Port number
+-  Service account with following privileges
+-  Query Log Ingestion setup:  ``slow_log`` to archive table
+
+.. image:: ../../_static/DS_MySQL01.png
+    :width: 3.5in
+    :align: center
+
+Preliminaries
+------------------
+
+Firewall Configuration:
+
+-  Open outbound TCP port **3306** to MySQL server
+
+Create Service Account
+------------------------
+
+Sample SQL to create an account
+
+.. code-block:: bash
+
+    CREATE USER 'alation'@'%' IDENTIFIED BY '[password]';
+
+Metadata Extraction
+---------------------
+
+.. code-block:: bash
+
+    GRANT SELECT ON [database].* TO 'alation'@'%';
+    GRANT SHOW VIEW ON [database].* TO 'alation'@'%';
+
+Table Profiling
+------------------
+
+.. code-block:: bash
+
+    GRANT SELECT ON [database].* TO 'alation'@'%';
+    GRANT SHOW VIEW ON [database].* TO 'alation'@'%';
+
+Query History
+---------------
+
+Supported for MySQL 5.1.6 and higher. MySQL ``slow_log`` system table is
+used to get query history. The recommended procedure is to enable
+``slow_log`` on MySQL and to periodically flush ``slow_log`` into an archive
+table. Alation will read queries from the archive table.
+
+Slow Query Log adds some performance overhead and is only recommended
+for OLAP environments where the queries are infrequent and are mostly
+for analytical purposes.
+
+To enable Slow Query Log, run the following queries as an admin user.
+
+.. code-block:: bash
+
+    SET GLOBAL slow_query_log=1;
+    SET GLOBAL log_output='TABLE';
+    SET long_query_time=0;
+    SET min_examined_row_limit=0;
+
+.. note::
+
+   -  Slow Query Log can only be truncated and rows cannot be deleted.
+   -  Administrative queries and queries not using indices are not logged by default.

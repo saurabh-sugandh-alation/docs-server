@@ -1,0 +1,88 @@
+How to Reinitialize Alation Without Re-Install
+================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+These steps can be used to reinitialize Alation without re-installing it.
+
+.. important::
+
+      Reinitialization results in deletion of data. This procedure is for Alation system admins only.
+
+**Run all commands as "root" or SUDO**.
+
+Prerequisite
+-----------------
+
+If your Alation instance is running in an HA cluster (HA configuration) and you need to reinitialize the secondary instance, make sure to first put the primary instance into standalone mode:
+
+- Do this only on the primary node to switch it to the standalone mode
+
+    .. code-block:: Bash
+
+        sudo service alation shell
+        alation_action cluster_enter_standalone_mode
+        #Exit the shell
+        exit
+
+Reinitialize Alation
+-----------------------
+
+1. Stop Alation on the instance to be reinitialized. In case of HA pair configuration, stop Alation on the node to be reinitialized:
+
+    .. code-block:: Bash
+
+        #if not logged in as root use SUDO
+        service alation stop
+
+2. Copy a backup file to a different location in case you need to restore later:
+
+    .. code-block:: Bash
+
+        #optional, but skip at your own risk
+        cp /opt/alation/alation/data2/backup/<backup file> /home/<directory>/<backup file>
+
+3. Run the ``tail`` command for ``/opt/alation/alation/.disk*`` and save the output:
+
+    .. code-block:: Bash
+
+        # Save this output, you will need it later
+        tail /opt/alation/alation/.disk*
+
+4. Delete disk cache files:
+
+    .. code-block:: Bash
+
+        rm /opt/alation/alation/.disk*
+
+5. Remove data:
+
+    .. warning::
+
+        There is no way to recover any data after performing this step. This step results in deleting the data existing on the instance.
+
+    .. code-block:: Bash
+
+        # You will not be able to recover any data after this step is run
+        # Use the output you saved for paths
+        rm -rf <path to data>/*
+        rm -rf <path to backup>/*
+
+6. Reinitialize Alation:
+
+    .. code-block:: Bash
+
+        service alation init <path to data> <path to backup>
+
+7. If there were any custom configurations done (for example, SSL configuration), run:
+
+    .. code-block:: Bash
+
+        service alation shell
+        alation_action deploy_conf_all
+
+8. Start Alation:
+
+    .. code-block:: Bash
+
+        service alation start

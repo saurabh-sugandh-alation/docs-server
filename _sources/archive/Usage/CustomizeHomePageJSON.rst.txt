@@ -1,0 +1,417 @@
+Customize Homepage JSON - V R4 to V R7
+=====================================================================
+
+*Applies to releases V R4 (5.8.x) - V R7 (5.12.x)*
+
+Homepage JSON Structure
+-------------------------
+
+The JSON you will send using the Homepage API should have the definitions of the elements you want to see on the Homepage and their properties.
+
+JSON Structure
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    {
+      "action_links" : [
+        #this is the Promoted Actions section that appears on top and holds the links to actions
+            {
+              #this object is a tile
+              "title" : "value",
+              "img" : "path to image",
+              "navigateURL" : "URL"
+            },
+          ],
+      "admin_sections" : [
+        #this is the Curated by Your Admins section that can include carousel rows and object windows
+            {
+              #this object is a carousel row that includes tiles
+              "type": "carousel",
+              "title" : "value",
+              "tiles" : [
+                  #this array lists the tiles on this carousel
+                  {
+                    "title" : "value",
+                    "img" : "path to image",
+                    "navigateURL" : "URL",
+                    "description" : "value",
+                    "expandDescriptions" : true
+                  }
+                ]
+              },
+       {
+          #this object is an object window row that includes object windows
+          "type": "object_window_row",
+          "objects": [
+              #this array lists object windows in this object window row
+              {
+                 "otype": "<otype value>",
+                 "oid": <oid>
+               }
+              ]
+             }
+            ]
+           }
+
+
+.. important::
+
+      Both the ``"admin_sections"`` and ``"article_links"`` objects must exist in the **homepage.json**, even if they are empty. It is not possible to completely hide main sections from the Home Page. If the section is empty in the customized JSON, Alation will display the default configuration for this section.
+
+The bare minimum JSON would look like this:
+
+.. code-block:: JSON
+
+      {
+          "action_links" : [
+          ],
+          "admin_sections" : [
+          ]
+        }
+
+========================== ===========================================================================
+Object                     Description
+========================== ===========================================================================
+action_links               Includes the tiles in the Promoted Actions Banner
+admin_sections             Includes objects of type carousel and object_window_row
+carousel                   A row of tiles
+object_window_row          A row of object windows (elements that reference specific Alation objects)
+========================== ===========================================================================
+
+Examine the customization of each section and the properties of its elements, below.
+
+Promoted Actions Banner
+-------------------------
+
+In its default version, this section includes several tiles links to useful pages in Alation. They are:
+
+=================================== ====================================== ======================================================
+Default ``title``                   Default ``navigateURL``                Notes
+=================================== ====================================== ======================================================
+``"Browse Data Sources"``           ``"/sources/"``                        Link to the Sources page in Alation
+``"Search Tables"``                 ``"/search/?otype=table&q="``          Link to the advanced search page with Table in filter
+``"Search Business Intelligence"``  ``"/search/?q=&otype=report_sources"`` Link to the advanced search page with BI in filter
+``"Write SQL"``                     ``"/compose/"``                        Link to Compose
+``"Write an Article"``              ``"/article/new"``                     Link to a new article page
+=================================== ====================================== ======================================================
+
+In this section, you can customize:
+
+- The number of tiles - add or remove the tile objects
+- The order of tiles - they will appear in the order you list them in the customized JSON
+- The titles of the tiles - change the title property of a tile object
+- The target URLs of the tiles - provide URL to page you would like to be the target of the tile
+
+*Sample Promoted Actions Banner*:
+
+.. image:: ../../_static/Action_Links1.png
+    :width: 5.5in
+    :align: center
+
+Promoted Actions JSON
+~~~~~~~~~~~~~~~~~~~~~~
+
+In **homepage.json**, this section appears as the ``"action_links"`` object. It nests the tile objects defined by such properties as ``title``, ``description``, and ``navigateURL``. For example:
+
+.. code-block:: JSON
+
+      {
+        "action_links" : [
+          {
+            "title" : "Browse Data Sources",
+            "img" : "/static/img/homepage_images/static_actions/BrowseDataSources.png",
+            "navigateURL" : "/sources/"
+            },
+          { "title" : "Search Tables",
+            "img" : "/static/img/homepage_images/static_actions/SearchTables.png",
+            "navigateURL" : "/search/?otype=table&q="
+            },
+          ]
+        }
+
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
++----------------+-------------------------+--------------------------------------------------+
+| Parameter      | Description             | Notes                                            |
++================+=========================+==================================================+
+| title          | Title of the tile       | Use to customize the title of the tile           |
++----------------+-------------------------+--------------------------------------------------+
+| navigateURL    | URL of the target page  | Use to provide a target URL for the link         |
+|                |                         | associated with the tile. Check if the URL is    |
+|                |                         | correctly formatted – URLs to Alation pages      |
+|                |                         | require a trailing backslash "/" on the link     |
+|                |                         | to work: ``"/sources/"``                         |
++----------------+-------------------------+--------------------------------------------------+
+| img            | Path to the image file  | For details on the images, see below.            |
+|                | to be used for the tile | Alation does not recommend to substitute these   |
+|                | background.             | images with other custom images.                 |
++----------------+-------------------------+--------------------------------------------------+
+
+Alation uses several default images for the corresponding tiles on the default Homepage. See below for details on these images.
+
+.. table::
+  :widths: auto
+  :class: longtable
+
+  +-----------------------------------------------+-------------------------------------------------------------------------+
+  | Image                                         | Path                                                                    |
+  +===============================================+=========================================================================+
+  |                                               | ``/static/img/homepage_images/static_actions/BrowseDataSources.png``    |
+  | .. image:: ../../_static/HomepageImage_01.png |                                                                         |
+  |     :width: 100px                             |                                                                         |
+  |                                               |                                                                         |
+  +-----------------------------------------------+-------------------------------------------------------------------------+
+  |                                               | ``/static/img/homepage_images/static_actions/SearchTables.png``         |
+  | .. image:: ../../_static/HomepageImage_02.png |                                                                         |
+  |     :width: 100px                             |                                                                         |
+  |                                               |                                                                         |
+  +-----------------------------------------------+-------------------------------------------------------------------------+
+  |                                               | ``/static/img/homepage_images/static_actions/SearchBI.png``             |
+  | .. image:: ../../_static/HomepageImage_03.png |                                                                         |
+  |     :width: 100px                             |                                                                         |
+  |                                               |                                                                         |
+  +-----------------------------------------------+-------------------------------------------------------------------------+
+  |                                               | ``/static/img/homepage_images/static_actions/WriteAQuery.png``          |
+  | .. image:: ../../_static/HomepageImage_04.png |                                                                         |
+  |     :width: 100px                             |                                                                         |
+  |                                               |                                                                         |
+  +-----------------------------------------------+-------------------------------------------------------------------------+
+  |                                               | ``/static/img/homepage_images/static_actions/CreateAnArticle.png``      |
+  | .. image:: ../../_static/HomepageImage_05.png |                                                                         |
+  |     :width: 100px                             |                                                                         |
+  |                                               |                                                                         |
+  +-----------------------------------------------+-------------------------------------------------------------------------+
+
+
+Shorthand ``"action_links"``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alternatively, the ``"actions_links"`` can be defined with a shorthand format. Each tile has a type hash that maps to a complete tile format hard-coded in the back end. Here is the short hand configuration that corresponds to the default configuration of this section on the Homepage:
+
+.. code-block:: bash
+
+      "action_links" : [
+            {"type" : "sources"},
+            {"type" : "search_tables"},
+            {"type" : "search_bi"},
+            {"type" : "write_sql"},
+            {"type" : "write_article"}
+          ]
+
+
+Curated by Your Admins
+-------------------------
+
+**Curated by Your Admins** section is displayed under the Revisit section. Here you can customize:
+
+- The number of carousel rows - add/remove the *carousel* objects
+- The number and order of tiles in a carousel - add/remove the *tile* objects nested in a carousel object
+- The order of the rows or tiles - list the rows or tiles the way you want they should appear in UI
+- Titles of carousels - provide or change the title of the carousel object
+- Titles of the tiles - change the ``title`` property of the *tile* object
+- Description of the tiles - optionally, add a description to the tile object
+- The target URLs of the tiles - provide the target URL for the tiles using the ``navigateURL`` property
+- Color of the background images of the tiles - define a color from a range of supported colors
+- The number of *object windows* - add/remove object windows to object window rows
+- Content of object windows - provide the ``otype`` and ``oid`` values of the target object.
+
+*Sample Curated By Your Admins*:
+
+.. image:: ../../_static/HomepageImage_06.png
+
+Curated By Your Admins JSON
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In **homepage.json**, this section appears as the "admin_sections" object. Each row of this section is either a carousel or an object window row.
+
+Object visibility is limited by permissions.  If a user does not have permission to view the object, the corresponding object window will not be displayed on the page. Currently, the supported object types are:
+
+- article
+- bi_report
+- tableau_sheet
+
+For Articles, a user can only view the fields that they have permission for. For example, if a custom field is not visible to the user, it will not show up; however, the rest of the article will be displayed.
+
+Each row can have one or two object windows.
+
+Structure
+^^^^^^^^^^^
+
+.. code-block: json
+
+      {
+        "admin_sections": [
+            {
+              // carousel
+              },
+              {
+              // carousel
+              },
+              {
+              // object_window_row
+              },
+            ...
+          ]
+        }
+
+Sample JSON
+^^^^^^^^^^^^^
+
+.. code-block:: JSON
+
+      {
+        "admin_sections": [
+          {
+            "type": "carousel",
+            "title" : "Here are Articles you might like",
+            "tiles" : [
+              {
+                "title" : "Getting started for data stewards",
+                "img" : "/static/img/homepage_images/colored_images/ArticleBlue.png",
+                "navigateURL" : "/article/19090/",
+                "description" : "MySQL",
+                "otype" : "bi_report",
+                "expandDescriptions" : true
+                },
+              {
+                "title" : "Getting Started for Query Writers",
+                "img" : "/static/img/homepage_images/colored_images/ArticleGreen.png",
+                "navigateURL" : "/article/68/",
+                "description" : "Some description is here #2",
+                "expandDescriptions" : true
+                },
+              {
+                "title" : "Getting started for Admins",
+                "img" : "/static/img/homepage_images/colored_images/ArticleOrange.png",
+                "navigateURL" : "/article/20147/",
+                "description" : "Test workbook"
+                }
+              ]
+            }
+          ]
+        }
+
+
++--------------------+---------------------------------+--------------------------------------------------------+
+| Parameter          | Description                     | Notes                                                  |
++====================+=================================+========================================================+
+| title              | Title of a carousel or a tile   | Use to customize the title                             |
++--------------------+---------------------------------+--------------------------------------------------------+
+| img                | Path to the background image    | Use to change the background image or its color.       |
+|                    |                                 | See `Customizing the Color of the Tiles`_.             |
++--------------------+---------------------------------+--------------------------------------------------------+
+| navigateURL        | URL of the target page the user | Change the target link.                                |
+|                    | is redirected to after clicking | Check if the tile URL is correctly formatted           |
+|                    | on the tile                     | URLs require a trailing backslash ``"/"``:             |
+|                    |                                 | ``"/article/20147/"``                                  |
++--------------------+---------------------------------+--------------------------------------------------------+
+| description        | Description shown on a sliding  | Provide the description                                |
+|                    | out background on top of the    |                                                        |
+|                    | tile                            |                                                        |
++--------------------+---------------------------------+--------------------------------------------------------+
+| expandDescriptions | If True, will expand description|                                                        |
+|                    | upon hover-over on the tile.    |                                                        |
++--------------------+---------------------------------+--------------------------------------------------------+
+| otype              | Type of Alation object          | Supported types are:                                   |
+|                    |                                 |                                                        |
+|                    |                                 |  - article                                             |
+|                    |                                 |  - bi_report                                           |
+|                    |                                 |  - tableau_sheet                                       |
+|                    |                                 |                                                        |
++--------------------+---------------------------------+--------------------------------------------------------+
+| oid                | ID of object. When otype and    | You can find the oid in Alation URL for the object     |
+|                    | oid are specified, Alation will | page. For example, for an article with the URL:        |
+|                    | populate the title and          | ``https://alationdata.com/article/878/business-areas`` |
+|                    | description for this object     | the ``oid`` is the ID you find after ``/article/``:    |
+|                    | window from the object itself.  | **878**                                                |
++--------------------+---------------------------------+--------------------------------------------------------+
+| title              |                                 | Optional property                                      |
++--------------------+---------------------------------+--------------------------------------------------------+
+| description        |                                 | Optional property                                      |
++--------------------+---------------------------------+--------------------------------------------------------+
+
+Customizing the Color of the Tiles
+------------------------------------
+
+Currently, tile image colors are generated randomly. If you want to define specific image colors for specific tiles, you will need to add the color to the **img** key value for the tile object. See the table below for the object type that matches the image, and what the corresponding URL is. Background color change is supported for the following object types:
+
+- article
+- custom_glossary (business glossaries)
+- attribute (columns)
+- data (data sources)
+- schema
+- table
+- tag
+- bi_report (BI reports)
+
+Current supported colors are:
+
+- blue
+- orange
+- purple
+- teal
+- red
+- yellow
+- green
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
+.. table::
+  :widths: auto
+  :class: longtable
+
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  | Object Type      | Image                                         | Path                                                                  |
+  +==================+===============================================+=======================================================================+
+  | article          |                                               | ``/static/img/homepage_images/colored_images/Article+ <Color>.png``   |
+  |                  | .. image:: ../../_static/HomepageImage_07.png | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/ArticleBlue.png``        |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  | custom_glossary  |                                               | ``/static/img/homepage_images/colored_images/BG+<Color>.png``         |
+  |                  | .. image:: ../../_static/HomepageImage_08.png | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/BGBlue.png``             |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  |                  |                                               | ``/static/img/homepage_images/colored_images/Column+ <Color>.png``    |
+  | attribute        | .. image:: ../../_static/HomepageImage_09.png | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/ColumnBlue.png``         |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  |                  |                                               | ``/static/img/homepage_images/colored_images/DataSource+<Color>.png`` |
+  | data             | .. image:: ../../_static/HomepageImage_10.png | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/DataSourceBlue.png``     |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  |                  |                                               | ``/static/img/homepage_images/colored_images/Query+<Color>.png``      |
+  | query            | .. image:: ../../_static/HomepageImage_11.png | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/QueryBlue.png``          |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  |                  |                                               | ``/static/img/homepage_images/colored_images/Schema+ <Color>.png``    |
+  | schema           | .. image:: ../../_static/HomepageImage_12.png | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/SchemaBlue.png``         |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  |                  |                                               | ``/static/img/homepage_images/colored_images/Table+<Color>.png``      |
+  | table            | .. image:: ../../_static/HomepageImage_13.png | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/TableBlue.png``          |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  |                  |                                               | ``/static/img/homepage_images/colored_images/Tag+<Color>.png``        |
+  | tag              | .. image:: ../../_static/HomepageImage_14.png | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/TagBlue.png``            |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  |                  |                                               | ``/static/img/homepage_images/colored_images/BIReport+<Color>.png``   |
+  | bi_report        |.. image:: ../../_static/HomepageImage_15.png  | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/BIReportBlue.png``       |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+
+  |                  |                                               | ``/static/img/homepage_images/colored_images/<Color>.png``            |
+  | none             | .. image:: ../../_static/HomepageImage_16.png | Example:                                                              |
+  |                  |     :width: 200px                             | ``/static/img/homepage_images/colored_images/Blue.png``               |
+  |                  |                                               |                                                                       |
+  +------------------+-----------------------------------------------+-----------------------------------------------------------------------+

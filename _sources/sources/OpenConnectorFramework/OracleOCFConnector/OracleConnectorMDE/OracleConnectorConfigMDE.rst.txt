@@ -1,0 +1,284 @@
+Version 1.5.0 or Newer
+========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+.. important::
+
+    This section is applicable for Alation version **2023.3.4 or higher** and Oracle OCF connector version **1.5.0 or higher**.
+
+Overview
+-----------
+
+Metadata extraction (MDE) is the process of fetching data source information, such as tables, columns, column data types, views, primary keys, foreign keys, functions, policies, tags, and procedures.
+Alation queries your database to retrieve this metadata, which becomes catalog objects.
+
+You can initiate MDE on demand or schedule it for regular catalog updates.
+
+Configure MDE in Alation
+---------------------------
+
+Metadata extraction fetches data source information, such as schemas, tables, columns, keys, functions, and more.
+
+Alation queries your database to retrieve this metadata, which becomes catalog objects. You can initiate MDE on demand or schedule it for regular catalog updates.
+
+Steps involved in metadata extraction are:
+
+    1. `Test Access and Fetch Schemas`_
+
+    2. `Select Schemas for Extraction`_
+
+    3. `Customize the Extraction Scope`_ (Optional)
+
+    4. `Configure Custom Extraction Queries`_ (Optional)
+
+    5. `Run Extraction`_
+
+     .. image:: ../../../../_static/Snowflake_OCF_New_MDE_Workflow.png
+        :width: 600px
+
+
+Test Access and Fetch Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before fetching the schemas for extraction, Alation tests if the service account has the required permissions to run metadata extractions.
+
+Perform these steps to test the access and fetch schemas.
+
+        .. note::
+
+            Ensure that the service account has the necessary permissions to access required system views and retrieve accessible schemas (see :doc:`/sources/OpenConnectorFramework/OracleOCFConnector/OracleConnectorPrerequisites`).
+
+
+    1. On the Settings page of your Oracle OCF data source, go to the **Metadata Extraction** tab.
+
+    2. In the **Test access and fetch schemas** section, click **Run**.
+
+        The retrieved list of schemas appears in the Schemas table under the **Select schemas for extraction** section of the Metadata Extraction page.
+
+.. note::
+
+    Access check is not applicable if you are using custom queries to extract metadata. 
+
+Select Schemas for Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Select schemas for extraction, to which you have access, instead of extracting all the schemas. When selecting schemas for extraction, you retrieve the metadata only for the selected schemas. This makes the extraction quicker and consumes fewer resources than extracting all the schemas.
+
+
+By default, all the schemas Alation fetches from the data source will be selected for extraction. You can adjust the selection of by:
+
+    - Selecting Schemas using Filters
+
+    - Selecting Schemas Manually
+
+If you do not select any schema manually or using rules, Alation extracts all the schemas upon running the metadata extraction.
+
+Select Schemas using Filters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to apply extraction filters, perform these steps:
+
+    1. On the Settings page of your Oracle OCF connector, go to the **Metadata Extraction** tab.
+
+    2. Under the **Select schemas for extraction** section, turn on the **Enable advanced settings** toggle.
+
+    3. Select the required extraction filter option from the **Extract** drop down:
+
+        - **Only selected schemas** — extracts metadata only from the selected schemas. This is the default value.
+
+        - **All schemas except selected** — extracts metadata from all schemas except the selected schemas.
+
+    4. To soft-delete the schemas from previous extraction that are not part of the current schema selection, select the **Keep the catalog synchronized with the current selection of schemas** checkbox.
+
+    5. Create a filter.
+
+        a. From the first drop down, select **Schema** or **Catalog**.
+
+        b. Select the filter criteria (**Contains**, **Starts with**, **Ends with**, **Regex**).
+
+        c. Specify the keyword to look for from the schema or catalog.
+
+        Use this option if you frequently change schemas or if you use extensive metadata.
+
+       You can add multiple filters by clicking the **Add another filter** link.
+
+
+        .. note::
+
+            You must use rules if you plan to schedule MDE.
+
+    6. Click **Apply filters**.
+
+       The **Schema** table displays the selected schemas that match the rules that you had set.
+
+    .. note::
+
+         - After applying rules, you cannot manually adjust the selection of schemas.
+
+         - Filter is not applicable if you are using custom queries.
+
+Select Schemas Manually
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you opt to manually select the schemas for extraction, perform these steps:
+
+    1. On the Settings page of your Oracle data source, go to the **Metadata Extraction** tab.
+
+    2. Under the **Select schemas for extraction** section, turn off the **Enable advanced settings** toggle if not disabled already.
+
+    3. Select the required schemas from the list of schemas in the **Schemas** table.
+
+       Alternatively, you can select schemas by searching for the required schema from the table using either the schema name or any keyword or string in the schema name.
+
+       After you have selected the schemas, your schema selection count is displayed above the **Schema** table.
+
+Customize the Extraction Scope
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    This is an optional step.
+
+You can customize metadata extraction down to the level of specific metadata types, such as tables, columns, and views. Consider the following points:
+
+    - The extraction of schema, table, view, and column metadata is always enabled and cannot be disabled.
+
+    - The extraction of system schema information is disabled by default. All other supported metadata types are enabled by default.
+
+    - You can disable or enable the metadata types you want to extract by enabling or disabling the corresponding option.
+
+To customize the extraction scope, perform these steps:
+
+    1. On the Settings page of your Oracle data source, go to the **Metadata Extraction** tab.
+
+    2. Under the **Customize extraction scope** section, enable or disable the required additional available metadata types from the following options:
+
+        - **Extract system schema** - extracts system schemas.
+
+        - **Extract primary keys** - extracts primary keys. Enabling this option leads to increased performance demands.
+
+        - **Extract foreign keys** - extracts foreign keys. Enabling this option leads to increased performance demands.
+
+        - **Extract index** - extracts indexes. Enabling this option leads to increased performance demands.
+
+        - **Extract functions** - extracts function information. We recommend that you enable this option.
+
+        - **Extract synonyms** - extracts synonyms. Public synonyms are displayed under a dummy schema called **PUBLIC**. The **PUBLIC** schema does not exist in the Oracle database. Enabling this option leads to increased performance demands.
+
+
+Configure Custom Extraction Queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    1. On the Settings page of your Oracle data source, go to the **Metadata Extraction** tab.
+
+    2. Under the **Custom extraction queries** section, provide custom queries in the respective fields.
+
+       For details on the custom queries, see :doc:`/sources/OpenConnectorFramework/OracleOCFConnector/OracleConnectorExtractionQueries`.
+
+    3. Click **Save**.
+
+    .. note::
+
+        If you specify the custom query for some metadata types but not all, Alation performs extraction based on the corresponding default query for the metadata types that do not have a custom query.
+
+Run Extraction
+----------------
+
+Under the Run extraction section (**General Settings** > **Metadata Extraction**), click **Run Extraction** to extract metadata on demand.
+
+The status of the extraction action is logged in the Extraction Job Status table under the **MDE Job History** tab.
+
+Schedule Extraction
+~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also schedule the extraction. To schedule the extraction, perform these steps:
+
+    1. On the Settings page of your Oracle data source, go to the **Metadata Extraction**.
+
+    2. Under the **Run extraction** section, turn on the **Enable extraction schedule** toggle.
+
+    3. Using the date and time widgets, select the recurrence period and day and time for the desired MDE schedule. The next metadata extraction job for your data source will run on the schedule you have specified.
+
+        .. image:: ../../../../_static/Snowflake_OCF_New_ScheduleMDE.png
+            :width: 500px
+            :class: with-border
+
+    .. note::
+
+        Here are some of the recommended schedules for better performance:
+
+            - Schedule extraction to run for every 12 hours at the 30th minute of the hour.
+
+            - Schedule extraction to run for every 2 days at 11:30 PM.
+
+            - Schedule extraction to run every week on the Sunday and Wednesday of the week.
+
+            - Schedule extraction to run for every 3 months on the 15th day of the month.
+
+
+View the MDE Job History
+---------------------------
+
+You can view the status of the extraction actions after you run the extraction or after Alation triggers the MDE as per the schedule. Also, you can view the status of the schemas retrieved from the `Test Access and Fetch Schemas` step.
+
+To view the status of extraction, go to **Metadata Extraction** > **MDE Job History** on the Settings page of your Oracle data source. The Extraction job status table is displayed.
+
+    .. image:: ../../../../_static/Snowflake_OCF_New_MDEJobHistory.png
+         :width: 600px
+         :class: with-border
+
+The **Extraction job status** table logs the following status:
+
+    - **Did Not Start** - Indicates that the metadata extraction did not start due to configuration or other issues.
+
+    - **Succeeded** - Indicates that the extraction was successful.
+
+    - **Partial Success** - Indicates that the extraction was successful with warnings. If Alation fails to extract some of the objects during the metadata extraction process, it skips them and proceeds with the extraction process, resulting in partial success.
+
+    - **Failed** - Indicates that the extraction failed with errors.
+
+Click the **View Details** link to view a detailed report of metadata extraction. If there are errors, the **Job errors** table displays the error category, error message, and a hint (ways to resolve the issue). Follow the instructions under the **Hints** column to resolve the error.
+
+In some cases, **Generate Error Report** link is displayed above the **Job errors** table. Click the **Generate Error Report** link above the **Job errors** table to generate an archive (*.zip*) containing *CSV* files for different error categories, such as Data and Connection errors. Click **Download Error Report** to download the files.
+
+Enable Raw Dump or Replay
+--------------------------
+
+You can enable or disable the Raw Metadata Dump or Replay feature for debugging MDE. By default, this feature is disabled. We recommend enabling it for extraction debugging only. The full use of this feature requires access to the Alation server.
+
+If Raw Metadata Dump or Replay is enabled, Alation breaks MDE into these stages:
+
+    - “Dump” the extracted metadata into files. You can access and review the files on the Alation server to debug extraction issues before attempting to ingest the metadata into the catalog.
+
+    - Ingest the metadata from the files into the catalog (Replay).
+
+Both the stages are manually controlled from the user interface.
+
+To enable the Raw Metadata Dump or Replay perform these steps:
+
+    1. On the Settings page of your Oracle data source, go to the **Metadata Extraction** > **Troubleshooting: Enable raw dump or replay** section.
+
+    2. From the **Enable Raw Metadata Dump or Replay** dropdown list, select the **Enable Raw Metadata Dump** option.
+
+    3. Click **Save**.
+
+       This enables the first stage of MDE where the extracted metadata is dumped into the following files in a subdirectory within the *opt/alation/site/tmp/* directory on the Alation server (inside the Alation shell):
+
+        *attribute.dump*, *function.dump*, *schema.dump*, *table.dump* —in a subdirectory of the directory opt/alation/site/tmp/ on the Alation server (inside the Alation shell).
+
+    4. Click **Run extraction**.
+
+       Alation performs a raw metadata dump into files. In the Extraction job status table on the MDE Job History tab, click the View Details link to display the details of the MDE job. The log lists the location of the .dump files for the MDE job. For example:  /opt/alation/site/tmp/rosemeta/170/extraction_dump/5028.
+
+    5. Access and review the metadata dump files to intercept any potential extraction issues.
+
+    6. From the **Enable Raw Metadata Dump or Replay** dropdown list, select the option **Enable Ingestion Replay**.
+
+    7. Click **Save**.
+
+       This enables the second stage where the metadata from the files is ingested into the Alation catalog.
+
+    8. Click **Run extraction**.
+
+       The metadata from the files are ingested into the catalog.

@@ -1,0 +1,80 @@
+Troubleshooting Advanced Search
+=====================================================================
+
+*Applies to release V R6 (5.10.x)*
+
+Problem
+~~~~~~~
+
+After updating to V R6, :doc:`Using Advanced Search </archive/Usage/AdvancedSearch>` does not allow users to
+select values for multiple custom fields.
+
+Context
+~~~~~~~
+
+Starting with release *V R6 (5.10.x)*, users should be able to select
+values from multiple custom field facets on the Advanced Search page to
+better focus the search results (see :doc:`Using Advanced Search </archive/Usage/AdvancedSearch>` ). 
+
+If you have updated Alation to V R6 from an older release, this
+functionality will become available after the search index is updated on
+your Alation instance.
+
+The search index is expected to update automatically in the background
+after updating to V R6. On instances with a large volume of catalog
+data, this may take up to two days to complete. The same index update
+process is triggered over the next weekend after the update as a backup
+for the automatic run. After this update process has completed, users
+will be able to select values for multiple custom fields in advanced
+search.
+
+Troubleshooting Steps
+~~~~~~~~~~~~~~~~~~~~~
+
+If after updating to V R6, you notice that advanced search does not
+allow users to select values from multiple custom fields, the automatic
+job *run_update_indexes_for_multi_cf* may have not run or not
+completed.
+
+You can check if the job has completed successfully by checking if a
+file named *index_update_completed_file_for_multi_facet* exists at
+**/opt/alation/site/site_data/**.
+
+If the file *index_update_completed_file_for_multi_facet* does not
+appear at **/opt/alation/site/site_data/** after several days
+following the update, you can wait until the next weekend for the backup
+job to run or you can troubleshoot by running this job manually from the
+Alation shell.
+
+To trigger the job manually,
+
+1. Enter the Alation shell:
+
+    .. code-block:: bash
+
+       sudo service alation shell
+
+2. Enter the Django shell
+
+    .. code-block:: bash
+
+       alation_django_shell
+
+3. Run the following script:
+
+    .. code-block:: bash
+
+       from rosemeta.one_off_scripts.update_indexes_for_new_fields import run_update_indexes_for_multi_cf
+       run_update_indexes_for_multi_cf.delay()
+
+4. Exit both shells:
+
+    .. code-block:: bash
+
+       exit()
+       exit
+
+5. This job may take time. Upon completion, it creates an empty file *index_update_completed_file_for_multi_facet*. Check **/opt/alation/site/site_data/index_update_completed_file_for_multi_facet** to make sure the file now exists.
+
+The functionality when advanced search allows for selecting multiple
+custom field values should now be available on your instance.

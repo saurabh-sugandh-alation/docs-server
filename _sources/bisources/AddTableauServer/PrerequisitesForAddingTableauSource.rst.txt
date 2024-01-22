@@ -1,0 +1,70 @@
+Prerequisites for Adding a Tableau Source to Alation
+=====================================================
+
+To add a Tableau source on any framework - Legacy or GBM V2, you will
+need to prepare information about your Tableau server.
+
+Required Server Information
+-------------------------------
+
+-  Tableau server URI
+-  Port number
+-  Service Account with *Site Admin* privileges; an AD account preferred
+-  Hostname or IP address of your Tableau PostgreSQL server
+-  To access the Tableau PostgreSQL database ``workgroup``: password for the
+   user account ``readonly``
+
+SSL
+~~~~~~~~
+
+SSL connection is supported for the Tableau server and the Tableau internal PostgreSQL database.
+
+**Starting with release 2020.3**, connection over SSL requires that the corresponding SSL certificates of the Tableau server and/or the Tableau internal PostgreSQL database must be uploaded to Alation. They can be uploaded via the Alation UI on the Settings page of the Tableau server source.
+
+Please work with your Tableau Server Administrator to obtain the SSL certificate files. Relevant Tableau documentation:
+
+      - `Tableau PostgreSQL SSL certificate <https://help.tableau.com/current/server/en-us/ssl_config_direct_cx.htm>`_
+
+      - `SSL for Tableau server <https://help.tableau.com/current/server/en-us/ssl_config.htm>`_
+
+On the Settings page, configure connection over SSL using the following guidelines:
+
+    - The server connection URI must include the HTTPS prefix, for example: ``https://tableau2020.alationcatalog.com``.
+
+    - To connect over SSL to the Tableau internal PostgreSQL database, include the parameter ``ssl=true`` into the PostgreSQL URI, for example: ``postgresql://tableau2020.alationcatalog.com:8060/workgroup?ssl=true``
+
+.. note::
+
+    On the Settings page, you have the ability to test connectivity to the source after providing the connection details. During the connection test, the driver validates both the hostnames and the uploaded SSL certificates.
+
+
+Firewall Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Open the outbound TCP port to Tableau API server, usually port 80 or 443.
+-  Open the outbound TCP port to Tableau server PostgreSQL database: port 8060.
+-  Verify that Tableau PostgreSQL is listening on all interfaces.
+-  Enable external access for the user ``readonly`` to Tableau PostgreSQL:
+
+    -  Verify that external access to Tableau PostgreSQL is enabled by running the following command as any user from Alation server.
+
+      .. code-block:: Bash
+
+          psql -h <tableau hostname or ip> -p 8060 -U readonly -d workgroup
+
+     -  Enable the access if this has not been done yet on your Tableau server                
+
+Metadata Extraction
+----------------------
+
+-  Alation needs a service account with at least site-level Administration privileges (Site Administrator). Local, Active Directory accounts are supported. SAML authentication-based service accounts are not supported.
+
+-  Alation needs access to the Tableau PostgreSQL database with the user account ``readonly``
+
+Below is a screenshot showing how to elevate a Tableau user account:
+
+   .. image:: ../../_static/bi_image21.png
+       :width: 554.50px
+       :align: center
+       :height: 390.10px
+       :alt: image

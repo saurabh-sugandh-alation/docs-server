@@ -1,0 +1,101 @@
+MDE from Snowflake Data Source Fails with "Error Message: 'name'"
+=======================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Problem
+----------------
+
+Metadata extraction from a Snowflake data source cataloged using the native (built-in) connector for Snowflake fails. The extraction job history table on the **Metadata Extraction** tab of the data source settings shows the error *Error Message: 'name'* in the **Detail** column.
+The ``/opt/alation/site/logs/taskserver.log`` file contains an error message similar to the following:
+
+.. code-block:: Bash
+
+    "exception": {
+		  "stacktrace": "net.snowflake.client.jdbc.SnowflakeSQLException:
+      SQL compilation error:\nObject does not exist,
+      or operation cannot be performed <...>
+      "exception_class": "net.snowflake.client.jdbc.SnowflakeSQLException",
+      "exception_message": "SQL compilation error:\nObject does not exist,
+      or operation cannot be performed."}
+
+Root Cause
+-----------------
+
+There were changes to some of the Account Usage views in the Snowflake database, including:
+
+    - **MASKING_POLICIES**
+    - **ROW_ACCESS_POLICIES**
+    - **TAGS**
+
+It is likely that these changes were released by Snowflake after you created data policy and tag extraction views for Alation. These changes prevent the new objects to be extracted and require refreshing the views that enable data policy and tag extraction:
+
+    - **METADATA_DB.METADATA_SCHEMA.MASKING_POLICIES**
+    - **METADATA_DB.METADATA_SCHEMA.ROW_ACCESS_POLICIES**
+    - **METADATA_DB.METADATA_SCHEMA.TAGS**
+    - **METADATA_DB.METADATA_SCHEMA.TAG_REFERENCES**.
+
+For more details, see `Account Usage: New and Changed Columns in Certain Views in Snowflake <https://community.snowflake.com/s/article/Account-Usage-New-Columns-Added-to-Certain-Views-Pending>`_ knowledge base.
+
+Solution
+--------------------
+
+Recreate the views that were set up on Snowflake for data policy and tag extraction.
+
+To recreate the views:
+
+1. On your Snowflake database, use the queries given below to recreate the views.
+
+      - **METADATA_DB.METADATA_SCHEMA.MASKING_POLICIES**
+
+              .. code-block:: SQL
+
+                  CREATE OR REPLACE VIEW METADATA_DB.METADATA_SCHEMA.MASKING_POLICIES AS
+                  SELECT *
+                  FROM SNOWFLAKE.ACCOUNT_USAGE.MASKING_POLICIES;
+
+      - **METADATA_DB.METADATA_SCHEMA.ROW_ACCESS_POLICIES**
+
+              .. code-block:: SQL
+
+                  CREATE OR REPLACE VIEW METADATA_DB.METADATA_SCHEMA.ROW_ACCESS_POLICIES AS
+                  SELECT *
+                  FROM SNOWFLAKE.ACCOUNT_USAGE.ROW_ACCESS_POLICIES;
+
+      - **METADATA_DB.METADATA_SCHEMA.TAGS**
+
+              .. code-block:: SQL
+
+                  CREATE OR REPLACE VIEW METADATA_DB.METADATA_SCHEMA.TAGS AS
+                  SELECT *
+                  FROM SNOWFLAKE.ACCOUNT_USAGE.TAGS
+                  WHERE TAG_ID IS NOT NULL;
+
+      - **METADATA_DB.METADATA_SCHEMA.TAG_REFERENCES**
+
+              .. code-block:: SQL
+
+                  CREATE OR REPLACE VIEW METADATA_DB.METADATA_SCHEMA.TAG_REFERENCES AS
+                  SELECT *
+                  FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+                  WHERE TAG_ID IS NOT NULL;
+
+2. Grant the Alation service role access to the recreated views. Replace ``<alation_role>`` in the SQL below with your actual Alation service account role name.
+
+    .. code-block:: SQL
+
+        GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.TAGS TO <alation_role>;
+
+    .. code-block:: SQL
+
+        GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.MASKING_POLICIES TO <alation_role>;
+
+    .. code-block:: SQL
+
+        GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.ROW_ACCESS_POLICIES TO <alation_role>;
+
+    .. code-block:: SQL
+
+        GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.TAG_REFERENCES TO <alation_role>;
+
+3. Rerun metadata extraction for your Snowflake data source in Alation. Now, tags and data policy objects should be extracted and displayed in the Alation catalog.

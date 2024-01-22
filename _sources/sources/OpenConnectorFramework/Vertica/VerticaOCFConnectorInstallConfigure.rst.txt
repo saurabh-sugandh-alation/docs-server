@@ -1,0 +1,332 @@
+Vertica OCF Connector: Install and Configure
+================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Network Configuration
+------------------------
+
+Open outbound TCP port **5433** to the Vertica server.
+
+Create Service Account
+-----------------------------
+
+Sample SQL to Create an Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using the SQL below, substitute ``<service_account>`` and ``<password>`` with actual values.
+
+.. code-block:: SQL
+
+    CREATE USER <service_account> IDENTIFIED BY '<password>';
+
+Permissions for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: SQL
+
+    GRANT SELECT ON V_CATALOG.SCHEMATA TO <service_account>;
+    GRANT SELECT ON V_CATALOG.ALL_TABLES TO <service_account>;
+    GRANT SELECT ON V_CATALOG.TABLES TO <service_account>;
+    GRANT SELECT ON V_CATALOG.ODBC_COLUMNS TO <service_account>;
+    GRANT SELECT ON V_CATALOG.VIEWS TO <service_account>;
+    GRANT SELECT ON V_CATALOG.PRIMARY_KEYS TO <service_account>;
+    GRANT SELECT ON V_CATALOG.FOREIGN_KEYS TO <service_account>;
+    GRANT SELECT ON V_CATALOG.USER_FUNCTIONS TO <service_account>;
+    GRANT SELECT ON V_CATALOG.USER_TRANSFORMS TO <service_account>;
+    GRANT SELECT ON V_INTERNAL.ODBC_PROCEDURE_COLUMNS TO <service_account>;
+
+|
+
++---------------------------------------------------+-------------------------------------+
+| Permission                                        | Purpose                             |
++===================================================+=====================================+
+| GRANT SELECT ON V_CATALOG.SCHEMATA                | Required for schema extraction      |
++---------------------------------------------------+-------------------------------------+
+| GRANT SELECT ON V_CATALOG.ALL_TABLES              | Required for table extraction       |
++---------------------------------------------------+-------------------------------------+
+| GRANT SELECT ON V_CATALOG.TABLES                  | Required for table extraction       |
++---------------------------------------------------+-------------------------------------+
+| GRANT SELECT ON V_CATALOG.ODBC_COLUMNS            | Required for column extraction      |
++---------------------------------------------------+-------------------------------------+
+| GRANT SELECT ON V_CATALOG.VIEWS                   | Required for view extraction        |
++---------------------------------------------------+-------------------------------------+
+| GRANT SELECT ON V_CATALOG.PRIMARY_KEYS            | Required for primary key extraction |
++---------------------------------------------------+-------------------------------------+
+| GRANT SELECT ON V_CATALOG.FOREIGN_KEYS            | Required for foreign key extraction |
++---------------------------------------------------+-------------------------------------+
+| GRANT SELECT ON V_CATALOG.USER_FUNCTIONS          | Required for function extraction    |
++---------------------------------------------------+-------------------------------------+
+| GRANT SELECT ON V_CATALOG.USER_TRANSFORMS         | Required for function extraction    |
++---------------------------------------------------+-------------------------------------+
+| GRANT SELECT ON V_INTERNAL.ODBC_PROCEDURE_COLUMNS | Required for function               |
+|                                                   | definition extraction               |
++---------------------------------------------------+-------------------------------------+
+
+Permissions for Profiling and Sampling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: SQL
+
+    GRANT USAGE ON SCHEMA [schema] TO <service_account>;
+    GRANT SELECT ON ALL TABLES IN SCHEMA [schema] TO <service_account>;
+
+Permissions for Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If using table-based QLI, grant the service account the SELECT permissions for the QLI view you create on Vertica. If using custom query-based QLI, grant the service account admin-level privileges as this type of QLI involves querying system tables.
+For details, see `Query Log Ingestion`_ below.
+
+Configure Kerberos for Vertica Data Source
+---------------------------------------------
+
+If your Vertica database is kerberized, make sure that the Alation service account has been granted permissions to use Kerberos authentication. You will also need the **krb5.conf** and the keytab files for your Vertica database. Both files will need to be uploaded in the data source settings in Alation user interface. For details on granting accounts permissions to use Kerberos authentication, refer to `Create the Vertica Principals and Keytabs on Linux KDC <https://www.vertica.com/docs/11.0.x/HTML/Content/Authoring/Security/Kerberos/CreateTheVerticaPrincipal.htm>`_ in Vertica documentation.
+
+Testing Kerberos Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Run the following commands to obtain a ticket and check connectivity from the Vertica server:
+
+    - **Kerberos without keytab**
+
+        .. code-block:: Bash
+
+            sudo -i -u  dbadmin kinit <principal>/<service_account>
+
+        Enter the password created during adding the principal.
+
+    - **Kerberos with keytab**
+
+        .. code-block:: Bash
+
+            sudo -i -u  dbadmin kinit -kt <keytab_file> <principal>/<service_account>
+
+    - **Verifying the connection**
+
+        .. code-block:: Bash
+
+            vsql -U <service_account> -k <KerberosServiceName> -K <krb5-host> -h <host name> -c "select client_authentication_name, authentication_method from sessions;"
+
+            vsql -U <service_account> -k <KerberosServiceName> -K <krb5-host> -h <host name> -c "select KERBEROS_CONFIG_CHECK();"
+
+JDBC URI
+------------------
+
+Format
+~~~~~~~~~~
+
+Basic Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    vertica://<hostname_or_ip>:<port>/<database_name>
+
+**Example**
+
+.. code-block:: Bash
+
+    vertica://10.13.41.154:5433/my_database
+
+Kerberos Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    vertica://<hostname>:<port>/<database_name>?KerberosHostName=<kerberos_host_name>&KerberosServiceName=<service_name>
+
+**Example**
+
+.. code-block:: Bash
+
+    vertica://ip-10-13-20-137:5433/alation?KerberosHostName=ip-10-13-20-137.alation-test.com&KerberosServiceName=alation
+
+Configuration in Alation
+-----------------------------
+
+Step 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **Vertica OCF connector**.
+
+Access
+--------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+------------------------
+
+Perform the configuration on the **General Settings** tab.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ConnectorSettings_3.rst
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+You can view the connector logs in **Admin Settings** > **Manage Connectors** > **Vertica OCF connector**.
+
+Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ObfuscateLiterals.rst
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under Test Connection, click **Test** to validate network connectivity.
+
+Metadata Extraction
+-------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+The default queries that the connector uses to extract metadata can be found in :doc:`/sources/OpenConnectorFramework/Vertica/VerticaExtractionQueries`. You can customize these queries to adjust the extraction to your needs.
+
+MDE Extraction from Compose
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After creation of a table or view in Compose, users will see the corresponding table or view on the respective catalog page without re-running MDE.
+In Compose, users should use the following query format for Alation to ingest the metadata incrementally:
+
+    - Table
+
+        .. code-block:: Bash
+
+            CREATE TABLE "SCHEMA_NAME"."TABLE_NAME" ({column properties});
+
+    - View
+
+        .. code-block:: Bash
+
+            CREATE VIEW "SCHEMA_NAME"."VIEW_NAME" AS {view condition}
+
+Sampling and Profiling
+-------------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Compose
+--------------------------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+Query Log Ingestion
+----------------------------
+
+QLI Configuration on Vertica
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Vertica logs queries to a number of system tables. Selecting rows from these tables directly requires an admin account. For Alation to ingest the query information, you can either give the Alation service account admin access to select from the relevant system tables or request the DBA to create a view that Alation can be permitted to access.
+
+Use the query below as an example of creating such a view. You can choose any name for the view. You will need to enter the view name in the Alation user interface when configuring query log ingestion on the **Query Log Ingestion** tab.
+
+.. code-block:: SQL
+
+      CREATE view public.alation_qli_view AS
+  	     SELECT
+            ri.session_id AS sessionId,
+            ri.user_name AS userName,
+            qr.start_timestamp AS startTime,
+            qr.end_timestamp AS endTime,
+            qr.request_duration_ms/1000 AS seconds,
+            ri.request_id,
+            qr.start_timestamp AS sessionStartTime,
+            ri.request AS queryString,
+            '' as defaultDatabases,
+            CASE WHEN qr.success THEN null
+                ELSE 'FAILED'
+            END AS cancelled,
+            qr.search_path
+        FROM v_internal.dc_requests_issued ri
+          JOIN v_monitor.query_requests qr
+            ON ri.transaction_id = qr.transaction_id
+            AND ri.request_id = qr.request_id
+            AND ri.session_id = qr.session_id;
+
+Configuration in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On the **Query Log Ingestion** tab, you can select QLI options for your data source and schedule the QLI job if necessary.
+
+Connector Settings > Query Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can choose to use *table-based QLI* or *custom query-based QLI*.
+
+If you select table-based QLI, before you set up QLI in Alation, perform the configuration on the database as is described in `QLI Configuration on Vertica`_.
+
+If you select query-based QLI, make sure that the Alation service account has admin-level access.
+
+Table-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^
+
+To configure table-based QLI:
+
+In the **Table Name** field, specify the name of the QLI view where the query logs are available. Make sure that the service account has the permissions to access this view. The view name must be provided in the following format: ``database.schema.view_name``.
+
+Custom Query-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_QLI_CustomQueryQLI.rst
+
+QLI Query Template
+''''''''''''''''''''''''''
+
+.. code-block:: SQL
+
+      SELECT
+        ri.session_id AS sessionId,
+        ri.user_name AS userName,
+        qr.start_timestamp AS startTime,
+        qr.end_timestamp AS endTime,
+        qr.request_duration_ms/1000 AS seconds,
+        ri.request_id,
+        qr.start_timestamp AS sessionStartTime,
+        ri.request AS queryString,
+        '' AS defaultDatabases,
+        CASE WHEN qr.success THEN null
+            ELSE 'FAILED'
+        END AS cancelled,
+        qr.search_path
+      FROM
+        v_internal.dc_requests_issued ri
+        JOIN v_monitor.query_requests qr
+          ON ri.transaction_id = qr.transaction_id
+  	       AND ri.request_id = qr.request_id
+  	        AND ri.session_id = qr.session_id
+      WHERE date(starttime) >= STARTTIME
+        AND date(endtime) <= ENDTIME
+      ORDER BY
+        sessionId,
+        startTime;
+
+Perform QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst
+
+Troubleshooting
+------------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting` for information about logs.

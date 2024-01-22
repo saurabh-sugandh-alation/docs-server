@@ -1,0 +1,77 @@
+Troubleshooting
+======================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Issues with Metadata Extraction
+-------------------------------------
+
+Problem: MDE fails with error "iterating schema children"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The issue may occur with older connector versions that use the legacy Spark driver. This driver sometimes cannot keep up the connection long enough for MDE to complete.
+
+Solution
+^^^^^^^^^^^
+
+This issue was resolved starting with connector version **2.0.2.6259**, where the driver was changed to the Databricks JDBC driver. See more in :ref:`Build the JDBC URI <uc-build-uri>`.
+
+Issues with Lineage Extraction
+----------------------------------
+
+Problem: After upgrading the connector to version 1.0.3, MDE fails at ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Connector logs will show the error "system.access.table_lineage table does not exist".
+
+Solution
+^^^^^^^^^^^^
+
+Direct lineage extraction from system tables is a beta feature. The lineage system tables are not enabled by default and need to be enabled by your Databricks admin. See more in :doc:`/sources/OpenConnectorFramework/DatabricksUnityCatalog/DatabricksUnityCatalogOCFLineageExtraction`.
+
+
+Problem: No lineage is generated after MDE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Solution
+^^^^^^^^^^^^
+
+Verify that lineage data is available in the system lineage tables in Databricks.
+
+Issues with QLI
+--------------------
+
+Problem: After running QLI, some queries don’t appear in the History section of the Queries tab
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Explanation
+^^^^^^^^^^^^
+
+Some SQL statements are currently not supported by the Databricks SQL parser that is used to parse SQL statements during QLI, for example:
+
+    - Partially qualified names in SQL statements are not parsed. Object names in query history must be fully qualified to be ingested.
+    - The USE statements are not parsed.
+    - Queries containing CTEs are not parsed.
+    - Queries containing comments (COMMENT, COMMENT ON) are not parsed
+
+This is a limitation with the current GSP and a known issue.
+
+Problem: After QLI, parts of a query appear as separate queries in the catalog
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Explanation
+^^^^^^^^^^^^
+
+To support proper query parsing, accurate execution times count, and lineage resolution, batched queries are split into individual query statements before ingestion.
+
+Problem: Queries that appeared in Preview don't appear in the catalog after QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Explanation
+^^^^^^^^^^^^
+
+The Preview is not directly tied to queries that will appear in the catalog. It returns 100 statements which may be a subset of all imported queries. For queries to appear in the catalog after QLI:
+
+    - Queries must contain fully qualified object names with three-level namespace (**catalog.schema.table**).
+    - The objects referenced in queries must have been cataloged with MDE.
+    - Queries must not duplicate identical queries that were ingested previously. Duplicate queries are not resolved.

@@ -1,0 +1,297 @@
+Extraction Queries for Vertica
+===================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+
+Schema
+---------------
+
+Ensure your query has a column labeled as ``USERNAME`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        current_database() AS CATALOG,
+        schema_name AS SCHEMA
+    FROM
+        v_catalog.schemata
+    WHERE schema_name NOT IN ('''')
+        AND schema_name NOT IN ('public', 'v_idol', 'pg_catalog', 'v_internal',
+                                'v_catalog', 'v_monitor', 'pg_internal',
+                                'v_txtindex')
+    ORDER BY
+      CATALOG,
+      schema_name;
+
+
+Table
+-------------------
+
+Ensure your query has columns labeled as ``SCHEMA``, ``TABLE_NAME``, ``TABLE_TYPE``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        current_database AS CATALOG,
+        a.schema_name AS SCHEMA,
+        a.table_name AS TABLE_NAME,
+        a.table_type AS TABLE_TYPE,
+        a.remarks AS REMARKS,
+        b.owner_name AS OWNER,
+        b.create_time AS CREATE_TIME
+    FROM
+        v_catalog.all_tables a
+        LEFT JOIN v_catalog.tables b
+          ON a.table_id = b.table_id
+    WHERE schema_name NOT IN ('''')
+        AND schema_name NOT IN ('public', 'v_idol', 'pg_catalog',
+                                'v_internal', 'v_catalog', 'v_monitor',
+                                'pg_internal', 'v_txtindex')
+        AND table_type ILIKE 'TABLE'
+    ORDER BY
+      schema_name,
+      table_name;
+
+View
+----------------------
+
+Ensure your query has columns labeled as ``SCHEMA``, ``VIEW_NAME``, ``VIEW_CREATE_STATEMENT``, ``'VIEW' AS VIEW_TYPE``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        current_database AS CATALOG,
+        a.schema_name AS SCHEMA,
+        a.table_name AS TABLE_NAME,
+        a.table_type AS VIEW_TYPE,
+        a.remarks AS REMARKS,
+        c.owner_name AS OWNER,
+        c.create_time AS CREATE_TIME,
+        c.view_definition as VIEW_CREATE_STATEMENT
+    FROM
+        v_catalog.all_tables a
+        LEFT JOIN v_catalog.views c
+            ON a.table_id = c.table_id
+    WHERE a.schema_name NOT IN ('''')
+        AND a.schema_name NOT IN ('public', 'v_idol', 'pg_catalog',
+                                  'v_internal', 'v_catalog', 'v_monitor',
+                                  'pg_internal', 'v_txtindex')
+        AND table_type ILIKE 'VIEW';
+
+
+Column
+-----------------
+
+Ensure your query has columns labeled as ``SCHEMA``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, ``COLUMN_DEFAULT`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        current_database AS CATALOG,
+        schema_name as SCHEMA,
+        TABLE_NAME,
+        COLUMN_NAME,
+        CASE WHEN data_type_name = 'Char'
+              THEN 'Char(' || column_size || ')'
+            WHEN data_type_name = 'Varchar'
+              THEN 'Varchar(' || column_size || ')'
+            WHEN data_type_name = 'Numeric'
+              THEN 'Numeric(' || column_size || ',' || decimal_digits || ')'
+            WHEN data_type_name = 'Date'
+              THEN 'Date(' || column_size || ')'
+            WHEN data_type_name = 'Integer'
+              THEN 'Integer(' || column_size || ')'
+            WHEN data_type_name = 'Float'
+              THEN 'Float(' || column_size || ')'
+            WHEN data_type_name = 'Time'
+              THEN 'Time(' || column_size || ')'
+            WHEN data_type_name = 'Timestamp'
+              THEN 'Timestamp(' || column_size || ')'
+            WHEN data_type_name = 'Interval Second'
+              THEN 'Interval Second(' || column_size || ')'
+            WHEN data_type_name = 'Interval Month'
+              THEN 'Interval Month(' || column_size || ')'
+            WHEN data_type_name = 'Interval Day'
+              THEN 'Interval Day(' || column_size || ')'
+            WHEN data_type_name = 'Interval Minute to Second'
+              THEN 'Interval Minute to Second(' || column_size || ')'
+            WHEN data_type_name = 'TimestampTz'
+              THEN 'TimestampTz(' || column_size || ')'
+            WHEN data_type_name = 'Interval Hour'
+              THEN 'Interval Hour(' || column_size || ')'
+            WHEN data_type_name = 'Interval Day to Hour'
+              THEN 'Interval Day to Hour(' || column_size || ')'
+            WHEN data_type_name = 'Binary'
+              THEN 'Binary(' || column_size || ')'
+            WHEN data_type_name = 'Varbinary'
+              THEN 'Varbinary(' || column_size || ')'
+            WHEN data_type_name = 'TimeTz'
+              THEN 'TimeTz(' || column_size || ')'
+            WHEN data_type_name = 'Interval Minute'
+              THEN 'Interval Minute(' || column_size || ')'
+            WHEN data_type_name = 'Interval Day to Minute'
+              THEN 'Interval Day to Minute(' || column_size || ')'
+            WHEN data_type_name = 'Interval Day to Second'
+              THEN 'Interval Day to Second(' || column_size || ')'
+            WHEN data_type_name = 'Interval Hour to Second'
+              THEN 'Interval Hour to Second(' || column_size || ')'
+            WHEN data_type_name = 'Interval Year'
+              THEN 'Interval Year(' || column_size || ')'
+            WHEN data_type_name = 'Interval Year to Month'
+              THEN 'Interval Year to Month(' || column_size || ')'
+            ELSE data_type_name
+        END AS TYPE_NAME,
+        column_default AS COLUMN_DEF,
+        remarks,
+        column_size AS MAX_LENGTH,
+        decimal_digits AS NUMERIC_SCALE,
+        ordinal_position,
+        COLUMN_DEFAULT,
+        data_type_name AS DATA_TYPE,
+        is_nullable
+    FROM
+      v_catalog.odbc_columns
+    WHERE schema_name NOT IN ('''')
+      AND schema_name NOT IN ('public', 'v_idol', 'pg_catalog',
+                              'v_internal', 'v_catalog', 'v_monitor',
+                              'pg_internal' ,'v_txtindex')
+    ORDER BY
+      CATALOG,
+      schema_name,
+      table_name;
+
+
+Primary Key
+--------------------
+
+Ensure your query has columns labeled as ``TABLE_NAME``, ``COLUMN_NAME``, ``OWNER`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        current_database AS CATALOG,
+        table_schema AS SCHEMA,
+        table_name,
+        column_name,
+        ordinal_position AS KEY_SEQ,
+        constraint_name AS PK_NAME
+    FROM
+        v_catalog.primary_keys
+    WHERE
+        table_schema NOT IN ('''')
+          AND table_schema NOT IN ('public', 'v_idol', 'pg_catalog',
+                                  'v_internal', 'v_catalog', 'v_monitor',
+                                  'pg_internal', 'v_txtindex')
+    ORDER BY
+        CATALOG,
+        table_schema,
+        table_name;
+
+Foreign Key
+--------------------
+
+Ensure your query has columns labeled as ``PK_CATALOG``, ``PK_SCHEMA``, ``PK_TABLE``, ``PK_COLUMN``, ``FK_CATALOG``, ``FK_SCHEMA``, ``FK_TABLE``, ``FK_COLUMN`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        current_database AS CATALOG,
+        null AS PK_CATALOG,
+        primary_keys.table_schema AS PK_SCHEMA,
+        primary_keys.table_name AS PK_TABLE,
+        primary_keys.column_name AS PK_COLUMN,
+        null AS FK_CATALOG,
+        foreign_keys.table_schema AS FK_SCHEMA,
+        foreign_keys.table_name AS FK_TABLE,
+        foreign_keys.column_name AS FK_COLUMN,
+        primary_keys.ordinal_position AS KEY_SEQ,
+        3 AS FOREIGN_KEY_UPDATE_RULE,
+        3 AS FOREIGN_KEY_DELETE_RULE,
+        foreign_keys.constraint_name AS FK_NAME,
+        primary_keys.constraint_name AS PK_NAME,
+        1 AS DEFERRABILITY
+    FROM
+        v_catalog.primary_keys
+        JOIN v_catalog.foreign_keys
+            ON primary_keys.table_name = foreign_keys.reference_table_name
+            AND primary_keys.table_schema = foreign_keys.reference_table_schema
+            AND primary_keys.column_name = foreign_keys.reference_column_name
+    WHERE primary_keys.table_schema NOT IN ('''')
+        AND primary_keys.table_schema NOT IN ('public', 'v_idol', 'pg_catalog',
+                                              'v_internal', 'v_catalog',
+                                              'v_monitor', 'pg_internal',
+                                              'v_txtindex')
+    ORDER BY
+      pk_catalog,
+      primary_keys.table_schema,
+      pk_table;
+
+Function
+-------------------
+
+Ensure your query has columns labeled as ``SCHEMA``, ``FUNCTION_NAME``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        catalog,
+        schema_name as SCHEMA,
+        function_name,
+        remarks
+    FROM
+        (
+          SELECT
+            current_database AS CATALOG,
+            schema_name as SCHEMA_NAME,
+            function_name,
+            function_definition AS REMARKS
+          FROM
+            v_catalog.user_functions
+          UNION ALL
+          SELECT
+            current_database AS CATALOG,
+            schema_name as SCHEMA_NAME,
+            function_name,
+            function_definition AS REMARKS
+          FROM
+            v_catalog.user_transforms)
+          AS vmd
+    WHERE schema_name NOT IN ('''')
+        AND schema_name NOT IN ('public', 'v_idol', 'pg_catalog',
+                                'v_internal', 'v_catalog', 'v_monitor',
+                                'pg_internal', 'v_txtindex')
+    ORDER BY
+      catalog,
+      schema_name,
+      function_name;
+
+
+Function Definition
+----------------------
+
+Ensure your query has columns labeled as ``SCHEMA``, ``FUNCTION_NAME``, ``ARG_NAME``, ``TYPE_NAME``, ``ARG_TYPE``, ``ARG_DEF`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        current_database AS FUNCTION_CAT,
+        proc_schema AS SCHEMA,
+        proc_name AS FUNCTION_NAME,
+        specific_proc_name AS SPECIFIC_NAME,
+        column_name,
+        type_name,
+        remarks AS DEFINITION,
+        '' AS FUNCTION_TYPE,
+        column_name AS ARG_NAME,
+        type_name AS ARG_TYPE,
+        column_def AS COLUMN_DEFAULT
+    FROM
+        v_internal.odbc_procedure_columns
+    WHERE proc_schema NOT IN ('''')
+        AND proc_schema NOT IN ('public', 'v_idol', 'pg_catalog',
+                                'v_internal', 'v_catalog', 'v_monitor',
+                                'pg_internal', 'v_txtindex')
+    ORDER BY
+      proc_schema,
+      function_name;

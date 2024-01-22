@@ -1,0 +1,173 @@
+Extraction Queries for SingleStore
+========================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The default extraction queries for the  SingleStore data source are provided below. You can customize them to better suit your catalog needs. Custom queries can be specified on the Metadata Extraction tab of the data source Settings page under Metadata Extraction Queries. You can customize all or some of the queries.
+
+Schema
+-------------
+
+Please ensure your query has a column labeled as CATALOG in the SELECT list.
+
+
+  .. code-block:: SQL
+
+        SELECT SCHEMA_NAME AS 'CATALOG'
+        FROM INFORMATION_SCHEMA.SCHEMATA
+        WHERE SCHEMA_NAME  NOT IN ('''')
+           AND  SCHEMA_NAME NOT IN  ( 'memsql', 'performance_schema', 'information_schema', 'innodb', 'sys')
+
+Table
+----------
+
+Please ensure your query has columns labeled as CATALOG, TABLE_NAME, TABLE_TYPE, REMARKS in the SELECT list.
+
+  .. code-block:: SQL
+
+        SELECT
+           DISTINCT TABLE_SCHEMA AS 'CATALOG',
+           TABLE_NAME AS TABLE_NAME,
+           CASE WHEN TABLE_TYPE = 'BASE TABLE' THEN 'TABLE' ELSE 'VIEW' END AS TABLE_TYPE,
+           TABLE_COMMENT AS REMARKS
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_TYPE='BASE TABLE'
+        AND TABLE_SCHEMA  NOT IN ('''')
+        AND TABLE_SCHEMA NOT IN  ('memsql', 'performance_schema', 'information_schema', 'innodb', 'sys')
+
+View
+----------
+
+Please ensure your query has columns labeled as CATALOG, VIEW_NAME, VIEW_CREATE_STATEMENT, 'VIEW' AS VIEW_TYPE, REMARKS in the SELECT list.
+
+  .. code-block:: SQL
+
+        SELECT
+           TABLE_SCHEMA AS 'CATALOG',
+           TABLE_NAME AS 'VIEW_NAME',
+           VIEW_DEFINITION AS 'VIEW_CREATE_STATEMENT','
+           VIEW' AS 'VIEW_TYPE','' AS  'REMARKS'
+        FROM INFORMATION_SCHEMA.VIEWS
+        WHERE TABLE_SCHEMA NOT IN ('''')
+           AND TABLE_SCHEMA NOT IN
+           ( 'memsql', 'performance_schema', 'information_schema', 'innodb', 'sys')
+
+Column
+--------------
+
+Please ensure your query has columns labeled as CATALOG, TABLE_NAME, TYPE_NAME, DATA_TYPE, COLUMN_NAME, ORDINAL_POSITION, IS_NULLABLE, REMARKS, COLUMN_DEFAULT  in the SELECT list.
+
+  .. code-block:: SQL
+
+        SELECT
+           null AS 'TABLE_CAT',
+           c.TABLE_SCHEMA AS 'CATALOG',
+           c.TABLE_NAME, c.COLUMN_NAME,
+           c.DATA_TYPE,
+           c.COLUMN_TYPE AS TYPE_NAME,
+           c.IS_NULLABLE,
+           c.ORDINAL_POSITION,
+           c.COLUMN_DEFAULT ,
+           c.COLUMN_COMMENT AS REMARKS
+        FROM INFORMATION_SCHEMA.COLUMNS AS c,
+        INFORMATION_SCHEMA.TABLES AS t
+        WHERE c.TABLE_SCHEMA = t.TABLE_SCHEMA
+              AND c.TABLE_NAME = t.TABLE_NAME
+              AND  c.TABLE_SCHEMA  NOT IN ('''')
+              AND c.TABLE_SCHEMA NOT IN  ( 'memsql', 'performance_schema', 'information_schema', 'innodb', 'sys')
+              AND  TABLE_TYPE IN ('BASE TABLE', 'SYSTEM VIEW', 'VIEW')  ORDER BY c.TABLE_SCHEMA, c.TABLE_NAME
+
+Primary Key
+------------------
+
+Please ensure your query has columns labeled as CATALOG, TABLE_NAME, COLUMN_NAME in the SELECT list.
+
+  .. code-block:: SQL
+
+        SELECT k.TABLE_SCHEMA AS 'CATALOG', k.TABLE_NAME AS 'TABLE_NAME',
+           k.COLUMN_NAME as 'COLUMN_NAME',
+           k.TABLE_SCHEMA AS 'SCHEMA'
+        FROM information_schema.table_constraints t
+             JOIN information_schema.key_column_usage k
+             USING(constraint_name,table_schema,table_name)
+        WHERE t.CONSTRAINT_NAME =k.CONSTRAINT_NAME
+           AND t.constraint_type='PRIMARY KEY'
+           AND t.TABLE_SCHEMA  NOT IN ('''')
+           AND t.TABLE_SCHEMA NOT IN
+              ( 'memsql', 'performance_schema', 'information_schema', 'innodb' , 'sys')
+
+Foreign Key
+----------------
+
+Please ensure your query has columns labeled as PK_CATALOG, PK_SCHEMA, PK_TABLE, PK_COLUMN, FK_CATALOG, FK_SCHEMA, FK_TABLE, FK_COLUMN in the SELECT list.
+
+  .. code-block:: SQL
+
+        SELECT
+           null AS PK_CATALOG,
+           t.TABLE_SCHEMA AS 'PK_SCHEMA',
+           k.TABLE_NAME AS 'PK_TABLE',
+           k.COLUMN_NAME as 'PK_COLUMN',
+           null AS FK_CATALOG,
+           t.TABLE_SCHEMA AS 'FK_SCHEMA',
+           t.TABLE_NAME AS 'FK_TABLE',
+           k.COLUMN_NAME AS 'FK_COLUMN'
+        FROM information_schema.table_constraints t
+              JOIN information_schema.key_column_usage k
+              USING(constraint_name,table_schema,table_name)
+        WHERE t.constraint_type='FOREIGN KEY'
+           AND t.TABLE_SCHEMA  NOT IN ('''')
+           AND t.TABLE_SCHEMA NOT IN
+           ( 'memsql', 'performance_schema', 'information_schema', 'innodb', 'sys')
+
+Index
+---------
+
+Please ensure your query has columns labeled as CATALOG, TABLE_NAME, COLUMN_NAME, REMARKS in the SELECT list.
+
+  .. code-block:: SQL
+
+        SELECT
+           TABLE_SCHEMA AS 'CATALOG',
+           TABLE_NAME AS 'TABLE_NAME',
+           COLUMN_NAME AS 'COLUMN_NAME'
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA  NOT IN ('''')
+           AND TABLE_SCHEMA NOT IN
+              ( 'memsql', 'performance_schema', 'information_schema', 'innodb' , 'sys')
+
+Function
+------------
+
+Please ensure your query has columns labeled as CATALOG, FUNCTION_NAME, REMARKS in the SELECT list.
+
+  .. code-block:: SQL
+
+        SELECT
+           ROUTINE_SCHEMA AS 'CATALOG',
+           ROUTINE_NAME AS 'FUNCTION_NAME',
+           ROUTINE_COMMENT AS 'REMARKS'
+        FROM INFORMATION_SCHEMA.ROUTINES
+        WHERE ROUTINE_SCHEMA NOT IN ('''')
+              AND ROUTINE_SCHEMA NOT IN
+              ( 'memsql', 'performance_schema', 'information_schema', 'innodb' , 'sys')
+
+
+Function Definition
+------------------------
+
+Please ensure your query has columns labeled as CATALOG, FUNCTION_NAME, ARG_NAME, TYPE_NAME, ARG_TYPE, ARG_DEF in the SELECT list.
+
+  .. code-block:: SQL
+
+        SELECT
+           ROUTINE_SCHEMA AS 'CATALOG',
+           ROUTINE_NAME AS 'FUNCTION_NAME',
+           SPECIFIC_NAME AS 'ARG_NAME',
+           DATA_TYPE AS 'TYPE_NAME',
+           ROUTINE_TYPE AS 'ARG_TYPE',
+           ROUTINE_DEFINITION AS 'ARG_DEF'
+        FROM INFORMATION_SCHEMA.ROUTINES
+        WHERE ROUTINE_SCHEMA  NOT IN ('''')  
+              AND ROUTINE_SCHEMA NOT IN
+              ( 'memsql', 'performance_schema', 'information_schema', 'innodb', 'sys')

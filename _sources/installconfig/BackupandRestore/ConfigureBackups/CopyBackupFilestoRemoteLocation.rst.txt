@@ -1,0 +1,59 @@
+Copy Backup Files to a Remote Location
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+.. note::
+
+    This information applies to both Backup V1 and Backup V2.
+
+Creation of a backup is a prerequisite for copying the backup file to a remote location. The execution of the script copies the backup files to a remote location. This requires admin access to the Alation host.
+
+To copy the backup:
+
+#. Create a script that copies the backup to the destination location. Ensure that it recognizes the ``%f`` variable that will be passed from Alation when the script is run. This variable passes the path to the backup.
+
+    Example script:
+
+    .. code-block:: bash
+
+        FILE_TO_RSYNC=$1
+        DESTINATION=host.example.com
+        DESTINATION_PATH="/backup/alation/"
+        SSH_USER="alation"
+        SSH_KEY="/home/site_data/rsync_key.pem"
+        rsync -avi -e "ssh -i ${SSH_KEY} -l ${SSH_USER}" "${FILE_TO_RSYNC}" "${DESTINATION}:${DESTINATION_PATH}" 
+
+2. Place the script to **/data1/site_data** in the Alation shell.
+
+   .. note::
+
+      The backup scripts must be stored in **/data1/site_data**.
+      This location prevents them from being deleted during an update.
+
+3. Enable the script execution using **alation_conf**. Enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+4. Enable the script:
+
+    .. code-block:: bash
+
+        alation_conf alation.backup.post_script.enabled -s True
+
+5. Specify the path to the script, substituting the ``<backup_script_example.sh>`` with the actual file name. The input variable ``%f`` must be recognized by the script.
+
+    .. code-block:: bash
+
+        alation_conf alation.backup.post_script.path -s "/data1/site_data/<backup_script_example.sh> %f"
+
+
+6. Set the permission to execute the script.
+
+    .. code-block:: bash
+
+        chmod +x /data1/site_data/<backup_script_example.sh>
+
+The script will run after every manual or automatic backup and copy the backup to the destination location.

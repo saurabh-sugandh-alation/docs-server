@@ -1,0 +1,198 @@
+Informatica PowerCenter Connector: Install and Configure
+===============================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Follow these steps to perform the required configuration for the Informatica PowerCenter connector on the Informatica PowerCenter side and in Alation. This connector can be used to perform only Metadata Extraction and other features are not supported.
+
+Preliminaries
+------------------
+
+Create a User
+~~~~~~~~~~~~~~~~~~~~
+
+Create a user for the Informatica PowerCenter repository, refer to `Creating a User <https://docs.informatica.com/data-integration/powercenter/10-4-0/getting-started/tutorial-lesson-1/creating-users-and-groups/creating-a-user.html>`_.
+
+Permissions
+~~~~~~~~~~~~~~~~~~~
+
+The following permission is required for the Informatica PowerCenter repository to access the metadata:
+
+    - Read access
+
+JDBC URI
+~~~~~~~~~~~~~
+
+When building the URI, include the following components:
+
+    - Host
+    - Port
+
+        - Oracle - 1521
+        - DB2 - 50000
+        - SQL Server - 1433
+
+    - Database name
+
+URI Format for Oracle Data Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      oracle:thin:@<Host>:<Port>/<Database_Name>
+
+**Example:**
+
+.. code-block:: Bash
+
+      oracle:thin:@11.132.126.242:1521/Data
+
+URI Format for DB2 Data Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      db2://:<Host>:<Port>/<Database_Name>
+
+**Example:**
+
+.. code-block:: Bash
+
+      db2://52.64.198.47:50000/data
+
+URI Format for SQL Server Data Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      sqlserver://<Host>:<Port>;databaseName=<Database_Name>
+
+**Example:**
+
+.. code-block:: Bash
+
+      sqlserver://10.22.146.138:1433;databaseName=data
+
+Alation Setup and Authentication
+----------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  .. important::
+
+      Installation of an OCF connector requires Alation Connector Manager to be installed as a prerequisite.
+
+1. If this has not been done on your instance, install Alation Connector Manager using the steps in: :doc:`Install Alation Connector Manager <../../../sources/OpenConnectorFramework/OCFInstallAlationConnectorManager>`.
+
+2. Make sure that the OCF connector Zip file that you received from Alation is available on your local machine.
+
+3. Install the connector on the Connectors Dashboard page: refer to :doc:`Manage Connector Dashboard <../../../sources/OpenConnectorFramework/ManageConnectors>`.
+
+STEP 2: Create and Configure a New Informatica PowerCenter Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Log in to the Alation instance and add a new Informatica PowerCenter source: **Apps > Sources > Add > Data Source**.
+
+2. Provide the Title for data source and click on **Continue Setup**.
+
+3. Select **Database Type** as follows based on the data source types from the dropdown menu:
+
+    - Alation InfaOra OCF Connector
+    - Alation Infa DB2 OCF Connector
+    - Alation Infa SQLServer OCF Connector
+
+You will be navigated to your new Informatica PowerCenter connectors **Settings** page.
+
+.. image:: ../../../_static/InformaticaPC_02.png
+
+General Settings
+~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab:
+
+1. **Application Settings** - Skip the Application Settings section because it is not relevant to this data source.
+
+2. Specify **Connector Settings**:
+
+    .. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+    +----------------------------+---------------------------------------------------------------------------+
+    | **Parameter**              | **Description**                                                           |
+    +============================+===========================================================================+
+    |                     **Data Source Connection**                                                         |
+    +----------------------------+---------------------------------------------------------------------------+
+    | JDBC URI                   | Provide the JDBC URI :                                                    |
+    |                            |                                                                           |
+    |                            | - For Oracle data source, use `URI Format for Oracle Data Source`_        |
+    |                            | - For DB2 data source, use `URI Format for DB2 Data Source`_              |
+    |                            | - For SQL Server data source, use `URI Format for SQL Server Data Source`_|
+    +----------------------------+---------------------------------------------------------------------------+
+    | Username                   | Provide the Informatica PowerCenter repository username.                  |
+    +----------------------------+---------------------------------------------------------------------------+
+    | Password                   | Provide the Informatica PowerCenter repository password.                  |
+    +----------------------------+---------------------------------------------------------------------------+
+    |                     **Logging Information**                                                            |
+    +----------------------------+---------------------------------------------------------------------------+
+    | Log Level                  | Select the Log Level to generate logs. The available log levels are       |
+    |                            | based on the log4j framework.                                             |
+    +----------------------------+---------------------------------------------------------------------------+
+
+4. Click **Save**.
+
+5. Skip the **Obfuscate Literals** toggle because it is not relevant to this data source.
+
+6. Under **Test Connection**, click **Test** to validate network connectivity.
+
+Deleting the Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can delete your data source from the General Settings tab. Under **Delete Data Source**, click **Delete** to delete the data source connection.
+
+.. image:: ../../../_static/InformaticaPC_03.png
+
+Metadata Extraction
+---------------------------
+
+You can perform automated extraction or run a manual extraction for the data source.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - **Enable Raw Metadata Dump or Replay**: The options in this drop list can be used to dump the extracted metadata into files in order to debug extraction issues before ingesting the metadata into Alation. This feature can be used during testing in case there are issues with MDE. It breaks extraction into two steps: first, the extracted metadata is dumped into files and can be viewed; and second, it can be ingested from the files into Alation. It is recommended to keep this feature enabled only if debugging is required.
+
+        -  **Enable Raw Metadata Dump**: Select this option to save the extracted metadata into a folder for debugging purposes. The dumped data will be saved in four files (attribute.dump, function.dump, schema.dump, table.dump) in the folder opt/alation/site/tmp/ inside Alation shell.
+
+        -  **Enable Ingestion Replay**: Select this option to ingest the metadata from the dump files into Alation.
+
+        -  **Off** - Disable the **Raw Metadata Dump** or **Replay** feature. Extracted metadata will be ingested into Alation.
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Datasource Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Not applicable.
+
+Query Based Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Not applicable.
+
+Selective Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Not applicable.
+
+Automated and Manual Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you wish to automatically update the metadata extracted into the Catalog, under **Automated and Manual Extraction**, turn on the **Enable Automated Extraction** switch and select the day and time when metadata must be extracted. The metadata extraction will be automatically scheduled to run on the selected schedule.
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.

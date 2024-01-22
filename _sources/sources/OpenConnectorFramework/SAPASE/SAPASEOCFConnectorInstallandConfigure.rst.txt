@@ -1,0 +1,324 @@
+SAP ASE OCF Connector: Install and configure
+====================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Network Connectivity
+--------------------------
+
+Open outbound TCP port **5000** to the SAP ASE (Sybase ASE) server.
+
+Create a Service Account
+------------------------------
+
+Sample SQL to create an account:
+
+.. code-block:: Bash
+
+      CREATE LOGIN alation WITH PASSWORD password
+      USE <database>;
+      sp_adduser alation;
+
+Permissions for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ensure the user ``alation`` has the following privileges on system tables.
+
+.. code-block:: Bash
+
+      GRANT SELECT on master.dbo.sysdatabases to alation;
+      GRANT SELECT on sysusers to alation;
+      GRANT SELECT on sysobjects to alation;
+      GRANT SELECT on syscomments to alation;
+      GRANT SELECT on syscolumns to alation;
+      GRANT SELECT on systypes to alation;
+      GRANT SELECT on sysindexes to alation;
+      GRANT SELECT on sysprocedures to alation;
+      GRANT SELECT on sysconstraints to alation;
+      GRANT SELECT on syskeys to alation;
+
+Permissions for Sampling and Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On each database, provide the following grant for profiling each table:
+
+.. code-block:: Bash
+
+      GRANT SELECT ON <table_name> to alation;
+
+JDBC URI
+------------
+
+Format
+~~~~~~~~~~
+
+Use the following format to build the JDBC URI:
+
+.. code-block:: Bash
+
+      sybase:Tds:<Host_Name>:<Port>/<DB_name>
+
+``DB_name`` is an optional parameter. If not included, Alation will extract all metadata that the service account was allowed access to.
+
+**Example:**
+
+.. code-block:: Bash
+
+
+      sybase:Tds:10.13.0.242:5000/my_database
+
+Query Log Ingestion Setup
+-----------------------------
+
+Query Log Ingestion requires access to Monitoring Data Access (MDA) tables.  The following configuration setting must be set on the SAP ASE server before using MDA tables:
+
+    1. Ensure that the configuration parameter ``enable cis`` is set to 1. If the value is not set to 1, then set it to 1 and restart the ASE server.
+
+       .. code-block:: Bash
+
+            sp_configure "enable cis" 1
+            Go
+    2. Assign ``mon_role`` to the service account to allow MDA access.
+
+       .. code-block:: Bash
+
+            use master
+            go
+            grant role mon_role to alation
+            go
+
+     The same procedure is applicable to the ``sa`` login. In version 15.7 and onwards, ESD#2, the ``mon_role`` is assigned to ``sa`` by default so you may not need to make this change.
+
+      .. code-block:: Bash
+
+            use master
+            go
+            grant role mon_role to sa
+            go
+
+     .. note::
+
+          - If the ``mon_role`` is not granted to the service account, you will not be able to access the ``monSysStatement`` and ``monSysSQLText`` tables.
+          - You might need to disconnect or reconnect to activate ``mon_role`` after the role is granted to the login.
+
+    3. Test the basic MDA configuration:
+
+       .. code-block:: Bash
+
+            select * from master..monState
+            go
+
+    4. Enable Monitoring:
+
+       The ``enable monitoring`` setting is essentially the master switch for most of MDA functionality. This must be set to 1 for Alation to have logs to read.
+
+       .. code-block:: Bash
+
+            use master
+            go
+            sp_configure "enable monitoring", 1
+            go
+
+    5. Enable all configuration parameters.
+
+          - For all “pipe” tables, the number of messages is set to **1,000,000**. However, you may want to choose a larger size.
+          - Logs will be rolled off after the maximum value is set. The maximum permissible value is **2147483647**.
+          - SQL text pipe max messages and statement pipe max messages should be set as equal.
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Command**                                                   |
+      +============================+===============================================================+
+      | monSysSQLText              | sp_configure "sql text pipe active", 1                        |
+      |                            | go                                                            |
+      |                            | sp_configure "sql text pipe max messages", 1000000            |
+      |                            | go                                                            |
+      +----------------------------+---------------------------------------------------------------+
+      | monSysStatement            | sp_configure "statement pipe active", 1                       |
+      |                            | go                                                            |
+      |                            | sp_configure "statement pipe max messages", 1000000           |
+      |                            | go                                                            |
+      +----------------------------+---------------------------------------------------------------+
+      | Column in MDA table        | sp_configure "statement statistics active", 1                 |
+      |                            | go                                                            |
+      |                            | sp_configure "per object statistics active", 1                |
+      |                            | go                                                            |
+      +----------------------------+---------------------------------------------------------------+
+      | Cmon*SQLTexttables         | sp_configure "SQL batch capture", 1                           |
+      |                            | go                                                            |
+      +----------------------------+---------------------------------------------------------------+
+
+Configuration in Alation
+-------------------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **SybaseASE OCF** connector.
+
+.. image:: ../../../_static/SAPASEOCF_01.png
+    :width: 5.5in
+    :align: center
+
+Access
+--------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+--------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Skip this section as it is not applicable to this data source.
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ConnectorSettings_1.rst
+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Obfuscate Literals**—Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^^^^
+
+After specifying the connector settings, under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+----------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+Metadata Extraction Queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use query-based metadata extraction, you will need to write custom queries to extract the metadata. Alation expects that these queries conform to a specific structure and use some reserved identifiers. After providing custom queries, save them by clicking Save in this section.
+
+Refer to :doc:`/sources/OpenConnectorFramework/SAPASE/ExtractionQueriesforSAPASE` for information about query customization.
+
+Metadata Extraction from Compose
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If a table is created  from Compose, users will be able to see the relevant table metadata on the catalog page without re-running MDE.
+
+Users should use the following query format to create tables in Compose:
+
+  .. code-block:: Bash
+
+        CREATE TABLE “DATABASE_NAME“.“SCHEMA_NAME”.”TABLE_NAME” ({column properties});
+
+Compose
+-------------------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+.. note::
+
+      Compose is not available for on-prem databases connected to the Alation Cloud Service instances through Alation Agent.
+
+Sampling and Profiling
+-------------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Query Log Ingestion
+-------------------------------
+
+You can configure QLI on the **Query Log Ingestion** tab of the data source Settings page. Select a QLI option for your data source and schedule the QLI job if necessary.
+
+Configure Table-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can choose to create a table or a view on your database to store the query history data (table-based QLI) or to provide a custom query to retrieve query history (custom query-based QLI).
+
+Use the query format below to create a view and flush the query history from the data source:
+
+    - Substitute the placeholder view name <schema>.<view> with your actual values.
+
+.. code-block:: SQL
+
+      CREATE VIEW <schema>.<view> as
+      SELECT
+      	mss.SPID AS SessionId,
+      	mss.StartTime AS StartTime,
+      	round(datediff(ms, mss.StartTime, mss.EndTime)/1000000,3) AS seconds,
+      	mss.DBName AS defaultDatabases,
+      	msst.SQLText AS queryString,
+      	mss.StartTime AS sessionStartTime,
+      	'N' AS cancelled,
+      	msst.SequenceInBatch - 1 as SequenceId,
+      	suser_name(msst.ServerUserID) AS userName
+      FROM master.dbo.monSysSQLText msst
+      INNER JOIN
+      master.dbo.monSysStatement mss
+      ON msst.SPID = mss.SPID
+      AND msst.KPID = mss.KPID
+      AND msst.BatchID = mss.BatchID
+      AND mss.DBName not in ('sybmgmtdb', 'sybsystemprocs', 'sybsecurity', 'sybmgmtdb', 'dbccdb', 'sybdiag')
+       AND mss.ProcedureID = 0
+       mss.StatementNumber = 0;
+
+On the **Query Log Ingestion** tab under **Connector Settings > Query Extraction**, in the **Table Name** field specify the name of the view in which the query logs are available. Make sure that the service account has SELECT permission to access this view. The table name must be provided in the format **db_name.schema.view_name**.
+
+Configure Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_QLI_CustomQueryQLI.rst
+
+QLI Query Template
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: SQL
+
+      SELECT
+      	mss.SPID AS SessionId,
+      	mss.StartTime AS StartTime,
+      	round(datediff(ms, mss.StartTime, mss.EndTime)/1000000,3) AS seconds,
+      	mss.DBName AS defaultDatabases,
+      	msst.SQLText AS queryString,
+      	mss.StartTime AS sessionstarttime,
+      	'N' as cancelled,
+      	msst.SequenceInBatch - 1 AS SequenceId,
+      	suser_name(msst.ServerUserID) AS username
+      FROM master.dbo.monSysSQLText msst
+      INNER JOIN
+      master.dbo.monSysStatement mss
+      ON msst.SPID = mss.SPID
+      AND msst.KPID = mss.KPID
+      AND msst.BatchID = mss.BatchID
+      AND mss.DBName NOT IN ('sybmgmtdb', 'sybsystemprocs', 'sybsecurity', 'sybmgmtdb', 'dbccdb', 'sybdiag')
+      AND mss.ProcedureID = 0
+      AND mss.StatementNumber = 0
+      WHERE startTime >= STARTTIME
+        AND startTime < ENDTIME;
+
+Perform QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting`.

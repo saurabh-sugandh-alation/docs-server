@@ -1,0 +1,254 @@
+Update Alation to 2020.3
+===========================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+.. _20203-Release-Specific-Information:
+
+2020.3 Release Specific Information
+----------------------------------------
+
+Please review the following information:
+
+- **SSL Connection to Tableau sources** in 2020.3 requires that SSL certificates should be uploaded to Alation on the Settings page of a Tableau data source:
+
+        - Server SSL certificate: SSL certificate for Tableau REST API
+        - PostgreSQL SSL certificate: SSL certificate for Tableau internal PostgreSQL.
+
+  Make this change for your Tableau sources **on the Settings page** after the update and validate that the connection can be established. In 2020.3 the Settings page has two new fields for the certificate upload under **Additional Settings**: **Server SSL certificate** and **Postgres SSL certificate**.
+
+- In 2020.3, you have an option to set the **Catalog Object Definition** for Custom DB sources. For some Custom DB sources, setting the Catalog Object Definition may be required after the upgrade or MDE will fail. If you have such sources as **Denodo**, please set the Catalog Object Definition in the data source Settings > **Custom Settings**. For Denodo, it is `Catalog.Table`.
+
+- In 2020.3, a new improved Alation backup tool is available. See :doc:`/installconfig/BackupandRestore/BackupV1AndV2/index`.
+
+- The **New Homepage is enabled by default** when the instance is upgraded to 2020.3. If you have never enabled the Customizable Homepage, then your instance will inherit the default Homepage version. You can customize it to better suit your requirements. If you have already enabled the Customizable Homepage in a previous release, your customizations will transition seamlessly into the new style.
+
+- 2020.3 introduces a new **Access Token Management API** that uses Refresh and Access token types. The Token API which existed prior to 2020.3 will work in 2020.3 too. When you have made the transition to the new Token Management API, you can disable the previous Token API using the **alation_conf**.
+
+- 2020.3 introduces **Alation Analytics V2**. If you already use Alation Analytics V1, note that it remains fully operational after the update to 2020.3. The new Alation Analytics V2 is a separate feature and can be installed on a separate machine. If you already use Alation Analytics V1 but would also like to enable and try out Alation Analytics V2, please contact your account manager so that Alation can assist in enabling both V1 and V2 at the same time. If you have not tried Alation Analytics yet, you can do so with Alation Analytics V2. Please use the system requirements for Alation Analytics to prepare the environment for V2.
+
+Prepare for the Update
+------------------------
+
+- `V R7 (5.12.x) to 2020.3`_
+
+- `V R6 (5.10.x) and V R5 (5.9.x) to 2020.3`_
+
+- `V R2 (5.4.6-5.4.10), V R3, VR4 To 2020.3`_
+
+- `V R2 (5.4.0-5.4.5) To 2020.3`_
+
+- `Below V R2 to 2020.3`_
+
+V R7 (5.12.x) to 2020.3
+---------------------------
+
+1. PostgreSQL Upgrade to 9.6
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation strongly recommends upgrading the internal PostgreSQL database to version 9.6 if this has not been done yet on your instance. You can upgrade PostgreSQL before or after the update to 2020.3, on a separate schedule.
+
+This upgrade ensures that your Alation instance receives the latest PostgreSQL security upgrades and is required in order to enable such 2020.3 Alation features as:
+
+  - Backup and Restore V2
+
+To check your current PostgreSQL version, on the Alation server:
+
+  .. code-block:: Bash
+
+      sudo /etc/init.d/alation shell
+      alation_psql
+
+See :doc:`Upgrade Internal PostgreSQL Instances from 9.3 to 9.6. <../../installconfig/Update/UpgradeInternalPostgreSQLInstances>`.
+
+2. Update Alation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Update Alation using the `Regular Update Scenario`_. There are no specific prerequisites for the update from V R7 (5.12.x) to 2020.3.
+
+Post-Update Steps
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Please review section `2020.3 Release Specific Information`_.
+
+V R6 (5.10.x) and V R5 (5.9.x) to 2020.3
+--------------------------------------------
+
+1. Evaluate resources for Elasticsearch upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Please refer to `Evaluate resources for Elasticsearch upgrade`_ for details.
+
+2. Update Alation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Update Alation using the `Regular Update Scenario`_.
+
+3. Post-Update Steps
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - Please review section `2020.3 Release Specific Information`_
+
+  - Please review `PostgreSQL upgrade to 9.6`_
+
+V R2 (5.4.6-5.4.10), V R3, VR4 To 2020.3
+------------------------------------------
+
+1. Evaluate resources for Elasticsearch upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Please refer to `Evaluate Resources for Elasticsearch Upgrade`_ for details.
+
+2. Changes to Scheduled Queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Review `Scheduled Query Migration: V R6 Changes`_. This information applies to 2020.3 too.
+
+3. Migration of the internal server database from MongoDB to PostgreSQL
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In 2020.3, Alation no longer includes the MongoDB component, which was removed in release V R5 (5.9.x). Migration from MongoDB to PostgreSQL was introduced in V R2 (5.4.x) as a background process. It should have already been completed on your instance, and Alation can be updated to 2020.3 following the standard update steps. However, if the 2020.3 updater stops with the following error:
+`The installer will abort until migration job from MongoDB to Postgres has succeeded` - this indicates that MongoDB migration is not complete on your instance.
+
+**Do not attempt to troubleshoot on your own**. Raise a support ticket with Alation Support to investigate the root cause of the issue and to guide you through the upgrade process.
+
+4. Update Alation
+~~~~~~~~~~~~~~~~~~~~~
+
+Update Alation using the `Regular Update Scenario`_.
+
+5. Post-Update Steps
+~~~~~~~~~~~~~~~~~~~~~~~
+
+  - Please review section `2020.3 Release Specific Information`_
+  - Please review `PostgreSQL upgrade to 9.6`_
+
+V R2 (5.4.0-5.4.5) To 2020.3
+-------------------------------
+
+Updating from version V R2 (5.4.0 - 5.4.5) to 2020.3 cannot happen directly due to the absence of some internal changes introduced in patch 5.4.6 that are required for this update.
+
+Update to 2020.3 requires two stages. The options are:
+
+- First update to the latest V R2 patch (5.4.10) then update to 2020.3.
+
+- First update to the latest patch of V R3, V R4, V R5, or V R6 and then update to 2020.3.
+
+Below V R2 to 2020.3
+-------------------------
+
+If your current release is between 4.8.x and V R1 (5.0.x), then updating to 2020.3 has to be achieved in a number of stages.
+
+1. Update to V R4 (latest patch version)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In your Alation version, one of the internal components is MongoDB. It is used for storing Alation server data, such as, for example, the results of Compose queries. Starting with version V R2 (5.4.x), Alation began to migrate the server data off MongoDB to a PostgreSQL database. This transition happens in the background and is complete in V R5 (5.9.x) where the MongoDB component is no longer present in the Alation package. This transition is a major architectural change in the Alation application, which does not allow Alation to support a seamless update from your version to the latest release. The intermediary stage is updating to V R4 (latest available patch), which is required for Alation to start and complete the transition from MongoDB to PostgreSQL as the internal server data repository.
+
+**Plan your update to V R4 using the following information**:
+
+  - :doc:`Release-Specific Update Pre-checks <../../installconfig/Update/ReleaseUpdatePrechecks>` : this instruction does apply to your Alation instance. Perform the checks to prepare for the update.
+
+  - Use `Regular Update Scenario`_ to update to V R4.
+
+When you successfully update Alation to V R4, you can move to the next step.
+
+2. Allow Time For MongoDB Transition to Complete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Let your updated R4 instance run over at least one weekend. In the background, Alation will start and complete the server data migration off MongoDB to PostgreSQL.
+After the Mongo migration is complete, you can go to the next stage and update to 2020.3.
+
+  .. note::
+
+      On a Saturday after the update, Alation will automatically trigger the MongoDB migration script that copies the Alation server data from MongoDB to PostgreSQL. In a regular scenario, this migration should be completed over one weekend. If it requires a longer time, the process will be working until the migration is finished successfully.
+
+You can check **mongo-data-migration.log** at **/opt/alation/site/logs** after the weekend to make sure that migration is complete.
+
+3. Complete Prerequisites for 2020.3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - `Evaluate Resources for Elasticsearch Upgrade`_
+
+  - `Scheduled Query Migration: V R6 Changes`_. This information applies to 2020.3 too.
+
+4. Update to 2020.3
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the `Regular Update Scenario`_ to update Alation to 2020.3
+
+If During the update you see the message:
+
+`The installer will abort until the migration job from MongoDB to Postgres has succeeded`
+
+this means the MongoDB data migration may have completed with errors. **Do not attempt to troubleshoot on your own**. Contact Alation Support to investigate the root cause of the issue and to guide you through the upgrade process.
+
+5. Post-update steps
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - Please review section `2020.3 Release Specific Information`_
+
+  - Please review `PostgreSQL upgrade to 9.6`_
+
+2020.3 Update Prerequisites
+-------------------------------
+
+Evaluate Resources for Elasticsearch Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+During update to 2020.3 **from releases below V R7**, the Elasticsearch component will be upgraded from version 1.7 to version 7.4.
+
+After your instance is successfully updated to 2020.3, Alation will begin search index migration to Elasticsearch 7. During this process, Elasticsearch 1 and 7 will both be using an equivalent amount of memory, which may result in doubling memory usage by Elasticsearch on a temporary basis. This process will be happening in the background and is not expected to have any impact on Alation users. When it completes, Alation will automatically switch to fully using Elasticsearch 7 and memory usage by Elasticsearch will be back to normal.
+
+The instance should be sized to allow for equivalent memory usage for both Elasticsearch 1.4 and Elasticsearch 7.4 while migration is running.
+
+If the instance is close to its memory usage maximum and does not have any to spare, it is possible that the update to V R7 may cause an out of memory error on the Alation server after the update. If this happens, there may be a brief outage of search functionality while processes are restarted. The Elasticsearch migration will be initiated again on the weekend. If there is still not enough spare memory on the weekend, the Elasticsearch migration job will keep failing and manual intervention will eventually be required.
+
+See :doc:`Elasticsearch Upgrade to 7.4 FAQ and Troubleshooting </installconfig/Update/UpgradeElasticsearchVR7>`
+
+PostgreSQL Upgrade to 9.6
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation strongly recommends to upgrade the internal PostgreSQL database to version 9.6 (if this has not been done yet). This upgrade ensures that your Alation instance receives the latest PostgreSQL security upgrades and is required in order to enable such 2020.3 Alation features as:
+Backup and Restore V2
+
+To check your current PostgreSQL version from the Alation server:
+
+  .. code-block:: Bash
+
+      sudo /etc/init.d/alation shell
+      alation_psql
+
+You can upgrade PostgreSQL after the update to 2020.3, on a separate schedule. See :doc:`Upgrade Internal PostgreSQL Instances from 9.3 to 9.6 <../../installconfig/Update/UpgradeInternalPostgreSQLInstances>`
+
+Scheduled Query Migration: V R6 Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Applies to **instances on release V R4 and below**.
+
+If you have UNPUBLISHED SCHEDULED queries:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As of R6, you can no longer schedule unpublished queries.
+During update to V R6 or a later release, your UNPUBLISHED SCHEDULED queries will be automatically PUBLISHED to keep your query schedule. You will receive an email notification informing you about this change and having the list of auto-published queries.
+Note that this auto-publishing will create a major version in the query version history.
+
+If you have PUBLISHED SCHEDULED queries that include changes you haven’t published yet:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As of R6, only the published part of the query can run on schedule. During update to V R6 or a later release, such queries will be automatically republished in full so that there are no unpublished edits in these queries. You will receive an email notification informing you about this change and having the list of auto-republished queries.
+Note that auto-republishing will create a major version in the query version history.
+
+Regular Update Scenario
+--------------------------
+
+Plan your update using the following information:
+
+#. General Alation update information: :doc:`Updating Alation <../../installconfig/Update/index>`
+
+#. Important :doc:`Update Safety Best Practice <../../installconfig/Update/UpdateSafetyBestPractice>`
+
+#. Update instructions depending on your instance type:
+
+      - :doc:`Manual Software Update - Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+
+      - :doc:`Update on HA Pair (4.7 and Above) <../../installconfig/Update/updateHAPair>`

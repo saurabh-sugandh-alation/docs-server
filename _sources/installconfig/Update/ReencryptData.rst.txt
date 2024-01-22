@@ -1,0 +1,125 @@
+Re-Encrypt Existing Data
+===================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Use the steps in this section to re-encrypt existing data after updating Alation to a version that includes the security fix to the current encryption mechanism. The details of the security risk are available in `November 3, 2022 - Encryption Key Reuse Security Advisory <https://community.alation.com/askalationexpertsmicrosite/viewdocument/november-3-2022-encryption-key-r?CommunityKey=ae45134b-412a-4cff-bb26-1e9f3caa2f60>`_  available on Alation Community (requires Community login).
+
+    .. note::
+
+        Re-encryption does not require encryption key rotation and will use the existing key with a new cryptography algorithm.
+
+Re-encryption will happen in the background. As re-encryption is running, the Alation application remains fully operational. Alation users can work in the data catalog and Compose as they normally would. The new data they create will be encrypted using the new encryption algorithm. Our testing has not shown any perceptible impact on the application performance. No separate downtime is required for this action to complete.
+
+Re-encryption includes three main stages:
+
+    - Re-encryption of the **alation_conf** values—This only takes a very short time (seconds) as the target values are small and there are less than a hundred to re-encrypt.
+    - Re-encryption of data source credentials—Any credential fields, or fields containing secrets, are re-encrypted. This part takes a short time as these fields are small and few in number (minutes).
+    - Re-encryption of table samples and query results—This stage is expected to take the most time, hours to days, depending on the size of tables:
+
+        - ``rosemeta_tableprofile`` (stores table samples)
+        - ``rosemeta_attributeprofile`` (stores column samples)
+        - ``data_storage_blobaccesspostgres`` (stores Compose results).
+
+      During re-encryption, the tables are updated row by row. Our testing has shown that on a 100 GB Rosemeta, re-encryption takes about 30 minutes to complete. On a 750 GB Rosemeta, it takes about 13 hours. These numbers are given here for reference only.
+
+Prerequisites
+------------------
+
+Before re-encrypting, ensure that internal Postgres is in a healthy state and that you have enough disk space for this process.
+
+Scan Postgres
+~~~~~~~~~~~~~~~~~~~~
+
+Even if you may have scanned Postgres before updating Alation to 2022.3.10, perform a **full** Postgres scan again after the update to validate that the internal Postgres database is in a healthy state before re-encryption. For steps, see :doc:`/admins/How-tos/HowToScanPostgresForCorruptedIndexes`.
+
+If multiple rows in the tables ``rosemeta_tableprofile``, ``rosemeta_attributeprofile``, and ``data_storage_blobaccesspostgres`` are corrupted, the re-encryption process will fail. Postgres scan should be able to discover large corruptions.
+
+If the Postgres scan does not return any errors, continue to the next step.
+If you discovered corruptions, contact Alation Support to guide you through the process of removing the corrupted rows.
+
+Estimate Available Disk Space
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+During re-encryption, we are doing a large series of UPDATE operations on the tables ``rosemeta_tableprofile``, ``rosemeta_attributeprofile``, and   ``data_storage_blobaccesspostgres``. As a result, there will be noticeable growth in disk usage from Postgres. It is important to ensure that you have enough free disk space for this process.
+
+1. Outside of the Alation shell, check the disk space available on the ``/DATA`` disk.
+
+    .. code-block:: Bash
+
+	       df -h
+
+2. Enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Enter the Postgres shell.
+
+    .. code-block:: Bash
+
+        alation_psql
+
+4. Run the following query to estimate the minimum space needed for re-encryption:
+
+    .. code-block:: Bash
+
+        SELECT pg_size_pretty(pg_total_relation_size('data_storage_blobaccesspostgres') + pg_total_relation_size('rosemeta_tableprofile') + pg_total_relation_size('rosemeta_attributeprofile'));
+
+5. Type ``\q`` to exit the Postgres shell.
+
+    .. code-block:: Bash
+
+        postgres=#  \q
+
+6. Compare the result with the space available on ``/DATA``. There should be as much available space as the minimum required space.
+
+If available space is less than required, provision additional space before running re-encryption. If provisioning more space is not an option, contact Alation Support for next steps.
+
+Run Re-encryption
+---------------------------
+
+After you have completed the prerequisites, perform re-encryption. In case of the HA pair, run the script **on the primary server**.
+
+1. The re-encryption script should be run from the Alation shell. You will need an additional Terminal window if you want to tail the corresponding log. You can use a terminal multiplexer (such as Screen) to do this if it is available on your instance.
+
+2. Enter the Alation shell in both Terminal windows.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. In the window where you're tailing the logs, use the following command to tail the logs:
+
+    .. code-block:: Bash
+
+        tail -f /opt/alation/site/logs/alation-debug.log
+
+4. In the window where you will run the re-encryption command, switch user to ``alation``.
+
+    .. code-block:: Bash
+
+        sudo su alation
+
+5. Run the re-encryption script.
+
+    .. code-block:: Bash
+
+        alation_action securely_reencrypt_data
+
+
+    This will kick off a background Celery job ``keyvault.tasks.re_encryption_task.run_re_encryption`` that re-encrypts the data. This job runs in the **Default** Celery queue. In the Alation user interface, in **Admin Settings > Monitor > Active Tasks**, this task will appear as the ``run_re_encryption`` task.
+
+    When re-encryption is completed, Alation will print the success message to the **alation-debug.log** file: *Re-encryption completed. Took <...> seconds.* You can use a command similar to the command given below to find the message.
+
+    .. code-block:: Bash
+
+        grep --after-context=5 --before-context=10 'Re-encryption completed' alation-debug.log
+
+
+.. important::
+
+      Re-encryption will fail if there are multiple corrupted rows in any of the three tables we re-encrypt. If there are only a few corrupted rows, they will be skipped and the re-encryption will continue. After completion, a detailed report will be printed to the log.
+
+      Re-encryption failure does not affect the Alation instance, and users can continue working with the catalog as they normally would. Contact Alation Support if the operation fails on your instance or if the process discovers corrupted rows.

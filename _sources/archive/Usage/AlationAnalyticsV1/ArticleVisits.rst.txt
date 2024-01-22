@@ -1,0 +1,42 @@
+Article Visits
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query retrieves visits to Articles by day.
+
+.. code-block:: sql
+
+    -- article title tag information + all visits
+    SELECT
+      DATE(AV.timestamp) AS Date,
+      COUNT(*) AS numberOfVisits,
+      OFV.object_uuid AS articleUUID,
+      OFV.value_source,
+      FV.text_value AS title
+    FROM
+      public.object_field_value AS OFV
+      JOIN public.field_value AS FV ON OFV.value_fp = FV.value_fp
+      JOIN public.alation_visits AS AV ON OFV.object_uuid = AV.object_uuid
+      AND OFV.object_type_id = AV.object_type_id
+    WHERE
+      -- field ID = 3 is title
+      OFV.field_id = 3
+      AND -- object ID = 0 is article
+      OFV.object_uuid IN (
+        SELECT
+          object_uuid
+        FROM
+          public.alation_object
+        WHERE
+          object_type_id = 0
+      )
+      AND -- remember, UUID = object UUID + type ID
+      OFV.object_type_id = 0
+    GROUP BY
+      DATE(AV.timestamp),
+      OFV.object_uuid,
+      OFV.value_source,
+      FV.text_value;

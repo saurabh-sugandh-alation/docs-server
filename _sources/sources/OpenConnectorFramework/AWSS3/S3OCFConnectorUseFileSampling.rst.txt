@@ -1,0 +1,150 @@
+Use File Sampling
+======================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Connector supports on-demand end user driven sampling for a file. File sampling is supported for parquet, PSV, TSV, and CSV file formats. File sampling is supported with basic authentication (access key and secret key) and SSO authentication. The Amazon S3 user must have Read access to the file to sample it.
+
+Successful execution of schema extraction is a prerequisite to file sampling.
+
+When schema extraction is run with Schema Path Pattern, folders are identified as logical schemas. In this case, end users will be able to initiate sampling for folders identified as logical schemas with relevant columns cataloged for the folder.
+
+
+.. note::
+
+    File sampling is not supported with STS authentication.
+
+Basic Authentication for Sampling
+-------------------------------------
+
+To perform sampling:
+
+  1. Go to the **Samples** tab of the catalog page of a file and click **Credential Settings**.
+
+      .. image:: ../../../_static/S3OCF_05.png
+          :class: with-border
+
+  2. Click **Select > Add New** button.
+
+      .. image:: ../../../_static/S3OCF_06.png
+          :width: 400px
+          :class: with-border
+
+  3. Select **Basic Authentication** from the **Authentication Type** dropdown. Provide Credential Name, AWS Access Key ID and AWS Access Key Secret. Click **Save**.
+
+      .. image:: ../../../_static/S3OCF_07.png
+          :width: 300px
+          :class: with-border
+
+  4. Click **Authenticate**. You will be redirected to the catalog page.
+
+      .. image::  ../../../_static/S3OCF_08.png
+          :width: 300px
+          :class: with-border
+
+  5. Click the **Run Sample** button on the catalog page to see sampled data.
+
+      .. image:: ../../../_static/S3OCF_09.png
+          :class: with-border
+
+SSO Authentication for Sampling
+-----------------------------------
+
+Prerequisites
+~~~~~~~~~~~~~~~~~~
+
+  1. Create and configure a client application in the identity provider (IdP). Refer to :ref:`Create an Authentication Application for Alation in the IdP <create-auth-client>`.
+
+  2. Configure the IdP in AWS. Refer to :ref:`Create an Identity Provider in AWS <create-aws-identity-provider>`.
+
+  3. Configure an authentication profile in Alation. Refer to :ref:`AWS IAM <create-aws-iam-profile>`.
+
+        a. Make sure that you provide the correct Config Name that is used while setting up the IdP application.
+        b. Make sure that you specify the SAML 2.0 redirect URL from the IdP.
+
+  4. If you are using the proxy connection, perform the following:
+
+        a. Enter the Alation shell:
+
+           .. code-block:: Bash
+
+                sudo /etc/init.d/alation shell
+
+        b. Run the following command to list down the existing ``extra_flags`` in Alation's Auth Server. This command returns the **Existing_Config** value. Note down this value.
+
+           .. code-block:: Bash
+
+                alation_conf authserver.extra_flags
+
+        c. If you are using the Basic Proxy mode, run the following command to set the ``proxyHost`` and ``proxyPort`` parameters. Replace the **Existing_Config** with the value that you noted down in step **b**:
+
+            .. code-block:: Bash
+
+                alation_conf authserver.extra_flags -s " <Existing_Config> -Dhttps.proxyHost=<Proxy_Host> -Dhttp.proxyHost=<Proxy_Host> -Dhttps.proxyPort=<Proxy_Port_Number> -Dhttp.proxyPort=<Proxy_Port_Number>"
+
+           If there is no **Existing_Config**, run the following command:
+
+           .. code-block:: Bash
+
+                alation_conf authserver.extra_flags -s " -Dhttps.proxyHost=<Proxy_Host> -Dhttp.proxyHost=<Proxy_Host> -Dhttps.proxyPort=<Proxy_Port_Number> -Dhttp.proxyPort=<Proxy_Port_Number>"
+
+        d. If you are using the Auth Proxy mode, run the following command to set the ``proxyHost``, ``proxyPort``, ``proxyUser``, and ``proxyPassword``. Replace the **Existing_Config** with the value that you noted down in step **b**:
+
+            .. code-block:: Bash
+
+                  alation_conf authserver.extra_flags -s " <Existing_Config> -Dhttps.proxyHost=R<Proxy_Host> -Dhttp.proxyHost=R<Proxy_Host> -Dhttps.proxyPort=<Proxy_Port_Number> -Dhttp.proxyPort=<Proxy_Port_Number> -Dhttps.proxyUser=<Proxy_Username>-Dhttp.proxyUser=<Proxy_Username> -Dhttps.proxyPassword=<Proxy_Password> -Dhttp.proxyPassword=<Proxy_Password>"
+
+           If there is no **Existing_Config**, run the following command:
+
+           .. code-block:: Bash
+
+                  alation_conf authserver.extra_flags -s "  -Dhttps.proxyHost=R<Proxy_Host> -Dhttp.proxyHost=R<Proxy_Host> -Dhttps.proxyPort=<Proxy_Port_Number> -Dhttp.proxyPort=<Proxy_Port_Number> -Dhttps.proxyUser=<Proxy_Username>-Dhttp.proxyUser=<Proxy_Username> -Dhttps.proxyPassword=<Proxy_Password> -Dhttp.proxyPassword=<Proxy_Password>"
+
+        e. Restart Auth Server.
+
+            .. note::
+
+                Before restarting, make sure that there are no ongoing jobs, since restarting will affect the ongoing jobs.
+
+           .. code-block:: Bash
+
+                alation_supervisor restart java:authserver
+
+Perform Sampling
+~~~~~~~~~~~~~~~~~~~~~~
+
+To perform sampling:
+
+  1. Go to the **Samples** tab of the catalog page of a file and click **Credential Settings**.
+
+      .. image:: ../../../_static/S3OCF_05.png
+          :class: with-border
+
+  2. Click **Select > Add New** button.
+
+      .. image:: ../../../_static/S3OCF_06.png
+          :width: 4 in
+          :class: with-border
+
+  3. Select **SSO Authentication** from the **Authentication Type** dropdown. Provide the credential name and choose the relevant **Plugin Config Name**. Click **Save**.
+
+      .. image:: ../../../_static/S3OCF_19.png
+          :width: 400px
+          :class: with-border
+
+  4. Click **Authenticate** and you will be redirected to the IdP login page.
+
+      .. image:: ../../../_static/S3OCF_20.png
+          :width: 400px
+          :class: with-border
+
+  5. Login to IdP with your IdP credential.
+
+      .. image:: ../../../_static/S3OCF_21.png
+          :width: 400px
+          :class: with-border
+
+  6. Click the **Run Sample** button on the catalog page to see sampled data.
+
+      .. image:: ../../../_static/S3OCF_09.png
+          :class: with-border

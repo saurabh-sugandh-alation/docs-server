@@ -1,0 +1,72 @@
+Set Up a Custom Backup Schedule
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+.. note::
+
+    This information applies to both Backup V1 and Backup V2.
+
+Alation runs automatic backups on a nightly basis. Use these steps to change the backup schedule if necessary.
+
+Alation recommends switching to a schedule where the backup is created once or twice a week for large installations (> 1TB in data). 
+
+Also consider increasing the value of the parameter ``alation.backup.chef_timeout`` in **alation_conf** (set in seconds, the default is 21600 seconds (six hours)). This parameter defines the timeout for the backup process. For a large volume of data, the backup may require more time. 
+
+Application of a new backup schedule will require a restart of some Alation services.
+
+You will need to provide the day, hour, and minute values separately.
+
+    .. note::
+
+        From **version 2022.3**, UTC is the default server time zone. Schedules that are set using **alation_conf** parameters are interpreted as UTC. In previous releases, the server default time zone was PDT/PST.
+
+To set up a custom schedule:
+
+#. Enter the Alation shell.
+
+   .. code-block:: bash
+
+      sudo /etc/init.d/alation shell
+
+#. Set the minutes. If you want to set a schedule that runs at zero minutes, skip this parameter.
+
+   .. code-block:: Bash
+
+      alation_conf alation.backup.scheduled_minute -s <value>
+
+#. Set the hour in the 24-hour format. 
+
+   .. code-block:: Bash
+
+      alation_conf alation.backup.scheduled_hour -s <value>
+
+#. Set the day using the values ``mon``, ``tue``, ``wed``, ``thu``, ``fri``, ``sat``, ``sun``. You can use several values separated with a comma with no spaces.
+
+   .. code-block:: Bash
+
+      alation_conf alation.backup.scheduled_day -s <value1>,<value2>
+
+#. Restart Supervisor:
+
+   .. code-block:: bash
+
+      sudo /etc/init.d/supervisord restart
+
+Examples
+-----------------
+
+Every Sunday at 9:30 AM UTC:
+
+.. code-block:: bash
+
+   alation_conf alation.backup.scheduled_minute -s 30
+   alation_conf alation.backup.scheduled_hour -s 9
+   alation_conf alation.backup.scheduled_day -s sun
+
+Tuesday and Saturday at 9:00 AM UTC:
+
+.. code-block:: bash
+
+   alation_conf alation.backup.scheduled_hour -s 9
+   alation.backup.scheduled_day -s tue,sat

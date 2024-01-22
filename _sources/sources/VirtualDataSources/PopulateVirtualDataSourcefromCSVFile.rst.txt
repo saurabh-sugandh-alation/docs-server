@@ -1,0 +1,532 @@
+Populating a Virtual Data Source From a CSV File
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+This article describes how to import metadata from a CSV source file
+into a VDS created for a relational database or a Hive database.
+
+For information on Virtual Data Source API, refer to `Upload a Virtual Data Source <https://developer.alation.com/dev/reference/virtual-data-source>`_ on Alation's Developer Portal.
+
+Today’s VDS capability includes basic technical metadata. The
+fields available for importing are:
+
+-  Name
+-  Table type (for tables)
+-  Column type (for columns)
+
+Importing Schemas, Tables, Columns, and Indices
+-----------------------------------------------
+
+You can import metadata in the CSV format to populate a Virtual Data Source.
+The CSV file must meet several requirements. Prepare your CSV
+source file observing the format described below.
+
+Requirements for Head and Keys
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The file must include the *head*, declaring *keys* and properties, and
+then each line in the file should consist of a specific *key* along with
+the properties that apply, with empty values for properties that do not
+apply.
+
+Head
+^^^^
+
+Sample file head: ``key, table_type, column_type``
+
+Note that ``table_type `` can be ``VIEW`` or ``TABLE``.
+
+Key
+^^^
+
+Alation determines the data object type based on how many dots there are
+in *key*:
+
+- ``schema`` is a schema
+- ``schema.table`` is a table
+- ``schema.table.column`` is a column
+- ``schema.table.index`` is recognized as index if the key is accompanied by the property *index_type*.
+
+If your database type supports multipart schema (for example, this is
+the case for SQL Server, Amazon Redshift, and Netezza), then the key structure
+must be as follows:
+
+- ``dbname.schema``  is a schema
+- ``dbname.schema.table``  is a table
+- ``dbname.schema.table.column`` is a column
+- ``dbname.schema.table.index`` is an index if the key is accompanied by the property *index_type*.
+
+For more details on key format, see `Keys with Special Characters <https://developer.alation.com/dev/docs/keys-with-special-characters-fqn>`_ on Alation's Developer Portal.
+
+Sample CSV file
+
+.. code-block:: bash
+
+    "key","table_type","column_type"
+    "test_schema","",""
+    "test_schema.table1","TABLE",""
+    "test_schema.table2","VIEW",""
+    "schema.table1.column1","","varchar(10)"
+    "schema.table2.column1","","varchar(10)"
+
+Adding Table and View Properties
+--------------------------------
+
+Along with the *key*, you can also add the following properties, all of
+them optional.
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
+.. table::
+   :widths: auto
+   :class: longtable
+
+   =========================== ====================== ======================================================================
+   Property                    Description            Example
+   =========================== ====================== ======================================================================
+   ``table_type``              Specifies the type of  TABLE 
+                               the
+                               table. *table_type*
+                               is optional but
+                               recommended, and
+                               can be set to VIEW or
+                               TABLE. If not
+                               specified, it is
+                               assumed to be TABLE.
+
+   ``data_location``           A URI or file path to  hdfs:///user/hive/warehouse/table_a
+                               the location of the
+                               underlying data, such
+                               as, for example, an
+                               HDFS URL for a Hive
+                               table. Use this
+                               parameter only when
+                               the *table_type* is
+                               TABLE.
+
+   ``db_owner``                Name of the database   alation 
+                               account that owns
+                               this table.
+
+   ``definition_sql``          CREATE TABLE           CREATE TABLE
+                               statement which was    schema_a.table_a(column1int);
+                               used to create the
+                               table. Use this
+                               parameter only when
+                               the table_type is
+                               TABLE.
+
+   ``view_sql``                CREATE VIEW statement  CREATE VIEW view_name AS SELECT column1, column2 FROM table_name WHERE
+                               which was used to
+                               create the view. Use
+                               this  condition;
+                               parameter only when
+                               the table_type is
+                               VIEW.
+
+   ``view_sql_expanded``       CREATE VIEW statement  CREATE VIEW view_name AS SELECT
+                               with fully qualified   `test_table`.`column1`, `test_table`.`column2` FROM
+                               object references      `schema`.`test_table` WHERE condition;
+                               specific to the Hive
+                               database type. Note
+                               that the database
+                               names should use the
+                               escaping symbols of
+                               back quote. Use this
+                               parameter only when
+                               the table_type is
+                               VIEW in a Hive
+                               database.
+
+   ``constraint_text``         Constraint statements  column_a UNIQUE 
+                               enforced by
+                               the DB. Use this
+                               parameter only when
+                               the table_type is
+                               TABLE.
+
+   ``ts_created``              Timestamp at which      2018-03-13T22:09:33Z
+                               the table or view was
+                               created. Ensure the
+                               timestamp is in UTC
+                               and follows the
+                               format:
+                               YYYY-MM-DDThh:mm:ssZ
+
+   ``ts_last_altered``         Timestamp of the last  2018-03-13T22:09:33Z 
+                               ALTER statement
+                               executed against this
+                               table. Ensure the
+                               timestamp is in UTC
+                               and follows the
+                               format:
+                               YYYY-MM-DDThh:mm:ssZ
+
+   ``partitioning_attributes`` An array of columns    ['column1', 'column2']
+
+   ``*bucket_attributes*``     An array of columns    ['column1', 'column2']
+                               used to
+                               bucket the table.
+
+   ``sort_attributes``         An array of columns    ['column1', 'column2']
+                               used to sort the
+                               table.
+
+   ``synonyms``                An array of other      [{'schema_name': 'schema_a','table_name':
+                               names that can be      'table_a'}, {'schema_name': 'schema_b','table_name': 'table_b'}]
+                               used to refer to this
+                               table. Each synonym
+                               is represented as a
+                               JSON comprising a
+                               schema_name and
+                               table_name.
+
+   ``skews_info``              A JSON of the skew     {'column1': ['column1_value1', 'column1_value2'],
+                               column names to an     'column2': ['column2_value1', 'column2_value2']}
+                               array of their
+                               respective skewed
+                               column values that
+                               appear often.
+
+   ``table_comment``           A comment field that    Created by DB
+                               stores a description
+                               of the table which is
+                               ingested from the
+                               source system.
+   =========================== ====================== ======================================================================
+
+.. note::
+
+   You can have newline in the text values of the fields by adding a
+   newline wherever needed. For example, newline can be inserted after
+   AS:
+
+   ``CREATE VIEW view_name AS 
+   SELECT column1, column2 FROM table_name WHERE condition;``
+
+   Note how for non-primitive data types, single quotes are used to
+   enclose the string in the data type. For example,
+
+   ``['column1', 'column2']``
+
+
+Adding Column Properties
+------------------------
+
+For columns, you can specify the following properties, all of them
+optional:
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
+====================== ====================== ========================
+Property               Description            Example
+====================== ====================== ========================
+``column_type``        This property          map<int, string>
+                       is optional
+                       but
+                       recommended  and
+                       can be any string.
+
+``position``           Position of the        5
+                       column in the table
+                       which has it.
+                       1. This value needs
+                       to be a positive
+                       integer.
+                       2. If unspecified,
+                       the value defaults
+                       to the order in
+                       which it was
+                       uploaded.
+
+``column_comment``     A comment field that   <has a default value>
+                       stores a description
+                       of the column which
+                       is ingested from the
+                       source system.
+
+``nullable``           Field to indicate      true
+                       if the column can
+                       be nullable. Set
+                       this to ``true`` if
+                       the column is
+                       a nullable field,
+                       to ``false`` if
+                       otherwise.
+                       Default Value:
+                       ``true``.
+====================== ====================== ========================
+
+Adding Indices
+--------------
+
+For indices, you can specify the following properties.
+
+.. table::
+   :widths: auto
+   :class: longtable
+
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+   | Property                   | If Required          | Description                                                            |
+   +============================+======================+========================================================================+
+   | *index_type*               | yes                  | This property is an                                                    |
+   |                            |                      | *enum*. The value for                                                  |
+   |                            | The presence of this | this property can be                                                   |
+   |                            | field identifies an  | one of:                                                                |
+   |                            | index object in a    |                                                                        |
+   |                            | column.              | -  PRIMARY                                                             |
+   |                            |                      | -  SECONDARY                                                           |
+   |                            |                      | -  PARTITIONED_PRIMARY                                                 |
+   |                            |                      | -  UNIQUE                                                              |
+   |                            |                      | -  OTHER                                                               |
+   |                            |                      |                                                                        |
+   |                            |                      | For details, see `Understanding the Index Key Types and Icons`_        |
+   |                            |                      |                                                                        |
+   |                            |                      | When specifying an index, ensure that the corresponding table          |
+   |                            |                      | is already a part of the database metadata.                            |
+   |                            |                      |                                                                        |
+   |                            |                      | Even for index upsert, this field is required.                         |
+   |                            |                      |                                                                        |
+   |                            |                      | Example: Use PRIMARY index type to define a primary key.               |
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+   | *column_names*             | yes                  | An array of column names on which the index is defined.                |
+   |                            |                      | If the index is composite, this array will have  multiple column       |
+   |                            |                      | names.                                                                 |
+   |                            |                      |                                                                        |
+   |                            |                      | - This cannot be an empty array.                                       |
+   |                            |                      | - When specifying an index, make sure the columns it                   |
+   |                            |                      |   corresponds to are already a part of the database metadata.          |
+   |                            |                      | - For index upsert, this field                                         |
+   |                            |                      |   can be optional.                                                     |
+   |                            |                      | - The order in which the column names are specified                    |
+   |                            |                      |   is important because this implies the sequencing of the              |
+   |                            |                      |   column forf composite indices.                                       |
+   |                            |                      |                                                                        |
+   |                            |                      | Example: ["column1"]                                                   |
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+   | *data_structure*           | no                   | The underlying data structure used by the index. The value for         |
+   |                            |                      | this field can be one of:                                              |
+   |                            |                      |                                                                        |
+   |                            |                      | -  BTREE                                                               |
+   |                            |                      | -  HASH                                                                |
+   |                            |                      | -  BITMAP                                                              |
+   |                            |                      | -  DENSE                                                               |
+   |                            |                      | -  SPARSE                                                              |
+   |                            |                      | -  REVERSE                                                             |
+   |                            |                      | -  OTHER                                                               |
+   |                            |                      | -  NONE                                                                |
+   |                            |                      |                                                                        |
+   |                            |                      | Default: NONE                                                          |
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+   | *index_type_detail*        | no                   | A string having custom detailed information about the index.           |
+   |                            |                      |                                                                        |
+   |                            |                      | Example:                                                               |
+   |                            |                      | MU                                                                     |
+   |                            |                      | LTI_COLUMN_STATISTICS                                                  |
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+   | *is_ascending*             | no                   | Set this boolean to ``true`` if the index  is created in               |
+   |                            |                      | ascending order, otherwise set ``false``.                              |
+   |                            |                      |                                                                        |
+   |                            |                      | This is not valid for the composite index.                             |
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+   | *filter_condition*         | no                   | Filter condition used while creating an index for part                 |
+   |                            |                      | of the rows in the table.                                              |
+   |                            |                      |                                                                        |
+   |                            |                      | This is not valid for composite index.                                 |
+   |                            |                      |                                                                        |
+   |                            |                      | Example: ([filteredIndexCol]>(0))                                      |
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+   | *is_foreign_key*           | no                   | Set this boolean to ``true`` if the index is a foreign key. This       |
+   |                            |                      | allows Alation to recognize the index as a foreign key.                |
+   |                            |                      |                                                                        |
+   |                            |                      | When this is set to ``true``, it is mandatory to provide the values    |
+   |                            |                      | for foreign_key_table_name and foreign_key_column_names fields.        |
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+   | *foreign_key_table_name*   | yes if               | The key of the parent table object which                               |
+   |                            | *is_foreign_key* is  | the foreign index refers to.                                           |
+   |                            | set to ``true``      |                                                                        |
+   |                            |                      | This is required only if is_foreign_key is set to ``true``.            |
+   |                            |                      | Make sure the table it corresponds to is already a part                |
+   |                            |                      | of the database metadata.                                              |
+   |                            |                      |                                                                        |
+   |                            |                      | Example: 7.schema_a.table_a                                            |
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+   | *foreign_key_column_names* | yes if               | An array of column names on the parent                                 |
+   |                            | *is_foreign_key* is  | table object which the foreign index refers to.                        |
+   |                            | set to ``true``      |                                                                        |
+   |                            |                      | - This is required only if ``is_foreign_key`` is set to ``true``.      |
+   |                            |                      | - Make sure the columns it corresponds to are                          |
+   |                            |                      |   already a part of the database metadata.                             |
+   |                            |                      | - The number of columns here should match the number of                |
+   |                            |                      |   columns in column_names field.                                       |
+   |                            |                      |                                                                        |
+   |                            |                      | Example: ['column1']                                                   |
+   +----------------------------+----------------------+------------------------------------------------------------------------+
+
+
+*Sample CSV*
+
+
+.. code-block:: bash
+
+   "key","table_type","column_type","index_type","column_names"
+   "public","","","",""
+   "public.customers","VIEW","","",""
+   "public.parts","TABLE","","",""
+   "public.parts.id","","varchar(40)","",""
+   "public.parts.index","","","SECONDARY","['id']"
+
+Understanding the Index Key Types and Icons
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can use one of the following index types (``index_type``):
+
+   - PRIMARY: Ensures the uniqueness of the primary key in a table.
+
+   - SECONDARY: Specifies additional indices to speed up queries related to non-primary keys.
+
+   - PARTITIONED_PRIMARY: Indicates a partitioned primary index for efficiently managing large tables.
+
+   - UNIQUE: Enforces the uniqueness of values in a column or set of columns.
+
+   - OTHER: Indicates custom or context-specific index types specific to certain database systems or applications.
+
+Based on the value you set for the ``index_type`` property, one of the following icons are displayed on catalog pages next to Columns:
+
++-----------------------------------------------------+-------------------------------------------------------------------+
+| Icon                                                | Description                                                       |
++=====================================================+===================================================================+
+|  .. image:: ../../_static/Primary_Key_Icon_VDS.png  | Primary key icon. This icon is displayed when ``index_type`` is   |
+|                                                     | set to PRIMARY.                                                   |
+|                                                     |                                                                   |
+|                                                     | There will be only one primary key icon for a table.              |
+|                                                     |                                                                   |
++-----------------------------------------------------+-------------------------------------------------------------------+
+|  .. image:: ../../_static/Foreign_Key_Icon_VDS.png  | Foreign key icon. This icon is displayed when ``index_type`` is   |
+|                                                     | set to SECONDARY, PARTITIONED_PRIMARY, UNIQUE, or OTHER and       |
+|                                                     | ``is_foreign_key`` is set to true.                                |                                                                      
+|                                                     |                                                                   |
++-----------------------------------------------------+-------------------------------------------------------------------+
+|  .. image:: ../../_static/Index_Key_Icon_VDS.png    | Index key icon. This icon is displayed when ``index_type`` is     |
+|                                                     | set to any value other than PRIMARY (SECONDARY,                   |
+|                                                     | PARTITIONED_PRIMARY, UNIQUE, or OTHER) and ``is_foreign_key`` is  |                                                                                                                       
+|                                                     | set to ``false``.                                                 |
++-----------------------------------------------------+-------------------------------------------------------------------+
+
+
+  
+Encoding and Special Characters
+-------------------------------
+
+- If the data has Unicode characters, make sure the file is encoded in UTF8. Alation will show a preview before you confirm importing.
+- If a property in the *head* does not apply to the *key*, leave it empty.
+- Alation does not support symbols ``' " [ ]`` in the names loaded using CSV. If you must have these symbols in the names, you will have to use a complex escaping sequence.
+
+Adding, Updating, and Deleting Properties per Technical Metadata Object
+-----------------------------------------------------------------------
+
+Initially, you can upload only some of the properties for a *key* and
+later update the same key with new properties or update or delete an
+existing property value. For example, you can do one upload to add
+``view_sql`` to all VIEWs and another upload to add ``ts_created``. This
+second upload will retain the previously added ``view_sql`` if you omit
+that column.
+
+Adding Properties
+~~~~~~~~~~~~~~~~~
+
+Let us discuss examples of importing a TABLE, COLUMN and INDEX objects
+and their properties. Suppose, the first import uploads only some of the
+properties as illustrated in the Sample CSV below:
+
+Sample CSV:
+
+.. code-block:: bash
+
+   "key","table_type","column_type","db_owner","definition_sql","constraint_text","ts_created","ts_last_altered","partitioning_attributes","synonyms","skews_info","table_comment","index_type","column_names","index_type_detail","is_ascending
+   "public","","","","","","","","","","","","","","",""
+   "public.parts","TABLE","","alation","create table schema_a.table_a(column1 int);","column_a UNIQUE","2018-03-13T22:09:33Z","2018-03-13T22:09:33Z","['column1', 'column2']","[{'schema_name': 'schema_a','table_name':'table_a'},{'schema_name': 'schema_b','table_name':'table_b'}]","{'column1': ['column1_value1', 'column1_value2'],'column2': ['column2_value1', 'column2_value2']}","Created by DB","","","","",""
+   "public.parts.id","","int","","","","","","","","","","","","","",""
+   "public.parts.index","","","","","","","","","","","","SECONDARY","['id']","BTREE","MULTI_COLUMN_STATISTICS","true"
+
+You can specify such list properties as
+
+-  partitioning_attributes
+-  bucket_attributes
+-  sort_attributes
+-  synonyms
+
+individually.
+
+Sample CSV:
+
+.. code-block:: bash
+
+   "key","table_type","bucket_attribute1","bucket_attribute2","sort_attribute1","partitioning_attribute1","synonym1","synonym2"
+   "public.parts","TABLE","bucket_column1","bucket_column2","sort_column1","partition_column1","{'schema_name':'schema_a','table_name':'table_a'}","{'schema_name': 'schema_b','table_name': 'table_b'}"
+
+Updating Properties of an Existing Object
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+While creating the above TABLE object, we have not added
+the ``data_location`` property. We will next add that property and update
+the value of the existing property ``db_owner``. For the COLUMN object, we
+can also add ``position`` and update ``column_type``. Similarly, for an
+INDEX, we can add ``filter_condition`` and update the existing property
+``data_structure``.
+
+Sample update CSV:
+
+.. code-block:: bash
+
+   "key","table_type","db_owner","data_location","position","index_type","filter_condition","data_structure"
+   "public.parts","TABLE","new_owner","hdfs:///user/hive/warehouse/parts","","","",""
+   "public.parts.id","","","","5","","",""
+   "public.parts.index","","","","","SECONDARY","([filteredIndexCol]>(0))","HASH"
+
+All the properties mentioned while adding the object for the
+first time are retained.
+``index_type`` and ``is_foreign_key`` cannot be changed after the index is
+created.
+``foreign_key_table_name`` and ``foreign_key_column_names`` are required
+if ``is_foreign_key`` is part of the request. However, ``is_foreign_key``
+can be skipped to retain the existing foreign key reference
+values.
+
+Deleting Properties of an Existing Object
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For already uploaded properties of an object, you can delete the
+properties by uploading the same object with the property value set to
+null.
+
+However, ``table_type``, ``index_type``, ``column_names``, ``is_foreign_key``,
+``foreign_key_table_name``, and ``foreign_key_column_names`` property
+values cannot be deleted.
+
+Sample CSV
+
+.. code-block:: bash
+
+   "key","table_type","db_owner","data_location","position","index_type","data_structure","filter_condition"
+   "public.parts","","","","","",""
+   "public.parts.id","","","","","","",""
+   "public.parts.index","","","","","SECONDARY","",""
+
+This upload removes the ``data_location`` and ``db_owner`` properties for
+the TABLE object, removes ``column_type`` and ``position`` properties for
+the COLUMN object, removes ``data_structure`` and ``filter_condition`` for
+the INDEX object.
+
+Uploading the CSV File
+----------------------
+
+To import metadata from a CSV file,
+
+1. Sign in to Alation, open the settings page of the Virtual Data Source you need to upload the metadata for, and open to the **Import Metadata** tab.
+2. Upload or drag and drop the source CSV file into the upload area.
+3. Review the uploaded file. Any formatting errors will appear in the **Error** column of the preview table.
+4. In the top left corner of the uploaded table, click **Confirm** to confirm upload.
+5. Refresh **Job History**. When the import is completed, the corresponding completed Metadata Extraction (MDE) job will be listed in the Job History table.
+6. Navigate to the catalog page of the Virtual Data Source to view the imported metadata.

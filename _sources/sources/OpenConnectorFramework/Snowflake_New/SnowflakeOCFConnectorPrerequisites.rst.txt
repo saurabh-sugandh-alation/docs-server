@@ -1,0 +1,404 @@
+Prerequisites
+=================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Before you install the Snowflake OCF connector, ensure that you have performed the following:
+
+    - `Enable Network Connectivity`_
+
+    - `Create a Service Account`_
+
+Enable Network Connectivity
+-----------------------------
+
+Open the inbound TCP port **443** to the Snowflake server.
+
+Create a Service Account
+-------------------------
+
+Under your Snowflake account, set up a service account for Alation. Security and account administrators for Snowflake (users with the SECURITYADMIN or ACCOUNTADMIN roles) can create users.
+Alation uses the service account for metadata extraction (MDE), profiling and sampling, and query log ingestion (QLI). Snowflake administrators must assign a service account with a role that has enough privileges for these extraction jobs.
+
+.. note::
+
+    You can also use an existing account.
+
+
+Snowflake connection information requires a warehouse and a role. Snowflake users may have multiple roles which give them different access rights. As a best practice, we recommend setting a default role and a default warehouse for the service account user. The information on creating an account and required permissions is given below:
+
+    - `Create Role for Alation Service Account`_
+    - `Create Alation Service Account User`_
+    - `Set Default Warehouse`_
+    - `Grant Permissions for Metadata Extraction`_
+    - `Grant Permissions for Profiling`_
+    - `Grant Permissions for Query Log Ingestion`_
+
+Create Role for Alation Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    USE ROLE ACCOUNTADMIN;
+    CREATE ROLE <alation_role>;
+
+
+Create Alation Service Account User
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    USE ROLE ACCOUNTADMIN;
+    CREATE USER <alation_user> PASSWORD='*****' DEFAULT_ROLE = <alation_role> MUST_CHANGE_PASSWORD = TRUE;
+    GRANT ROLE <alation_role> TO USER <alation_user>;
+    ALTER USER <alation_user> SET ROWS_PER_RESULTSET=0
+
+.. note::
+
+    We recommend setting the ``ROWS_PER_RESULTSET`` parameter to ``0`` on the service account level to allow the connector to fetch all accessible metadata. This setting is relevant if a strict limit is set on the account level or if you're not sure if such a limit exists on the account. With a strict limit applied via the ``ROWS_PER_RESULTSET`` parameter, the connector may skip metadata during extraction, resulting in an incomplete extraction result.
+
+Set Default Warehouse
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    USE ROLE ACCOUNTADMIN;
+    ALTER USER <alation_user> SET DEFAULT_WAREHOUSE=<warehouse_name>;
+
+Grant Permissions for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Grant Access to Warehouse
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Grant access to the warehouse from which you want to extract. Access to the warehouse is required even if it is the default warehouse of the service account.
+
+    .. code-block:: sql
+
+        USE ROLE ACCOUNTADMIN;
+        GRANT USAGE ON WAREHOUSE <warehouse_name> TO ROLE <alation_role>;
+
+.. _access-account-usage-new:
+
+Grant Access to ACCOUNT_USAGE
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can either grant access to all views in the ACCOUNT_USAGE schema or, if full access is not allowed, grant limited access using Snowflake database roles. Access to the ACCOUNT_USAGE schema enables metadata extraction (MDE) and query log ingestion (QLI).
+
+Full Access to ACCOUNT_USAGE
+''''''''''''''''''''''''''''''''
+
+Grant access to all views in the  ACCOUNT_USAGE schema:
+
+    .. code-block:: sql
+
+        USE ROLE ACCOUNTADMIN;
+        GRANT IMPORTED PRIVILEGES ON DATABASE "SNOWFLAKE" to <alation_role>;
+
+Limited Access to ACCOUNT_USAGE
+'''''''''''''''''''''''''''''''''''
+
+If you can only provide limited access to the ACCOUNT_USAGE schema, then grant the service account the `SNOWFLAKE database roles <https://docs.snowflake.com/en/sql-reference/snowflake-db-roles#account-usage-views-by-database-role>`_ of OBJECT_VIEWER and GOVERNANCE_VIEWER:
+
+    .. code-block:: sql
+
+        USE ROLE ACCOUNTADMIN;
+        USE SNOWFLAKE;
+        GRANT DATABASE ROLE OBJECT_VIEWER TO ROLE <alation_role>;
+        GRANT DATABASE ROLE GOVERNANCE_VIEWER TO ROLE <alation_role>;
+
+    .. note::
+
+        The database roles of OBJECT_VIEWER and GOVERNANCE_VIEWER grant access to these ACCOUNT_USAGE views:
+
+          MDE:
+            - **OBJECT_VIEWER**
+
+              - SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+              - SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+              - SNOWFLAKE.ACCOUNT_USAGE.TABLES
+              - SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
+              - SNOWFLAKE.ACCOUNT_USAGE.VIEWS
+              - SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+
+            - **GOVERNANCE_VIEWER**
+
+              - SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES
+              - SNOWFLAKE.ACCOUNT_USAGE.ROW_ACCESS_POLICIES
+              - SNOWFLAKE.ACCOUNT_USAGE.MASKING_POLICIES
+              - SNOWFLAKE.ACCOUNT_USAGE.TAGS
+              - SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+
+          QLI:
+            - **GOVERNANCE_VIEWER**
+
+              - SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+
+
+Grant Access to Databases, Schemas, and Tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Grant the service account access to the database(s), schema(s), and table(s) that you want to be cataloged in Alation after metadata extraction:
+
+Grant USAGE on Specific Database(s)
+''''''''''''''''''''''''''''''''''''''
+
+.. code-block:: sql
+
+    GRANT USAGE ON DATABASE <database> TO <alation_role>;
+
+Grant USAGE on Specific Schema(s)
+''''''''''''''''''''''''''''''''''''''
+
+    - Grants limited by database
+
+        .. code-block:: sql
+
+            GRANT USAGE ON ALL SCHEMAS IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Grants limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT USAGE ON SCHEMA <database.schema> TO ROLE <alation_role>;
+
+    - Optional: grant access to future schemas in database
+
+        .. code-block:: sql
+
+            GRANT USAGE ON FUTURE SCHEMAS IN DATABASE <database> TO ROLE <alation_role>;
+
+Grant REFERENCES on Specific Table(s)
+''''''''''''''''''''''''''''''''''''''
+
+    - Grants limited by database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL TABLES IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Grants limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL TABLES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+    - Optional: grant access to future tables in database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON FUTURE TABLES IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Optional: grant access to future tables in a specific schema
+
+        .. code-block:: sql
+
+            GRANT SELECT ON FUTURE TABLES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+Grant REFERENCES on Specific View(s)
+''''''''''''''''''''''''''''''''''''''
+
+    - Grants limited by database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL VIEWS IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Grants limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL VIEWS IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+    - Optional: grant access to future views in database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON FUTURE VIEWS IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Optional: grant access to future views in a specific schema
+
+        .. code-block:: sql
+
+            GRANT SELECT ON FUTURE VIEWS IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+Grant Access to External Tables
+''''''''''''''''''''''''''''''''''''''
+
+Alation supports extraction of external tables on Amazon S3 and Azure Storage.
+
+    .. note::
+
+        Granting USAGE on databases and schemas is a prerequisite to extracting external tables.
+
+    - Grant access to external tables, limited by database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL EXTERNAL TABLES in DATABASE <database> TO ROLE <alation_role>;
+
+    - Grant access to external tables, limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL EXTERNAL TABLES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+    - Grant USAGE on stages used in external tables, limited by database
+
+        .. code-block:: sql
+
+            GRANT USAGE ON ALL STAGES IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Grant USAGE on stages used in external tables, limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT USAGE ON ALL STAGES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+        .. note::
+
+            An external table can be created from a stage belonging to a different database. Make sure you provide access to all required stages of all required databases.
+
+    - *Optional*: grant access to future external tables in a database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON FUTURE EXTERNAL TABLES in DATABASE <database> TO ROLE <alation_role>;
+
+    - *Optional*: grants access to future external tables in a schema
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON FUTURE EXTERNAL TABLES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+
+.. _policy-tag-extraction:
+
+Policy and Tag Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Permissions for Policy and Tag Extraction
+''''''''''''''''''''''''''''''''''''''''''''
+
+Permissions :ref:`you have granted on the ACCOUNT_USAGE views <access-account-usage-new>` are enough for policy and tag extraction.
+
+Permissions for Policy and Tag Synchronization
+'''''''''''''''''''''''''''''''''''''''''''''''''
+
+  - Grant access for policy synchronization
+
+      .. code-block:: sql
+
+          GRANT APPLY MASKING POLICY ON ACCOUNT TO <alation_role>;
+
+
+  - Grant access for tag synchronization
+
+      .. code-block:: sql
+
+          GRANT APPLY TAG ON ACCOUNT TO <alation_role>;
+
+Enable Policy Extraction
+''''''''''''''''''''''''''''''
+
+Policy extraction requires additional configuration on the Alation server. You can enable it using **alation_conf**.
+
+.. tabs::
+
+    .. tab:: Customer-Managed Instances
+
+        On customer-managed (on-premise) Alation instances, enable data policy extraction by setting these **alation_conf** flags to ``True``:
+
+            - ``alation.ocf.mde.policy.enable_extraction``
+            - ``alation.ocf.mde.policy.enable_ingestion``
+            - ``alation.ocf.mde.policy.enable_search``
+
+        After changing the parameters, restart Alation Supervisor with the command ``alation_supervisor restart all``.
+
+        On how to use **alation_conf**, see :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.
+
+    .. tab:: Alation Cloud Service
+
+        On Alation Cloud Service instances, Alation Support will adjust the **alation_conf** flag values to activate specific features. Submit a Support ticket to Alation to make these changes to your instance.
+
+For more on working with policies extracted into the catalog, see :doc:`/steward/PolicyCenter/index`.
+
+.. note::
+
+    Only policies attached to tables, columns, and views are extracted and shown in Alation. Policies linked to tags are not extracted. On connector versions before 1.1.5, metadata extraction exits with an error when it encounters a policy linked to a tag during ingestion. Connector versions 1.1.5 or newer will skip policies linked to tags and successfully extract policies attached to tables, columns, and views.
+
+Enable Tag Extraction
+''''''''''''''''''''''''''''''
+
+Tag extraction requires additional configuration on the Alation server. You can enable it using **alation_conf**.
+
+.. tabs::
+
+    .. tab:: Customer-Managed Instances
+
+        On customer-managed (on-premise) Alation instances, enable Snowflake tag extraction by setting these **alation_conf** flags to ``True``:
+
+            - ``alation.feature_flags.enable_snowflake_tags``
+            - ``alation.ocf.mde.custom_field.enable_extraction``
+            - ``alation.ocf.mde.custom_field.enable_ingestion``
+
+        After changing the parameters, restart Alation Supervisor with the command ``alation_supervisor restart all``.
+
+        On how to use **alation_conf**, see :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.
+
+    .. tab:: Alation Cloud Service
+
+        On Alation Cloud Service instances, Alation Support will adjust the **alation_conf** flag values to activate specific features. Submit a Support ticket to Alation to make these changes to your instance.
+
+By default, Alation will extract:
+
+    - All tags if the database name is not specified in the JDBC URI.
+
+    - All the tags which have references in the database if the database name is specified in the JDBC URI.
+
+For more on the format of the Snowflake JDBC URI, see :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOCFConnectorConfigConnectiontoDataSource`.
+
+If you want to extract more specific tags, use a custom query for tag extraction. See :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOCFConnectorConfigMDE`.
+
+For information about working with Snowflake tags in Alation, refer to :doc:`/steward/SnowflakeTags/index`.
+
+Function Extraction
+^^^^^^^^^^^^^^^^^^^^
+
+  - Grants limited by database
+
+      .. code-block:: sql
+
+          GRANT USAGE ON ALL FUNCTIONS IN DATABASE <database> TO ROLE <alation_role>;
+
+  - Grants limited by a schema
+
+      .. code-block:: sql
+
+          GRANT USAGE ON ALL FUNCTIONS IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+
+Grant Permissions for Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Profiling requires SELECT permissions for the tables you are going to profile:
+
+    .. code-block:: sql
+
+        GRANT SELECT ON schema_name.table_name TO <alation_role>;
+
+Grant Permissions for Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation supports query log ingestion (QLI) based on the ACCOUNT_USAGE.QUERY_HISTORY view of the SNOWFLAKE database.
+
+QLI can either use a dedicated view (table-based QLI) or a query (default or query-based QLI).
+
+    - For **table-based QLI**, you'll need to create a view on top of the SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY view and grant the Alation service account these permissions:
+
+          - USAGE on the database and schema where the view is created.
+          - SELECT on the created view.
+
+    - For **default** and **query-based QLI**, the permissions on the ACCOUNT_USAGE.QUERY_HISTORY view that you've granted the service account are enough.
+
+See :doc:`Snowflake OCF Connector (New) </sources/OpenConnectorFramework/Snowflake_New/SnowflakeOCFConnectorConfigQLI>` for more information on the types of QLI, including the information on how to create a QLI view for table-based QLI.

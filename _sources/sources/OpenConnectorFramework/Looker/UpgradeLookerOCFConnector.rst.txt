@@ -1,0 +1,103 @@
+Upgrade Looker OCF Connector to Version 1.4.1
+=====================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Before upgrading the **Looker OCF Connector** to version 1.4.1 or later from an older version, users must execute this migration script. The script should be run one time, prior to the connector upgrade. This migration ensures the transfer of all curated information on the catalog pages of Looker objects from your previous connector version to the Looker OCF Connector 1.4.1.
+
+.. note::
+
+      Users who initially install the Looker connector version 1.4.1 or above do not need to perform this migration. The script is only required if you are upgrading the connector from a previous version.
+
+On Looker OCF Connector versions before 1.4.1, Looker reports were extracted as new reports in Alation if these reports had been updated in Looker. The previously extracted version of the report and the associated curation information was removed from the catalog. The Looker OCF connector version 1.4.1 uses a different model of storing report IDs and fixes this issue. However, migration of the previously extracted metadata is required to ensure that the new connector version inherits the curation information on previously extracted Looker reports.
+
+Scope of Migration
+--------------------------
+
+This migration will ensure that the following catalog metadata is preserved after the connector upgrade:
+
+    - Built-in and custom fields
+
+        - Object Sets and People Sets—For example, **Stewards**
+        - Rich text fields
+        - Descriptions
+
+    - Trust Flags (Endorse, Warn, and Deprecate)
+    - Tags
+    - Stars
+    - Article and conversation mentions
+
+Migrate Curated Data
+----------------------------
+Perform the following steps to migrate the curated data of a cataloged Looker report in preparation for the connector upgrade:
+
+    .. note::
+
+          There will be no downtime while performing this migration.
+
+  1. Before migration, ensure that you have the latest valid Alation backup.
+
+  2. We recommend taking screenshots of the Looker catalog pages that contain curation information. These screenshots can be used as reference after the connector upgrade to validate that all curation information is successfully migrated.
+
+  3. Copy the Looker migration script that you received from Alation to the ``/tmp`` directory on the Alation host. If you use the example below, replace **<ssh-user>** with your username.
+
+     .. code-block:: Bash
+
+           scp looker_migration.pyc <ssh-user>@{alation-instance-ip}:/tmp
+
+  4. Use SSH to connect to the Alation host.
+
+  5. Run the following command to stage the migration script in the **one_off_scripts** directory:
+
+      .. code-block:: Bash
+
+
+            sudo cp /tmp looker_migration.pyc /opt/alation/alation/opt/alation/django/rosemeta/one_off_scripts
+
+  6. Enter the Alation shell.
+
+     .. code-block:: Bash
+
+           sudo /etc/init.d/alation shell
+
+  7. Navigate to the **one_off_scripts** directory.
+
+     .. code-block:: Bash
+
+           cd opt/alation/django/rosemeta/one_off_scripts/
+
+  8. Change the user to ``alation``:
+
+     .. code-block:: Bash
+
+           sudo su alation
+
+  9. Find the source ID of the Looker BI source. The source ID of a source can be viewed in the browser URL when you view the source catalog page. In the  example below, the source ID is **9**.
+
+     *Example:* htpps://qualified_domain_name/bi/v2/server/9/
+
+  10. Run the migration script with the  command below.
+
+      .. code-block:: Bash
+
+           python looker_migration.pyc -s <Looker source ID>
+
+
+  11. The following message will be displayed once the migration is complete: updated report id’s, exiting the script.
+
+      .. image:: ../../../_static/Looker_13.png
+          :width: 400px
+
+  12. Exit the shell.
+
+      .. code-block:: Bash
+
+            exit
+
+  13. Check the connector logs for any errors once the script execution is complete. If you find any errors in executing the script, contact  Alation Support.
+
+  14. Upgrade the Looker OCF connector to version 1.4.1 once the migration script execution is successful. Refer to :doc:`Upgrade Connector <../../../sources/OpenConnectorFramework/ManageConnectors>` for more information.
+
+  15. Perform a full extraction to restore the curated data on the upgraded connector version.
+
+  16. Make sure that the curation data was migrated successfully.

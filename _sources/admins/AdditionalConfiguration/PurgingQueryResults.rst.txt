@@ -1,0 +1,305 @@
+Managing Space: Purge Query Results
+=============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from version 2021.4*
+
+Alation server admins can use the ``alation_action purge_execution_results`` action to purge query execution results and free some space.
+
+Actions described in this section require access to the Alation server.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+Understanding Query Execution Results Storage
+---------------------------------------------------
+
+Compose query execution results are stored in the ``data_storage_blobaccesspostgres`` table of the internal Alation database. The storage rules are based on two **alation_conf** parameters:
+
+  - ``alation.query_exec.results_auto_persist_bytes``
+  - ``alation.query_exec.results_expiration_time``
+
+alation.query_exec.results_auto_persist_bytes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This parameter configures storing query results that are smaller than the parameter value perpetually.
+
+From *version 2021.4*, the default value is ``0 MB``. This means that no queries will be stored in Alation forever unless they are explicitly saved by users on the **Results** tab in Compose or on the **Execution Results** page in the catalog. Query results that are not saved by users are only stored for a specific time period that is set by the second parameter, ``alation.query_exec.results_expiration_time``. No small execution results will accumulate over time potentially leading to storage space issues.
+
+    .. note::
+
+        The default value in version 2021.3 and earlier versions was ``1 MB``. By default, results smaller than 1 MB were stored permanently.
+
+alation.query_exec.results_expiration_time
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This parameter configures storing query results that are larger than ``alation.query_exec.results_auto_persist_bytes`` in Alation for the duration of the time period specified as the parameter value. The default value is seven days, set in minutes (``10080`` minutes). This means that query results that are not explicitly saved by users are stored in Alation for seven days and then purged automatically.
+
+Determining Current Execution Result Storage Size
+------------------------------------------------------
+
+You can retrieve the current size of the query execution result data from the internal Alation database table ``data_storage_blobaccesspostgres``:
+
+1. SSH to the Alation server.
+2. Enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Use the **alation_psql** command to access the internal Alation database.
+
+    .. code-block:: Bash
+
+          alation_psql
+
+4. Run the following query to determine the total size of the **data_storage_blobaccesspostgres** table. The query will return the table size in MB.
+
+    .. code-block:: Bash
+
+        SELECT pg_size_pretty( pg_total_relation_size('data_storage_blobaccesspostgres') );
+
+5. Exit the Postgres shell.
+
+    .. code-block:: Bash
+
+        \q
+
+6. Exit the Alation shell.
+
+    .. code-block:: Bash
+
+        exit
+
+
+Purging Execution Results
+------------------------------
+
+You can use the ``alation_action purge_execution_results`` action to purge the query execution results storage and free some space. The script clears query execution results data from the ``data_storage_blobaccesspostgres`` table in the internal Alation database for a time range specified by the user.
+
+The ``alation_action purge_execution_results`` action works in 2 modes: ``'Scan'`` or ``'Purge'``. Begin with scanning the volume of results set data. Then you can purge the results data if space is an issue.
+
+Mode 1: Scanning for Records to Purge
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``'Scan'`` mode is used to find how much space can potentially be reclaimed. Use the steps below to scan for query execution result data that can be purged from ``data_storage_blobaccesspostgres``:
+
+1. SSH to the Alation server.
+
+2. Enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Change user to ``alation``.
+
+    .. code-block:: Bash
+
+        sudo su alation
+
+4. Use the ``alation_action purge_execution_results`` command.
+
+    .. code-block:: Bash
+
+        alation_action purge_execution_results
+
+5. Respond to all prompts. Pressing Enter skips to the next prompt and applies the default value. The following prompts will be displayed:
+
+    - **Enter the start date from which data is to be removed**: Specify the start date of the time range that you want to scan. The input to this prompt is required and cannot be skipped. Use the format ``yyyy-mm-dd`` to specify the date.
+
+    - **Enter the end date till which data is to be removed**: Specify the end date of the time range that you want to scan. The input to this prompt is required and cannot be skipped. Use the format ``yyyy-mm-dd`` to specify the date.
+
+    - **Enter the batch size**: For the ``'Scan'`` mode, leave the default value by pressing Enter.
+
+    - **Do you want to Scan or Purge?** Type ``'Scan'`` to use this script for scanning.
+
+    - **Log file path**:  specify the path to the output file or press Enter to accept the default value. By default, the output file will be written to **/opt/alation/site/logs/** inside the Alation shell, but you can specify a different location. The name of the output file will be similar to ``purge_execution_results_2021-11-12T11:29:55.607535.txt``
+
+    Example:
+
+    .. code-block:: Bash
+
+        (env) PROD [alation@ip-10-13-49-1 /]$ alation_action purge_execution_results
+        Enter the start date from which data is to be removed (format : yyyy-mm-dd) : 2021-01-01
+        Enter the end date till which data is to be removed(format : yyyy-mm-dd) : 2021-10-31
+        Enter the batch size (in days, default is 10):
+        Do you want to Scan or Purge? (default is 'Scan'): 'Scan'
+        Log file path (Default is: /opt/alation/site/logs/):
+
+        Scan revealed 900 records that can be removed and recover a total of 20.0MB
+        Scan complete, set to `Purge` mode to proceed with the purge
+
+
+6. View the scan output to determine if the data should be purged. Then, if needed, proceed with purging the data. If not, exit the Alation shell.
+
+    .. code-block:: Bash
+
+        exit
+
+Mode 2: Purging Records
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the ``'Purge'`` action with caution. It purges all query results for a specified time period, including the results saved in the catalog by users. Some results saved in the catalog may still be in use and referenced in articles or other objects. After purging, a warning will be displayed to users in both Compose and the catalog to inform them that a result set they are trying to view is no longer available.
+
+    .. warning::
+
+        On *version 2021.4*, the purge action requires a downtime of the Alation server. Plan this activity during a period when a downtime is possible and warn your users that Alation will be temporarily unavailable. The length of the downtime depends on the amount of results data that you will be purging; however, the purging action affects one internal table and should not take a long time.
+
+        In *version 2022.1 and later versions*, the downtime is not required.
+
+
+Use the steps below to purge query execution result data from the ``data_storage_blobaccesspostgres`` table:
+
+1. SSH to the Alation server.
+
+2. Enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Change user to ``alation``:
+
+    .. code-block:: Bash
+
+        sudo su alation
+
+4. Run the ``alation_action purge_execution_results`` action.
+
+    .. code-block:: Bash
+
+        alation_action purge_execution_results
+
+
+5. Respond to all prompts. Pressing Enter skips to the next prompt and applies the default value. The following prompts will be displayed:
+
+    - **Enter the start date from which data is to be removed**: Specify the start date of the time range that you want to scan. The input to this prompt is required and cannot be skipped. Use the format ``yyyy-mm-dd`` to specify the date.
+
+    - **Enter the end date till which data is to be removed**: Specify the end date of the time range that you want to scan. The input to this prompt is required and cannot be skipped. Use the format ``yyyy-mm-dd`` to specify the date.
+
+    - **Enter the batch size**: Result set data volume can be very large. Purging all data at once would be taxing on the system. Alation will purge the data in batches specified in this prompt.
+
+    - **Do you want to Scan or Purge**? Type ``'Purge'`` to use this script for purging.
+
+    - **Log file path**:  specify the path to the output file or press Enter to accept the default value. By default, the output file will appear in **/opt/alation/site/logs/** inside the Alation shell, but you can specify a different location.
+
+    Example:
+
+    .. code-block:: Bash
+
+        (env) PROD [alation@ip-10-13-49-1 /]$ alation_action purge_execution_results
+        Enter the start date from which data is to be removed (format : yyyy-mm-dd) : 2021-01-01
+        Enter the end date till which data is to be removed(format : yyyy-mm-dd) : 2021-10-31
+        Enter the batch size (in days, default is 10):
+        Do you want to Scan or Purge? (default is 'Scan'): 'Purge'
+        Log file path (Default is: /opt/alation/site/logs/):
+        . . .
+        Batch processing completed. Overall time taken : 0:00:00 - Overall space saved : 20.0MB
+
+        Purge complete.
+        Disk space will not be released by the operating system until a `VACUUM FULL`
+        has been run in your Postgres database.
+
+6. Depending on your Alation version, perform additional steps to return disk space to the operating system.
+
+        .. tabs::
+
+            .. tab:: Version 2022.1 and Later
+
+                1. Still as user ``alation`` in the Altion shell, run the following command:
+
+                    .. code-block:: Bash
+
+                        repack_table public.data_storage_blobaccesspostgres
+
+                    Progress will be indicated by the following message:
+
+                    .. code-block:: Bash
+
+                        INFO: repacking table "public.data_storage_blobaccesspostgres"
+
+                2. After repacking the table, you can check its size by running the query given below. Enter the Postgres shell.
+
+                    .. code-block:: Bash
+
+                        alation_psql
+
+                3. Run the query.
+
+                    .. code-block:: Bash
+
+                        SELECT pg_size_pretty( pg_total_relation_size('data_storage_blobaccesspostgres') );
+
+                4. Exit the Postgres shell.
+
+                    .. code-block:: Bash
+
+                        \q
+
+                5. Exit the Alation shell:
+
+                    .. code-block:: Bash
+
+                        exit
+
+            .. tab:: Version 2021.4
+
+                .. warning::
+
+                    The steps below will cause Alation to be temporarily unavailable.
+
+                1. Exit from the user ``alation``. You will proceed as user ``alationadmin``.
+
+                    .. code-block:: Bash
+
+                        exit
+
+                2. Stop Alation.
+
+                    .. code-block:: Bash
+
+                        alation_action stop_alation
+
+                3. Start Postgres.
+
+                    .. code-block:: Bash
+
+                        alation_action start_postgres
+
+                4. Enter the Postgres shell.
+
+                    .. code-block:: Bash
+
+                        alation_psql
+
+                5. Run ``VACUUM FULL`` on the ``data_storage_blobaccesspostgres`` table.
+
+                    .. code-block:: Bash
+
+                        VACUUM FULL data_storage_blobaccesspostgres;
+
+                6. When the ``VACUUM`` action is completed, you can check on the table size by running the query given below:
+
+                    .. code-block:: Bash
+
+                        SELECT pg_size_pretty( pg_total_relation_size('data_storage_blobaccesspostgres') );
+
+                7. Exit the Postgres shell.
+
+                    .. code-block:: Bash
+
+                        \q
+
+                8. Restart Alation.
+
+                    .. code-block:: Bash
+
+                        alation_action restart_alation
+
+
+                9. Exit the Alation shell:
+
+                    .. code-block:: Bash
+
+                      exit

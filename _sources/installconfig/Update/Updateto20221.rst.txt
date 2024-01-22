@@ -1,0 +1,349 @@
+Update Alation to 2022.1
+==============================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+2022.1 Update Version Dependencies
+----------------------------------------------
+
+Alation supports a direct update to version 2022.1 from the following previous versions:
+
+    - 2021.4.x
+    - 2021.3.x
+    - 2021.2.x
+
+Version 2021.1.x and Older
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Direct update to 2022.1 is not supported from version 2021.1 and older versions. First, update Alation to a version that supports the update to 2022.1 and then perform a second update to 2022.1. Use the update instructions specific to your release.
+
+.. _20221-Release-Specific-Information:
+
+2022.1 Release-Specific Information
+-------------------------------------------------
+
+    .. note::
+
+        More information about new features is available in Release Notes 2022.1 (Limited Availability).
+
+Log4j 2 Vulnerability Mitigation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Elasticsearch upgrade
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Elasticsearch component has been updated to version **7.16** to mitigate the Log4j 2 vulnerabilities discovered in December 2021. The Elasticsearch upgrade happens automatically during the update. No manual action is required from Alation admins.
+
+Security update for the Hive connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+2022.1 addresses the potential Log4j 2 vulnerability `CVE-2021-44832 <https://nvd.nist.gov/vuln/detail/CVE-2021-44832>`_ in the code of the Alation Hive Connector. The Log4j 2 components of the Hive connector have been updated to a newer version, where this vulnerability is not present.
+
+Built-in Driver Upgrades
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - The built-in driver for DB2 was upgraded to version 11.5
+
+  - The built-in driver for Presto has been updated to version 0.265.1
+
+Viewer Role Enforcement Enabled by Default
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From 2022.1, the Viewer role enforcement is enabled by default. Previously, the default value of the feature flag ``alation.feature_flags.enable_permissions_middleware_feature`` was ``False``, which meant that the Viewer role restrictions were not enforced. Without enforcement, the Composer, Steward, and Viewer roles had the same level of access. Now, the default value of this flag equals ``True``. This affects instances where the Viewer role was not enforced before updating to 2022.1: after the update, the access level of the Viewer role will be noticeably restricted.
+
+In order to go back to the previous access level for Viewers, you can either set this flag back to ``False`` after the upgrade or assign higher roles to the users who require more permissions than granted by the Viewer role.
+
+Update Known Issue
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you have a password set on the internal PostgreSQL database (Rosemeta), the update to 2022.1 will result in an error: *Password for user alation: psql: fe_sendauth: no password supplied ERROR: Cannot upgrade alation*.
+
+The update to 2022.1 requires that the password on the internal PostgreSQL database should be cleared for the time of the update. The password needs to be set again after the update. To set or clear the Postgres password, see :doc:`Set Password for Internal PostgreSQL Instances <../../admins/AdditionalConfiguration/SetPasswordforPostgreSQLInstance>`.
+
+Entity ID Check
+-----------------------------
+
+This check is relevant if your Alation application uses SAML authentication.
+
+If not, you can skip this check.
+
+In 2022.1, Alation upgraded an internal SAML-related library to a newer version. This version enforces the match between the **Entity ID** value set in Alation and the **Audience Restriction** value in the SAML response from the IdP.
+
+As the result of this enforcement, users may not be able to log in to Alation after the update to 2022.1 if the **Entity ID** value in Alation and the **Audience Restriction** value in the IdP do not match. Alation recommends checking these values before updating.
+
+To check the values:
+
+1. SSH to your Alation host.
+
+2. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Run the following command to view the current Entity ID value:
+
+    .. code-block:: Bash
+
+        alation_conf alation.authentication.saml.entity_id
+
+4. Check the Audience Restriction value in the IdP. Note that this property may be named differently depending on the IdP. For example, this can be *Audience URI*  or *SP Entity ID*. The value should match the Entity ID value in Alation.
+
+5. If the values do not match, update the value in the IdP or in Alation.
+
+Updating Entity ID
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you choose to update the value in Alation, follow these steps:
+
+1. Use the following command in the Alation shell to update the value:
+
+    .. code-block:: Bash
+
+        alation_conf alation.authentication.saml.entity_id -s <value>
+
+    **Example**:
+
+    .. code-block:: Bash
+
+        alation_conf alation.authentication.saml.entity_id -s http://alation.com/
+
+2. In version 2021.4, no restart is required. In versions 2021.3 and 2021.2, restart the Web component:
+
+    .. code-block:: Bash
+
+        alation_supervisor restart web:*
+
+
+Update Alation from 2021.4.x to 2022.1
+--------------------------------------------
+
+STEP 1: Scan Postgres
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation recommends using the ``scan_postgres`` action to validate that the internal Postgres database is in a healthy state before the update. For steps, see :doc:`How to Scan Postgres for Corrupted Indexes <../../admins/How-tos/HowToScanPostgresForCorruptedIndexes>`.
+
+    .. note::
+
+        If in your instance the Postgres scan runs on a schedule, you can check the **scan-postgres.log** file in **/opt/alation/site/logs** (path inside the Alation shell) for Postgres state.
+
+STEP 2: Update the Alation Application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Update instructions:
+
+    - :doc:`Manual Software Update for Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+
+    - Update on the HA pair:
+
+        - with splitting the HA cluster: :doc:`Update HA Pair with Cluster Splitting <../../installconfig/Update/UpdateHAPairwithClusterSplitting>`
+
+        - without splitting the cluster: :doc:`Update HA Pair Configuration (4.7 and above) <../../installconfig/Update/updateHAPair>`
+
+STEP 3: Update Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if Alation Analytcs V2 is in use on your instance.
+
+Use :doc:`Update Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2>` to update Alation Analytics V2.
+
+Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Update of Alation Connector Manager is not required.
+
+Update Alation from 2021.3.x to 2022.1
+-------------------------------------------------
+
+This update path skips release 2021.4 that includes a number of important changes. Make sure to review the information specific to 2021.4:
+
+    - :ref:`2021.4 Release-Specific Information <20214-Release-Specific-Information>`
+
+To update Alation:
+
+STEP 1: Scan Postgres
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation recommends using the ``scan_postgres`` action to validate that the internal Postgres database is in a healthy state before the update. For steps, see :doc:`How to Scan Postgres for Corrupted Indexes <../../admins/How-tos/HowToScanPostgresForCorruptedIndexes>`.
+
+    .. note::
+
+        If in your instance the Postgres scan runs on a schedule, you can check the **scan-postgres.log** file in **/opt/alation/site/logs** (path inside the Alation shell) for Postgres state.
+
+STEP 2: Update the Value of Parameter elasticsearch.env.es_java_opts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if you have previously changed the value of the **alation_conf** parameter ``elasticsearch.env.es_java_opts`` based on recommendations in the initial *Log4j 2 Security Advisory from December 10, 2021*. Before updating Alation, clear the value ``-Dlog4j2.formatMsgNoLookups=true`` from ``elasticsearch.env.es_java_opts`` and set a new value. Follow instructions in :doc:`Validating the Value of Parameter elasticsearch.env.es_java_opts <../../installconfig/Update/ValidatingValueOfelasticsearch_env>` to set the required value.
+
+STEP 3: Check Space in the Alation Analytics V2 Installation Directory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if Alation Analytics V2 is in use on your instance. If not, you can skip this step.
+
+On the Alation Analytics V2 host, check the disk space usage. There must be >= 50% free disk space available for the Alation Analytics V2 Postgres upgrade to succeed.
+
+To check the currently available disk space, on the host:
+
+    1. Change to root user:
+
+        .. code-block:: Bash
+
+            sudo -i
+
+    2. Run the disk space check:
+
+        .. code-block:: Bash
+
+            df -h <path/to/AlationAnalyticsV2/installation/directory>
+
+STEP 4: Update the Alation Application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Update instructions:
+
+    - :doc:`Manual Software Update for Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+
+    - Update on the HA pair:
+
+          - with splitting the HA cluster: :doc:`Update HA Pair with Cluster Splitting <../../installconfig/Update/UpdateHAPairwithClusterSplitting>`
+
+          - without splitting the cluster: :doc:`Update HA Pair Configuration (4.7 and above) <../../installconfig/Update/updateHAPair>`
+
+STEP 5: Update Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if Alation Analytics V2 is in use on your instance.
+
+  .. important::
+
+        At least 50% disk space must be available on the host to successfully upgrade the Alation Analytics V2 database.
+
+Use the steps in :doc:`Update Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2>` to update Alation Analytics V2. Note that during this update, the Alation Analytics V2 database version will be automatically updated to version **13.1**.
+
+Related topic: :doc:`Troubleshooting Alation Analytics V2 Upgrade to 2021.4 <../../admins/Troubleshooting/TroubleshootAAV2UpdateTo20214>`
+
+STEP 6: Update Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step is mandatory if OCF components are installed on your instance. Use the steps in :doc:`Update Alation Connector Manager <../../installconfig/Update/OCFUpdateAlationConnectorManager>` to update it.
+
+STEP 7: Review Backup and Restore Process
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On the changes to the Backup and Restore process in 2021.4, see: :ref:`Backup20214`.
+
+Update Alation from 2021.2.x to 2022.1
+-----------------------------------------------
+
+This update path skips releases 2021.4 and 2021.3 that include a number of important changes. Make sure to review the information specific to the release you skip.
+
+    - :ref:`2021.4 Release-Specific Information <20214-Release-Specific-Information>`.
+    - :ref:`2021.3 Release-Specific Information <20213-Release-Specific-Information>`.
+
+To update Alation:
+
+STEP 1: Scan Postgres
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation recommends using the ``scan_postgres`` action to validate that the internal Postgres database is in a healthy state before the update. For steps, see :doc:`How to Scan Postgres for Corrupted Indexes <../../admins/How-tos/HowToScanPostgresForCorruptedIndexes>`.
+
+    .. note::
+
+        If in your instance the Postgres scan runs on a schedule, you can check the **scan-postgres.log** file in **/opt/alation/site/logs** (path inside the Alation shell) for Postgres state.
+
+STEP 2: Update the Value of Parameter elasticsearch.env.es_java_opts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if you have previously changed the value of the **alation_conf** parameter ``elasticsearch.env.es_java_opts`` based on recommendations in the initial *Log4j 2 Security Advisory from December 10, 2021*. Before updating Alation, clear the value ``-Dlog4j2.formatMsgNoLookups=true`` from ``elasticsearch.env.es_java_opts`` and set a new value. Follow instructions in :doc:`Validating the Value of Parameter elasticsearch.env.es_java_opts <../../installconfig/Update/ValidatingValueOfelasticsearch_env>` to set the required value.
+
+STEP 3: Prepare for Postgres Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See :ref:`Prepare for Postgres Upgrade <Update_20213-Step2>` in the update instructions for 2021.3.
+
+STEP 4: Check Space in the Alation Analytics V2 Installation Directory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if Alation Analytics V2 is in use on your instance. If not, you can skip this step.
+
+On the Alation Analytics V2 host, check the disk space usage. There must be >= 50% free disk space available for the Alation Analytics V2 Postgres upgrade to succeed.
+
+To check the currently available disk space, on the host:
+
+    1. Change to root user:
+
+        .. code-block:: Bash
+
+            sudo -i
+
+    2. Run the disk space check:
+
+        .. code-block:: Bash
+
+            df -h <path/to/AlationAnalyticsV2/installation/directory>
+
+STEP 5: Update the Alation Application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Update instructions:
+
+    - :doc:`Manual Software Update for Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+
+    - Update on the HA pair:
+
+          - with splitting the HA cluster: :doc:`Update HA Pair with Cluster Splitting <../../installconfig/Update/UpdateHAPairwithClusterSplitting>`
+
+          - without splitting the cluster: :doc:`Update HA Pair Configuration (4.7 and above) <../../installconfig/Update/updateHAPair>`
+
+STEP 6: Verify the Postgres Version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After the Alation update is completed, ensure that Postgres has been successfully upgraded by running the command given below from the Alation shell. This command should return the updated version of PostgreSQL: **13.1**:
+
+    .. code-block:: Bash
+
+          alation_psql
+
+If the command returns 2 versions:
+
+    .. code-block:: Bash
+
+          psql (13.1, server 9.6.13)
+
+this means Postgres upgrade did not happen on your instance. Run the Postgres upgrade command manually from the Alation shell:
+
+    .. code-block:: Bash
+
+          alation_action upgrade_postgres
+
+Ensure there are no errors in the Alation UI after the upgrade by performing some basic post-upgrade testing.
+
+STEP 7: Update Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if Alation Analytics V2 is in use on your instance.
+
+  .. important::
+
+        At least 50% disk space must be available on the host to successfully upgrade the Alation Analytics V2 database.
+
+Use the steps in :doc:`Update Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2>` to update Alation Analytics V2. Note that during this update, the Alation Analytics V2 database version will be automatically updated to version **13.1**.
+
+Related topic: :doc:`Troubleshooting Alation Analytics V2 Upgrade to 2021.4 <../../admins/Troubleshooting/TroubleshootAAV2UpdateTo20214>`
+
+STEP 8: Update Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step is mandatory if OCF components are installed on your instance. Use the steps in :doc:`Update Alation Connector Manager <../../installconfig/Update/OCFUpdateAlationConnectorManager>` to update it.
+
+STEP 9: Review Backup and Restore Process
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On the changes to the Backup and Restore process from version 2021.4, see: ref:`Backup20214`.
+
+STEP 10: Create a Backup of the Updated Instance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Backups created on Postgres 9.6 are not compatible with 2022.1 after Postgres upgrade to 13.1. You need to take a full new backup of your system after updating all components to 2021.4.
+
+Create a full backup using the steps in :ref:`Create a Backup of the Updated Instance <Update_20213-Step8>`. Note that an incremental backup will fail. The first backup after the update should be a full backup.

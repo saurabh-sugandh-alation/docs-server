@@ -1,0 +1,42 @@
+How to Configure Alation to Use HTTP Proxy for All Web-bound Traffic
+=====================================================================
+
+Requires version 4.14.8 or 4.18.0+
+
+.. note::
+
+    This does not proxy Alation UI traffic used by your internal team
+    to connect to the Alation server. The only traffic proxied is the
+    outbound traffic that includes health and usage stats to Alation, Inc.
+
+Step-By-Step Guide
+------------------
+
+From the Alation shell:
+
+.. code-block:: bash
+
+   # enter the shell
+   sudo /etc/init.d/alation shell
+   # use alation_conf to set values
+   alation_conf -s <Proxy host/ip> proxy.host
+   # set port, if available
+   alation_conf -s <Proxy port> proxy.port
+   # set username, if available
+   alation_conf -s <Proxy username> proxy.username
+   # set password, if available
+   alation_conf -s <Proxy password> proxy.password
+
+(OPTIONAL) If the proxy does NOT use **http**, indicate the protocol for communication using the following command:
+
+.. code-block:: bash
+
+   alation_conf -s <protocol> proxy.scheme
+
+The following steps are all required, regardless:
+
+.. code-block:: bash
+
+   alation_conf -s True proxy.enabled
+   alation_action deploy_conf_datadog_agent
+   alation_action restart_alation

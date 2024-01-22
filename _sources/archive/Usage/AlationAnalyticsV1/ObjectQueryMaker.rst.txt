@@ -1,0 +1,170 @@
+Object Query Maker
+==================
+
+*V R7 (5.12.x) and earlier releases*
+
+.. note::
+
+    This section is for **Alation Analytics Version 1 (V1)**.
+
+The Alation Analytics team has provided a python script to help you
+quickly create queries that retrieve objects with values in specific
+fields: `Github link <https://github.com/mandeepsingh-alation/aa_query_maker>`_.
+
+It takes in the ``field_id`` and ``field_datatype`` value for each
+property of an Alation object stored in Alation Analytics and produces a
+complete query that will give you all Alation objects of the specified
+type that have the fields called out in the script filled-in.
+
+
+.. note::
+
+   This query will only retrieve objects that are an absolute match with the data packet defined in the script (that is, they have values filled in  ``ALL`` the specified fields).  
+
+
+After you run the script, the query will automatically be added to your
+clipboard. All you need to do is paste it into Compose.
+
+
+.. note::
+
+   This script uses the `pyperclip <https://pyperclip.readthedocs.io/en/latest/introduction.html>`_ python module. To run the script, make sure you have it installed on your machine.
+
+
+Follow the steps below to use the query maker script.
+
+Getting the Input Data
+-------------------------
+
+1. Open Compose and run the following query against your Alation Analytics instance:
+
+   ::
+
+      SELECT DISTINCT
+        OFV.field_id,
+        OBF.field_name,
+        OBF.field_datatype
+      FROM
+        public.object_field_value ASOFV
+        JOIN public.object_field AS OBF ON OFV.field_id = OBF.field_id
+      WHERE
+        OFV.object_type_id = $ { Object Type ID };
+
+   This is a parameterized query that will require you should provide the
+   object type ID for the object you are analyzing.
+
+   .. note::
+
+      For more on how to find out the object type ID, see :doc:`Understanding Analytics Object Queries </archive/Usage/AlationAnalyticsV1/ObjectQueries>`.
+
+2. You will see the following in Compose:
+
+   .. image:: ../../../_static/Query_maker_01.png
+
+3. Provide the Object Type ID and click ``Get Results``. The query will return the ``field_id``, ``field_name``, and ``field_datatype`` values for all fields on the specified object   type:
+
+   .. image:: ../../../_static/Query_maker_02.png
+
+4. Note down the ``field_id`` and ``field_datatype`` for the fields you want to analyze further.
+
+Object Identification
+-------------------------
+
+1. Download the ``q_maker`` script file to your machine.
+
+2. Open the script file. First you will need to identify the object type for which you want the query to be created. Find the following section:
+
+   .. code-block:: console
+
+      # A data packet example is given below
+      # format: "{field: [field_id, field datatype]}" 
+      ###################################################
+      # THESE ARE THE ONLY SETTINGS YOU NEED TO CHANGE
+      data_dict = {'private':[3255,'boolean_value'],
+                   'builtin_name':[3023,'text_value'],
+                  'title':[3, 'text_value']}
+      object_name = 'article'
+      object_type_id = 0
+      ###################################################
+
+ 3. For ``object_type_id``, specify the object type ID value of the objects you are analyzing. You can also update the ``object_name`` value to reflect what object type you are analyzing. For example, for the article object type, your values will be:
+
+   .. code-block:: console
+
+      object_name = 'article'
+      object_type_id = 0
+
+ 4. For ``data_dict``, specify the ``field_id`` and ``field_datatype`` for the fields you want to look at.
+
+   Example:
+
+   Suppose you want to get values for the following fields of the article object type:
+
+      .. image:: ../../../_static/Query_maker_03.png
+
+   The data_dict parameter in your script should look like:
+
+      .. code-block:: console
+
+         data_dict = {'private':[3255,'boolean_value'],
+                      'vote_score':[3376,'integer_value'],
+                      'deleted':[3083,'boolean_value'],
+                      'Post_id':[3249, 'integer_value'],
+                      'Title':[3, 'text_value]}
+
+
+   The format for each field you want to include should be:
+
+      .. code-block:: console
+
+          {field_name: [field_id, field_datatype_value]}
+
+   This is based on the values in the ``public.field_value`` table in Alation Analytics. The ``field_datatype_value`` you specify here should exactly  match the corresponding column name in ``public.field_value``.
+
+   You can append ``_value`` to the value of ``field_datatype`` you retrieved in the initial query described in `Getting the Input Data`_. For example, if the ``field_datatype`` value is ``integer``, then specify ``integer_value`` as ``field_datatype_value`` in the ``data_dict`` parameter.
+
+5. Save the changes to the script file and run the script from the Terminal. This sends a complete query to your buffer.
+
+Running the Query in Compose
+---------------------------------
+
+1. Back in Compose, open a new query for the Alation Analytics data source.
+
+2. Paste the content from your buffer into the query statement:
+
+   .. image:: ../../../_static/Query_maker_04.png
+
+   Example query generated by this script:
+
+   .. code-block:: sql
+
+      SELECT
+        AO.*,
+        FV_builtin_name.text_value AS builtin_name,
+        FV_private.boolean_value AS private,
+        FV_title.text_value AS title
+      FROM
+        public.alation_object AS AO -- Get builtin_name for the article
+        JOIN public.object_field_value AS OFV_builtin_name ON AO.object_uuid = OFV_builtin_name.object_uuid
+        AND AO.object_type_id = OFV_builtin_name.object_type_id -- Get field value
+        JOIN public.field_value AS FV_builtin_name ON OFV_builtin_name.value_fp = FV_builtin_name.value_fp
+        -- Get private for the article
+        JOIN public.object_field_value AS OFV_private ON AO.object_uuid = OFV_private.object_uuid
+        AND AO.object_type_id = OFV_private.object_type_id -- Get field value
+        JOIN public.field_value AS FV_private ON OFV_private.value_fp = FV_private.value_fp
+        -- Get title for the article
+        JOIN public.object_field_value AS OFV_title ON AO.object_uuid = OFV_title.object_uuid
+        AND AO.object_type_id = OFV_title.object_type_id -- Get field value
+        JOIN public.field_value AS FV_title ON OFV_title.value_fp = FV_title.value_fp
+      WHERE
+        AO.object_type_id = 0
+        AND -- get only field_id = 3023, builtin_name
+        OFV_builtin_name.field_id = 3023
+        AND -- get only field_id = 3255, private
+        OFV_private.field_id = 3255
+        AND -- get only field_id = 3, title
+        OFV_title.field_id = 3;
+
+3. Run the query. The result will retrieve values for the fields you have specified and for all the objects of the type you have specified:
+
+   .. image:: ../../../_static/Screen_Shot_2019-12-26_at_2.17.40_PM.png

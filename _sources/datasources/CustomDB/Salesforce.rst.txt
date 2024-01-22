@@ -1,0 +1,286 @@
+Salesforce
+=============
+
+*Applies from release 2020.4*
+
+Alation has certified the Salesforce DB with the following driver to accommodate additional features with the latest version of Salesforce API.
+
+    - **data.jdbc.salesforce.SalesforceDriver.cdata.jdbc.salesforce**
+
+Alation will provide the above mentioned CData driver for Salesforce.
+
+Scope of Support
+------------------
+
+    - Supported as Custom DB with the CData Driver
+    -  Metadata Extraction (MDE)
+    -  Automated MDE
+    -  Compose
+    -  Sampling and Profiling
+
+Ports
+------
+
+Port 443 must be open.
+
+Required Information
+----------------------
+
+- JDBC driver used to connect to the database: CData JDBC Driver for Salesforce
+- JDBC URI for the Salesforce data source
+
+    - OAuth Client ID
+    - OAuth Client Secret
+    - OAuth Access Token
+    - RTK - Use the RTK parameter only if you have the RTK provided by Alation.
+
+- Service Account - Username and Password
+- Security Token
+
+Construct the URI
+-------------------
+
+Pre-Configuration
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform the following steps to generate OAuth Client ID and OAuth Client Secret:
+
+1. Log in to `Salesforce <https://login.salesforce.com/?locale=in>`_ and create a User ID and Password. Refer to `Usernames and Passwords <https://help.salesforce.com/articleView?err=1&id=basics_intro_usernames_passwords.htm&type=5>`_.
+
+#. Generate the **OAuth Client ID/Consumer Key** and **OAuth Client Secret/Consumer Secret**:
+
+    a. Create an app, refer to `Create a Connected App <https://help.salesforce.com/articleView?id=connected_app_create_basics.htm&type=5>`_.
+
+    b. Go to **Apps > App Manager**. Click the dropdown icon of the created app and select **View**.
+
+      .. image:: ../../_static/SalesforceCDB_01.png
+
+    c. Copy the OAuth Client ID/Consumer Key and OAuth Client Secret/Consumer Secret.
+
+#. Get the **Security Token**. Refer to `Security Token <https://help.salesforce.com/articleView?err=1&id=user_security_token.htm&type=5>`_. Security Token must be provided in the **General Settings > Network Connection > Properties** field, if the IP is not set as Trusted IP.
+
+JDBC URI Format
+~~~~~~~~~~~~~~~~~
+
+Use the following format of the JDBC URI if you are not using an OAuth Connection:
+
+.. code-block:: console
+
+    salesforce:RTK=<RTK_Code>
+
+**Example:**
+
+.. code-block:: console
+
+    salesforce:RTK=444752465641535552425641454E545042424D333236323900000000000000000000000000000000414C4154494F4E5800005559475655474E4E464242370000
+
+JDBC URI for OAuth Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the following format of the JDBC URI if OAuth connection is used:
+
+
+.. code-block:: console
+
+    salesforce:InitiateOAuth="REFRESH";OAuthClientId=<ID>;OAuthClientSecret=<KEY>;RTK=<RTK_Code>
+
+**Example:**
+
+.. code-block:: console
+
+    salesforce:InitiateOAuth="REFRESH";OAuthClientId=3MVG9d8..z.hDcPKp5929I72FP04v6Gg9UyrPok7Wrtm5ph2Yf9nKl6l_Dr_IvN7l4gg361jh8tzyB15BvMVU;OAuthClientSecret=6C7CE7939B00D9C72811AFCC2F0E49E0CB8F1F829E31AB6B941B7C64181FD6B0;RTK=444752465641535552425641454E545042424D333236323900000000000000000000000000000000414C4154494F4E5800005559475655474E4E464242370000
+
+After you have successfully added the source, you will need to connect to it in **Compose**, obtain the OAuth Access Token and update the URI on the Data Source **Settings > General Settings page**. This is described in the sections below.
+
+Preliminaries
+----------------
+
+Add the CData to Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Refer to :doc:`Add the CData Driver into Alation Instance <../../datasources/CustomDB/CDataDrivers>`.
+
+Set Trusted IP
+~~~~~~~~~~~~~~~
+
+Before setting up the datasource connection in Alation, make sure that the IP of the Alation instance is set as a trusted IP in Salesforce. Refer to `Set Trusted IP <https://help.salesforce.com/articleView?id=security_networkaccess.htm&type=5>`_.
+
+Steps in Alation
+------------------
+
+Step 1: Add a Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a new Data Source on the **Sources** page.
+
+Step 2: Set up the Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. On the **Add a Data Source** screen of the wizard, specify:
+
+    - **Database Type:** Custom DB
+
+    - **JDBC URI:** Provide any valid URI with port number 443. This is only a temporary URI to move through the Add Data Source wizard.
+
+        **Example**: ``https://ap5.salesforce.com:443``
+
+        .. note::
+
+            The correct JDBC URI must be provided on the **General Settings** tab of the data source Settings page.
+
+    - **Select Driver**: select the JDBC driver for Salesforce from the **Select Driver** drop-down list: ``cdata.jdbc.salesforce.SalesforceDriver.cdata.jdbc.salesforce``.
+
+    - Do not select the **Use Kerberos** checkbox.
+
+2. Click **Save and Continue**. The next wizard screen **Set Up a Service Account** will open.
+
+    .. image:: ../../_static/SalesforceCDB_02.png
+        :width: 350px
+
+Step 3: Enter Service Account Credentials
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Select the **Yes** radio button.
+
+#. Provide the Username and Password of the service account created for Alation.
+
+#. Click **Save and Continue**. The next wizard screen **Configure Your Data Source** will open.
+
+Step 4: Configure Your Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Click **Skip this Step**. After this step, you are navigated to the **Settings** page of your data source.
+
+Step 5: General Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On the **General Settings** section, change the temporary URI to the correct URI as explained in the `Construct the URI`_ section. Provide the `Security Token <https://help.salesforce.com/articleView?err=1&id=user_security_token.htm&type=5>`_ in the Properties fields if the IP is not set as Trusted IP, refer to `Set Trusted IP`_.
+
+Click the **Test** button to test the connection.
+
+    .. image:: ../../_static/SalesforceCDB_05.png
+
+If you are using an OAuth connection, perform the following:
+
+  1. Go to **Compose** and connect to your Salesforce source using the User ID and Password.
+
+  2. Click the plus icon and provide the URI using the format described in the `JDBC URI for OAuth Connection`_ section. Click **Add & Use**.
+
+    .. note::
+
+        **InitiateOAuth** parameter in the URI must be set to **OFF**.
+
+    .. image:: ../../_static/SalesforceCDB_06.png
+        :width: 350px
+
+  3. Run the following query in Compose. As "<call_back_url>", provide the callback URL that was provided during the OAuth App creation:
+
+      .. code-block:: Bash
+
+            EXEC GetOAuthAuthorizationURL @CallbackUrl='<call_back_url>'
+
+      **Example:**
+
+      .. code-block:: Bash
+
+            EXEC GetOAuthAuthorizationURL @CallbackUrl='http://localhost:3333'
+
+      This should return a URL as result.
+
+      .. image:: ../../_static/SalesforceCDB_07.png
+          :width: 350px
+
+  4. Copy the URL and run it in a new browser. You will see an error message as shown below and a code in the URL. Copy the code and decode it using an URL decoder.
+
+      .. image:: ../../_static/SalesforceCDB_08.png
+          :width: 350px
+
+  5. Copy the decoded code and add it as a value to the Verifier parameter in the below query.
+
+      .. code-block:: Bash
+
+            EXEC GetOAuthAccessToken @Verifier=<Code_Copied_from_URL>
+
+      **Example:**
+
+      .. code-block:: Bash
+
+            EXEC GetOAuthAccessToken @Verifier=32217c96149fda1e96
+
+     This should return the OAuth Access Token as result.
+
+     .. image:: ../../_static/SalesforceCDB_09.png
+         :width: 350px
+
+  6. Copy the OAuth Access Token.
+
+  7. Go to the **Settings > General Settings** page and edit the connection URI:  specify the URI in the correct format and add the OAuth Access Token (refer to the `JDBC URI for OAuth Connection`_ section).
+
+     .. note::
+
+          **InitiateOAuth** parameter must be set to **Refresh** while adding the generated OAuthAccessToken to the URI.
+
+     **Pattern:**
+
+     .. code-block:: Bash
+
+          salesforce:InitiateOAuth="REFRESH";OAuthClientId=<ID>;OAuthClientSecret=<KEY>;OAuthAccessToken=<Access_Token>;RTK=<RTK_Code>
+
+     **Example:**
+
+      .. code-block:: Bash
+
+          salesforce:InitiateOAuth="REFRESH";OAuthClientId=3MVG9d8..z.hDcPKp5929I72FP04v6Gg9UyrPok7Wrtm5ph2Yf9nKl6l_Dr_IvN7l4gg361jh8tzyB15BvMVU;OAuthClientSecret=6C7CE7939B00D9C72811AFCC2F0E49E0CB8F1F829E31AB6B941B7C64181FD6B0;OAuthAccessToken=Ay6CaEUwVim409lF5jp69bi8CK3JHyGBo0T915AwFEIfngegJNFU89FKJDF33lsd_SM9jH9;RTK=444752465641535552425641454E545042424D333236323900000000000000000000000000000000414C4154494F4E5800005559475655474E4E464242370000
+
+
+  8. Save the change. After providing the URI in the required format, you can configure and perform metadata extraction.
+
+Metadata Extraction
+---------------------
+
+Configure and perform metadata extraction and verify the results:
+
+  - In **Settings > Custom Settings**, you can set the **Catalog Object Definition** to **Schema.Table** to remove any driver-imposed prefixes from the metadata object names
+
+  - Automatic full and selective MDE is supported
+
+Sampling and Profiling
+------------------------
+
+Configure and perform :doc:`Sampling and Profiling <../../datasources/CustomDB/ProfilingForCustomDB>` :
+
+    - Users can run a sample for an individual table on the **Samples** tab of the Table Catalog page or profile an individual column on the **Overview** tab of the Column page.
+
+    - Automatic full and selective Profiling is supported.
+
+    - Use the **Per-Object Parameters** in Settings tab to specify which objects to profile.
+
+    - Custom query-based Sampling is supported. :ref:`Custom Query-Based Sampling <Sampling_Profiling-Custom_Query_Based_Sampling_for_Tables>` allows you to provide a custom query for profiling each specific table.
+
+    - Deep Column Profiling (:ref:`Profiling V2 <profilingV2-label>` ) is supported.
+
+Query Log Ingestion
+---------------------
+
+Not applicable.
+
+Compose
+----------------------------
+
+You can optionally use Compose with the Salesforce Custom DB data source. Use the **Schema.Table** format for writing queries.
+
+Troubleshooting
+-----------------
+
+Logs to collect/review:
+
+    - For logs related to MDE: **taskserver.log, taskserver_err.log**.
+    - For logs related to Compose: **connector.log, connector_err.log**.
+    - For any other errors: **alation-error.log, alation-debug.log**
+
+Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+During Metadata Extraction from a Salesforce Sandbox data source, if the **Error serializing table objects: null** or **Error serializing table objects: Error iterating schema children** is displayed:
+
+    - Append the parameter UseSandbox=true to the URI. Failed test result for the Network Connection is expected.

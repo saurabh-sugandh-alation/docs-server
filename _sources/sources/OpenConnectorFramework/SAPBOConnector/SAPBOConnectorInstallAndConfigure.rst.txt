@@ -1,0 +1,369 @@
+SAP BusinessObjects Connector: Install and Configure
+===========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Configuration in SAP BO
+-----------------------------
+
+Create a Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+STEP 1: Create User
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the steps described below to create a service account and to grant it the required permissions.
+
+1. Log in into SAP BO Central Management Console (CMC) with admin credentials.
+2. Select the Users and Groups option.
+3. Click the Users List option.
+4. Right-click and select **New User**:
+
+    .. image:: ../../../_static/SAPBOBJ_02.png
+
+5. Select **Authentication type** as *Enterprise* and fill in the other details.
+6. Select **Access type** as *Guaranteed - named user*. Alation recommends *Guaranteed - named user* so that the service account can get a token at any time to run extraction.
+7. Click **Create & Close**.
+8. The user can be found in the users list.
+
+STEP 2: Create User Group
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Create a user group:
+
+    .. image:: ../../../_static/SAPBOBJ_04.png
+
+2. Add the user created for Alation in Step 1 to this group.
+
+STEP 3: Grant Permissions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Service Account requires View permissions on folders and universes to extract metadata.
+
+Universe Permissions
+''''''''''''''''''''''
+
+1. Log in into CMC and select **Universes** in the dropdown.
+2. Click on **Manage** and select *All Universes*:
+
+    .. image:: ../../../_static/SAPBOBJ_05.png
+        :width: 450px
+
+3. Click on **Add Principals**:
+
+    .. image:: ../../../_static/SAPBOBJ_06.png
+        :width: 300px
+
+4. Click on the Group list and select the User Group created in Step 2. Click on **Add and Assign Security**:
+
+    .. image:: ../../../_static/SAPBOBJ_07.png
+
+5. Select the View permission and click **OK**:
+
+    .. image:: ../../../_static/SAPBOBJ_08.png
+
+
+Folder Permissions
+'''''''''''''''''''''
+
+1. Similarly, select **Folders** and select *All Folders*:
+
+    .. image:: ../../../_static/SAPBOBJ_09.png
+        :width: 450px
+
+2. Click **Add Principals** and select the group created in Step 2 of `Universe Permissions`_.
+
+3. Click **Add and Assign Security**.
+
+4. Under the **Access levels** tab, select the View permission.
+
+5. Under the **Advanced** tab, click on **Add/Remove Rights**:
+
+    .. image:: ../../../_static/SAPBOBJ_10.png
+        :width: 300px
+
+6. Click **Content**:
+
+    .. image:: ../../../_static/SAPBOBJ_11.png
+        :width: 150px
+
+7. Select *Web Intelligence* under **Content**. Grant permissions to **View SQL** and click **OK**.
+
+    .. image:: ../../../_static/SAPBOBJ_12.png
+        :width: 450px
+
+Configuration in Alation
+--------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New BI Server Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This configuration requires the role of the *Server Admin*.
+
+Add a New BI Server Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Log in to the Alation instance and add a new BI Server source: **Apps > Sources > Add > BI Server**. The **Register a Business Intelligence Server** screen will open.
+
+2. From the **Select a Business Intelligence Server type** list, select BusinessObjects and enter a **Title** and a **Description**:
+
+    .. image:: ../../../_static/SAPBOBJ_03.png
+        :width: 400px
+
+3. Click **Add**. You will be navigated to your new BI Server source Settings page.
+
+Configure the BusinessObjects BI Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **Settings** page.
+
+1. Specify **Application Settings**:
+
+    *Upto 2021.1:*
+
+      .. image:: ../../../_static/SAPBOBJ_13.png
+          :width: 300px
+
+    *From 2021.2:*
+
+      .. image:: ../../../_static/SAPBOBJ_18.png
+          :width: 300px
+
+    *From 2021.3:*
+
+      .. image:: ../../../_static/SAPBOBJ_19.png
+          :width: 300px
+
+      .. tabularcolumns:: |p{5cm}|p{10cm}|
+
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | **Parameter**              | **Description**                                                                                                      |
+      +============================+======================================================================================================================+
+      | Disable Hard Sync          | Leave this checkbox **unselected**.                                                                                  |
+      |                            |                                                                                                                      |
+      |                            | Selecting it will disable synchronization of BI                                                                      |
+      |                            | objects between Alation and SAP BO.                                                                                  |
+      |                            |                                                                                                                      |
+      |                            | .. note::                                                                                                            |
+      |                            |                                                                                                                      |
+      |                            |       This is not applicable from version 2021.2                                                                     |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Disable Automatic Lineage  | Select the **Disable Automatic Lineage Generation** checkbox to                                                      |
+      | Generation                 | skip the creation of automatic Lineage after extraction.                                                             |
+      |                            | When automatic Lineage generation is disabled, during                                                                |
+      |                            | extraction Alation does not calculate Lineage data for this                                                          |
+      |                            | BI source.                                                                                                           |
+      |                            |                                                                                                                      |
+      |                            | For more information, see                                                                                            |
+      |                            | :doc:`Disable Automatic Lineage Generation </bisources/AddBISources/DisableAutomaticLineageGenerationFAQ>`.          |
+      |                            |                                                                                                                      |
+      |                            |                                                                                                                      |
+      |                            | .. note::                                                                                                            |
+      |                            |                                                                                                                      |
+      |                            |       This is applicable from version 2021.3                                                                         |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Enable Raw-metadata Dump   | Leave this checkbox **unselected**.                                                                                  |
+      |                            |                                                                                                                      |
+      |                            | This parameter can be used for debugging. When selected, the                                                         |
+      |                            | connector will not post extracted meta data to Alation. The data                                                     |
+      |                            | will be stored in files which can be shared with Support for                                                         |
+      |                            | debugging.                                                                                                           |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Enable Ingestion Replay    | Leave this checkbox **unselected**.                                                                                  |
+      | from Metadata Dump         |                                                                                                                      |
+      |                            | This parameter can be used for debugging. Metadata from the files                                                    |
+      |                            | created when the **Enable Raw-metadata Dump** checkbox is selected                                                   |
+      |                            | will be loaded into Alation.                                                                                         |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Disable Permission         | Leave this checkbox **selected**.                                                                                    |
+      | Enforcement                |                                                                                                                      |
+      |                            | Permission enforcement is not supported between BusinessObjects                                                      |
+      |                            | and Alation.                                                                                                         |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Disable Certification      | Leave this checkbox **selected**.                                                                                    |
+      |                            |                                                                                                                      |
+      |                            | Certification of BI objects in BusinessObjects from Alation                                                          |
+      |                            | is not supported.                                                                                                    |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Server URI                 | Enter the server URI used to access BusinessObjects Launch Pad URL.                                                  |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+
+2. Click **Save** to save the information you have entered.
+
+3. Specify **Connector Settings**:
+
+      .. image:: ../../../_static/SAPBOBJ_14.png
+          :width: 300px
+
+      .. tabularcolumns:: |p{5cm}|p{10cm}|
+
+      +----------------+----------------------------------------------------------------------------------------+
+      | Parameter      | Description                                                                            |
+      +================+========================================================================================+
+      | SAP BO API URL | Enter BO API URL. API URL should end with a slash ("/")                                |
+      +----------------+----------------------------------------------------------------------------------------+
+      | BO Username    | Enter username of BusinessObjects Service Account                                      |
+      +----------------+----------------------------------------------------------------------------------------+
+      | BO Password    | Enter password of Business Objects Service Account                                     |
+      +----------------+----------------------------------------------------------------------------------------+
+      | Universe       | Used to populate lineage. Provide the universe name and its                            |
+      | Connection     | data source hostname as key value pairs separated by the ``equals`` (=) symbol.        |
+      | Details        | Multiple universes should be separated by semicolons (;).                              |
+      |                |                                                                                        |
+      |                | Example: If the ``Customer`` universe is created from                                  |
+      |                | ``https://oracle.datasource.com`` and the ``Human Resources.unx``                      |
+      |                | is derived from ``http://mysql.server.com``, then the values will be                   |
+      |                | ``Customer=https://oracle.datasource.com;Human Resources.unx=http://mysql.server.com`` |
+      +----------------+----------------------------------------------------------------------------------------+
+      | Disable        | Used to bypass certificate validation for REST APIs (Not recommended).                 |
+      | Server         | Applicable for HTTPS.                                                                  |
+      | Certification  |                                                                                        |
+      +----------------+----------------------------------------------------------------------------------------+
+      | Server SSL     | Upload the SAP BO Server certificate.                                                  |
+      | Certificate    |                                                                                        |
+      +----------------+----------------------------------------------------------------------------------------+
+      | Log Level      | Select the log level to generate logs. The available options are INFO, DEBUG, WARN,    |
+      |                | TRACE, ERROR, FATAL, ALL.                                                              |
+      |                |                                                                                        |
+      |                |     .. note::                                                                          |
+      |                |                                                                                        |
+      |                |      This field is available from SAP BO OCF Connector version 1.1.0.                  |
+      +----------------+----------------------------------------------------------------------------------------+
+
+      **Cross-System Lineage:**
+
+      Cross-System Lineage is to generate lineage between this SAP BusinessObjects BI source and any supported data source by this connector. To generate the cross-system Lineage, specify the host name and the port number of this BI source on the RDBMS connector’s  **General Settings > Application Settings > BI Connection Info** field in the format mentioned below:
+
+      ``Host_Name:Port_Number``
+
+      Example: ``adb-8443049157651279.19.azuredatabricks.net:443``
+
+      .. image:: ../../../_static/powerb17.png
+          :width: 400px
+          :align: center
+
+      .. note::
+
+           This image is from the supported data source **General Settings** page.
+
+4. Click **Save**.
+
+5. Under **Test Connection**, click **Test** to validate network connectivity.
+
+6. Configure metadata extraction under **Extraction Settings**. Turn on **Selective Extraction**, if required. Selective extraction settings are used to apply a filter to include or exclude a list of Folders.
+
+   **From connector version 1.1.0:**
+
+        Extraction of nested folders is supported in selective extraction. Users can extract the sub-folders by performing selective extraction and catalog them without extracting its parent folders.
+
+          .. image:: ../../../_static/SAPBOBJ_20.png
+              :width: 600px
+
+7. Click **Get List of Projects** to first fetch the list of Folders from BusinessObjects.
+
+    .. image:: ../../../_static/SAPBOBJ_16.png
+        :width: 600px
+
+8. The status of the Get Projects action is logged in the **Job History** table at the bottom of the Settings page.
+
+    .. image:: ../../../_static/SAPBOBJ_17.png
+        :width: 600px
+
+9. After folder synchronization is complete, a drop-down list of the main Level of public folders will become enabled.
+
+10. Select one or more Folders:
+
+    .. image:: ../../../_static/SAPBOBJ_15.png
+        :width: 600px
+
+11. Check if you are using the desired filter option. Available filter options are described below:
+
+    +-----------------------------+-----------------------------------------------------------------+
+    | Filter Option               | Description                                                     |
+    +=============================+=================================================================+
+    | Extract all Folders except  | Extract metadata from all Folders except from the workspaces    |
+    |                             | selected.                                                       |
+    +-----------------------------+-----------------------------------------------------------------+
+    | Extract only these Folders  | Extract metadata only from the selected Folders.                |
+    +-----------------------------+-----------------------------------------------------------------+
+
+12. Click **Run Extraction Now** to extract metadata. The status of the extraction action is also logged in the **Job History** table at the bottom of the page.
+
+
+13. If you wish to automatically update the metadata extracted into the Catalog, under **Automated and Manual Extraction**, turn on the **Enable Automated Extraction** switch and select the day and time when metadata must be extracted. The metadata extraction will be automatically scheduled to run on the selected schedule.
+
+Troubleshooting
+--------------------
+
+Test Connection
+~~~~~~~~~~~~~~~~~~
+
+If test connection fails, make sure the API URL and Service Account credentials are entered correctly.
+
+If Lineage from data provider to underlying data sources table is not generated:
+
+    -  Lineage details for reports created from the universe and the universe should be created from a single data source.
+    -  Check whether the connection objects are populated with the queries under the data provider. If connection objects are missing, it is a permission issue. Check `STEP 3: Grant Permissions`_.
+    -  Make sure the Universe Name and the Host Name details are provided in the Connector Settings.
+    -  Check if the tables used in queries in the connection object are cataloged in Alation by searching.
+    -  Lineage will be generated by parsing queries. Query parsing will be done by Alation QLI and not by the Connector. Check if there are any query parsing errors.
+
+Logs to be collected
+~~~~~~~~~~~~~~~~~~~~~~~
+
+    - NGINX logs: **/opt/hydra/agent/logs**
+
+    - Alation Connector Manager logs:
+
+        - To tail:
+
+            .. code-block:: Bash
+
+                docker logs -f agent
+
+        - Write to a file:
+
+            .. code-block:: Bash
+
+                docker logs agent >& agent.logs 2>&1
+
+    - Connector logs
+
+        .. note::
+
+            ``alation_ypireti`` commands should be run from the Alation shell as user ``alation``.
+
+        - To get Connector ID:
+
+            .. code-block:: Bash
+
+                alation_ypireti list --fields id name
+
+        - To tail:
+
+            .. code-block:: Bash
+
+                alation_ypireti kratos --subcommand tail <connector_id>
+
+        - Write logs to a file:
+
+            .. code-block:: Bash
+
+                alation_ypireti kratos --subcomand tail <conector_id> > connector.log 2>&1
+
+        - Write logs from specific date to a file:
+
+            .. code-block:: Bash
+
+                alation_ypireti kratos --subcommand logs --since 2020-08-15 <connector_id> > connector.log 2>&1
+
+    - Ingestion logs:
+
+      Ingestion logs are available in the **celery-default_error.log** file.

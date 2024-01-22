@@ -1,0 +1,107 @@
+SSRS OCF Connector: Overview
+====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The OCF connector for SSRS was developed by Alation and is available as a Zip file that can be uploaded and installed in the Alation application.
+
+To download the SSRS OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+This connector should be used to catalog **SSRS** as a BI source on Alation on-prem and Alation Cloud Service instances. It extracts and catalogs such SSRS objects as folders, datasources, datasets, and reports. After the metadata is extracted, it is represented in the data catalog as a hierarchy of catalog pages under the parent BI source. Alation users can leverage the full catalog functionality to search for and find the extracted metadata, curate the corresponding catalog pages, create documentation about the data source, and exchange information about it.
+
+Team
+---------
+
+The following administrators are required to install this connector:
+
+    - Alation Administrator:
+
+        - Install the connector
+        - Creates and configures a SSRS data source in the Catalog
+
+    - SSRS Administrator:
+
+        - Creates a service account for Alation
+        - Provides access to public folders to extract metadata
+        - Provides the JDBC URI to access metadata
+
+Scope
+----------------
+
+The table below shows what features are covered by the connector.
+
++------------------------+--------------------------------------------------+-----------------+
+| Feature                | Scope                                            | Availability    |
++========================+==================================================+=================+
+| SSRS instance          | The SSRS instance represented as a BI source     | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Folders                | Folders and sub-folders in SSRS                  | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Filter folders         | Ability to include or exclude certain folders    | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| SSRS reports and       | Reports and paginated reports in a folder        | Yes             |
+| paginated reports      |                                                  |                 |
++------------------------+--------------------------------------------------+-----------------+
+| SSRS reports from      | Reports that are created from datasets from      | Yes             |
+| different folders      | different folders                                |                 |
++------------------------+--------------------------------------------------+-----------------+
+| SSRS report object data| Datasets used by report objects                  | Yes             |
+| sources                |                                                  |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Datasource object      | Lineage of the datasource objects                | Yes             |
+| lineage                |                                                  |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Report object lineage  | Lineage of a report to a datasource object       | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| SSRS dashboards        | Dashboards in a folder                           | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| SSRS datasets          | Datasets                                         | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Datasets without       | Datasets which does not have reports             | Yes             |
+| reports                |                                                  |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Dataset fields         | Fields of datasets                               | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Report owner           | Owners or authors who created a report           | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Image previews         | Ability to preview thumbnail images of reports   | Yes             |
+|                        | and dashboards                                   |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Popularity             | Popularity of dashboards & reports. SSRS API does| No              |
+|                        | not provide this info                            |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Folder description     | Description of a folder                          | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Filter reports         | Ability to include or exclude certain reports.   | No              |
++------------------------+--------------------------------------------------+-----------------+
+
+SSRS Object Hierarchy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following diagram shows the hierarchy of SSRS objects and how they are cataloged in Alation:
+
+  .. image:: ../../../_static/SSRSOCF_01.png
+      :width: 600px
+
+SSRS API Endpoints
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following table lists the SSRS APIs used by this connector to extract metadata from SSRS:
+
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Type               | API Endpoint                            | Description                                                    |
++====================+=========================================+================================================================+
+| Folder             | ListChildren                            | Projects metadata extraction                                   |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Datasource         | ListChildren                            | Datasource extraction                                          |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Reports, Sub       | ListChildren                            | Report extraction                                              |
+| Reports(Dashboards)| GetItemDefinition                       |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Dataset            | ListChildren                            | Dataset extraction                                             |
+|                    | GetItemDefinition                       |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Report             | LoadReport                              | Preview extraction                                             |
+| preview(Image)     | SetExecutionParameters                  |                                                                |
+|                    | Render                                  |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+

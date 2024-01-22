@@ -1,0 +1,66 @@
+Use ALLIE AI to Suggest Stewards
+=================================
+
+.. include:: /shared/ProductLabels/Cloud_Label.rst
+
+From Alation version 2023.3, for customers using the Alation cloud-native architecture, ALLIE AI can help suggest stewards for your RDBMS data objects (data sources, schemas, tables, and columns). The feature is currently in Public Preview. When the feature is enabled, ALLIE AI suggests stewards for objects based on various user actions and certain parameters for each object.
+
+Enable Auto-Suggest
+--------------------
+
+To enable the auto-suggest feature, do the following:
+
+1. Open the :doc:`Feature Configuration tab in Admin Settings <../../admins/AdminSettings/FeatureConfiguration>`.
+2. Toggle the switch **Allie Suggested Stewards** to **On**, as shown:
+    
+    .. image:: ../../_static/EnableAllieStewardSuggest.png
+        :class: with-border
+
+    .. note::
+
+        In Alation versions 2023.3 and 2023.3.1, the **Allie Suggested Stewards** switch was visible in all Alation instances, not just those using Alation cloud-native architecture. This has been corrected in Alation version 2023.3.2 and later.
+
+Once enabled, model training will be triggered automatically once a week. You can also trigger model training from the Alation django shell. See `Trigger Training Manually`_.
+
+Accept or Reject Suggested Stewards
+-----------------------------------
+
+Once auto-suggest is enabled and the model training is run, you may see Allie-suggested stewards on relevant catalog pages, marked by the Allie robot head icon. You can hover over a suggested steward to see that Alation has recommended the user as a steward. Use the check icon to confirm the suggestion and the cross icon to reject the suggestion:
+
+.. image:: ../../_static/AllieStewardSuggestion.png
+    :class: with-border
+
+Confirmed stewards receive an email notification informing them of the change. Rejected suggestions disappear from the list of stewards.
+
+Trigger Training Manually
+--------------------------
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+Once you enable auto-suggest, model training will occur automatically once a week. If you want to see results sooner, you may want to run the model training before the automatic run is triggered. You can do this using the Alation django shell, as follows:
+
+.. include:: ../../shared/AccessingAlationShell.rst
+
+#. Change to the Alation user:
+
+    .. code-block:: Bash
+
+        sudo su alation
+
+#. Enter the Alation django shell:
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+#. From the django prompt, import the Allie suggestion scripts:
+
+    .. code-block:: Bash
+
+        from rosemeta.tasks.allie_suggestions import *
+
+#. Run the model training:
+
+    .. code-block:: Bash
+
+        run_allie_stewards_combined_pipeline()

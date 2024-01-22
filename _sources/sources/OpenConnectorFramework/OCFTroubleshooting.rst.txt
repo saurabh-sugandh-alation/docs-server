@@ -1,0 +1,62 @@
+Troubleshooting
+========================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Test Connection
+-------------------------
+
+If the test connection fails, make sure the JDBC URI and the service account credentials are entered correctly.
+
+.. _OCF_Troubleshooting-Logs:
+
+Logs to be collected
+--------------------------
+
+    - NGINX Logs - **/opt/hydra/agent/logs**
+
+    - Alation Connector Manager logs:
+
+        - Tail:
+
+            .. code-block:: Bash
+
+                docker logs -f agent
+
+        - Write to a file:
+
+            .. code-block:: Bash
+
+                docker logs agent >& agent.logs 2>&1
+
+    - Connector logs:
+
+        - To get the connector ID:
+
+            .. code-block:: Bash
+
+                 alation_ypireti list --fields id name
+
+        - To tail:
+
+            .. code-block:: Bash
+
+                alation_ypireti kratos --subcommand tail <connector_id>
+
+        - Write logs to a file:
+
+            .. code-block:: Bash
+
+                alation_ypireti kratos --subcommand tail <connector_id> > connector.log 2>&1
+
+        - Write logs from specific date to a file:
+
+            .. code-block:: Bash
+
+                alation_ypireti kratos --subcommand logs <connector_id> --since 2020-08-15 3  > connector.log 2>&1
+
+    - Ingestion logs:
+
+      Ingestion logs are available in the **celery-default_error.log** file.
+
+    - OCF.log

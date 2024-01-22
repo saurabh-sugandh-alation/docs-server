@@ -1,0 +1,428 @@
+Release Notes 2021.1 (General Availability)
+=============================================
+
+RELEASE 2021.1.13
+-------------------
+
+*build 7.2.14.155515*
+
+This patch is a security update providing fixes to mitigate the Log4j 2 vulnerability discussed in *December 22, 2021 - Log4j2 Security Advisory*. This addresses the security vulnerability described in `CVE-2021-45105 <https://nvd.nist.gov/vuln/detail/CVE-2021-45105>`_.
+
+This patch is cumulative and fixes all the security issues from the prior two patches, 2021.1.11 and 2021.1.12.
+
+Upgrading to this security patch will apply the fixes automatically. This patch includes:
+
+Security fix for the Hive connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Apache Hive connector is updated with a newer version of Apache Log4j 2. This addresses security vulnerability `CVE-2021-45105 <https://nvd.nist.gov/vuln/detail/CVE-2021-45105>`_.
+
+Security fix for Elasticsearch
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Elasticsearch is updated with a newer version of Apache Log4j 2. This addresses security vulnerability `CVE-2021-45105 <https://nvd.nist.gov/vuln/detail/CVE-2021-45105>`_.
+
+RELEASE 2021.1.12
+-------------------
+
+*build 7.2.13.155179*
+
+This patch is a security update providing a fix to mitigate the Log4j 2 vulnerability discussed in *December 17, 2021 - Update to December 15 log4j2 CVE-2021-45046 Security Advisory*.
+
+Security fix for the Hive connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Hive connector is updated to use a newer version of Apache Log4j 2, which addresses a possible DoS vulnerability described in `CVE-2021-45046 <https://nvd.nist.gov/vuln/detail/CVE-2021-45046>`_.
+
+RELEASE 2021.1.11
+-------------------
+
+*build 7.2.12.154834*
+
+This patch is a security update providing two important fixes to mitigate the Log4j 2 vulnerability discussed in *December 10, 2021 - log4j2 Security Advisory*.
+
+Upgrading to this security patch will apply the fixes automatically. The patch includes:
+
+Security fix for the Hive connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Apache Hive connector is updated with a newer version of Apache Log4j 2 as per NIST publication `NVD - CVE-2021-44228 <https://nvd.nist.gov/vuln/detail/CVE-2021-44228>`_. In addition to updating the Log4j 2 version, all invocations of the Apache Hive connector will run with the ``-Dlog4j2.formatMsgNoLookups=true`` system property.
+
+With this security update, the Alation Hive connector is not susceptible to remote code execution based on the Log4j 2 vulnerability CVE-2021-44228.
+
+Security fix for Elasticsearch
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As per recommendation from Elastic found at `Apache Log4j2 Remote Code Execution (RCE) Vulnerability - CVE-2021-44228 - ESA-2021-31 <https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476>`_, this fix disables the message lookup substitution for Elasticsearch on the Alation server. With this security update, the **alation_conf** parameter ``elasticsearch.env.es_java_opts``, which sets Java options for Log4j 2, will be set to ``-Dlog4j2.formatMsgNoLookups=true`` by default. This change ensures that the Log4j 2 Java options have the recommended setting and that the Elasticsearch component of the Alation server is not susceptible to remote code execution based on the Log4j 2 vulnerability CVE-2021-44228.
+
+RELEASE 2021.1.10
+-------------------
+
+*build 7.2.11.146829*
+
+- Fixed an issue where user profiles were not loading on the **Advanced Search** page after searching for users. Now, when a user is selected in the Advanced Search results pane, the corresponding user profile will load in the right-hand view pane.
+
+- Fixed an issue with Backup V2 restore where the restore process failed with the error ``pg_probackup archive-get failed to deliver WAL file`` after several consecutive backup and restore operations.
+
+RELEASE 2021.1.9
+-------------------
+
+*build 7.2.10.144381*
+
+- Previously, there was an issue with logging of the metric *search.click* that captures the usage of the Full-Page search. This fix corrects the logging problem for *search.click* in the *metrics_metric* table of the internal database.
+
+- For Legacy Hive users, added a feature flag that allows specifying from where the query string is read during QLI. Enabling ``alation.feature_flags.enable_usage_of_map_reduce_name_for_query_location`` will cause Hive V1 QLI to read ``mapreduce.workflow.name`` for the query string. By default, Alation reads ``hive.query.string`` to get the query string. Note that Alation recommends using the Hive V2 framework for Hive sources.
+
+RELEASE 2021.1.8
+-------------------
+
+*build 7.2.9.142382*
+
+- Fixed an issue in Compose where the *Loading...* message was displayed for an excessively long time in the **Results** section after a query was cancelled. Now, when a query is cancelled by a user clicking the **Cancel** button, the query results will either be displayed immediately if Alation managed to retrieve some results before cancellation or no results will be displayed if the cancelled execution has returned no results.
+
+- Fixed the issue of duplicate result tables on the Query Form page that occurred when running the query form.
+
+- Previously, metadata extraction from SQL Server sources failed to extract tables from a database when the database collation type was different from the collation type on the SQL Server level. This issue has been fixed.
+
+- Fixed the issue with QLI from Presto with Hive and AWS Glue as *Custom DB* data source. Previously, there was inconsistency in how QLI jobs pulled query history into Alation: initial QLI worked but consecutive QLI jobs omitted queries. After this fix, Alation should correctly process query history according to the QLI settings of the data source.
+
+RELEASE 2021.1.7
+-------------------
+
+*build 7.2.8.141049*
+
+- Presto on Hive QLI fails with UnicodeDecodeError when column data has unicode characters. This issue has been fixed by defaulting to UTF-8 encoding for reading QLI log files.
+
+- Fixed an issue with Greenplum metadata extraction where it fails for unicode characters in functions.
+
+- Previously while performing metadata extraction or any other action on a connector and the connector is unresponsive, the connection will be terminated. Now, the connection timeout time has been increased.
+
+- Fixed an issue where the metrics in query search logged the Object ID (OID) as integers which fail the searchclickextract job. Now, the metrics in query search logged oid as otype for each search result click.
+
+- Previously the CSV exports in Compose were having few blank rows in between the rows. The CSV exports now should not have any blank rows in between the rows.
+
+RELEASE 2021.1.6
+---------------------
+
+*build 7.2.7.139384*
+
+- Previously, when **Use Group to assign roles** was enabled, new users with the Viewer role did not appear in the Viewer built-in group. Those users received the "Permission Denied" error on numerous pages if the Viewer role was enforced on the instance. Now all new users are assigned to the correct built-in groups that correspond to their roles.
+
+- Query execution and export failed when multibyte Unicode characters were part of the query result retrieved from a data source. This issue has been fixed by using a different decoder mechanism.
+
+- Fixed the issue of the system health alerts not being sent to admins. System health alerts are now triggered and sent as expected.
+
+- Fixed a problem where new schedules for existing queries could not be created after the Alation update to 2021.1. This fix also updates the partially created schedules and applies them to the queries as was intended.
+
+- The search group strategy for LDAP groups uses a query that pulls out all the users. Previously, in case of very large LDAP groups, this query could time out or reach the LDAP server limit on how many results were permitted to be retrieved. This fix introduces pagination for the LDAP group search query and an **alation_conf** setting to control it: **alation.authentication.ldap.search_page_size** (defaults to 500). The parameter should be set to a value that is less than the group result size allowed by the LDAP server.
+
+RELEASE 2021.1.5
+---------------------
+
+*build 7.2.6.138178*
+
+- Fixed an issue with metadata extraction from Azure Data Warehouse where it failed with the ``0 schemas found`` error. This was resolved by adding support for case sensitive collation.
+
+- Fixed an issue with high CPU usage by Taskserver during extraction, QLI, profiling, search index update, and some other processes. The issue was caused by Hive grammar projection grammar rule: ``antlr`` went into an infinite loop while parsing a query. As a solution, the ``antlr`` version and the timeout for execution of parser threads were updated.
+
+- Fixed an issue when information about Connections based on custom SQL queries was missing from the Tableau report pages after extraction from the Tableau server.
+
+- Fixed an issue with query log ingestion from Hive data sources when it failed with the ``QueryLog.setStartTime was called more than once`` error when multiple ``AM_STARTED`` attributes were present in the query log. The last ``AM_STARTED`` attribute in the log will now be the value used in ingestion.
+
+RELEASE 2021.1.4
+---------------------
+
+*build 7.2.5.136994*
+
+- Fixed a performance issue when a large number of Groups with multiple members in the system caused the **Customize Catalog** page to load slowly. Now, the page loading time has significantly decreased.
+
+- Fixed a problem when sometimes a subset of web server workers on the Alation server hung and did not serve requests. This fix improves throughput and availability of the Alation web service.
+
+- Previously, QLI could become stalled at the ``StatmentParsingJob`` stage with ``get() returned more than one AlationVersion`` error message. Fixed by adding a unique constraint to the ``tree_hash`` field of the ``AlationVersion`` model so that no duplicate entries can be created due to race condition.
+
+- Added two **alation_conf** parameters to mitigate search timeout issues. Admins can change the values in case they observe timeout issues on the **Advanced Search** page or when using the public Search API:
+
+    - **alation.search.timeout = 10.0**
+    - **alation.search.max_retries = 1**
+
+
+- SAML requests generated to authenticate Compose users to SSO-enabled AWS data sources used an invalid format for the ``IssueInstant`` attribute in the request, which resulted in a connection error. This problem is now fixed by assigning the ``IssueInstant`` attribute the correct ISO format based on the SAML 2.0 specification.
+
+- Fixed an issue of the manual upload of usage data to Alation failing due to changes in how model data are written to files in Python 3. After the fix, manual uploading of usage data completes successfully.
+
+
+RELEASE 2021.1.3
+---------------------
+
+*build 7.2.4.134495*
+
+- Fixed an issue with lineage calculation where Table information was not available on the **Connections** tab of the Tableau BI source and the lineage relationships with Tableau objects were not displayed on the **Lineage** tab of the Amazon Redshift data source when there were multiple clusters with the same URI and schema and table names.
+
+- Fixed an issue of the lineage diagram for the Tableau source not displaying the upstream objects from a Presto on Hive data source when a number of lines of the connection query SQL were commented out. Added support for array expressions to Alation Presto grammar.
+
+- Fixed a bug related to open stream writer that caused excessive memory usage during metadata extraction from a file system source.
+
+- Fixed a QLI issue where it failed with the following error: *A string literal cannot contain NUL (0x00) characters*. Now, queries containing null characters will not cause the QLI job to fail.
+
+
+MicroStrategy GBM V2 Extraction Stabilization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed an issue where only the first project from the list of projects selected for extraction was extracted into the Catalog. Now, all selected projects should be extracted as expected
+
+- Fixed a number of NPEs reported during metadata extraction
+
+- All document, dossier, and dashboard previews are now extracted using the MicroStrategy REST APIs
+
+- Alation now determines if a cube is published or if it is not using isPublished API during extraction
+
+- Made changes to populate sub-reports of a document using search-based API. This works for both published and unpublished cubes
+
+- Cube data sources are now linked with reports and documents using search API, which enables Alation to calculate lineage
+
+- All data source cubes in the project are extracted using the search API
+
+- Simple reports are extracted using the NoAction execution flag. This opens the reports in the design mode before extraction and works for both published and unpublished cubes
+
+- Alation now retrieves object prompts using the search API and extracts the corresponding field metadata
+
+- Alation can now extract the document and lineage information irrespective of whether the underlying cube is published or not. Fields will not be extracted if the document depends on an unpublished cube
+
+- Report metadata is extracted asynchronously. If a large number of reports are extracted, Alation creates multiple connections to extract report data. The MicroStrategy server has different types of governing job limits set to restrict the number of connections per user account, user session, and per project. Alation will respect the limits set on the MicroStrategy server and only use the server resources allowed to be used for extraction
+
+- Preview generation will now be skipped if a report or document is dependent on an unpublished cube.
+- Fixed multiple issues with prompt validation and extraction
+
+- Added a fix for the VALUE prompt to answer all prompts and only fail for required prompts that do not have any answers
+
+- Alation will now extract only valid metric types. The auto-generated field ``row count`` that used to cause the MicroStrategy server crash is no longer extracted
+
+
+RELEASE 2021.1.2
+---------------------
+
+*build 7.2.3.133419*
+
+- Fixed an issue where long-running extraction jobs were given the *Failed* status in the Job History table in Alation UI before they were completed. The job status will now be properly tracked for the entire duration of the job lifecycle.
+
+- Added support for the back quote character **`** in the Query Log Ingestion parser logic, which should ensure that QLI is successful for the data sources where query SQL includes this character.
+
+- Improved handling of recursive objects when they were added to a Data Domain, removed, and then re-added.
+
+- Added a description of the Search API to the API Documentation on Customer Portal.
+
+- Fixed an issue where the **Articles** section of the left-hand navigation panel was unavailable to users who logged in for the first time, requiring a refresh of the browser page. The **Articles** panel is now always displayed in the left-hand navigation panel.
+
+
+RELEASE 2021.1.1
+---------------------
+
+*build 7.2.2.132324*
+
+- Added an **alation_conf** flag **alation.backup_v2.pgbackup_compression** to exclude the Postgres backup from Alation backup tarball creation. This reduces backup tarball creation time. Postgres backups should be handled manually and restored separately. For details, refer to :doc:`How to Exclude Postgres Backup from Alation Backup <../../archive/AdminConfig/HowToExcludePostgresBackupFromAlationBackup>`
+
+- Search using the \* wildcard is now case insensitive.
+
+- Fixed an issue with SSO authentication for AWS data sources where it did not work in Chrome without disabling the SameSite flags. This change introduces the use of the RelayState parameter in SAML requests to track asynchronous communication with identity providers and deprecates the use of "user session" to track such asynchronous communication, rendering the SSO solution browser-agnostic.
+
+
+RELEASE 2021.1 - General Availability
+-------------------------------------------
+
+*build 7.2.1.131666*
+
+New Features
+~~~~~~~~~~~~~~~~~~~~~~
+
+Search and Discovery
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Data Domains
+''''''''''''''''''''
+
+A Data Domain is a new catalog object type that can be used to categorize other catalog objects. With the help of Data Domains, you can organize your catalog data by business areas, departments or any other unifying criteria. Data Domains can be created, edited, deleted, and organized hierarchically. Like other Catalog object types, Data Domains have a dedicated customizable Catalog page template that allows for the adding, removing, and re-arranging of custom fields. Data Domains increase discoverability of other Catalog objects: by selecting the relevant Domain in the Search filter, you can retrieve the list of all catalog objects residing in this Domain. The Data Domains feature can be enabled on the Admin Settings > **Feature Configuration** page (former **Labs**).
+
+Search API
+'''''''''''''''''''
+
+2021.1 adds a new public API for retrieving Search data from the Catalog: you can now send requests to the GET Search API endpoint and retrieve search results. GET Search API documentation is available in the OAS 3.0 format at **http(s)://<your_Alation_URL>/openapi/search/** (requires the Swagger integration to be enabled: ``alation_conf alation.feature_flags.enable_swagger = True``). The Search API offers the capability to interact with other applications used at your organization and to integrate the Alation Catalog into the existing application workflows.
+
+Full-Page Search Improvements
+''''''''''''''''''''''''''''''''
+
+Alation's full-page Search now supports the asterisk wildcard syntax. The asterisk symbol can be placed at the beginning, at the end, and in the middle of the search string: "ab\*", "\*yz", "ab\*yz", and "\*mn\*". The search will retrieve relevant Catalog objects where the search string with the wildcard symbol matches the title or the name of the object.
+
+Governance and Curation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation Analytics V2 Improvements
+''''''''''''''''''''''''''''''''''''''
+
+- Added search data to the Alation Analytics V2 schema surfacing the information on:
+
+    - the number of searches performed by users
+    - search queries
+    - search timestamps
+    - the number of searches that resulted in a click-through
+    - the pages from which search was initiated;
+
+- Added dashboard-level filters to the Alation Analytics V2 Dashboard that allow filtering the dashboard data by User and Date Range;
+
+- Added the ability to remove the Alation Analytics V2 data source from the Catalog;
+
+- Alation Analytics V2 database password is now stored in the encrypted format in the ``alation-analytics.env`` file.
+
+
+Lineage Impact Analysis
+''''''''''''''''''''''''''''''''''''''
+
+The Lineage page now includes 2 new tabular Lineage reports: **Impact Analysis** and **Upstream Audit**. These reports list data objects downstream or upstream from a selected object in the tabular format. The tables can be filtered by relevant fields, such as *Steward*, *Object Type*, *Trust Flag*, and others. The reports can be exported into the CSV format. For details, see :doc:`Lineage Impact Analysis <../../sources/Lineage/LineageImpactAnalysis>`.
+
+
+Custom DB Profiling Improvements
+''''''''''''''''''''''''''''''''''''''
+
+- Column catalog page load time is significantly decreased
+- Custom Profiling information has been added to the Profiling preview in Compose: :doc:`Custom DB Column Profile Preview <../../analyst/WriteQueries/CustomDBColumnProfilePreview>`
+- Improved the UI of the Frequency Distribution chart: :ref:`Frequency Distribution Chart <Sampling_Profiling-Frequency_Distribution_Chart>`
+- The names of UI elements and text messages for deep Column Profiling (Profiling V2) and Sampling (default) features were updated for a more consistent user experience
+
+
+Connect Platform
+^^^^^^^^^^^^^^^^^^^^
+
+Data Source Certifications
+''''''''''''''''''''''''''''''''''''''
+
+Certified support for more data sources and new versions of supported sources:
+
+    - Starburst Enterprise Trino
+    - Teradata Vantage
+    - Denodo
+    - MongoDB Atlas and others.
+
+
+Enterprise Deployment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Federated Compose User Login For AWS Sources
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Alation Compose now supports SSO for data sources on AWS. Alation integrates with AWS IAM to direct the authentication flow through SAML 2.0-supporting IdP providers used at the Organization (such as Azure AD, Okta, ADFS, PingOne, and others).
+
+User Role Assignment Using LDAP Groups
+''''''''''''''''''''''''''''''''''''''''''''''
+
+Server Admins can now map Alation roles to Custom Groups, and users in this group are automatically assigned the mapped role. Admins also have an option to auto-suspend LDAP users who do not belong to any LDAP group: :doc:`Use Custom Groups to Assign User Roles <../../admins/AdminSettings/UseCustomGroupsToAssignRoles>`.
+
+Alation Sandbox Improvements
+'''''''''''''''''''''''''''''''''
+
+  - Added the ``--resume`` flag for the ``run`` command
+  - Download progress status is now displayed as the build is being downloaded
+  - After a successful run, users are prompted to use the ``alation-sandbox-admin`` user for UI login
+  - Improved error messages
+  - Key rotation warning is displayed when upgrading to the 2021.1 Alation build
+  - Improved handling of the Sandbox license
+  - Numerous other bug fixes and improvements to enhance user experience, stability, and security.
+
+Alation Server
+^^^^^^^^^^^^^^^^^^^^^
+
+- Upgraded internal codebase components to Python 3
+
+- Expanded Operating Systems support for new installations of the Alation server by adding:
+
+    - Fedora
+    - Oracle Linux with RHEL compatible kernel
+    - Debian
+
+Improvements
+~~~~~~~~~~~~~~~~~~~
+
+- An admin can now disable the query export feature in Compose.
+- The **Labs** page was renamed to **Feature Configuration**.
+- Previously, some of the queries from Presto were not parsed by the Presto parser component because they contained built-in functions with no arguments. Now, the Presto parser will properly handle such queries and they will be displayed on the **Query History** tab.
+- The built-in driver for Snowflake was updated to version 3.12.14.
+- Added support for the NULL value in the ``IS_NULLABLE`` column in the Columns query for the Query-Based MDE.
+- Previously, making numerous changes to fields on a custom template could cause a spike in the number of background tasks processed on the Alation server. Now, this action will be processed in parallel to other running tasks and not cause the queued tasks to back up.
+- The temporary folder **pg_backup** created under **/data2/backup/** during backup restore is deleted automatically after the backup restore process completes successfully.
+- Tableau BI source logs will now capture BI type, framework version, and error code.
+- For Databricks on Azure as Custom DB, the complex data types *Array* and *Struct* can be displayed as a structured JSON object in Alation UI.
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~
+
+    .. note::
+
+        2021.1 GA also includes all bug fixes listed for the 2021.1 LA version.
+
+
+- Fixed an issue where Table and Column samples were not loading for users with the Viewer role when the Viewer role was enforced. After the fix:
+
+      - When **Dynamic Profiling** is OFF, only *Server Admins* can run samples and profiles.
+
+      - When **Dynamic Profiling** is ON, all roles, including Viewers, can run samples and profiles.
+
+- Fixed an issue where after update to 2021.1 LA Tableau certificates had to be re-uploaded on the Tableau source Settings page. No action is required after updating to 2021.1 GA from a previous major release.
+
+- For the Amazon Redshift data sources, decimal, real, float, and double data types will now display the correct length and precision.
+
+- Miscellaneous other fixes.
+
+
+RELEASE 2021.1 - Limited Availability
+-----------------------------------------
+
+*build 7.2.0.130782*
+
+For new features in 2021.1, see `New Features`_.
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~
+
+- Fixed an issue with MDE from Amazon Redshift data sources when tables with column comments were not extracted. Now, table extraction works as expected.
+- Fixed an issue when the Monitor > **Active Tasks** tab displayed a pop-up error message when the number of active tasks in queues was too large to be displayed. After the fix, Active Tasks no longer issues the error. If the task list for a specific queue is too large to be displayed (> 500 items), the Active Tasks list will show a collective record "other tasks in this queue" with the number of overflowing tasks.
+- Fixed a bug where Alation Analytics V2 did not reflect the updated Glossary article counts correctly after Glossary rules were updated.
+- Fixed an issue when the Popularity values were not updated correctly after QLI in a specific case of QLI.
+- Previously, table aliases from merge statements from Teradata were incorrectly recognized as temporary tables, which generated incorrect lineage. Now the aliases are properly ignored.
+- Added support for Hive data sources with the Oracle metastore on the configuration-based Hive framework (Hive V2).
+- For MySQL data sources, fixed an issue with the MDE property **Remove schemas from the catalog that are not captured by the lists below** when a previously extracted schema was not removed during the next MDE after being placed into the Exclude Schemas list.
+- The Compare User Roles matrix on the Admin Settings > **Users** page now appropriately reflects the current access rules. For example, a Steward can access Compose, and the Data Source Management tooltip no longer includes "wizard deployment" as Catalog and Source Admins do not have access to this feature.
+- Fixed the text overflow issues in the Quick Links section of the Homepage and the Apps menu in Internet Explorer 11.
+- Fixed a bug where embedded videos with the ``allowfullscreen`` HTML attribute could not be viewed in full-screen mode.
+- Fixed the issue of QLI archiving not working after enabling the Lineage V2 feature.
+- Restored the ability to upload data to a table using Excel files.
+- Fixed a performance issue that manifested itself when loading batches of execution results while a Compose query tab was being loaded (or when adding results for a new execution). This fix provides a dramatic improvement in execution time and will free up database resources as a result.
+- When OAuth is enabled for a data source but the default Compose URI does not include the OAuth parameter, using the Export Connection dialog in Query Forms and Data Upload with manual URI and without saved credentials will use the manually entered credentials from the username and password fields.
+- Removed the Alation Analytics V2 staging tables from the UI on the Per-Object Parameters tab as these tables are not displayed under the Public schema and are not meant to be profiled.
+- Addressed a potential Stored XSS issue where the "title" parameter of a query would be stored and rendered without any sanitization.
+- Since release V R7 (5.12.x), the script to convert usernames did not work. This has now been fixed, and admin users can continue to use the instructions provided in :doc:`How to Convert Usernames <../../admins/How-tos/HowtoConvertUsernames>`.
+- Fixed a bug in Compose when clicking on **Run Current Statement** executed the statement found in the next line. Now, the statement on the line which currently has the cursor will be executed.
+- Fixed a UI issue with table formatting in the Dusk theme in Compose: the row shading of the table in the Preview pane now uses 2 alternating colors from the navy blue palette.
+- Fixed the incorrect Lexicon file size limit value in the error message that is displayed when the file size limit is exceeded. The value in the message now correctly reflects the file size limit set in the Alation application.
+- Previously, the Open API specification of the Custom Field Values API incorrectly rendered the example for the PUT endpoint. This issue has now been fixed.
+-  Fixed an issue with installing Alation Connector Manager on SELinux-enabled systems. Alation Connector Manager is now configured to automatically start on system startup.
+
+Known Issues
+----------------------------
+- If you have a password set on the internal PostgreSQL database (Rosemeta), the update to 2021.1 will result in an error: ``Password for user alation: psql: fe_sendauth: no password supplied ERROR: Cannot upgrade alation``. Update to 2021.1 requires that the password on the internal PostgreSQL database should be cleared for the time of the update. The password needs to be set again after the update is completed.
+- The command ``alation_action scan_postgres`` will fail if a password is set on the internal PostgreSQL database.
+- The search using the wildcard symbol with uppercase symbols (for example, TEST\*) only returns results from object titles and disregards object names.
+- With Backup V2 enabled, automatic backup process cannot write to ``alation_backup.log`` due to a file permissions error.
+- Only users with the Server Admin permission can see reports extracted from an SSRS BI source. Contact Alation Support to apply a known workaround if you run into this issue.
+- If during the upgrade you encounter the error that points to the corrupted index on the ``djcelery_periodictask`` table, please contact Alation Support to fix the corrupted indexes. The error message will include the following text: ``(duplicate key value violates unique constraint \"django_celery_beat_periodictask_pkey\"")``.
+- CREATE VIEW queries in Denodo do not support the ``catalog.table`` format, and as a result, the CREATE VIEW queries are not parsed during QLI and Lineage cannot be built.
+- Alation saves the timestamps of the Catalog events in the UTC time. As a result, the events created after 12 am UTC will be loaded into the Alation Analytics V2 database with a day's delay.
+- With the Viewer role enforcement enabled, the Viewer users cannot run Table and Column profiles on data sources they have access to [**FIXED IN 2021.1 GA**]
+- For AWS Data Sources with SSO enabled in Compose, when the STS token expires, Compose issues an error in the query results page instead of displaying the Authentication dialog.
+- In Chrome, Compose SSO for AWS data sources may not work correctly if Alation uses HTTP and the security flags are enabled in the browser settings. As a workaround, disable the SameSite setting (set ``SameSite=None``) in your Chrome settings if Alation uses HTTP.
+- The ``alation_repair`` action does not fix permissions on the **extra_config** folder, which may cause the Alation upgrades to fail. The recommendation to check permissions on **extra_config** has been included into the upgrade steps for 2021.1.
+- Using the up or down arrow keys on the keyboard to select a search item from the Quick Search list closes the Quick Search [**FIXED IN 2021.1 GA**]
+- Upgrades from 2021.1 LA to a newer build of 2021.1 do not work. [**FIXED IN 2021.1 GA**]
+- Backups of instances on release 2021.1 LA cannot be restored on clean 2021.1 systems.[**FIXED IN 2021.1 GA**]
+- New configuration-based Hive connections (Hive V2) cannot be created as the Hive configuration file upload does not work In 2021.1 LA. Existing configuration-based Hive data sources continue to work as expected. [**FIXED IN 2021.1 GA**]
+- If you update an unpublished query created by cloning a published query, the changes are not displayed on the corresponding Catalog page.
+- For extraction jobs that take a long time, the Job History UI may mark the job as "failed" before it actually completes. The job will eventually complete, and the Job History UI will be updated to reflect this; however, initially, the job is marked as "failed" and false alerts are issued to admins.
+- Compose does not work for Salesforce DB with the custom CData driver.
+- Customers upgrading their 2021.1 LA test environments to 2021.1 GA still need to re-upload the SSL certificates on the Tableau source Settings page after the update. This step is required only for customers upgrading from 2021.1 LA to 2021.1 GA and does not affect updates from previous major releases to 2021.1 GA.

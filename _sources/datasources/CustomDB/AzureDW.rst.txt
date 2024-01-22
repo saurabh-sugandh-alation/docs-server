@@ -1,0 +1,202 @@
+Azure Data Warehouse (Azure SQL DW)
+========================================
+
+*Applies from 2021.1*
+
+Alation has certified the Azure Data Warehouse as Custom DB. The certified driver is present on the list of drivers in Alation by default and can be selected when adding the data source to Alation. Refer to the appropriate version of Support Matrix for the driver version.
+
+Scope of Support
+-------------------
+      - Metadata Extraction (MDE)
+
+            - Automated MDE
+
+      - Compose
+      - Data Profiling
+      - Query Log Ingestion and Lineage
+
+Ports
+-------
+Port **1433** must be open.
+
+Required Information
+------------------------
+
+    - JDBC URI for the Azure Data Warehouse data source
+
+JDBC URI
+~~~~~~~~~~~
+
+Include the following components:
+
+    - Host Name
+    - Port number
+    - Database name
+
+Use the following format:
+
+.. code-block:: Bash
+
+        sqlserver://<Host_Name>:<Port>;database=<Database_Name>;
+
+*Example:*
+
+.. code-block:: Bash
+
+          sqlserver://tf-test-al-63194-admin-user.database.windows.net:1433;database=show_table_tests_database;
+
+Service Account
+-------------------
+
+.. code-block:: Bash
+
+        CREATE LOGIN [login_value] WITH PASSWORD = [password];
+        CREATE USER [service_account] FOR LOGIN [login_value];
+
+Make sure you adhere to the password restrictions. Follow the Azure DW requirements for passwords.
+
+Permissions
+-------------
+
+Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~
+
+Make sure that the user has admin permission to the INFORMATION_SCHEMA to perform Metadata Extraction. Grant SELECT or VIEW DEFINITION at Database or Schema level to the service account created for Alation.
+
+*Example:*
+
+.. code-block:: Bash
+
+        GRANT [SELECT/VIEW DEFINITION] on SCHEMA::[schema_name] to [service_account]
+
+Make sure that the service_account also has SELECT access on the SYS tables listed below to extract Table Size:
+
+        - sys.pdw_table_mappings
+        - sys.pdw_nodes_tables
+        - sys.dm_pdw_nodes
+        - sys.pdw_distributions
+        - sys.dm_pdw_nodes_db_partition_stats
+
+Profiling/Sampling
+~~~~~~~~~~~~~~~~~~~~~~
+
+Grant SELECT or VIEW DEFINITION at Database or Schema level to the service account.
+
+Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~
+
+User must have the admin rights to the **sys.dm_pdw_exec_requests** and **sys.dm_pdw_exec_sessions** tables to perform QLI. These tables have all the queries recorded and can be ingested into Alation:
+
+    - **sys.dm_pdw_sql_requests** - holds information about all SQL Server query distributions
+    - **sys.dm_pdw_exec_requests** - holds information about all requests that are currently active or were active recently in Azure Synapse Analytics, and the **command** column has the actual query text.
+
+Setup in Alation
+--------------------
+
+Step 1: Add a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a new Data Source on the **Sources** page.
+
+Step 2: Set up the Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. On the **Add a Data Source** screen of the wizard, specify:
+
+    - **Database Type:** Custom DB
+    - **JDBC URI:** URI in the required format. See `JDBC URI`_.
+
+          *Example:*
+
+          .. code-block:: Bash
+
+                sqlserver://tf-test-al-63194-admin-user.database.windows.net:1433;database=show_table_tests_database;
+
+    - **Select Driver:** select the JDBC driver for Azure Data Warehouse from the **Select Driver** drop-down list. Refer to the appropriate version of Support Matrix for the driver version.
+
+2. Click **Save and Continue**. The next wizard screen - **Set Up a Service Account** - will open.
+
+      .. note::
+
+          Do not select the Kerberos **Use Kerberos** checkbox.
+
+      .. image:: ../../_static/AzureDW_01.png
+          :width: 450px
+
+Step 3: Enter Service Account Credentials
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  1. On the **Set Up a Service Account** screen, select **Yes**.
+
+  #. Provide the username and password of the service account created for Alation.
+
+  #. Click **Save and Continue**. The next wizard screen, **Configure Your Data Source**, will open.
+
+Step 4: Configure Your Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Click **Skip this Step**. After this step, you are navigated to the **Settings** page of your data source.
+
+Metadata Extraction
+----------------------
+
+Configure and perform metadata extraction and verify the results:
+
+    - In **Settings > Custom Settings**, set the **Catalog Object Definition** to **Schema.Table**:
+
+        .. image:: ../../_static/AzureDW_02.png
+
+    - In **Settings > Metadata Extraction**, set up and perform MDE. Refer to :doc:`Metadata Extraction From Custom DB <../../datasources/CustomDB/MDEFromCustomDB>`.
+
+Profiling
+------------
+
+Configure and perform :doc:`Sampling and Profiling <../../datasources/CustomDB/ProfilingForCustomDB>` :
+
+    - Users can run a sample for an individual table on the **Samples** tab of the Table Catalog page or profile an individual column on the **Overview** tab of the Column page.
+    - Automatic full and selective Profiling is supported.
+    - Use the **Per-Object Parameters** in Settings tab to specify which objects to profile.
+    - Custom query-based Sampling is supported. :ref:`Custom Query-Based Sampling <Sampling_Profiling-Custom_Query_Based_Sampling_for_Tables>` allows you to provide a custom query for profiling each specific table.
+    - Deep Column Profiling (:ref:`Profiling V2 <profilingV2-label>` ) is supported.
+
+Query Log Ingestion
+---------------------
+
+1. In the Query Log Ingestion tab, provide the query given below in the **Query to Execute**
+field and click **Save**:
+
+.. code-block:: Bash
+
+        select s.login_name as userName,
+        r.start_time AS startTime,
+        datediff(second, r.start_time,r.end_time) as seconds_taken,
+        r.command as queryString,
+        r.session_id as sessionId,
+        s.client_id as client_id,
+        r.submit_time AS sessionStartTime,
+        s.app_name,
+        s.status as status,
+        r.resource_class
+        from sys.dm_pdw_exec_requests r
+        inner join sys.dm_pdw_exec_sessions s on s.session_id = r.session_id
+
+2. Click **Import** to import the queries into Alation.
+
+    .. image:: ../../_static/AzureDW_03.png
+
+Compose
+---------
+
+Log into Compose:
+
+    - Authenticate in Compose with your Azure DW credentials.
+    - Use the **Schema.Table** format for writing queries.
+
+Troubleshooting
+-----------------
+
+Logs to collect/review:
+
+    - For logs related to MDE: **taskserver.log, taskserver_err.log**.
+    - For logs related to Compose: **connector.log, connector_err.log**.
+    - For any other errors: **alation-error.log, alation-debug.log**

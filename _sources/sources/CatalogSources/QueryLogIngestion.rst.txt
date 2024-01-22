@@ -1,0 +1,172 @@
+Query Log Ingestion
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Query Log Ingestion (QLI) is a data job that processes a selection
+of database query logs to retrieve meaningful information about
+database objects extracted into Alation. Query logs are ingested to
+calculate several valuable indicators for data object catalog pages,
+such as Popularity and Top Users. Moreover, the data
+resulting from QLI is used to calculate Lineage and to supply
+filter and JOIN information to the catalog pages of data objects (such
+as, for example, Tables).
+
+.. note::
+
+    Alation usually recommends that you have at least one week of query
+    history available for initial QLI.
+
+    Automated daily QLI typically requires an ETL script to generate a
+    table every day with queries executed in the last seven days. If the
+    daily query volume is large (more than a million/day) or if the DB
+    server is constrained by disk space, a minimum of last three days
+    worth of logs is required for Alation to produce a meaningful
+    result. also see  `Sampling in Query Log Ingestion`_  below.
+
+    In environments where historical query log for a week or longer is
+    available, it can be ingested into Alation after adding the data
+    source and performing metadata extraction (MDE).
+
+
+QLI setup is always database type-specific: it may be required that you
+perform several prerequisite steps on your database before you
+can perform QLI in Alation. The parameters for QLI you need to provide
+in Alation also depend on the database type. For QLI specifics on each
+supported DB type, refer to :doc:`Adding Data Sources <../../datasources/AddDataSources/index>`.
+
+In Alation UI, most of the QLI-related configuration and actions are on
+the Query Log Ingestion tab of the settings page, but a few can
+also on the General Settings tab. To specify the parameters and to
+eventually perform QLI, you need access to the settings of a data
+source. You must have either the Server Admin role in Alation or
+the *Data Source Admin* access the data source to open the settings page and perform data jobs.
+
+After you have done the required preliminary steps, added your data
+source to Alation, completed the configuration, and performed MDE, you
+can proceed to run QLI. During MDE, Alation has extracted the metadata
+and created catalog pages for all catalog objects under a source. As the
+next step, QLI will provide more information about the extracted
+metadata for the respective catalog pages:
+
+.. image:: ../../_static/QLI_1.png
+    :width: 5.5in
+    :align: center
+
+During QLI, Alation accesses the query history tables or views, reads
+the query log data, and parses query SQL to retrieve information about
+which database objects were used by what users and how many times and
+about created or updated data objects. Based on this data, Alation
+performs calculations for **Top Users**, **Popularity**, **Lineage**, and extracts filters and
+JOINs. Note that QLI data is an essential, but not the only source of
+data for these calculations. Queries users run in Compose form another
+data pipeline for Top Users, Popularity, Lineage, and filter and JOIN
+information:
+
+.. image:: ../../_static/QLI.png
+    :width: 4.0in
+    :align: center
+
+From Alation version 2023.3.1, QLI performance has been stabilized by restricting a single QLI job to run for seven days or less. Multiple QLI jobs can still be submitted to account for more days as an alternative. If a QLI job is submitted for more than seven days, an error message will be displayed in the QLI job submission UI and referenced in the QLI job history page and the job will not run until resolved. If any exceptions are required to loosen these restrictions and submitting multiple QLI jobs is not an option, please request an exception via a Support ticket.
+
+Data Source Settings > General Settings Tab
+-------------------------------------------
+
+The **General Settings** tab of the data source settings has a number
+of parameters for QLI:
+
+-  **Sampling in Query Log Ingestion** a generic parameter present
+   for all data source types. 
+-  **Query Log Privileges** database-specific section that may be
+   present for some data source types and absent for others.
+
+Sampling in Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Enable this parameter if the query log volume is extremely large (> tens
+of millions per day). When it is enabled, Alation will apply random
+sampling on the fetched query logs and ingest this sample only. Note
+that sampling is not applied to DDL queries, so we do not lose lineage
+information. The default sample size is 5,000,000 query execution events:
+
+.. image:: ../../_static/QLI_3.png 
+    :width: 5.5in
+    :align: center
+
+Query Log Privileges
+~~~~~~~~~~~~~~~~~~~~
+
+The **Query Log Privileges** section will provide tips on what prerequisite
+steps may be required on the database for running QLI in Alation. If
+present on the page, this information is always going to be your
+database type-specific. This information for each database type can also be found in :doc:`Adding Data Sources </datasources/AddDataSources/index>`.
+
+*MySQL:*
+
+.. image:: ../../_static/QLI_4.png 
+    :width: 5.5in
+    :align: center
+
+*PostgreSQL:*
+
+.. image:: ../../_static/QLI_5.png
+    :width: 5.5in
+    :align: center
+
+Data Source Settings > QLI Tab
+------------------------------
+
+You can perform QLI on the Query Log Ingestion tab of the data source
+settings. To perform QLI,
+
+1. Make sure you have done the preliminary steps, if any are required. They will differ for each database type.
+2. Open the data source page in Alation, and on the upper right, click **More...** then click **Settings**:
+
+    .. image:: ../../_static/QLI_6.png
+        :width: 5.5in
+        :align: center
+
+3. On the Settings page that opens, click the **Query Log Ingestion** tab to open it:
+
+    .. image:: ../../_static/QLI_7.png
+        :width: 5.5in
+        :align: center
+
+You can run QLI manually or as a scheduled job.
+
+Automated Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Clear the checkbox **Disable automatic query log ingestion**. This will reveal the schedule settings for the automated QLI:
+
+    .. image:: ../../_static/QLI_8.png
+        :width: 4.0in
+        :align: center
+
+2. Set the day/time for the QLI process. It will run automatically at the time you have specified in the schedule.
+
+Manual Query Ingestion
+~~~~~~~~~~~~~~~~~~~~~~
+
+To perform QLI manually on demand, in the section **Run Manual Query
+Ingestion**, specify the **Date Range** of the logs to be ingested
+and click **Import**:
+
+.. image:: ../../_static/QLI_9.png
+    :width: 3.5in
+    :align: center
+
+QLI Status
+----------
+
+The details of each queued and completed QLI job are displayed in the
+**Job History** section:
+
+.. image:: ../../_static/QLI_10.png
+    :width: 5.5in
+    :align: center
+
+Related Topics
+----------------
+
+ :doc:`Metadata Extraction <../../sources/CatalogSources/MetadataExtraction>`

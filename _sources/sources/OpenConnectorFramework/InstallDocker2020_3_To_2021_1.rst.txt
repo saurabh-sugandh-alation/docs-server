@@ -1,0 +1,134 @@
+Install Docker for Alation Versions 2020.3.x - 2021.1.x
+=========================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies to Alation releases 2020.3.x - 2021.1.x*
+
+The core software dependency for OCF and Alation Analytics V2 is Docker. Alation requires Docker version 18.09.1 or later. Steps to install Docker depend on the operating system of the Alation host.
+
+To check if the host already has Docker installed:
+
+    .. code-block:: Bash
+
+        docker -v
+
+If you are installing Docker for Alation Analytics V2, see `General Recommendations to Install Docker`_ below.
+
+If you are installing Docker for OCF, then depending on the operating system of the host, you may be able to use Alation Connector Manager  installer to automatically install the required Docker version. Auto-installation is supported for AWS Linux 2, CentOS 7, and Ubuntu:
+ :doc:`Auto-Install Docker as Alation Connector Manager Dependency <../../sources/OpenConnectorFramework/AutoInstallDockerAsDependency>`.
+
+If auto-installation is not supported on the operating system of the host, Docker needs to be installed separately using general recommendations and as a prerequisite to installing Alation Connector Manager.
+
+General Recommendations to Install Docker
+---------------------------------------------
+
+This section gives general instructions on how to install Docker in specific operating system environments. This applies to:
+
+    - RHEL 7, 8
+    - CentOS 8
+    - OEL 7
+    - Fedora 31, 32
+    - Debian 10
+
+To install Docker on any of these systems:
+
+1. Navigate to `<https://download.docker.com/linux/>`_
+
+2. Navigate to your appropriate distribution:
+
+    - For Debian-based systems, it will look like **/linux/<OS>/dists/<VERSION>/pool/stable/amd64/**. For example: **/linux/debian/dists/wheezy/pool/stable/amd64/**
+
+    - For RHEL-based systems, it will look like **/linux/<OS>/<VERSION>/x86_64/stable/Packages/**. For example: **/linux/centos/8/x86_64/stable/Packages/**
+
+3. Pick an appropriate version number and download that version for all of the packages listed.
+
+4. Install all packages that you downloaded using the appropriate package manager (APT or YUM). Note that these packages depend on each other, so in order to fulfill these dependencies you must install them all in the same invocation of the package manager. See examples below.
+
+CentOS 8
+''''''''''''
+
+.. code-block:: Bash
+
+    # SSH to the Alation host
+    # As root, create a directory and navigate to this directory
+    sudo su
+    mkdir centos8
+    cd centos8
+    # Download the Docker packages
+    curl -O https://download.docker.com/linux/centos/8/x86_64/stable/Packages/containerd.io-1.4.3-3.1.el8.x86_64.rpm
+    curl -O https://download.docker.com/linux/centos/8/x86_64/stable/Packages/docker-ce-20.10.2-3.el8.x86_64.rpm
+    curl -O https://download.docker.com/linux/centos/8/x86_64/stable/Packages/docker-ce-cli-20.10.2-3.el8.x86_64.rpm
+    curl -O https://download.docker.com/linux/centos/8/x86_64/stable/Packages/docker-ce-rootless-extras-20.10.2-3.el8.x86_64.rpm
+    # Install the packages. Note that *.rpm is installing all of these packages at the same time, which is necessary to do
+    yum install -y *.rpm
+
+RHEL 8.x
+''''''''''''
+
+RHEL 8.x requires that you also install ``iptables`` or Docker will not start. For RHEL 8, use Docker packages for CentOS 8:
+
+.. code-block:: Bash
+
+    # SSH to the Alation host
+    # As root, create a directory on the host and navigate to this directory
+    sudo su
+    mkdir rhel8
+    cd rhel8
+    # Download the Docker packages
+    curl -O https://download.docker.com/linux/centos/8/x86_64/stable/Packages/containerd.io-1.4.3-3.1.el8.x86_64.rpm
+    curl -O https://download.docker.com/linux/centos/8/x86_64/stable/Packages/docker-ce-20.10.2-3.el8.x86_64.rpm
+    curl -O https://download.docker.com/linux/centos/8/x86_64/stable/Packages/docker-ce-cli-20.10.2-3.el8.x86_64.rpm
+    curl -O https://download.docker.com/linux/centos/8/x86_64/stable/Packages/docker-ce-rootless-extras-20.10.2-3.el8.x86_64.rpm
+    # Install the packages. Note that *.rpm is installing all of these packages at the same time, which is necessary to do
+    yum install -y *.rpm
+    #Install iptables
+    yum install iptables
+
+Debian 10
+'''''''''''''''
+
+.. code-block:: Bash
+
+    # SSH to the Alation host
+    # As root, create a directory on the host and navigate to this directory
+    sudo su
+    mkdir ubuntu20
+    cd ubuntu20
+    # Download the Docker packages
+    curl -O https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/containerd.io_1.4.3-1_amd64.deb
+    curl -O https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/docker-ce-cli_20.10.2~3-0~debian-buster_amd64.deb
+    curl -O https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/docker-ce-rootless-extras_20.10.2~3-0~debian-buster_amd64.deb
+    curl -O https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/docker-ce_20.10.2~3-0~debian-buster_amd64.deb
+    # Install the packages. Note that *amd64.deb is installing all of these packages at the same time, which is necessary to do
+    apt install ./*amd64.deb
+
+
+Oracle Linux 7 with RHCK
+''''''''''''''''''''''''''''
+
+.. code-block:: Bash
+
+    # SSH to the Alation host
+    # On the host, update YUM:
+    sudo yum -y update
+    # Enable the ol7_addons repo:
+    yum-config-manager --enable ol7_addons
+    # Install Docker:
+    sudo yum install -y docker-engine
+
+Start Docker
+'''''''''''''''''
+
+To start Docker:
+
+    .. code-block:: Bash
+
+        sudo systemctl start docker
+
+On Oracle Linux 7, you may need to enable Docker after starting it:
+
+    .. code-block:: Bash
+
+        sudo systemctl start docker
+        sudo systemctl enable docker

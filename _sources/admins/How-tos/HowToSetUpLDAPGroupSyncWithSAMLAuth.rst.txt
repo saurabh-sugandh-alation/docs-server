@@ -1,0 +1,44 @@
+How to Set Up LDAP Group Sync with SAML Authentication
+=========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from release 2021.3*
+
+With SAML as the authentication method, it is possible to synchronize groups with Alation using LDAP sync. In this case, Alation will use SAML to authenticate users who log in Alation and LDAP to sync Groups from the LDAP directory.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+In order to use this "hybrid" configuration, perform the following steps:
+
+1. Set up SAML Authentication on the Alation instance.
+
+2. Go to **Admin Settings > Authentication** and fill out the LDAP information.
+
+    .. important::
+
+        Do not select LDAP as the authentication method. It should be set to SAML.
+
+3. SSH to the Alation host and enable LDAP Group synchronization by running the code given below from the Alation Django shell:
+
+    .. code-block:: Bash
+
+        # to enter the Alation shell:
+
+        sudo /etc/init.d/alation shell
+
+        # to enter the Django shell:
+        
+        alation_django_shell
+
+        #to enable LDAP Group sync:
+
+        from rosemeta.utils.users_and_groups.configuration_utils import enable_ldap_group_sync
+
+        enable_ldap_group_sync()
+
+4. To exit the Django shell: ``exit``
+5. To exit the Alation shell: ``exit``
+6. Create the required LDAP Groups in Alation.
+
+LDAP Groups will be auto-synced between Alation and the LDAP directory every 15 minutes (default). When users log in, their accounts will be created and automatically placed into the corresponding Groups. LDAP sync period can be adjusted using **alation_conf**.

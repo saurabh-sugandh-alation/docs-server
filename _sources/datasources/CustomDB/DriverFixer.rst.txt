@@ -1,0 +1,121 @@
+Driver Fixer
+======================
+
+*Available from version V R4 (5.8.x)*
+
+Usage
+----------
+
+The basic usage is:
+
+.. code-block:: Bash
+
+    java -jar driver-fixer-0.0.1-jar-with-dependencies.jar -i <input_file.jar> -o <output_name.jar>
+
+Parameters
+~~~~~~~~~~~~
+
++----------------------------+---------------------------------------------------------------+
+| Parameter                  | Description                                                   |
++============================+===============================================================+
+| ``-i``, ``--input``        | Path to the input driver file. Required                       |
++----------------------------+---------------------------------------------------------------+
+| ``-o``, ``--output``       | Path to the output file. Must be different from the input     |
+|                            | file. Required if not in dry-run mode.                        |
++----------------------------+---------------------------------------------------------------+
+| ``--force``                | Overwrite the output file if it already exists.               |
++----------------------------+---------------------------------------------------------------+
+| ``--dry_run``              | Don't write an output file; only check whether the input      |
+|                            | file has any problems.                                        |
++----------------------------+---------------------------------------------------------------+
+| ``-h``, ``--help``         | Print help information                                        |
++----------------------------+---------------------------------------------------------------+
+
+Location
+~~~~~~~~~~~~~
+The default location of the driver fixer .jar **driver-fixer-0.0.1-jar-with-dependencies.jar** is in:
+
+    - **/opt/alation/django/connector/tools** inside the Alation shell
+    - **/opt/alation/alation/opt/alation/django/connector/tools** outside of the Alation shell.
+
+Before running the command make sure you are in the correct location. See `Path`_.
+
+Path
+~~~~~~~~
+
+.. tabs::
+
+    .. tab:: 2020.3.x and Newer
+
+        The driver fixer runs in the Java 11 runtime. Make sure the ``java`` in the path points to Java 11. Run the command from inside the Alation shell. Substitute ``<version>`` with the actual version you find in the java directory.
+
+            .. code-block:: Bash
+
+                sudo /opt/java/amazon-corretto-<version>-linux-x64/bin/java -jar <path to driver-fixer-0.0.1-jar-with-dependencies.jar> -i <path to input_file.jar> -o <path to output_name.jar>
+
+            **Example**:
+
+            .. code-block:: Bash
+
+                sudo /opt/java/amazon-corretto-<version>-linux-x64/bin/java -jar /opt/alation/django/connector/tools/driver-fixer-0.0.1-jar-with-dependencies.jar -i /opt/tmp/SimbaSparkJDBC-2.6.3.1003.zip -o /opt/tmp/Fixed_SimbaSparkJDBC-2.6.3.1003.zip
+
+
+            Note that the driver fixer command can be run from outside the Alation shell too. The path to the java directory is different inside or outside the shell:
+
+                - Inside the Alation shell: **/opt/java/amazon-corretto-<version>-linux-x64/bin/java**
+
+                - Outside of the Alation shell: **/opt/alation/alation/opt/java/amazon-corretto-<version>-linux-x64/bin/java**
+
+    .. tab:: V R4 (5.8.x) - V R7 (5.12.x)
+
+        The driver fixer runs in the Java 9 runtime. Make sure the ``java`` in the path points to **jdk9**. Run this command from **inside the Alation shell**. Substitute ``<version>`` with the actual version you find in the java directory.
+
+            .. code-block:: Bash
+
+                sudo /opt/java/jdk-<version>/bin/java -jar <path to driver-fixer-0.0.1-jar-with-dependencies.jar> -i <path to input_file.jar> -o <path to output_name.jar>
+
+            **Example**
+
+            .. code-block:: Bash
+
+                sudo /opt/java/jdk-<version>/bin/java -jar /opt/alation/django/connector/tools/driver-fixer-0.0.1-jar-with-dependencies.jar -i /opt/tmp/SimbaSparkJDBC-2.6.3.1003.zip -o /opt/tmp/Fixed_SimbaSparkJDBC-2.6.3.1003.zip
+
+
+        Note that the driver fixer command can be run from outside the Alation shell too. The path to the java directory is different inside or outside the shell:
+
+          - Inside the Alation shell: **/opt/java/jdk-<version>/bin/java**
+
+          - Outside of the Alation shell: **/opt/alation/alation/opt/java/jdk-<version>/bin/java**
+
+
+Output Path Permissions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Make sure the current user has the write access to the output path (specified by ``-o``). In production, you may have to change the user to ``alation`` to write the output to **/opt/alation/django/connector/tools**. To switch the user:
+
+  .. code-block:: Bash
+
+      sudo su alation
+
+By default, the driver fixer does not overwrite an existing output file. This can be overridden using the ``--force`` parameter. Additionally, the program makes sure that the output file is different from the input file so that it does not overwrite the original driver.
+
+Output File Name
+~~~~~~~~~~~~~~~~~~~
+
+The output file name must follow this pattern: ``dbtype-driver-<major>.<minor>.<patch>.jar``.
+
+    **Example**: ``cassandra-driver-1.1.2.jar``
+
+Change the Permissions
+-------------------------
+
+After the .jar is fixed, change the owner to ``alation`` with:
+
+    .. code-block:: Bash
+
+        chown alation:alation <fixed-driver>.jar
+
+Move the Fixed Driver to Alation
+----------------------------------
+
+The fixed driver must be present at  **/opt/alation/site/site_data/custom_drivers** so that it can be loaded by TaskServer and Connector and picked up by the Alation user interface. See :doc:`Move the Fixed Driver to Alation </datasources/CustomDB/AddCustomDrivers>`.

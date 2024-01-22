@@ -1,0 +1,76 @@
+Remove Alation Analytics V1 Data Source From the Catalog
+============================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Available from release 2020.4*
+
+The ability to delete the Alation Analytics V1 data source from the Catalog is available in the Alation UI on the **Alation Analytics Settings** page.
+
+    .. note::
+
+        The **Alation Analytics Settings** page becomes available if the Alation Analytics V2 feature switch is turned on in **Labs/Feature Configuration**.
+
+The Alation Analytics Settings page will only display an option to remove the Alation Analytics V1 data source if it is enabled and exists on the instance. For example, if you have V1 and V2 running simultaneously.
+
+When you have fully transitioned to Alation Analytics V2, you can remove V1, leaving V2 only. This action requires the role of the *Server Admin*.
+
+The Remove Alation Analytics V1 action:
+
+    - Removes the Alation Analytics V1 data source and all its Catalog metadata from Alation. These catalog objects are marked as *deleted*;
+    - Updates the Alation search index excluding the deleted objects from search;
+    - Removes the Alation Analytics V1 feature flag from **Admin Settings** > **Labs/Feature Configuration**.
+
+        .. note::
+
+            The ability to re-enable and use the Alation Analytics V1 feature again is not supported.
+
+    - Makes the required changes to the Alation configuration in **alation_conf** (disables the Alation Analytics V1 feature and ETL):
+
+        - ``alation.feature_flags.enable_alation_analytics = False``
+        - ``alation_analytics.etl.enabled = False``
+        - ``alation_analytics-v2.enable_simulataneous_v1_and_v2.enabled = False``
+
+    - Does not remove query objects that use Alation Analytics V1;
+    - Does not remove references to and @-mentions of the Alation Analytics V1 data source and its child objects. They remain in the Catalog and need to be located and removed, if necessary. The @-mentions will be marked as [GONE] indicating that they point to a non-existing catalog object.
+
+.. important::
+
+    This action does not remove the underlying Alation Analytics V1 **database** from the Alation host. To remove the Alation Analytics database from the host, please create a ticket for the Alation Support with the following subject: **Assist in removing Alation Analytics V1 database**.
+
+To remove Alation Analytics V1 data source from the Catalog:
+
+1. Go to **Admin Settings** > **Alation Analytics** section.
+2. Depending on your Alation version:
+
+    - **2020.4.x**: In the **Clean up Alation Analytics V1** section, click the **Clean Up Alation Analytics V1** button.
+
+        .. image:: ../../_static/AAV2_17.png
+
+    - **2021.1 and newer**: In the **Remove AAV1 DS from Catalog** section, click the **Remove AAV1 DS from Catalog** button.
+
+        .. image:: ../../_static/AAV1_Remove_fromUI_01.png
+
+
+    .. note::
+
+        The **Clean Up Alation Analytics V1/Remove AAV1 DS from Catalog** section is available only if both Alation Analytics V1 and V2 features are currently in use.
+
+
+3. Confirm the deletion in the delete confirmation dialog:
+
+    .. image:: ../../_static/AAV1_Remove_fromUI_02.png
+
+4. The Alation Analytics V1 data source will be deleted and all the accompanying changes to the Alation configuration will be applied. The Remove AAV1 DS from Catalog section will now show the message that Alation Analytics V1 data source was deleted successfully:
+
+    .. image:: ../../_static/AAV1_Remove_fromUI_03.png
+
+
+5. To check that Alation Analytics V1 has been removed successfully:
+
+    - Verify that the Alation Analytics V1 data source is no longer available on the **Sources** page and in the Left-Hand Navigation panel;
+    - Check that the Alation Analytics V1 feature flag is no longer present in **Labs/Feature Configuration**.
+
+The removal of Alation Analytics V1 uses the *soft delete* pattern. The deleted objects will still be accessible using their URLs with the **object removed** warning. However, the deleted objects cannot be located in the application by searching or browsing:
+
+    .. image:: ../../_static/AAV2_18.png

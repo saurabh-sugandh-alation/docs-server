@@ -1,0 +1,163 @@
+Oracle
+=========
+
+Required Information
+-------------------------
+
+To configure an Oracle data source using the native (built-in) connector for Oracle, you will need the following information:
+
+-  Hostname or IP address of your server
+-  Port number
+
+    - The default port is **1521**
+
+-  Service name
+-  Kerberos information if using Kerberos
+-  Service account
+-  Query log ingestion setup: Custom View
+
+      .. image:: ../../_static/DS_Oracle01.png
+          :width: 3.5in
+
+Synonym Extraction
+-----------------------
+
+*Applies from release V R7 (5.12.x)*
+
+For Oracle sources, Alation can extract both private and public synonyms if synonyms extraction is enabled in **Admin Settings** > **Server Admin** > **Feature Configuration**. All extracted public synonyms can be located under the schema ``PUBLIC`` on the catalog page of your data source. This schema is used in Alation only to surface the synonym object pages to users: it is created by Alation and is not present in the database itself.
+
+Private synonyms will be extracted together with their respective schemas if these schemas are extracted.
+
+Prerequisites
+----------------------
+
+Firewall Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Open outbound TCP port **1521** to Oracle server
+
+-  DNS Record (if using Kerberos authentication)
+
+      -  Oracle Kerberos authentication requires the Alation server hostname to be resolvable. Add a DNS record for Alation server or edit the **/etc/hosts** file on the Alation server.
+
+Create Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sample SQL to create an account:
+
+.. code-block:: sql
+
+    CREATE USER alation IDENTIFIED BY [password];
+    GRANT CREATE SESSION TO alation;
+
+Metadata Extraction
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+    GRANT SELECT ON DBA_OBJECTS TO alation;
+    GRANT SELECT ON DBA_TAB_COLUMNS TO alation;
+    GRANT SELECT ON DBA_CONS_COLUMNS TO alation;
+    GRANT SELECT ON DBA_CONSTRAINTS TO alation;
+    GRANT SELECT ON DBA_VIEWS TO alation;
+    GRANT SELECT ON DBA_IND_COLUMNS TO alation;
+    GRANT SELECT ON DBA_INDEXES TO alation;
+    GRANT SELECT ON DBA_SYNONYMS TO alation;
+    GRANT SELECT ON DBA_COL_COMMENTS TO alation;
+    GRANT SELECT ON DBA_MVIEW_COMMENTS TO alation;
+    GRANT SELECT ON DBA_TAB_COMMENTS TO alation;
+    GRANT SELECT ON DBA_SEGMENTS TO alation;
+    GRANT SELECT ON DBA_LOBS TO alation;
+    GRANT SELECT ON DBA_IND_STATISTICS TO alation;
+    GRANT SELECT ON DBA_IND_PARTITIONS TO alation;
+    GRANT SELECT ON DBA_ARGUMENTS TO alation;
+    GRANT SELECT ON SYS.ALL_IND_STATISTICS TO alation;
+    GRANT SELECT ON SYS.ALL_USERS TO alation;
+    GRANT SELECT ON ALL_IND_PARTITIONS TO alation;
+
+|
+
++----------------------------------------------------------+--------------------------------------+
+| **Permission**                                           | **Purpose**                          |
++==========================================================+======================================+
+| GRANT SELECT ON DBA_OBJECTS TO alation;                  | Required for table extraction.       |
+|                                                          |                                      |
+| GRANT SELECT ON DBA_LOBS TO alation;                     |                                      |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_TAB_COLUMNS TO alation;              | Required for table and column        |
+|                                                          | extraction.                          |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_CONS_COLUMNS TO alation;             | Required for column extraction.      |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_CONSTRAINTS TO alation;              | Required for primary key and         |
+|                                                          | foreign key extraction.              |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_VIEWS TO alation;                    | Required for view extraction.        |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_IND_COLUMNS TO alation;              | Required for index extraction.       |
+|                                                          |                                      |
+| GRANT SELECT ON DBA_INDEXES TO alation;                  |                                      |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_SYNONYMS TO alation;                 | Required for synonym extraction.     |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_COL_COMMENTS TO alation;             | Required for source comments         |
+|                                                          | extraction.                          |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_MVIEW_COMMENTS TO alation;           | Required for view comments           |
+|                                                          | extraction.                          |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_TAB_COMMENTS TO alation;             | Required for table comments          |
+|                                                          | extraction.                          |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_SEGMENTS TO alation;                 | Required for table iteration.        |
++----------------------------------------------------------+--------------------------------------+
+| GRANT SELECT ON DBA_IND_STATISTICS TO alation;           | Required for partition extraction.   |
+|                                                          |                                      |
+| GRANT SELECT ON DBA_IND_PARTITIONS TO alation;           |                                      |
+|                                                          |                                      |
+| GRANT SELECT ON DBA_ARGUMENTS TO alation;                |                                      |
+|                                                          |                                      |
+| GRANT SELECT ON SYS.ALL_IND_STATISTICS TO alation;       |                                      |
+|                                                          |                                      |
+| GRANT SELECT ON SYS.ALL_USERS TO alation;                |                                      |
+|                                                          |                                      |
+| GRANT SELECT ON ALL_IND_PARTITIONS TO alation;           |                                      |
++----------------------------------------------------------+--------------------------------------+
+
+Table Profiles
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    GRANT SELECT on [SCHEMA or TABLE]
+
+.. _Oracle-Query_History:
+
+Query History
+------------------
+
+`Active session history <https://docs.oracle.com/cd/E11882_01/server.112/e41573/autostat.htm>`_ (ASH, or "AWR tables") is recorded by default and is the most commonly used method for capturing query history for the Alation catalog. ASH only records some of the queries, as it samples them on an interval (one every ten seconds). This means that the lineage feature is not fully supported when using ASH. Some lineage may appear but many links may be missing. Popularity will not be as accurate with ASH, but over many samples it should still be a good approximation. Oracle Enterprise Edition and the Diagnostics and Tuning option are required for Active session history.
+
+ASH query ingestion requires access to a view on top of:
+
+    - ``dba_hist_active_sess_history``
+
+    - ``dba_users``
+
+    - ``dba_hist_sqltext tables``
+
+See appendix :ref:`A.4 Oracle Query Log View <Appendix_4>` for the view definition.
+
+Enable Default Schema Extraction
+----------------------------------------
+
+*Applies from 2020.4*
+
+When configuring metadata extraction on the **Metadata Extraction** tab of the **Settings** page, enable the **Enable default schema extraction** checkbox to extract the default schemas.
+
+.. important::
+
+    Enable this checkbox only if required since extracting all the default schemas may slow down the metadata extraction process.
+
+.. image:: ../../_static/Oracle_01.png
+    :width: 500px

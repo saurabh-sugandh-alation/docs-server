@@ -1,0 +1,651 @@
+Extraction Queries for Teradata
+=========================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Schema
+---------
+
+Make sure that  your query has a column labeled as ``SCHEMA`` in the ``SELECT`` statement.
+
+.. code-block:: SQL
+
+    SELECT
+      DatabaseName AS SCHEMA
+    FROM
+      DBC.BASE
+    WHERE lower(DatabaseName) NOT IN ('''')
+      AND lower(DatabaseName) NOT IN
+          ('sysspatial','td_sysfnlib','syslib','tdwstage','twm_source','default',
+          'tdpuser','public','locklogshredder','sys_calendar','tpch','extuser',
+          'sysudtlib','td_sysxml','sysadmin','twm_md','all','dbcmngr','viewpoint',
+          'console','td_sysgpl','information_schema','dbc','sysjdbc','systemfe',
+          'external_ap','sqlj','tdstats','tdwm','tdqcd','crashdumps','sysuif',
+          'sysbar','td_server_db');
+
+
+Table
+-----------
+
+Make sure that your query has columns labeled as ``SCHEMA``, ``TABLE_NAME``, ``TABLE_TYPE``, and ``REMARKS`` in the ``SELECT`` statement.
+
+.. code-block:: SQL
+
+    SELECT
+      tb.DataBaseName AS SCHEMA,
+      tb.TableName AS TABLE_NAME,
+      tb.CommentString AS REMARKS,
+      tb.CreatorName AS TABLE_OWNER,
+      tb.RequestTxtOverFlow,
+      CASE
+        WHEN tb.RequestTxtOverFlow IS NULL
+        THEN tb.RequestText
+        ELSE tt.RequestText
+      END AS RequestText,
+      CASE
+        WHEN tb.TableKind IN ('T', 'O')
+        THEN 'TABLE'
+        ELSE 'VIEW'
+      END AS TABLE_TYPE
+    FROM dbc.TablesV tb
+    LEFT OUTER JOIN
+          (SELECT *
+          FROM
+              (SELECT
+                  DataBaseName,
+                  TableName,
+                  2 * LineNo - 1 AS LineNo,
+                  substr(RequestText, 1, 16000) AS RequestText
+              FROM dbc.TableTextV text_split_1
+              WHERE
+                LOWER(text_split_1.DataBaseName) NOT IN ('''')
+                AND LOWER(text_split_1.DataBaseName) NOT IN ('sysspatial',
+                    'td_sysfnlib','syslib','tdwstage','twm_source','default',
+                    'tdpuser','public','locklogshredder','sys_calendar','tpch',
+                    'extuser','sysudtlib','td_sysxml','sysadmin','twm_md','all',
+                    'dbcmngr','viewpoint','console','td_sysgpl','information_schema',
+                    'dbc','sysjdbc','systemfe','external_ap','sqlj','tdstats','tdwm',
+                    'tdqcd','crashdumps','sysuif','sysbar','td_server_db')
+                AND text_split_1.TableKind IN ('O', 'T', 'V')
+              UNION ALL
+              SELECT
+                  DataBaseName,
+                  TableName,
+                  2 * LineNo AS LineNo,
+                  substr(RequestText, 16001) AS RequestText
+              FROM dbc.TableTextV text_split_2
+              WHERE
+                LOWER(text_split_2.DataBaseName) NOT IN ('''')
+                AND LOWER(text_split_2.DataBaseName) NOT IN ('sysspatial',
+                    'td_sysfnlib','syslib','tdwstage','twm_source','default',
+                    'tdpuser','public','locklogshredder','sys_calendar','tpch',
+                    'extuser','sysudtlib','td_sysxml','sysadmin','twm_md','all',
+                    'dbcmngr','viewpoint','console','td_sysgpl','information_schema',
+                    'dbc','sysjdbc','systemfe','external_ap','sqlj','tdstats','tdwm',
+                    'tdqcd','crashdumps','sysuif','sysbar','td_server_db')
+                AND text_split_2.TableKind IN ('O', 'T', 'V')
+                AND CHARACTER_LENGTH(RequestText) > 16000) tabletextv_split) tt
+      ON tb.DataBaseName = tt.DataBaseName
+        AND tb.TableName = tt.TableName
+    LEFT OUTER JOIN
+          (SELECT
+              DataBaseName,
+              TableName,
+              sum(CurrentPerm) AS CurrentPerm,
+              sum(PeakPerm) AS PeakPerm
+          FROM dbc.TableSizeV
+          GROUP BY
+            DataBaseName,
+            TableName) ts
+      ON tb.DataBaseName = ts.DataBaseName
+        AND tb.TableName = ts.TableName
+    WHERE LOWER(tb.DataBaseName) NOT IN ('''')
+      AND LOWER(tb.DataBaseName) NOT IN ('sysspatial','td_sysfnlib',
+          'syslib','tdwstage','twm_source','default','tdpuser','public',
+          'locklogshredder','sys_calendar','tpch','extuser','sysudtlib',
+          'td_sysxml','sysadmin','twm_md','all','dbcmngr','viewpoint',
+          'console','td_sysgpl','information_schema','dbc','sysjdbc',
+          'systemfe','external_ap','sqlj','tdstats','tdwm','tdqcd',
+          'crashdumps','sysuif','sysbar','td_server_db')
+      AND tb.TableKind IN ('O', 'T')
+    ORDER BY
+      TABLE_TYPE,
+      tb.DataBaseName,
+      tb.TableName,
+      tt.LineNo;
+
+View
+---------------
+
+Make sure that your query has columns labeled as ``SCHEMA``, ``VIEW_NAME``, ``VIEW_CREATE_STATEMENT``, 'VIEW' AS VIEW_TYPE, and ``REMARKS`` in the ``SELECT`` statement.
+
+.. code-block:: SQL
+
+    SELECT
+        tb.DataBaseName AS SCHEMA,
+        tb.TableName AS VIEW_NAME,
+        tb.CommentString AS REMARKS,
+        tb.CreatorName AS TABLE_OWNER,
+        tb.RequestTxtOverFlow,
+        CASE
+          WHEN tb.RequestTxtOverFlow IS NULL
+            THEN tb.RequestText
+          ELSE tt.RequestText
+        END AS VIEW_CREATE_STATEMENT,
+        CASE
+          WHEN tb.TableKind IN ('T', 'O')
+            THEN 'TABLE'
+          ELSE 'VIEW'
+        END AS VIEW_TYPE
+    FROM dbc.TablesV tb
+    LEFT OUTER JOIN
+            (SELECT *
+              FROM
+                (SELECT
+                    DataBaseName,
+                    TableName,
+                    2 * LineNo - 1 AS LineNo,
+                    substr(RequestText, 1, 16000) AS RequestText
+                FROM dbc.TableTextV text_split_1
+                WHERE LOWER(text_split_1.DataBaseName) NOT IN ('''')
+                    AND LOWER(text_split_1.DataBaseName) NOT IN ('sysspatial','td_sysfnlib',
+                        'syslib','tdwstage','twm_source','default','tdpuser','public',
+                        'locklogshredder','sys_calendar','tpch','extuser','sysudtlib',
+                        'td_sysxml','sysadmin','twm_md','all','dbcmngr','viewpoint',
+                        'console','td_sysgpl','information_schema','dbc','sysjdbc',
+                        'systemfe','external_ap','sqlj','tdstats','tdwm','tdqcd','crashdumps',
+                        'sysuif','sysbar','td_server_db')
+                    AND text_split_1.TableKind IN ('V')
+            UNION ALL
+            SELECT
+                DataBaseName,
+                TableName,
+                2 * LineNo AS LineNo,
+                substr(RequestText, 16001) AS RequestText
+            FROM dbc.TableTextV text_split_2
+            WHERE LOWER(text_split_2.DataBaseName) NOT IN ('''')
+                AND LOWER(text_split_2.DataBaseName) NOT IN
+                    ('sysspatial','td_sysfnlib','syslib','tdwstage',
+                    'twm_source','default','tdpuser','public','locklogshredder',
+                    'sys_calendar','tpch','extuser','sysudtlib','td_sysxml',
+                    'sysadmin','twm_md','all','dbcmngr','viewpoint','console',
+                    'td_sysgpl','information_schema','dbc','sysjdbc','systemfe',
+                    'external_ap','sqlj','tdstats','tdwm','tdqcd','crashdumps',
+                    'sysuif','sysbar','td_server_db')
+                AND text_split_2.TableKind IN ('V')
+                AND CHARACTER_LENGTH(RequestText) > 16000) tabletextv_split) tt
+      ON tb.DataBaseName = tt.DataBaseName
+        AND tb.TableName = tt.TableName
+    LEFT OUTER JOIN
+          (SELECT
+              DataBaseName,
+              TableName,
+              sum(CurrentPerm) AS CurrentPerm,
+              sum(PeakPerm) AS PeakPerm
+          FROM dbc.TableSizeV
+          GROUP BY
+              DataBaseName,
+              TableName) ts
+      ON tb.DataBaseName = ts.DataBaseName
+        AND tb.TableName = ts.TableName
+    WHERE LOWER(tb.DataBaseName) NOT IN ('''')
+      AND LOWER(tb.DataBaseName) NOT IN
+          ('sysspatial','td_sysfnlib','syslib','tdwstage','twm_source',
+          'default','tdpuser','public','locklogshredder','sys_calendar',
+          'tpch','extuser','sysudtlib','td_sysxml','sysadmin','twm_md','all',
+          'dbcmngr','viewpoint','console','td_sysgpl','information_schema','dbc',
+          'sysjdbc','systemfe','external_ap','sqlj','tdstats','tdwm','tdqcd',
+          'crashdumps','sysuif','sysbar','td_server_db')
+      AND tb.TableKind IN ('V')
+    ORDER BY
+      VIEW_TYPE,
+      tb.DataBaseName,
+      tb.TableName,
+      tt.LineNo;
+
+Column
+---------------
+
+Make sure that your query has columns labeled as ``SCHEMA``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, and ``COLUMN_DEFAULT`` in the ``SELECT`` statement.
+
+.. code-block:: SQL
+
+      SELECT CAST (NULL AS varchar(30)) AS table_cat,
+        TRIM(t.databasename) AS SCHEMA,
+        TRIM(t.tablename) AS TABLE_NAME,
+        TRIM(c.columnname) AS COLUMN_NAME,
+        c.decimaltotaldigits AS decimal_size,
+        c.decimalfractionaldigits AS fraction_size,
+        c.chartype AS char_type,
+        CASE
+          WHEN c.decimaltotaldigits > 0
+              THEN LOWER(CAST ((CASE TRIM(c.columntype)
+                                  WHEN '++' THEN 'TD_ANYTYPE'
+                                  WHEN 'AT' THEN 'TIME'
+                                  WHEN 'BF' THEN 'BYTE'
+                                  WHEN 'BO' THEN 'BLOB-TERADATA'
+                                  WHEN 'BV' THEN 'VARBYTE'
+                                  WHEN 'CF' THEN 'CHAR'
+                                  WHEN 'CO' THEN 'CLOB'
+                                  WHEN 'CV' THEN 'VARCHAR'
+                                  WHEN 'D' THEN 'DECIMAL'
+                                  WHEN 'DA' THEN 'DATE'
+                                  WHEN 'DH' THEN 'INTERVAL DAY TO HOUR'
+                                  WHEN 'DM' THEN 'INTERVAL DAY TO MINUTE'
+                                  WHEN 'DS' THEN 'INTERVAL DAY TO SECOND'
+                                  WHEN 'DY' THEN 'INTERVAL DAY'
+                                  WHEN 'F' THEN 'FLOAT'
+                                  WHEN 'GF' THEN 'GRAPHIC'
+                                  WHEN 'GV' THEN 'VARGRAPHIC'
+                                  WHEN 'HM' THEN 'INTERVAL HOUR TO MINUTE'
+                                  WHEN 'HR' THEN 'INTERVAL HOUR'
+                                  WHEN 'HS' THEN 'INTERVAL HOUR TO SECOND'
+                                  WHEN 'I1' THEN 'BYTEINT'
+                                  WHEN 'I2' THEN 'SMALLINT'
+                                  WHEN 'I' THEN 'INTEGER'
+                                  WHEN 'I8' THEN 'BIGINT'
+                                  WHEN 'MI' THEN 'INTERVAL MINUTE'
+                                  WHEN 'MO' THEN 'INTERVAL MONTH'
+                                  WHEN 'MS' THEN 'INTERVAL MINUTE TO SECOND'
+                                  WHEN 'N' THEN 'NUMBER'
+                                  WHEN 'PD' THEN 'PERIOD(DATE)'
+                                  WHEN 'PM' THEN 'PERIOD(TIMESTAMP WITH TIME ZONE)'
+                                  WHEN 'PS' THEN 'PERIOD(TIMESTAMP)'
+                                  WHEN 'PT' THEN 'PERIOD(TIME)'
+                                  WHEN 'PZ' THEN 'PERIOD(TIME WITH TIME ZONE)'
+                                  WHEN 'SC' THEN 'INTERVAL SECOND'
+                                  WHEN 'SZ' THEN 'TIMESTAMP WITH TIME ZONE-TERADATA'
+                                  WHEN 'TS' THEN 'TIMESTAMP'
+                                  WHEN 'A1' THEN 'ARRAY'
+                                  WHEN 'AN' THEN 'MULTI-DIMENSIONAL ARRAY'
+                                  WHEN 'UT' THEN 'UDT'
+                                  WHEN 'TZ' THEN 'TIME WITH TIME ZONE'
+                                  WHEN 'XM' THEN 'XML'
+                                  WHEN 'YM' THEN 'INTERVAL YEAR TO MONTH'
+                                  WHEN 'YR' THEN 'INTERVAL YEAR'
+                                ELSE 'NA'
+                                END) AS varchar(500)))||'(' || CAST(c.decimaltotaldigits AS varchar(500))||CAST(CASE
+                                                                                                              WHEN c.decimalfractionaldigits
+                                                                                                                  IS NOT NULL
+                                                                                                                  AND c.decimalfractionaldigits > 0
+                                                                                                                THEN ','||CAST(c.decimalfractionaldigits AS varchar(500))
+                                                                                                                ELSE ''
+                                                                                                              END AS varchar(500))||')'
+          WHEN c.chartype = 1
+            OR c.chartype = 2
+            THEN LOWER(CAST ((CASE TRIM(c.columntype)
+                                WHEN '++' THEN 'TD_ANYTYPE'
+                                WHEN 'AT' THEN 'TIME'
+                                WHEN 'BF' THEN 'BYTE'
+                                WHEN 'BO' THEN 'BLOB-TERADATA'
+                                WHEN 'BV' THEN 'VARBYTE'
+                                WHEN 'CF' THEN 'CHAR'
+                                WHEN 'CO' THEN 'CLOB'
+                                WHEN 'CV' THEN 'VARCHAR'
+                                WHEN 'D' THEN 'DECIMAL'
+                                WHEN 'DA' THEN 'DATE'
+                                WHEN 'DH' THEN 'INTERVAL DAY TO HOUR'
+                                WHEN 'DM' THEN 'INTERVAL DAY TO MINUTE'
+                                WHEN 'DS' THEN 'INTERVAL DAY TO SECOND'
+                                WHEN 'DY' THEN 'INTERVAL DAY'
+                                WHEN 'F' THEN 'FLOAT'
+                                WHEN 'GF' THEN 'GRAPHIC'
+                                WHEN 'GV' THEN 'VARGRAPHIC'
+                                WHEN 'HM' THEN 'INTERVAL HOUR TO MINUTE'
+                                WHEN 'HR' THEN 'INTERVAL HOUR'
+                                WHEN 'HS' THEN 'INTERVAL HOUR TO SECOND'
+                                WHEN 'I1' THEN 'BYTEINT'
+                                WHEN 'I2' THEN 'SMALLINT'
+                                WHEN 'I' THEN 'INTEGER'
+                                WHEN 'I8' THEN 'BIGINT'
+                                WHEN 'MI' THEN 'INTERVAL MINUTE'
+                                WHEN 'MO' THEN 'INTERVAL MONTH'
+                                WHEN 'MS' THEN 'INTERVAL MINUTE TO SECOND'
+                                WHEN 'N' THEN 'NUMBER'
+                                WHEN 'PD' THEN 'PERIOD(DATE)'
+                                WHEN 'PM' THEN 'PERIOD(TIMESTAMP WITH TIME ZONE)'
+                                WHEN 'PS' THEN 'PERIOD(TIMESTAMP)'
+                                WHEN 'PT' THEN 'PERIOD(TIME)'
+                                WHEN 'PZ' THEN 'PERIOD(TIME WITH TIME ZONE)'
+                                WHEN 'SC' THEN 'INTERVAL SECOND'
+                                WHEN 'SZ' THEN 'TIMESTAMP WITH TIME ZONE-TERADATA'
+                                WHEN 'TS' THEN 'TIMESTAMP'
+                                WHEN 'A1' THEN 'ARRAY'
+                                WHEN 'AN' THEN 'MULTI-DIMENSIONAL ARRAY'
+                                WHEN 'UT' THEN 'UDT'
+                                WHEN 'TZ' THEN 'TIME WITH TIME ZONE'
+                                WHEN 'XM' THEN 'XML'
+                                WHEN 'YM' THEN 'INTERVAL YEAR TO MONTH'
+                                WHEN 'YR' THEN 'INTERVAL YEAR'
+                              ELSE 'NA'
+                              END) AS varchar(500)))||'('||CAST(OREPLACE(CAST(c.columnlength AS varchar(500)), ',', '') AS varchar(500))||')'
+            ELSE LOWER(CAST ((CASE trim(c.columntype)
+                                WHEN '++' THEN 'TD_ANYTYPE'
+                                WHEN 'AT' THEN 'TIME'
+                                WHEN 'BF' THEN 'BYTE'
+                                WHEN 'BO' THEN 'BLOB-TERADATA'
+                                WHEN 'BV' THEN 'VARBYTE'
+                                WHEN 'CF' THEN 'CHAR'
+                                WHEN 'CO' THEN 'CLOB'
+                                WHEN 'CV' THEN 'VARCHAR'
+                                WHEN 'D' THEN 'DECIMAL'
+                                WHEN 'DA' THEN 'DATE'
+                                WHEN 'DH' THEN 'INTERVAL DAY TO HOUR'
+                                WHEN 'DM' THEN 'INTERVAL DAY TO MINUTE'
+                                WHEN 'DS' THEN 'INTERVAL DAY TO SECOND'
+                                WHEN 'DY' THEN 'INTERVAL DAY'
+                                WHEN 'F' THEN 'FLOAT'
+                                WHEN 'GF' THEN 'GRAPHIC'
+                                WHEN 'GV' THEN 'VARGRAPHIC'
+                                WHEN 'HM' THEN 'INTERVAL HOUR TO MINUTE'
+                                WHEN 'HR' THEN 'INTERVAL HOUR'
+                                WHEN 'HS' THEN 'INTERVAL HOUR TO SECOND'
+                                WHEN 'I1' THEN 'BYTEINT'
+                                WHEN 'I2' THEN 'SMALLINT'
+                                WHEN 'I' THEN 'INTEGER'
+                                WHEN 'I8' THEN 'BIGINT'
+                                WHEN 'MI' THEN 'INTERVAL MINUTE'
+                                WHEN 'MO' THEN 'INTERVAL MONTH'
+                                WHEN 'MS' THEN 'INTERVAL MINUTE TO SECOND'
+                                WHEN 'N' THEN 'NUMBER'
+                                WHEN 'PD' THEN 'PERIOD(DATE)'
+                                WHEN 'PM' THEN 'PERIOD(TIMESTAMP WITH TIME ZONE)'
+                                WHEN 'PS' THEN 'PERIOD(TIMESTAMP)'
+                                WHEN 'PT' THEN 'PERIOD(TIME)'
+                                WHEN 'PZ' THEN 'PERIOD(TIME WITH TIME ZONE)'
+                                WHEN 'SC' THEN 'INTERVAL SECOND'
+                                WHEN 'SZ' THEN 'TIMESTAMP WITH TIME ZONE-TERADATA'
+                                WHEN 'TS' THEN 'TIMESTAMP'
+                                WHEN 'A1' THEN 'ARRAY'
+                                WHEN 'AN' THEN 'MULTI-DIMENSIONAL ARRAY'
+                                WHEN 'UT' THEN 'UDT'
+                                WHEN 'TZ' THEN 'TIME WITH TIME ZONE'
+                                WHEN 'XM' THEN 'XML'
+                                WHEN 'YM' THEN 'INTERVAL YEAR TO MONTH'
+                                WHEN 'YR' THEN 'INTERVAL YEAR'
+                              ELSE 'NA'
+                              END) AS varchar(500)))
+            END AS type_name,
+            CAST ((CASE TRIM(c.columntype)
+                       WHEN '++' THEN 'TD_ANYTYPE'
+                       WHEN 'AT' THEN 'TIME'
+                       WHEN 'BF' THEN 'BYTE'
+                       WHEN 'BO' THEN 'BLOB-TERADATA'
+                       WHEN 'BV' THEN 'VARBYTE'
+                       WHEN 'CF' THEN 'CHAR'
+                       WHEN 'CO' THEN 'CLOB'
+                       WHEN 'CV' THEN 'VARCHAR'
+                       WHEN 'D' THEN 'DECIMAL'
+                       WHEN 'DA' THEN 'DATE'
+                       WHEN 'DH' THEN 'INTERVAL DAY TO HOUR'
+                       WHEN 'DM' THEN 'INTERVAL DAY TO MINUTE'
+                       WHEN 'DS' THEN 'INTERVAL DAY TO SECOND'
+                       WHEN 'DY' THEN 'INTERVAL DAY'
+                       WHEN 'F' THEN 'FLOAT'
+                       WHEN 'GF' THEN 'GRAPHIC'
+                       WHEN 'GV' THEN 'VARGRAPHIC'
+                       WHEN 'HM' THEN 'INTERVAL HOUR TO MINUTE'
+                       WHEN 'HR' THEN 'INTERVAL HOUR'
+                       WHEN 'HS' THEN 'INTERVAL HOUR TO SECOND'
+                       WHEN 'I1' THEN 'BYTEINT'
+                       WHEN 'I2' THEN 'SMALLINT'
+                       WHEN 'I' THEN 'INTEGER'
+                       WHEN 'I8' THEN 'BIGINT'
+                       WHEN 'MI' THEN 'INTERVAL MINUTE'
+                       WHEN 'MO' THEN 'INTERVAL MONTH'
+                       WHEN 'MS' THEN 'INTERVAL MINUTE TO SECOND'
+                       WHEN 'N' THEN 'NUMBER'
+                       WHEN 'PD' THEN 'PERIOD(DATE)'
+                       WHEN 'PM' THEN 'PERIOD(TIMESTAMP WITH TIME ZONE)'
+                       WHEN 'PS' THEN 'PERIOD(TIMESTAMP)'
+                       WHEN 'PT' THEN 'PERIOD(TIME)'
+                       WHEN 'PZ' THEN 'PERIOD(TIME WITH TIME ZONE)'
+                       WHEN 'SC' THEN 'INTERVAL SECOND'
+                       WHEN 'SZ' THEN 'TIMESTAMP WITH TIME ZONE-TERADATA'
+                       WHEN 'TS' THEN 'TIMESTAMP'
+                       WHEN 'A1' THEN 'ARRAY'
+                       WHEN 'AN' THEN 'MULTI-DIMENSIONAL ARRAY'
+                       WHEN 'UT' THEN 'UDT'
+                       WHEN 'TZ' THEN 'TIME WITH TIME ZONE'
+                       WHEN 'XM' THEN 'XML'
+                       WHEN 'YM' THEN 'INTERVAL YEAR TO MONTH'
+                       WHEN 'YR' THEN 'INTERVAL YEAR'
+                   ELSE 'NA'
+                   END) AS varchar(500)) AS data_type,
+        c.columnlength AS LENGTH,
+        TRIM(c.commentstring) AS REMARKS,
+        TRIM(c.defaultvalue) AS column_default,
+        CAST ((row_number () OVER (PARTITION BY SCHEMA, TABLE_NAME
+                                    ORDER BY c.columnid)) AS integer) AS ordinal_position,
+        TRIM((CASE c.nullable
+                WHEN 'Y' THEN 'YES'
+                WHEN 'N' THEN 'NO'
+              ELSE ''
+              END)) AS is_nullable
+        FROM dbc.tablesv t
+          JOIN dbc.columnsv c ON t.databasename = c.databasename
+            AND t.tablename = c.tablename
+        WHERE LOWER(TRIM(t.databasename)) IN ('''')
+          AND LOWER(TRIM(t.databasename)) NOT IN ('sysspatial', 'td_sysfnlib', 'syslib',
+                                          'tdwstage', 'twm_source', 'default', 'tdpuser',
+                                          'public', 'locklogshredder', 'sys_calendar',
+                                          'tpch', 'extuser', 'sysudtlib', 'td_sysxml',
+                                          'sysadmin', 'twm_md', 'all', 'dbcmngr',
+                                          'viewpoint', 'console', 'td_sysgpl',
+                                          'information_schema', 'dbc', 'sysjdbc',
+                                          'systemfe', 'external_ap', 'sqlj', 'tdstats',
+                                          'tdwm', 'tdqcd', 'crashdumps', 'sysuif',
+                                          'sysbar', 'td_server_db')
+          AND TRIM(t.tablekind) IN ('O', 'T', 'V')
+
+Primary Key
+------------------
+
+Make sure that your query has columns labeled as ``SCHEMA``, ``TABLE_NAME``, and  ``COLUMN_NAME`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+          '' AS TABLE_CAT,
+          DATABASENAME AS SCHEMA,
+          TABLENAME AS TABLE_NAME,
+          COLUMNNAME AS COLUMN_NAME,
+          CAST (COLUMNPOSITION AS SMALLINT) AS KEY_SEQ,
+          INDEXNAME AS PK_NAME,
+          INDEXNUMBER AS INDEX_NUMBER
+      FROM dbc.indicesV
+      WHERE LOWER(TRIM(DATABASENAME)) NOT IN ('''')
+        AND LOWER(TRIM(DATABASENAME))  NOT IN
+            ('sysspatial','td_sysfnlib','syslib','tdwstage','twm_source',
+            'default','tdpuser','public','locklogshredder','sys_calendar',
+            'tpch','extuser','sysudtlib','td_sysxml','sysadmin','twm_md','all',
+            'dbcmngr','viewpoint','console','td_sysgpl','information_schema',
+            'dbc','sysjdbc','systemfe','external_ap','sqlj','tdstats','tdwm','tdqcd',
+            'crashdumps','sysuif','sysbar','td_server_db')
+        AND TRIM(indextype) IN ('K', 'P', 'Q')
+        AND TRIM(uniqueflag) = 'Y'
+      ORDER BY
+        DATABASENAME,
+        TABLENAME,
+        INDEXNUMBER,
+        COLUMNPOSITION
+
+Foreign Key
+------------------
+
+Make sure that your query has columns labeled as ``PK_CATALOG``, ``PK_SCHEMA``, ``PK_TABLE``, ``PK_COLUMN``, ``FK_CATALOG``, ``FK_SCHEMA``, ``FK_TABLE``, and ``FK_COLUMN``  in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+          CAST (NULL AS varchar(30)) AS PK_CATALOG,
+          TRIM(ParentDB) AS PK_SCHEMA,
+          TRIM(ParentTable) AS PK_TABLE,
+          TRIM(ParentKeyColumn) AS PK_COLUMN,
+          cast (null AS varchar(30)) AS FK_CATALOG,
+          TRIM(ChildDB) AS FK_SCHEMA,
+          TRIM(ChildTable) AS FK_TABLE,
+          TRIM(ChildKeyColumn) AS FK_COLUMN,
+          CAST (NULL AS smallint) AS KEY_SEQ,
+          CAST (3 AS smallint) AS UPDATE_RULE,
+          CAST (3 AS smallint) AS DELETE_RULE,
+          TRIM(IndexName) AS FK_NAME,
+          CAST (NULL AS varchar(30)) AS PK_NAME,
+          CAST (NULL AS smallint) AS DEFERRABILITY
+      FROM DBC.All_RI_ParentsV
+      WHERE LOWER(TRIM(ChildDB)) NOT IN ('''')
+          AND LOWER(TRIM(ChildDB)) NOT IN
+              ('sysspatial','td_sysfnlib','syslib','tdwstage','twm_source',
+              'default','tdpuser','public','locklogshredder','sys_calendar',
+              'tpch','extuser','sysudtlib','td_sysxml','sysadmin','twm_md',
+              'all','dbcmngr','viewpoint','console','td_sysgpl','information_schema',
+              'dbc','sysjdbc','systemfe','external_ap','sqlj','tdstats','tdwm','tdqcd',
+              'crashdumps','sysuif','sysbar','td_server_db')
+      ORDER BY
+          FK_CATALOG,
+          FK_SCHEMA,
+          FK_TABLE,
+          FK_NAME,
+          FK_COLUMN
+
+Index
+--------------
+
+Make sure that your query has columns labeled as ``SCHEMA``, ``TABLE_NAME``, and ``FUNCTION_NAME``  in the select list.
+
+.. code-block:: SQL
+
+    SELECT
+      DISTINCT TRIM(c.databasename) AS SCHEMA,
+      TRIM(c.tablename) AS TABLE_NAME,
+      TRIM(c.columnname) AS COLUMN_NAME,
+      TRIM(c.indexname) AS INDEX_NAME,
+      TRIM(c.indextype) AS INDEX_TYPE,
+      c.indexnumber AS INDEX_NUMBER,
+      c.columnposition AS COLUMN_POSITION,
+      c.uniqueFlag AS UNIQUE_FLAG
+    FROM dbc.indicesV c
+    WHERE LOWER(TRIM(c.databasename)) NOT IN ('''')
+      AND LOWER(TRIM(c.databasename)) NOT IN
+        ('sysspatial','td_sysfnlib','syslib','tdwstage','twm_source','default',
+        'tdpuser','public','locklogshredder','sys_calendar','tpch','extuser',
+        'sysudtlib','td_sysxml','sysadmin','twm_md','all','dbcmngr','viewpoint',
+        'console','td_sysgpl','information_schema','dbc','sysjdbc','systemfe',
+        'external_ap','sqlj','tdstats','tdwm','tdqcd','crashdumps','sysuif','sysbar','td_server_db')
+      AND TRIM(c.indextype) <> 'Q'
+    ORDER BY
+      c.databasename,
+      c.tablename,
+      c.indexname,
+      c.indexnumber,
+      c.columnposition;
+
+Function
+--------------
+
+Make sure that your query has columns labeled as ``SCHEMA``, ``FUNCTION_CAT``, and ``FUNCTION_NAME``  in the select list.
+
+.. code-block:: SQL
+
+    SELECT
+        TRIM(fn.TableName) AS FUNCTION_NAME,
+        TRIM(fn.TableKind) AS ARG_TYPE,
+        TRIM(fn.DataBaseName) AS SCHEMA,
+        TRIM(m.requesttext) AS REMARKS,
+        f.fieldid,
+        TRIM(f.fieldname) AS ARG_NAME
+    FROM dbc.tvm m, dbc.tvfields f, dbc.tablesV fn
+    WHERE LOWER(TRIM(fn.databasename)) NOT IN ('''')
+        AND LOWER(TRIM(fn.databasename)) NOT IN
+          ('sysspatial','td_sysfnlib','syslib','tdwstage','twm_source',
+          'default','tdpuser','public','locklogshredder','sys_calendar',
+          'tpch','extuser','sysudtlib','td_sysxml','sysadmin','twm_md','all',
+          'dbcmngr','viewpoint','console','td_sysgpl','information_schema',
+          'dbc','sysjdbc','systemfe','external_ap','sqlj','tdstats','tdwm',
+          'tdqcd','crashdumps','sysuif','sysbar','td_server_db')
+        AND fn.TableName = m.tvmname
+        AND m.tvmid = f.tableid
+        AND (fn.TableKind ='F' OR fn.TableKind ='P')
+    ORDER BY
+        fn.DataBaseName,
+        fn.TableName,
+        f.fieldid;
+
+Function Definition
+----------------------
+
+Make sure that your query has columns labeled as ``SCHEMA``, ``FUNCTION_CAT``, ``FUNCTION_NAME``, ``ARG_NAME``, ``TYPE_NAME``, ``ARG_TYPE``, and ``ARG_DEF``  in the select list.
+
+.. code-block:: SQL
+
+    SELECT
+        TRIM(fn.TableName) AS specificname,
+        TRIM(fn.TableName) AS FUNCTION_NAME,
+        TRIM(fn.TableKind) AS ARG_TYPE,
+        TRIM(fn.DataBaseName) AS SCHEMA,
+        TRIM(m.requesttext) AS REMARKS,
+        f.fieldid,
+        TRIM(f.fieldname) AS ARG_NAME,
+        f.spparametertype,
+        CAST
+          (
+            (CASE f.FieldType
+                WHEN '++' THEN 'TD_ANYTYPE'
+                WHEN 'A1' THEN TRIM(TRAILING FROM f.UDTName)
+                WHEN 'AN' THEN TRIM(TRAILING FROM f.UDTName)
+                WHEN 'AT' THEN 'TIME'
+                WHEN 'BF' THEN 'BYTE'
+                WHEN 'BO' THEN 'BLOB'
+                WHEN 'BV' THEN 'VARBYTE'
+                WHEN 'CF' THEN 'CHAR'
+                WHEN 'CO' THEN 'CLOB'
+                WHEN 'CV' THEN 'VARCHAR'
+                WHEN 'D' THEN 'DECIMAL'
+                WHEN 'DA' THEN 'DATE'
+                WHEN 'DH' THEN 'INTERVAL DAY TO HOUR'
+                WHEN 'DM' THEN 'INTERVAL DAY TO MINUTE'
+                WHEN 'DS' THEN 'INTERVAL DAY TO SECOND'
+                WHEN 'DY' THEN 'INTERVAL DAY'
+                WHEN 'F' THEN 'FLOAT'
+                WHEN 'GF' THEN 'GRAPHIC'
+                WHEN 'GV' THEN 'VARGRAPHIC'
+                WHEN 'HM' THEN 'INTERVAL HOUR TO MINUTE'
+                WHEN 'HR' THEN 'INTERVAL HOUR'
+                WHEN 'HS' THEN 'INTERVAL HOUR TO SECOND'
+                WHEN 'I1' THEN 'BYTEINT' WHEN 'I2' THEN 'SMALLINT'
+                WHEN 'I' THEN 'INTEGER'
+                WHEN 'I8' THEN 'BIGINT'
+                WHEN 'MI' THEN 'INTERVAL MINUTE'
+                WHEN 'MO' THEN 'INTERVAL MONTH'
+                WHEN 'MS' THEN 'INTERVAL MINUTE TO SECOND'
+                WHEN 'N'  THEN 'NUMBER'
+                WHEN 'PD' THEN 'PERIOD(DATE)'
+                WHEN 'PM' THEN 'PERIOD(TIMESTAMP WITH TIME ZONE)'
+                WHEN 'PS' THEN 'PERIOD(TIMESTAMP)'
+                WHEN 'PT' THEN 'PERIOD(TIME)'
+                WHEN 'PZ' THEN 'PERIOD(TIME WITH TIME ZONE)'
+                WHEN 'SC' THEN 'INTERVAL SECOND'
+                WHEN 'SZ' THEN 'TIMESTAMP WITH TIME ZONE'
+                WHEN 'TS' THEN 'TIMESTAMP'
+                WHEN 'TZ' THEN 'TIME WITH TIME ZONE'
+                WHEN 'XM' THEN 'XML'
+                WHEN 'YM' THEN 'INTERVAL YEAR TO MONTH'
+                WHEN 'YR' THEN 'INTERVAL YEAR'
+                WHEN 'UT' THEN TRIM(TRAILING FROM f.UDTName)
+                ELSE TRIM (f.FieldType)
+            END) AS VARCHAR(500)) AS TYPE_NAME
+    FROM dbc.tvm m, dbc.tvfields f, dbc.tablesV fn
+    WHERE LOWER(TRIM(fn.databasename)) NOT IN ('''')
+        AND LOWER(TRIM(fn.databasename)) NOT IN
+            ('sysspatial','td_sysfnlib','syslib','tdwstage','twm_source','default',
+            'tdpuser','public','locklogshredder','sys_calendar','tpch','extuser',
+            'sysudtlib','td_sysxml','sysadmin','twm_md','all','dbcmngr','viewpoint',
+            'console','td_sysgpl','information_schema','dbc','sysjdbc','systemfe',
+            'external_ap','sqlj','tdstats','tdwm','tdqcd','crashdumps','sysuif','sysbar','td_server_db')
+        AND fn.TableName = m.tvmname
+        AND m.tvmid = f.tableid
+        AND (fn.TableKind ='F' OR fn.TableKind ='P')
+    ORDER BY
+        fn.DataBaseName,
+        fn.TableName,
+        f.fieldid;

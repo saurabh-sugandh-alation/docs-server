@@ -1,0 +1,38 @@
+Configure Sampling and Profiling 
+===================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Refer to :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Sampling and Profiling
+-------------------------------
+
+For Amazon Redshift, Alation supports a number of ways to retrieve data samples and column profiles. For general information about sampling and profiling, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Column Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default queries for column profiling can be modified on the **Custom Settings** tab of the Settings page. Do not use fully qualified table names in custom profiling queries for Amazon Redshift. The following query template can be used to create a custom query:
+
+**Numeric columns:**
+
+  .. code-block:: bash
+
+      SELECT 
+	      MIN({column_name}) AS Minimum, 
+	      MAX({column_name}) AS Maximum, 
+	      AVG({column_name}) AS Average, 
+	      MEDIAN({column_name}) AS Median, 
+	      SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END) as "#NULL", 
+	      (SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS "%NULL" 
+      FROM {table_name};
+
+**Non-numeric columns:**
+
+  .. code-block:: bash
+
+      SELECT
+	      SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END) as "#NULL",
+	      (SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS "%NULL"
+      FROM {table_name};

@@ -1,0 +1,299 @@
+Configure Server Health Alerts for Administrators
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Alation offers automated server health checks to help you monitor your on-premise Alation software. Server health checks will alert the admins by email if there are any problems with the server. This functionality complements the component status checks described in :doc:`Monitoring Component Health <../../admins/AdminSettings/MonitorComponentHealth>`. Alation Cloud Service (ACS) instances of Alation are actively monitored by Alation staff, so ACS customers don't need to worry about these alerts.
+
+.. note::
+
+   Basic system checks like CPU load and RAM usage are usually monitored by your system monitoring utilities.
+
+Starting with 2021.4.5, Alation will automatically alert Server Admins if Alation disks are too full. (This is the `Root or Data Volumes Overflow Check`_.) The DataDog agent will be enabled by default. You can manually enable additional server health checks. See :doc:`/admins/Troubleshooting/DefaultServerHealthAlerts` for more information.
+
+Before 2021.4.5, there are no default alerts. You must manually enable server health checks to get any alerts.
+
+.. note::
+
+   Alation will send an alert only if something is "unhealthy" and the check returns a warning. If the check doesn't detect any issues, it won't trigger an alert.
+
+.. _Enabling Admin Alerts:
+
+Enabling Admin Alerts
+---------------------
+
+Use these instructions to enable the full set of server health checks. You must first enter the Alation shell.
+
+.. include:: ../../shared/AccessingAlationShell.rst
+
+To enable admin alerts:
+
+#. In the Alation shell, run the following command to enable alerts:
+
+   .. code-block:: bash
+
+      alation_conf alation.healthcheck.enable_admin_alert_checks -s True
+
+#. Enable the DataDog agent with the following command:
+
+   .. code-block:: bash
+
+      alation_action enable_datadog
+
+#. Exit the shell:
+
+   .. code-block:: bash
+
+      exit
+
+After you enable admin alert checks, users with the Server Admin role will start receiving email alerts for the full set of server health checks. There is currently no way for individual users to opt out of these notifications. All Server Admins in your instance will receive them.
+
+The alert email will have the details on the check and a suggested course of action to fix the problem.
+
+You can configure which server health checks Alation will perform. See `Configuring Which Alerts to Get`_.
+
+Alation Server Health Checks
+----------------------------
+
+Alation will perform two sets of checks: **hourly** and **daily**.
+
+Hourly Checks
+~~~~~~~~~~~~~
+
+By default, these checks run every hour. You can configure how often they run (see `Changing the Interval for Hourly Checks`_). These checks should run often.
+
+If any of these checks find problems, Alation will send email alerts to Server Admins. If the same check finds a problem again during the next hour, Alation will send out the same emails again.
+
+Hourly checks include:
+
+* Basic Service Check
+* Celery Queues Health Check
+* Backend Task Scheduling Health Check
+* Out of Memory Kills Check
+* Excessive Query Time Check
+* Auth Service Check
+* Alation Analytics V2 Check
+
+Basic Service Check
+^^^^^^^^^^^^^^^^^^^
+
+Checks if all Alation services are up and running.
+
+Celery Queues Health Check
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation uses Celery to manage many tasks simultaneously. If Celery queues have too many items, it means that tasks aren't processing fast enough. This could result in some tasks getting stuck and prevent other tasks from processing. It could also mean that the system is underperforming.
+
+By default, this check only monitors some Celery queues. You can configure which queues to check. The queues included by default are:
+
+-  ``default`` takes backend jobs.
+-  ``ingestion`` takes backend jobs. If default and ingestion queues get full, metadata will be out of date.
+-  ``run_scheduling`` manages the running of scheduled Compose queries. If full, scheduled queries may stay unprocessed.
+-  ``stewardship`` manages the Stewardship Dashboard. If full, the dashboard won't update.
+
+To specify which queues to check, you will need to change the ``alation.healthcheck.celery_queues_to_monitor`` parameter in ``alation_conf``:
+
+.. code-block:: bash
+
+    alation_conf alation.healthcheck.celery_queues_to_monitor -s [list of queues to monitor]
+
+Don't use spaces in the list when setting the parameter value. Example:
+
+.. code-block:: bash
+
+   alation_conf alation.healthcheck.celery_queues_to_monitor -s ['fastqueue','thinqueue','default']
+
+To change the threshold of how many items in the queue to consider as excessive, use the ``alation.healthcheck.celery_queue_size_threshold`` parameter:
+
+.. code-block:: bash
+
+   alation_conf alation.healthcheck.celery_queue_size_threshold -s <number>
+
+Replace *<number>* with the number of tasks in the queue.
+
+Note that ``alation.healthcheck.celery_queue_size_threshold`` equally applies to all queues.
+
+If a queue has more items than the threshold, Alation issues this alert:
+
+-  The following Celery queues are quite crowded: *list of unhealthy queues*.
+
+Backend Task Scheduling Health Check
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation users schedule various jobs to run at a specific time. When the server tasks associated with these jobs miss their scheduled runs, it means the scheduler or the workers fetching jobs from the scheduler may be overloaded. This check looks at server tasks like:
+
+* BI server extraction
+* File system extraction
+* Metadata extraction
+* Profiling
+* Query log ingestion
+
+The check will fetch information if any of these tasks missed their schedule and issues this alert:
+
+-  The following tasks missed their latest scheduled run: <list of tasks>.
+
+Out of Memory Kills Check
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Checks if there are any out-of-memory (OOM) process "kills." If so, it issues this alert:
+
+-  The following processes were OOM-killed by the OS: *list of processes*.
+
+Excessive Query Time Check
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Checks if there are queries running for too long on the main Alation database. If so, it issues this alert:
+
+-  <number> queries are running for longer than 3600 seconds on Alation backend: *list of queries that take too long*.
+
+Auth Service Check
+^^^^^^^^^^^^^^^^^^
+
+*Starting from 2021.4.5*
+
+Checks whether the authentication service is running. If the ``​​alation.authentication.service.enabled`` parameter is set to ``True`` but no authentication service is running, this check issues the alert:
+
+-  Authserver is reporting error in following services: failed to connect to all addresses.
+
+Alation Analytics V2 Check
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*Starting from 2023.1*
+
+Checks whether a connection to the RabbitMQ and Postgres components of Alation Analytics V2 can be established. If not, it issues alerts such as:
+
+-  AAv2 Postgres: Error while running query: could not connect to server:Connection refused Is the server running on host "127.0.0.1" and accepting TCP/IP connections on port 25432
+-  AAv2 RabbitMQ: Error while establishing connection: AMQPConnectionError: (AMQPConnectorSocketConnectError: ConnectionRefusedError(111, 'Connection refused'))
+
+For help addressing these errors, see :doc:`/installconfig/AlationAnalyticsV2/MaintainAlationAnalyticsV2`.
+
+Changing the Interval for Hourly Checks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, these hourly checks run every hour, but you can change this interval using the ``alation.healthcheck.admin_alert_check_interval`` parameter in ``alation_conf``:
+
+.. include:: ../../shared/AccessingAlationShell.rst
+
+To change the interval:
+
+#. In the Alation shell, run the following command, replacing ``<interval in seconds>`` with the desired interval:
+
+   .. code-block:: bash
+
+      alation_conf alation.healthcheck.admin_alert_check_interval -s <interval in seconds>
+
+#. Enable the DataDog agent with the following command:
+
+   .. code-block:: bash
+
+      alation_action enable_datadog
+
+#. Exit the shell:
+
+   .. code-block:: bash
+
+      exit
+
+Daily Checks
+~~~~~~~~~~~~
+
+If any of the daily checks detect a health issue, the admins will be immediately notified. The daily checks run once a day, inside one of the hourly checks. The emails sent from that combined check will only have warnings from checks that found problems. This may mean the email contains only daily checks, only hourly checks, or a mix.
+
+Daily checks include:
+
+* Root or Data Volumes Overflow Check
+* Backup Health Check
+* Backend Table Limit Check
+* Elasticsearch Migration Status Check
+
+Root or Data Volumes Overflow Check
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Checks if any of the root or data volumes are filled up over a threshold. You can change the threshold using the ``alation.healthcheck.disk_usage_threshold`` parameter in ``alation_conf``:
+
+.. code-block:: bash
+
+   alation_conf alation.healthcheck.disk_usage_threshold -s <number in %>
+
+If the used disk space passes the threshold, the check issues this alert:
+
+-  The following volumes are quite full: *list of volumes*."
+
+Backup Health Check
+^^^^^^^^^^^^^^^^^^^
+
+Checks if the daily backup job has run successfully. Starting with 2021.4.5, Alation can also check the health of Backup V2.
+
+If this check returns a warning, there is something wrong with the backup job health. If this check doesn’t find any problems, you will still need to check on backups as specified in your admin routine. Currently, the backup job doesn’t provide any details on the job status. So passing this check doesn’t necessarily mean creating a backup is a complete success. To validate backups, check if the latest backups are present in your backup directory. This is usually **/data2/backup/**. It should have a backup file for each night of the week. You can validate a backup by restoring it on a fresh instance.
+
+The check issues this alert:
+
+-  The latest backup job has failed."
+
+Backend Table Limit Check
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some tables in the Alation database have limits on how many rows they can take. This check tests if such a limit is approaching for any of them. If a table is close to the limit, the check issues this alert:
+
+-  Integer IDs of the following Alation backend tables have reached <number>% of maximum value."
+
+.. _Configuring Which Alerts to Get:
+
+Configuring Which Alerts to Get
+-------------------------------
+
+You can configure which alerts to get. In ``alation_conf``, the parameter ``alation.healthcheck.alert_list`` has the list of alerts:
+
+.. code-block:: bash
+
+   alation.healthcheck.alert_list = ['celery','oom','disk','job','postgres','backup','authserver','scan_postgres','alation_analytics_v2']
+
+- ``celery`` enables the `Celery Queues Health Check`_ and `Backend Task Scheduling Health Check`_ alerts.
+- ``oom`` enables the `Out of Memory Kills Check`_ alert.
+- ``disk`` enables the `Root or Data Volumes Overflow Check`_ alert.
+- ``job`` enables the `Backup Health Check`_ alert for Backup V1.
+- ``postgres`` enables the `Backend Table Limit Check`_ and `Excessive Query Time Check`_ alerts.
+- ``backup`` enables the `Backup Health Check`_ alert for Backup V2.
+- ``authserver`` enables the `Auth Service Check`_ alert.
+- ``scan_postgres`` enables the Postgres corruption alert. This health check runs on a separate schedule from the others. See :doc:`/admins/How-tos/HowToScanPostgresForCorruptedIndexes` for more information. This alert is available starting in 2022.1.
+- ``alation_analytics_v2`` enables the Alation Analytics V2 alert, starting in 2023.1.
+
+If you want to stop getting an alert, remove the corresponding value from the list in the ``alation.healthcheck.alert_list`` parameter. No components need to be restarted. Don't use spaces in the list when setting the parameter value.
+
+For example, if you aren't using Backup V1 and want to remove that health check, you could remove ``'job'`` from the list:
+
+.. code-block:: bash
+
+   alation.healthcheck.alert_list -s ['celery','oom','disk','postgres','backup','authserver','scan_postgres','alation_analytics_v2']
+
+Health Check Parameters in alation_conf
+---------------------------------------
+
+The following table shows all the parameters in ``alation_conf`` that affect admin alerts.
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+==================================================== ================================================================================
+Parameter                                            Description
+==================================================== ================================================================================
+``alation.healthcheck.enable_admin_alert_checks``    Value can be ``True`` or ``False``.
+                                                     If ``True``, ``alation.healthcheck.alert_list`` is used.
+                                                     If ``False``, ``alation.healthcheck.default_list`` is used.
+
+``alation.healthcheck.alert_list``                   Specifies which alert checks should be performed
+                                                     if ``alation.healthcheck.enable_admin_alert_checks`` is ``True``.
+                                                     By default, the list is ``['celery', 'oom', 'disk', 'job', 'postgres', 'backup', 'authserver', 'scan_postgres']``.
+
+``alation.healthcheck.default_list``                 Specifies which alert checks should be performed
+                                                     if ``alation.healthcheck.enable_admin_alert_checks`` is ``False``.
+                                                     By default, the list is just ``['disk']``.
+
+``alation.healthcheck.admin_alert_check_interval``   Sets the interval, in *seconds*, for checks that run hourly
+                                                     by default. See `Changing the Interval for Hourly Checks`_.
+
+``alation.healthcheck.celery_queues_to_monitor``     List of Celery queues to be monitored by the `Celery Queues Health Check`_.
+
+``alation.healthcheck.celery_queue_size_threshold``  Sets the healthy Celery queue threshold, in number of queue items, for the `Celery Queues Health Check`_.
+
+``alation.healthcheck.disk_usage_threshold``         Sets the disk usage threshold, in %, for the `Root or Data Volumes Overflow Check`_.
+==================================================== ================================================================================

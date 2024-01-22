@@ -1,0 +1,323 @@
+Install Alation Sandbox
+============================
+
+.. include:: /shared/SandboxDeprecated.rst
+
+Use these steps to install Alation Sandbox of versions **2.0.0.120180** and newer.
+
+*Installation Flowchart*
+
+    .. image:: /_static/Sandbox_01.png
+        :width: 600px
+        :align: center
+
+Prerequisites
+------------------
+
+- `Prepare the Host`_
+- `Place a Valid Alation License on the Host`_
+- `Uninstall Previous Scarlet Build`_
+
+Prepare the Host
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+System
+^^^^^^^^^^^^
+
+For the Sandbox instance, it is recommended to use the same technical specification as was used for your Alation Production instance. This includes:
+
+    - Disk sizing
+
+        - Root Partition
+        - Data Partition
+        - Backup Partition
+
+    - CPU Processing Power
+
+    - RAM
+
+    - OS
+
+        - A minimal OS installation may need **openssl** to be installed
+
+        - If using RHEL8, upgrade RPM before installing Sandbox:
+
+              .. code-block:: Bash
+
+                  sudo yum install -y rpm --skip-broken
+
+Network
+^^^^^^^^^^^
+
+On the Sandbox host, open ports:
+
+    - **Outbound 443**: to allow Internet connection for downloading Alation builds from the Customer Portal and/or for uploading Sandbox logs to the Alation cloud.
+
+    - **Inbound 49152 - 65535**: Dynamic TCP Ports (Private Ports) to download Alation builds if planning to use the Connected mode
+
+    - **Outbound 2022** - for Sandbox to connect to the Replication Service on Production if planning to use the Connected mode. Enables copying of the Production backup to the Sandbox instance.
+
+    - Ports for Data Sources: depending on your test plan, the Sandbox instance may need connection to data sources. The Sandbox host needs network access to the sources that are tested. If this is the case, add those networking rules to the Sandbox instance.
+
+On the main Alation instance, open port:
+
+**Inbound 2022**: to connect to the Replication Service on the main Alation instance if you intend to use the *Connected* mode for Sandbox.
+
+    .. note::
+
+        The *Connected* mode uses the connection between the Sandbox host and the main Alation instance host in order to fetch the current build information and the backup. Modes overview can be found in :ref:`How Does Alation Sandbox Work? <Sandbox-How_Sandbox_Work>`.
+
+To test port connectivity, you can use Netcat commands (requires installation if not pre-installed on the host system):
+
+    .. code-block:: Bash
+
+        nc -zv <ALATION_PROD_IP> 2022
+        nc -zv spectrum.alationdata.com 443
+
+Place a Valid Alation License on the Host
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The license is free for Alation customers. It should have been provided by Alation with the Sandbox build.
+
+Place the license file on the Sandbox host. Note down the path.
+
+Uninstall Previous Scarlet Build
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are using the same host where you previously installed Scarlet (versions before **2.0.0.120180**) and still have such a version installed on the host, uninstall it before attempting to install Alation Sandbox (**2.0.0.120180** or newer).
+
+If you have never installed Scarlet on the host, skip this step.
+
+1. Find out which version of Scarlet is present on the host:
+
+    .. code-block:: Bash
+
+        rpm -qa | grep scarlet
+
+
+    This command returns the Scarlet package name that also includes the version if it is present on the instance, for example:
+
+    .. code-block:: Bash
+
+        rpm -qa | grep scarlet
+        alation_scarlet-1.9.9.124466-1.x86_64
+
+2. Uninstall the older version:
+
+    .. code-block:: Bash
+
+        rpm -e alation_scarlet-<version>
+
+3. Check that the older version is no longer present. After uninstallation, the following command should not return a result:
+
+    .. code-block:: Bash
+
+        rpm -qa | grep scarlet
+
+4. Remove any leftover Scarlet directories and files from the host:
+
+    .. code-block:: Bash
+
+        rm -rf /opt/alation/scarlet
+        rm -rf /etc/alation/scarlet
+        rm -rf /var/log/alation/scarlet
+
+Preparing the Host
+--------------------------------
+
+Use Sandbox in either the **Connected** or **Standalone** mode. Prepare for the mode you wish to use:
+
+- `Prepare for the Connected Mode`_
+- `Prepare for the Standalone Mode`_
+
+Prepare for the Connected Mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the **Connected** mode, Alation Sandbox:
+
+    - establishes a connection to the Replication Service on the main Alation instance in order to:
+
+          - Fetch the current build number
+          - Download the backup file
+
+    - uses the Internet connection to connect to the Customer Portal and download Alation builds for installation and upgrade.
+
+**This mode is safe** and requires no downtime of the main Alation instance.
+
+  .. note::
+
+      Port **2022** should be open on the main instance for Alation Sandbox to connect to its Replication Service.
+
+To prepare for the Connected mode, allow access for Sandbox on the main Alation host.
+
+1. Set up access to the main instance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. SSH to the server where you are going to install Alation Sandbox.
+2. On this server, generate the key pair for authorization. Make sure the key has proper permissions ``400``:
+
+    .. code-block:: Bash
+
+        ssh-keygen -t rsa
+
+    .. note::
+
+        It is possible to use an existing key if it was generated earlier. Make sure the key has proper permissions ``400``.
+
+3. By default, the generated key pair is saved in the root directory. Follow the prompts to specify a custom file name and directory, if necessary.
+
+4. Leave the passphrase empty: press Enter without providing any input in the passphrase prompt:
+
+    .. image:: /_static/Scarlet03.png
+        :width: 450px
+
+5. Note down the generated public key and the path to the private key file.
+6. In another Terminal window, SSH to the main Alation instance that you are replicating and enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+7. Generate keys for the Replication Service:
+
+    .. code-block:: Bash
+
+        alation_action cluster_generate_keys
+
+8. Run:
+
+    .. code-block:: Bash
+
+        replication_helper
+
+9. Follow the prompts to enter **Alation Sandbox Public Key** and **Alation Sandbox IP Address**:
+
+    .. image:: /_static/Scarlet04.png
+        :width: 450px
+
+10.  Return to the Terminal window that is SSH’ed to the Alation Sandbox host.
+
+11.  Test access to the main Alation instance:
+
+    .. code-block:: Bash
+
+        ssh -p 2022 -i <path to private key> <alationadmin>@<Main Alation Server IP or Hostname>
+
+If this command is successful, you will see output similar to the following example:
+
+    .. code-block:: Bash
+
+        Last login: Sat Jun 27 01:56:20 2020 (env) PROD [alationadmin@exciting-stork ~]$
+
+To exit and go back to the Sandbox instance: ``exit``
+
+2. Make sure a valid backup exists
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. note::
+
+        When testing the update to version 2021.1 or the update that skips 2021.1 (for example, from 2020.4.x to 2021.2.x), use a backup taken after key rotation has been successfully completed on the Alation instance. Completing key rotation before the update is a prerequisite for the 2021.1.x release.
+
+1. If the main Alation instance has not been backed up, create a backup by following the Alation backup instructions:
+
+    - :doc:`/installconfig/BackupandRestore/CreateBackupsManually`
+
+2. Note down the path to the backup file on the main Alation instance.
+
+
+3. Place Alation builds on the Sandbox host (optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Place Alation builds on the Sandbox host when it is not allowed to use the Internet connection or if you prefer to provide the builds manually. You will need:
+
+    - A build which will be installed first and from which Alation will be upgraded to a newer version
+    - A new build to which you will upgrade the instance
+
+If the builds are not provided locally on the Sandbox host, Sandbox will attempt to download them using the Spectrum service during the Sandbox run time.
+
+To place the Alation builds and a backup on the Sandbox host:
+
+1. On the Sandbox host, create a folder named install in the backup directory. For example, if the host uses the default backup directory **/backup**, the install directory should be created in **/backup**:
+
+    .. code-block:: Bash
+
+        sudo mkdir /backup/install
+
+2. Place the two Alation builds onto the Alation Sandbox host from any accessible location into the **/install** directory.
+
+After you have prepared the host, proceed to installation: :doc:`Install Alation Sandbox </archive/AdminConfig/AlationSandbox/SandboxInstall>`.
+
+
+Prepare for the Standalone Mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the **Standalone** mode, Alation Sandbox works without the connection to the main Alation instance. It will not attempt to download the backup and fetch the Alation version to install. The backup file must be either be made available locally on the Sandbox host or, from Sandbox version 5.1.0.136653, on Amazon S3.
+
+Sandbox 5.1.0.136653 or newer can automatically download backups from a location on S3. This requires Internet connection for the Sandbox host. If the backup file is stored on S3, you will need to specify the path to the S3 location in the Sandbox configuration file.
+
+To prepare for the Standalone mode, place the Alation builds (optional) and a backup file (required) on the Sandbox host or S3.
+
+1. Prepare the Alation Backup
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Placing the Backup on the Sandbox Host
+''''''''''''''''''''''''''''''''''''''''''
+
+Download the Alation backup **for the version that will be installed first and upgraded** to any location on the Sandbox host. Note down the path to the backup file.
+
+.. note::
+
+    When testing the update to version 2021.1.x or the update that skips 2021.1.x (for example, from 2020.4.x to 2021.2.x), use a backup taken after key rotation has been successfully completed on the Alation instance. Completing key rotation before the update is a prerequisite for the 2021.1.x release.
+
+Storing the Backup on Amazon S3
+'''''''''''''''''''''''''''''''''''''''''
+
+If the backup is stored on Amazon S3, note down the path to the backup, for example: ``s3://test-backups/manual-backups/backup.tar.gz``. You will need to provide it later in the configuration file. Note that this requires that access to S3 is allowed for the Sandbox host. See :doc:`Configure Access to Backups on Amazon S3 </archive/AdminConfig/AlationSandbox/SandboxConfigureAccessToBackupsOnAWS>`.
+
+2. Place Alation Builds on the Sandbox Host (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Perform this step when the Sandbox host is not allowed to use the Internet connection or if you prefer to provide the builds manually. If the builds are not provided, Sandbox will attempt to download them using the Spectrum service during the Sandbox run time:
+
+1. On the Sandbox host, create a folder named **install** in the **/backup** directory:
+
+    .. code-block:: Bash
+
+        sudo mkdir /backup/install
+
+2. Place the two Alation builds onto the Alation Sandbox host from any accessible location. You will need:
+
+    - A build which will be installed first and from which Alation will be upgraded to a newer version.
+    - A newer build to which you are upgrading
+
+After you have placed all the required files on the host, proceed to installation.
+
+Sandbox Installation
+---------------------------
+
+After preparing the host, install Sandbox:
+
+1. Place the Sandbox installer package on the Sandbox host.
+2. Run the installer. Use the command appropriate to the OS of the host:
+
+    .. important::
+
+          Run the commands described below with ``sudo``.
+
+    .. code-block:: Bash
+
+        sudo dpkg -i alation-sandbox-<version>.deb
+
+or
+
+    .. code-block:: Bash
+
+        sudo rpm -Uvh alation-sandbox-<version>.rpm
+
+
+The installer installs two files on the host to **/opt/alation/alation-sandbox**:
+
+    - The main executable: ``alation-sandbox``
+    - Example configuration file: ``example_config.toml``
+
+Proceed to configuration: :doc:`Configure Sandbox </archive/AdminConfig/AlationSandbox/SandboxConfigure>`

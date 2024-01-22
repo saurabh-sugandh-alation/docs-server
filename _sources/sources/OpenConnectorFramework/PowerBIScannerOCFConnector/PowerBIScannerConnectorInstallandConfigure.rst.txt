@@ -1,0 +1,708 @@
+Azure Power BI Scanner OCF Connector: Install and Configure
+===============================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Follow these steps to perform the necessary configuration for the Azure Power BI Scanner connector on the Power BI side and in Alation.
+
+Prerequisites
+-----------------
+
+Firewall Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Open outbound TCP port 443 on Azure Power BI server for Rest API communication.
+
+**Note:** If the Azure Power BI server is connected using a proxy connection, open the inbound TCP port 3128.
+
+Authentication Requirements
+-----------------------------
+
+* Azure app registration
+
+* Power BI application registration credentials
+
+I. Azure Power BI Scanner Setup and Authentication
+---------------------------------------------------------
+
+STEP 1: Register an Application in Azure Portal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Navigate to `App registrations <https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade>`_ in Microsoft Azure Portal.
+
+2. Click **New registration**:
+
+.. image:: ../../../_static/powerb2.png
+    :width: 500px
+    :align: center
+
+
+3. Provide the following information:
+
+    * A name for the application
+
+    * Select the account type **Accounts in this organizational directory only (<Org Name> only - Single tenant)**
+
+    * The Power BI URL as **Redirect URI** - :samp:`https://api.powerbi.com` or :samp:`https://api.powerbigov.us` - for Gov Cloud
+
+    .. image:: ../../../_static/powerb3.png
+        :width: 500px
+        :align: center
+
+4. Click **Register**.
+
+5. On the next screen, note down **Application (client) ID** and **Directory (tenant) ID**.
+
+.. image:: ../../../_static/powerb4.png
+    :width: 500px
+    :align: center
+
+6.  On the left pane, click **Certificates & secrets** to generate the **Client Secret**.
+
+.. image:: ../../../_static/powerb5.png
+    :width: 300px
+    :align: center
+
+7. Click **New client secret** under the **Client secrets** section.
+
+.. image:: ../../../_static/powerb6.png
+    :width: 500px
+    :align: center
+
+8. On the popup window, provide the **Description** for the client secret and click **Add**.
+
+.. image:: ../../../_static/powerb7.png
+    :width: 500px
+    :align: center
+
+9. Note the **Client Secret**.
+
+STEP 2: Create a Security Group for Azure Power BI Scanner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Navigate to the `Groups management section of Azure Portal <https://portal.azure.com/#blade/Microsoft_AAD_IAM/GroupsManagementMenuBlade/AllGroups>`_.
+
+2. Click **New group** and enter the following details:
+
+    .. image:: ../../../_static/powerb8.png
+        :width: 500px
+        :align: center
+
+    * Select **Security** for Group Type.
+
+    * Enter the **Group Name** and **Group Description**.
+
+    * Under **Members**, add the app created in Step 1 as the member of the group.
+
+    * Click **Create**.
+
+    .. image:: ../../../_static/powerb9.png
+        :width: 500px
+        :align: center
+
+STEP 3: Enable Azure Power BI Scanner Service Admin Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For an Azure application to be able to access the Power BI content and APIs, a Power BI admin needs to set **Enable service principal access** in the Power BI admin portal.
+
+1. Login to `Power BI <https://app.powerbi.com/>`_.
+
+2. From the **Settings** menu, select the **Admin portal**:
+
+.. image:: ../../../_static/powerb10.png
+    :width: 500px
+    :align: center
+
+3. Navigate to **Tenant Settings > Developer Settings** and perform the following configuration:
+
+    1. Enable **Allow service principals to use Power BI APIs**
+
+    2. Select the **Specific security groups** and select the security group created in Step 2
+
+    3. Click **Apply** to apply the settings
+
+        .. image:: ../../../_static/PowerBI_39.png
+            :width: 500px
+            :align: center
+
+4. Navigate to **Tenant Settings > Admin API Settings** and perform the following configuration:
+
+    1. Enable **Allow service principals to use read-only Power BI Admin APIs**
+
+    2. Select the **Specific security groups** and select the security group created in Step 2
+
+    3. Click **Apply** to apply the settings
+
+    4. Similarly enable the following flags:
+
+            * Enhance admin APIs responses with detailed metadata
+
+            * Enhance admin APIs responses with DAX and mashup expressions
+
+            .. image:: ../../../_static/powerb11.png
+                :width: 500px
+                :align: center
+
+5. In **Tenant Settings**, navigate to **Gen1 Dataflow Settings**:
+
+    1. Enable **Create and use Gen1 dataflows** to extract the dataflow objects in Alation.
+
+    2. Click **Apply** to save the settings.
+
+    .. image:: ../../../_static/powerb19.png
+        :width: 500px
+        :align: center
+
+II. Alation Setup and Authentication
+--------------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  .. important::
+
+      Installation of an OCF connector requires Alation Connector Manager to be installed as a prerequisite.
+
+1. If this has not been done on your instance, install Alation Connector Manager using the steps in: :doc:`Install Alation Connector Manager <../../../sources/OpenConnectorFramework/OCFInstallAlationConnectorManager>`.
+
+2. Make sure that the OCF connector Zip file that you received from Alation is available on your local machine.
+
+3. Install the connector on the Connectors Dashboard page: refer to :doc:`Manage Connector Dashboard <../../../sources/OpenConnectorFramework/ManageConnectors>`.
+
+STEP 2: Create and Configure a New BI Server Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a New BI Server Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This configuration requires the role of the **Server Admin**.
+
+1. Log in to the Alation instance and add a new BI Server source: **Apps > Sources > Add > BI Server**. The **Register a Business Intelligence Server** screen will open.
+
+2. On this screen, from the **Select a Business Intelligence Server** **type** list, select the **PowerBIScanner** connector name.
+
+.. note::
+
+      The connector name appears in this list only after it is installed.
+
+.. image:: ../../../_static/powerb12.png
+    :width: 500px
+    :align: center
+
+3. Provide the **Title** and a **Description** (optional) for your **PowerBI Scanner** data source.
+
+.. image:: ../../../_static/powerb13.png
+    :width: 500px
+    :align: center
+
+Configure the Azure Power BI Scanner Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **Settings** page:
+
+1. Specify **Application Settings**:
+
+  .. image:: ../../../_static/powerb14.png
+      :width: 300px
+      :align: center
+
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| **Parameter**              | **Description**                                                                                                      |
++============================+======================================================================================================================+
+| Enable Raw Dump or Replay  | The options in this drop list can be used to dump the extracted metadata into files in order to debug extraction     |
+|                            | issues before ingesting the metadata into Alation. This feature can be used during testing in case there are issues  |
+|                            | with MDE. It breaks extraction into two steps: first, the extracted metadata is dumped into files and can be viewed; |
+|                            | and second, it can be ingested from the files into Alation. It is recommended to keep this feature enabled only if   |
+|                            | debugging is required.                                                                                               |
+|                            |                                                                                                                      |
+|                            | - **Enable Raw Metadata Dump**: Select this option to save extracted metadata into a folder for debugging purposes.  |
+|                            |   The dumped data will be saved in four files (attribute.dump, function.dump, schema.dump, table.dump) in folder     |
+|                            |   **opt/alation/site/tmp/** inside Alation shell.                                                                    |
+|                            | - **Enable Ingestion Replay**: Select this option to ingest the metadata from the dump files into Alation.           |
+|                            | - **Off**: Disable the **Raw Metadata Dump** or **Replay** feature. Extracted metadata will be ingested into Alation.|
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Disable Automatic Lineage  | Select the **Disable Automatic Lineage Generation** checkbox to                                                      |
+| Generation                 | skip the creation of automatic Lineage after extraction.                                                             |
+|                            | When automatic Lineage generation is disabled, during                                                                |
+|                            | extraction Alation does not calculate Lineage data for this                                                          |
+|                            | BI source.                                                                                                           |
+|                            |                                                                                                                      |
+|                            | For more information, see                                                                                            |
+|                            | :doc:`Disable Automatic Lineage Generation <../../../bisources/AddBISources/DisableAutomaticLineageGenerationFAQ>`.  |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Disable Permission         | Leave this checkbox selected.                                                                                        |
+| Enforcement                |                                                                                                                      |
+|                            | Permission enforcement is not supported between Azure Power BI Scanner and Alation                                   |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Disable Certification      | Leave this checkbox selected.                                                                                        |
+|                            |                                                                                                                      |
+|                            | Certification of BI objects in Azure Power BI Scanner from Alation                                                   |
+|                            | is not supported.                                                                                                    |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Server URI                 | Enter the server URI used to access Azure Power BI Scanner.                                                          |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+
+2. Click **Save** to save the information you have entered.
+
+3. Specify **Connector Settings**:
+
+  .. image:: ../../../_static/powerb15.png
+      :width: 300px
+      :align: center
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| **Parameter**              | **Description**                                                                                                      |
++============================+======================================================================================================================+
+| Power BI Web URL           | Specify the URL to access Power BI. The default values are:                                                          |
+|                            | :samp:`https://app.powerbi.com/` and                                                                                 |
+|                            | :samp:`https://app.powerbigov.us/` - for Gov Cloud                                                                   |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Power BI API URL           | Specify the API URL to access Power BI APIs. The default values are:                                                 |
+|                            | :samp:`https://api.powerbi.com/v1.0/myorg/` and                                                                      |
+|                            | :samp:`https://api.powerbigov.us/v1.0/myorg/` - for Gov Cloud                                                        |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| API URL for Access Token   | Specify the API URL to generate the Access Token. The default value is                                               |
+|                            | :samp:`https://login.microsoftonline.com/common/oauth2/token`                                                        |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Power BI Resource URL      | Specify the Power BI Resource URL to grant access scope to Power BI APIs. The default values are:                    |
+|                            | :samp:`https://analysis.windows.net/powerbi/api` and                                                                 |
+|                            | :samp:`https://analysis.usgovcloudapi.net/powerbi/api` - for Gov Cloud                                               |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Power BI Tenant ID         | Specify the Power BI tenant ID.                                                                                      |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Power BI Client ID         | Specify the Power BI client ID.                                                                                      |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Power BI Client Secret     | Specify the Power BI client secret.                                                                                  |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Proxy URL                  | Specify the URL to access Power BI via proxy server. This is an optional field and should be used only if Azure Power|
+|                            | BI Scanner is connected using proxy connection.                                                                      |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Proxy Port                 | Specify the proxy port number. This is an optional field and should be used only if Azure Power BI Scanner is        |
+|                            | connected using proxy connection.                                                                                    |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Proxy Username             | Specify the proxy server username. This is an optional field and should be used only if Azure Power BI Scanner is    |
+|                            | connected using proxy connection.                                                                                    |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Proxy Password             | Specify the proxy server password. This is an optional field and should be used only if Azure Power BI Scanner is    |
+|                            | connected using proxy connection.                                                                                    |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Power BI Workspace         | Provide the workspace extraction batch size. Alation supports a maximum of 100 batches per extraction. Reducing this |
+| Extraction Batch Size      | parameter will increase the number of API calls against the Azure Power BI Scanner to fetch the data, but decrease   |
+|                            | the size of data fetched during each call.                                                                           |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Enable Apps Extraction     | Enable this checkbox to extract the apps from Azure Power BI Scanner.                                                |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Enable Extraction For      | Enable the check-box to enable service principal based extraction and listing of projects which the user has access  |
+| Service Principal          | to view.                                                                                                             |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Log Level                  | Select the log level to generate logs. The available options are INFO, DEBUG, WARN, TRACE, ERROR, FATAL, ALL.        |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Pause Extraction if API    | Enable this checkbox to pause the extraction if the API limit is reached. The extraction will be paused until the API|
+| limit is reached           | limit is refreshed which will take a maximum of one hour time. If this checkbox is disabled, the extraction will     |
+|                            | complete if the API limit is reached. The metadata that was extracted before this time will be added to the Catalog. |
+|                            | Extraction will not resume when the API limit is refreshed.                                                          |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+
+**Cross-System Lineage:**
+
+Cross-System Lineage is to generate lineage between this Azure Power BI Scanner BI source and any supported data source by this connector. To generate the cross-system Lineage, specify the host name and the port number of this BI source on the RDBMS connector’s  **General Settings > Application Settings > BI Connection Info** field in the format mentioned below:
+
+``Host_Name:Port_Number``
+
+Example: ``adb-8443049157651279.19.azuredatabricks.net:443``
+
+.. image:: ../../../_static/powerb17.png
+    :width: 400px
+    :align: center
+
+.. note::
+
+     This image is from the supported data source **General Settings** page.
+
+
+4. Click **Save**.
+
+5. Under **Test Connection**, click **Test** to validate network connectivity.
+
+.. image:: ../../../_static/powerb16.png
+    :width: 700px
+    :align: center
+
+6. Under **Extraction Settings**, turn on **Selective Extraction**, if required. Selective extraction settings are used to apply a filter to include or exclude a list of projects.
+
+    6.1 Click **Get List of Projects** to first fetch the list of projects.
+
+    6.2 The status of the Get Projects action is logged in the** Job History** table at the bottom of the Settings page.
+
+    6.3 Once the folder synchronization is successful, a drop-down list of projects will become enabled. Select one or more projects to apply the filter.
+
+    6.4 Check if you are using the desired filter option. Available filter options are described below:
+
+    +------------------------------+-----------------------------------------------------------------------+
+    | Filter Option                | Description                                                           |
+    +==============================+=======================================================================+
+    | Extract all Projects except  | Extract metadata from all projects except from the Folders selected.  |
+    +------------------------------+-----------------------------------------------------------------------+
+    | Extract only these Projects  | Extract metadata from only the selected Projects.                     |
+    +------------------------------+-----------------------------------------------------------------------+
+
+    6.5 Click **Run Extraction Now** to extract metadata. The status of the extraction action is also logged in the **Job History** table at the bottom of the page.
+
+        .. note::
+
+             Extraction of source description is supported from connector version **1.4.3**.
+
+        .. note::
+
+            Extraction of dataflow objects is supported from connector version **2.0.1**. See :doc:`Dataflows <../../../sources/OpenConnectorFramework/PowerBIScannerOCFConnector/AzurePowerBIScannerOCFConnectorDataflows>` for more details.
+
+7. If you wish to automatically update the metadata in the Catalog, under **Automated and Manual Extraction**, turn on **Enable Automated Extraction** and select the day and time when metadata must be extracted. The metadata extraction will be automatically scheduled to run at the selected day and time.
+
+Troubleshooting
+----------------------
+
+Refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.
+
+Cross-System Lineage
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the cross-system Lineage is configured on the supported data source and Lineage graph does not display the Lineage, check the following:
+
+    - Make sure that the data source on which the cross-system Lineage is configured is supported by this connector. See the `Expressions Supported by Lineage`_ table for the data sources supported by this connector.
+
+    - Make sure that the BI Connection Info field has the value set in the format mentioned below:
+
+      ``hostname:port-number``
+
+    - Make sure that  the Connection details in the Azure Power BI Scanner connector and the data source are in the same format.
+
+      **catalog.schema.tablename** or **schema.tablename**
+
+      .. image:: ../../../_static/powerb18.png
+          :width: 500px
+          :align: center
+
+Limitations
+~~~~~~~~~~~~~~
+
+* Lineage for PowerBI Dataflows is supported from Alation version **2023.3.3 onwards**.
+
+* You must upgrade to Alation version **2023.3.2 or higher** to use lineage for UC Databricks with connector version **2.1.0 or higher**.
+
+* To use lineage with UC Databricks in Alation version 2023.3.2, enable the flag **alation.resolution.DEV_bi_connector_returns_db_for_two_part_schema**. (No flag is required from Alation version **2023.3.3 onwards** for UC Datbricks Lineage with Power BI).
+
+* Lineage for paginated reports (RDL) is not supported. Paginated reports do not contain the dataset ID required to show lineage between a Power BI dataset and a Power BI paginated report.
+
+* Lineage between the datasource tables and the dataset is built through parsing the dataset expression which is a Power BI mQuery (Power Query). Alation gets this expression from the `getScanResult <https://docs.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-scan-result>`_ API. See `Expressions Supported by Lineage`_ below for examples of supported expressions.
+
+* Power BI Scanner API (API used in Power BI Scanner Connector) does not return datasets with object-level security, because of which Alation will not show connections, fields, and lineage for those datasets. See `Metadata Scanning <https://learn.microsoft.com/en-us/power-bi/enterprise/service-admin-metadata-scanning#considerations-and-limitations>`_ for details.
+
+Migrating Logical Metadata
+--------------------------------------------
+
+You can migrate the logical metadata from the Power BI instance connected using the older version of the Azure Power BI connector to the same Power BI instance connected using the Azure Power BI Scanner connector.
+
+Prerequisites
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prepare the following to migrate the metadata:
+
+1. The BI source that is configured with the old Power BI OCF Connector.
+
+2. The Power BI migration script: create a ticket with Alation Support about receiving the Power BI migration script.
+
+3. Make sure that the required Azure Power BI Scanner OCF connector has been installed on the Alation server. The installed OCF connector will be displayed on **Admin Settings > Server Admin > Manage Connectors** page.
+
+4.  Configure the same Power BI instance (as in step 1) as a new BI Server source with the Azure Power BI Scanner connector and run the extraction.
+
+Scope
+~~~~~~~~~~~~~~
+
+The following information will be migrated from the old Power BI connector to the Azure Power BI Scanner connector:
+
+* Data source ID - The data source ID will remain the same.
+
+* Logical metadata such as values of the custom fields, data quality flags, @-mentions in the custom fields, @-mentions in articles, object sets, people sets, pickers, multi-select pickers,  the title and description, tags, top users, and fields shared through catalog sets.
+
+Migration
+~~~~~~~~~~~~~~
+
+Perform the following steps to migrate the metadata:
+
+1. Copy the migration script that you received from Alation to the **/tmp** directory on the Alation host. If you use the example below, replace <ssh-user> with your username.
+
+.. code-block:: Bash
+
+          scp copy_powerbi_logical_data_to_scanner.py <ssh-user>@{alation-instance-ip}:/tmp
+
+2. Use SSH to connect to the Alation host.
+
+3. Enter the Alation shell:
+
+.. code-block:: Bash
+
+          sudo /etc/init.d/alation shell
+
+4. Stage the migration scripts in the .. code-block:: Bash `one_off_scripts` directory.
+
+.. code-block:: Bash
+
+          sudo cp /tmp/<Migration_Script>.py /opt/alation/alation/opt/alation/django/rosemeta/one_off_scripts
+
+5. Change user to alation:
+
+.. code-block:: Bash
+
+          sudo su alation
+
+6. Navigate to the .. code-block:: Bash `one_off_scripts` directory.
+
+.. code-block:: Bash
+
+          cd opt/alation/django/rosemeta/one_off_scripts/
+
+7. Find the SourceID of the connector. The SourceID of the datasource can be viewed in the browser URL when you view the datasource catalog page. In the below example, the SOURCE_ID would be 9.
+
+**Example:**
+
+      ``htpps://qualified_domain_name/bi/v2/server/9/``
+
+
+8. Run the migration script with the below command.
+
+.. code-block:: Bash
+
+          python <Migration_Script>.py -s <Old Power BI Connector_SourceID> -t <New Azure Power BI Scanner Connector_SourceID>
+
+9. Exit the shell:
+
+.. code-block:: Bash
+
+          exit
+
+10. The migration status will not be stored in logs and will be displayed in the console only during the migration process.
+
+Expressions Supported by Lineage
+--------------------------------------------
+
+ Lineage between tables and the dataset or dataflow will work only if the expression is in the formats given below:
+
+ .. tabularcolumns:: |p{2cm}|p{2cm}|p{11cm}|
+
+.. table::
+   :widths: auto
+   :class: longtable table-fixed-header table-fixed-first-column
+
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Database Name        | Connection  | Sample Expression                                                                                                                |
+   |                      | Type        |                                                                                                                                  |
+   +======================+=============+==================================================================================================================================+
+   | Azure Databricks     | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Databricks.Contents(\"adb-8651250466505288.8.azuredatabricks.net\", \"sql/protocolv1/o/8651250466505288/   |
+   |                      |             |    0622-214404-awash362\", [Database=null, BatchSize=null]),\n    SPARK_Database = Source{[Name=\"SPARK\",Kind=\"Database\"]}    |
+   |                      |             |    [Data],\n    default_Schema = SPARK_Database{[Name=\"default\",Kind=\"Schema\"]}[Data],\n    diamonds_Table =                 |
+   |                      |             |    default_Schema{[Name=\"diamonds\",Kind=\"Table\"]}[Data]\nin\n    diamonds_Table";                                            |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | AWS Databricks       | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    “let\n Source = Databricks.Catalogs(\"dbc-25e69bfd-44ed.cloud.databricks.com\", \"sql/protocolv1/o/7841352139603430/          |
+   |                      |             |    0118-050057-4xra3flu\", [Database=null, BatchSize=null]),\n       hive_metastore_Database = Source{[Name=\"hive_metastore\",  |
+   |                      |             |    Kind=\"Database\"]}[Data],\n           technology_Schema = hive_metastore_Database{[Name=\"default\",Kind=\"Schema\"]}[Data], |
+   |                      |             |    \n               strm_dems_Table = technology_Schema{[Name=\"student2\",Kind=\"Table\"]}[Data]\n          in\n                |
+   |                      |             |    strm_dems_Table\n”;                                                                                                           |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    “let\n    Source = DatabricksMultiCloud.Catalogs(\"dbc-25e69bfd-44ed.cloud.databricks.com\", \"sql/protocolv1/o/              |
+   |                      |             |    7841352139603430/0210-085930-oexhpgse\", [Catalog=null, Database=null, EnableAutomaticProxyDiscovery=null]),\n                |
+   |                      |             |    hive_metastore_Database = Source{[Name=\"hive_metastore\",Kind=\"Database\"]}[Data],\n    default_Schema = hive_metastore_    |
+   |                      |             |    Database{[Name=\"default\",Kind=\"Schema\"]}[Data],\n    student2_Table = default_Schema{[Name=\"student2\",Kind=\"Table\"]}  |
+   |                      |             |    [Data]\n in\n    student2_Table\n”;                                                                                           |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Unity Databricks     | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    “let\n    Source = Databricks.Catalogs(\"adb-8443049157651279.19.azuredatabricks.net\", \"sql/protocolv1/o/                   |
+   |                      |             |     900788168547414/1031-122656-8zrkv0jk\", [Catalog=\"default\", Database=null, EnableAutomaticProxyDiscovery=null]),\n         |
+   |                      |             |     hive_metastore_Database = Source{[Name=\"hive_metastore\",Kind=\"Database\"]}[Data],\n  default_Schema = hive_metastore_     |
+   |                      |             |     Database{[Name=\"default\",Kind=\"Schema\"]}[Data],\n    t1_Table = default_Schema{[Name=\"t1\",Kind=\"Table\"]}             |
+   |                      |             |     [Data]\nin\n    t1_Table”;                                                                                                   |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | SQL Server           | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Sql.Databases(\"ifac-sqlsrv.ceeyrlqdpprr.us-west-2.rds.amazonaws.com\"),\n    Sales = Source{[Name=\"Sales\|
+   |                      |             |    "]}[Data],\n    dbo_Customer_Orders = Sales{[Schema=\"dbo\",Item=\"Customer_Orders\"]}[Data]\nin\n    dbo_Customer_Orders";   |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Sql.Databases(\"tcp:ifac-sqlsrv.ceeyrlqdpprr.us-west-2.rds.amazonaws.com,1433\"),\n    AdventureWorks =    |
+   |                      |             |    Source{[Name=\"AdventureWorks\"]}[Data],\n    Sales_vPersonDemographics =                                                     |
+   |                      |             |    AdventureWorks{[Schema=\"Sales\",Item=\"vPersonDemographics\"]}[Data]\nin\n    Sales_vPersonDemographics";                    |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n Source = Sql.Databases("tcp:sqlwrhlondonprod.b05aaf70da1f.database.windows.net"),\n LONDON = Source{[Name="london"]}   |
+   |                      |             |    [Data],\n london_pbi_SHIFTREPORT_REACHSTAT_Allinone = LONDON{[Schema="london",Item="pbi_SHIFTREPORT_REACHSTAT_Allinone"]}     |
+   |                      |             |    [Data],\n #"Filtered Rows" = Table.SelectRows(london_pbi_SHIFTREPORT_REACHSTAT_Allinone, each [P_sysdate] >= RangeStart and   |
+   |                      |             |    [P_sysdate] <= RangeEnd)\nin\n #"Filtered Rows""                                                                              |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   |                      | Query       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Sql.Database(\"ifac-sqlsrv.ceeyrlqdpprr.us-west-2.rds.amazonaws.com\", \"pubs\", [Query=\"select * from    |
+   |                      |             |    jobs\"])\nin\n    Source";                                                                                                    |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Sql.Database(\"synapse-edw-d.sql.azuresynapse.net\", \"edwsyndsql\", [Query=\"SeLeCt#(lf)    s.f_name,#(lf)|
+   |                      |             |    t.f_name#(lf)from #(lf)    tmp.src_test s#(lf)inner JOIN  #(lf)    tmp.tgt_test t#(lf)ON  #(lf)    s.f_name = t.f_name\"])\nin|
+   |                      |             |    \n    Source";                                                                                                                |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Sql.Database(\"synapse-edw-d.sql.azuresynapse.net\", \"edwsyndsql\", [Query=\"select#(lf)    s.f_name,#(lf)|
+   |                      |             |    t.f_name#(lf)from #(lf)    tmp.src_test s#(lf)inner JOIN  #(lf)    tmp.tgt_test t#(lf)ON  #(lf)    s.f_name = t.f_name\"])\nin|
+   |                      |             |    \n    Source";                                                                                                                |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Sql.Database(\"10.13.12.200:1433\", \"test_database\", [Query=\"select * from                              |
+   |                      |             |    \"\"test_profilling_main.arcs.test\"\".\"\"arcstable\"\"\"])\nin\n   Source";                                                 |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | MySQL                | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = MySQL.Database(\"ifac-mysql.ceeyrlqdpprr.us-west-2.rds.amazonaws.com:3306\", \"employees\",                |
+   |                      |             |    [ReturnSingleDatabase=true]),\n    employees_departments = Source{[Schema=\"employees\",Item=\"departments\"]}[Data]\nin\n    |
+   |                      |             |    employees_departments";                                                                                                       |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   |                      | Query       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = MySQL.Database(\"ifac-mysql.ceeyrlqdpprr.us-west-2.rds.amazonaws.com:3306\", \"crm\", [ReturnSingleDatabase|
+   |                      |             |    =true, Query=\"select c.customerNumber , c.customername, c.city, c.country from customers c , orders o where                  |
+   |                      |             |    c.customernumber=o.customernumber\"])\nin\n    Source";                                                                       |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Azure SQL            | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Sql.Database(\"tf-testal-94619nimeshkuma-17.database.windows.net\", \"SqlServerAzDB_1\"),\n                         |
+   |                      |             |    schemaWithViews01_testView01 = Source{[Schema=\"schemaWithViews01\",Item=\"testView01\"]}[Data]\nin\n                         |
+   |                      |             |    schemaWithViews01_testView01";                                                                                                |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Azure Synapse        | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Sql.Database(\"synaptestal125371ayush24-ondemand.sql.azuresynapse.net\", \"master\"),\n                    |
+   |                      |             |    dbo_MSreplication_options = Source{[Schema=\"dbo\",Item=\"MSreplication_options\"]}[Data]\nin\n                               |
+   |                      |             |    dbo_MSreplication_options";                                                                                                   |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Oracle               | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Oracle.Database(\"ifac-orcl.ceeyrlqdpprr.us-west-2.rds.amazonaws.com:1521/orcl\", [HierarchicalNavigation= |
+   |                      |             |    true]),\n    IFAC_ADMIN = Source{[Schema=\"IFAC_ADMIN\"]}[Data],\n    ORDER_ITEMS1 = IFAC_ADMIN{[Name=\"ORDER_ITEMS\"]}[Data]\|
+   |                      |             |    nin\n    ORDER_ITEMS1";                                                                                                       |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Postgres             | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = PostgreSQL.Database(\"ifac-pgsql.ceeyrlqdpprr.us-west-2.rds.amazonaws.com:5432\", \"postgres\"),\n         |
+   |                      |             |    public_events = Source{[Schema=\"public\",Item=\"events\"]}[Data]\nin\n    public_events";                                    |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Amazon Redshift      | Table       |  .. code-block::                                                                                                                 |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = AmazonRedshift.Database(\"redshift-cluster-1.csjsqfswsudr.us-east-1.redshift.amazonaws.com:5439\", \"dev\",|
+   |                      |             |    [BatchSize=null]),\n    public = Source{[Name=\"public\"]}[Data],\n    category1 = public{[Name=\"category\"]}[Data]\nin\n    |
+   |                      |             |    category1";                                                                                                                   |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Snowflake            | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Snowflake.Databases(\"alation_partner.us-east-1.snowflakecomputing.com\", \"LOAD_WH\", [Role=null,         |
+   |                      |             |    CreateNavigationProperties=null, ConnectionTimeout=null, CommandTimeout=null]),\n    TABSFDC_Database =                       |
+   |                      |             |    Source{[Name=\"TABSFDC\",Kind=\"Database\"]}[Data],\n    PUBLIC_Schema = TABSFDC_Database{[Name=\"PUBLIC\",Kind=\"Schema\"]}  |
+   |                      |             |    [Data],\n    ACCOUNT_Table = PUBLIC_Schema{[Name=\"ACCOUNT\",Kind=\"Table\"]}[Data]\nin\n    ACCOUNT_Table";                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             | Non-Quoted Strings:                                                                                                              |
+   |                      |             |                                                                                                                                  |
+   |                      |             | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Snowflake.Databases(DS_CONN,DW_CONN,[Role=DS_ROLE]),\n    ANALYTICS_DB_Database =                          |
+   |                      |             |    Source{[Name=DB_CONN,Kind=\"Database\"]}[Data],\n    INSIGHT_REPORT_Schema = ANALYTICS_DB_Database{[Name=DSCH_CONN,Kind=\     |
+   |                      |             |    "Schema\"]}[Data],\n    CUSTOMER_DIM_G_AGREEMENT_DIM_G_VW_View =                                                              |
+   |                      |             |    INSIGHT_REPORT_Schema{[Name=\"CUSTOMER_DIM_G_AGREEMENT_DIM_G_GBI_RGG_VW\",Kind=\"View\"]}[Data],\n    #\"Removed Other Columns|
+   |                      |             |    \" = Table.SelectColumns(CUSTOMER_DIM_G_AGREEMENT_DIM_G_VW_View,{\"CustomerKey\", \"CustomerCd\", \"CustomerDesc\",           |
+   |                      |             |    \"MasterAgreementDesc\"})\nin\n    #\"Removed Other Columns\"                                                                 |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   |                      | Query       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Value.NativeQuery(Snowflake.Databases(\"hg51401.snowflakecomputing.com\",\"RESTAURANTS\"){[Name=\"FIVETRAN\|
+   |                      |             |    "]}[Data], \"select * from fivetran.restaurants_global_postsales.sc_new_monthly_churn\", null, [EnableFolding=true])\nin\n    |
+   |                      |             |    Source";                                                                                                                      |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Google BigQuery      | Table       | Extraction from a Table:                                                                                                         |
+   |                      |             |                                                                                                                                  |
+   |                      |             | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n   Source = GoogleBigQuery.Database(),    #\"eng-scene-228201\" = Source{[Name=\"eng-scene-228201\"]}[Data],            |
+   |                      |             |    HR_Data_Schema = #\"eng-scene-228201\"{[Name=\"HR_Data\",Kind=\"Schema\"]}[Data],   HR_Recruiting_Table = HR_Data_Schema{     |
+   |                      |             |    [Name=\"HR_Recruiting\",Kind=\"Table\"]}[Data]                                                                                |
+   |                      |             |    in                                                                                                                            |
+   |                      |             |    HR_Recruiting_Table";                                                                                                         |
+   |                      |             |                                                                                                                                  |
+   |                      |             | Extraction From a View:                                                                                                          |
+   |                      |             |                                                                                                                                  |
+   |                      |             | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    “let\n  Source =                                                                                                              |
+   |                      |             |    GoogleBigQuery.Database(), #\"test-alation-database-1\" = Source{[Name=\"test-alation-database-1\"]}[Data], profiling_Schema =|
+   |                      |             |    #\"test-alation-database-1\"{[Name=\"profiling\",Kind=\"Schema\"]}[Data],\n   gbq_profile_View = profiling_Schema{[Name=      |
+   |                      |             |    \"gbq_profile\",Kind=\"View\"]}[Data]\n                                                                                       |
+   |                      |             |    in\n  gbq_profile_View”;                                                                                                      |
+   |                      |             |                                                                                                                                  |
+   |                      |             | GBQ has default hostname - www.googleapis.com                                                                                    |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   |                      | Query       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Value.NativeQuery(GoogleBigQuery.Database(){[Name=\"test-alation-database-1\"]}[Data], \"select * from     |
+   |                      |             |    `test-alation-database-1.CAPITALDATASET.columnprofiler`\", null, [EnableFolding=true])\nin\n  Source";                        |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   | Teradata             | Table       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Teradata.Database(\"10.13.25.7\", [HierarchicalNavigation=true]),\n    test_query_ingestion =              |
+   |                      |             |     Source{[Schema=\"test_query_ingestion\"]}[Data],\n    test2 = test_query_ingestion{[Name=\"test1\"]}[Data]\nin\n    test2";  |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+   |                      | Query       | .. code-block::                                                                                                                  |
+   |                      |             |                                                                                                                                  |
+   |                      |             |    "let\n    Source = Teradata.Database(\"10.13.25.7\", [HierarchicalNavigation=true, Query=\"SELECT * from test_query_ingestion.|
+   |                      |             |    test1 t1 left join test_query_ingestion.test2 t2 on 1=1\"])\nin\n    Source";                                                 |
+   +----------------------+-------------+----------------------------------------------------------------------------------------------------------------------------------+
+
+
+Parameterised Expressions Supported by Lineage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Azure Power BI Scanner connector supports the parameterised expressions mentioned in the below table for Lineage:
+
+.. note::
+
+      All the parameterised expressions mentioned in the below table works with all the supported datasources mentioned in `Expressions Supported by Lineage`_.
+
++--------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+
+| **Types of Parameterised Expressions**           | **Example Parameters used in Dataset Expression**                                                                    |
++==================================================+======================================================================================================================+
+| Name of the parameterised expression             | .. code-block::                                                                                                      |
+|                                                  |                                                                                                                      |
+| Example: **BQEnv**                               |    let                                                                                                               |
+|                                                  |    Source = GoogleBigQuery.Database(),                                                                               |
+|                                                  |    #"test-alation-database-1" = Source{[Name=BQEnv]}[Data],                                                          |
+|                                                  |    PowerBiSchema_Schema = #"test-alation-database-1"{[Name="PowerBiSchema",Kind="Schema"]}[Data],                    |
+|                                                  |    joinedTable_Table = PowerBiSchema_Schema{[Name="joinedTable",Kind="Table"]}[Data]                                 |
+|                                                  |    in                                                                                                                |
+|                                                  |    joinedTable_Table                                                                                                 |
++--------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Parameterised expression preceding with #        | .. code-block::                                                                                                      |
+|                                                  |                                                                                                                      |
+| Example: **#"BQEnv"**                            |    let                                                                                                               |
+|                                                  |    Source = GoogleBigQuery.Database(),                                                                               |
+|                                                  |    #"test-alation-database-1" = Source{[Name=#"BQEnv"]}[Data],                                                       |
+|                                                  |    PowerBiSchema_Schema = #"test-alation-database-1"{[Name="PowerBiSchema",Kind="Schema"]}[Data],                    |
+|                                                  |    joinedTable_Table = PowerBiSchema_Schema{[Name="joinedTable",Kind="Table"]}[Data]                                 |
+|                                                  |    in                                                                                                                |
+|                                                  |    joinedTable_Table                                                                                                 |
++--------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Parameterised expression used with skip          | .. code-block::                                                                                                      |
+| character &                                      |                                                                                                                      |
+|                                                  |    let                                                                                                               |
+| Example: **""&BQEnv&""**                         |    Source = GoogleBigQuery.Database(),                                                                               |
+|                                                  |    #"test-alation-database-1" = Source{[Name=""&BQEnv&""]}[Data],                                                    |
+|                                                  |    PowerBiSchema_Schema = #"test-alation-database-1"{[Name="PowerBiSchema",Kind="Schema"]}[Data],                    |
+|                                                  |    joinedTable_Table = PowerBiSchema_Schema{[Name="joinedTable",Kind="Table"]}[Data]                                 |
+|                                                  |    in                                                                                                                |
+|                                                  |    joinedTable_Table                                                                                                 |
++--------------------------------------------------+----------------------------------------------------------------------------------------------------------------------+

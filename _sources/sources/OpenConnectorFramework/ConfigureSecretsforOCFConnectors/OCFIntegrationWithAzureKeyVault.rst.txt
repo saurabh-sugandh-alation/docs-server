@@ -1,0 +1,83 @@
+Integration with Azure Key Vault for Data Source Authentication Using OCF Connector
+====================================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from version 2023.1.5*
+
+Overview
+-------------------
+
+Alation can be configured to retrieve the username and password of a database service account from an Azure key vault. In this case, the service account credentials are not stored on the Alation server. Alation reads the credentials from the key vault when a Data Source Admin launches metadata extraction (MDE), query log ingestion (QLI), and profiling or when users perform profiling of specific tables and columns.
+
+.. note::
+
+   Alation currently does not support reading secrets stored as binary certificates or JSON key/value pairs. Only single secrets in text format can be read. 
+
+
+To set up the integration with an Azure key vault for a data source:
+
+1. Perform the configuration in MS Azure portal and collect the information required for configuring the Alation server. Refer to `Registering an Application for Azure Key Vault Integration`_ below for instructions.
+
+2. Perform additional configuration in Alation using the information you collected in MS Azure portal. Refer to `Configure Authentication with Azure Key Vault for a Data Source`_ below.
+
+.. include:: /shared/ConfigureAzureKeyVault.rst
+
+Configuring Integration with Azure Key Vault for an OCF Data Source
+-------------------------------------------------------------------------
+
+Follow the steps below to configure your data source to read the service account username and password for metadata extraction (MDE), query log ingestion (QLI), and Sampling and Profiling from an Azure key vault.
+
+To integrate your data source with an Azure key vault:
+
+1. Make sure you have the required information from Azure portal at hand:
+
+    - Application (client) ID
+    - Application client secret value
+    - Key vault Directory ID (Tenant ID)
+    - Key vault URI
+    - Names of the key vault secrets that store your desired settings. These can include JDBC URIs, usernames and passwords, and BI or ELT connector information.
+
+2. Log into Alation as a Server Admin and click the **Settings** gear icon.
+
+3. Under **Server Admin**, click **Authentication**.
+4. To the right of **Authentication Configuration Methods for External Systems**, click **Add Configuration** and then select **Azure Keyvault**.
+5. The **Authentication Configuration Method** page appears. The **Method** field should show **Azure Keyvault**.
+
+    .. image:: /_static/Admin_Auth_Keyvault.png
+        :class: with-border
+
+6. In **Config Name**, provide a unique name for the configuration. Your system may have a list of :ref:`Reserved Config Names`. Make sure your name does not conflict with any of these.
+
+7. In **Client Id**, enter the client ID of the Azure application.
+8. In **Client Secret**, enter the application client secret value.
+9. In **Tenant ID**, enter the tenant ID of the Azure application.
+10. In **Vault URL**, enter the URL to access the Azure key vault.
+11. Click **Save** to save the configuration.
+
+.. _Configure Authentication with Azure Key Vault for a Data Source:
+
+Configure Authentication with Azure Key Vault for a Data Source
+-----------------------------------------------------------------------------------
+
+Use the steps in this section to configure your data source to read the service account credentials from an Azure key vault.
+
+1. Log in to Alation and go to the settings page of the OCF data source for which you're setting up authentication with Azure key vault.
+
+2. Open the **General Settings** tab of the settings page and click the vault icon for each setting you want to configure using Azure Key Vault.
+
+3. Click **Select a Configuration** and select the appropriate Azure Key Vault configuration. 
+
+4. Enter the name of the Azure key vault secret that stores the desired setting.
+
+5. Repeat as needed for additional settings.
+
+6. Click **Save**. These identifiers will be used to look up the actual username and password stored in the Azure key vault.
+
+Now, when a Data Source Admin performs MDE, QLI, Sampling, and Profiling, Alation will read the appropriate credentials from the Azure key vault.
+
+Deleting a Key Vault Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /shared/DeleteExternalConfig.rst
+

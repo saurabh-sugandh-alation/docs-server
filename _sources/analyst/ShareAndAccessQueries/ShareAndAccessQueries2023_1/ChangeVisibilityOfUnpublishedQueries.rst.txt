@@ -1,0 +1,58 @@
+Change Visibility of Unpublished Queries
+========================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from 2023.1*
+
+Alation Cloud Service customers can submit a support ticket to request changes to the visibility of unpublished queries. Server Admins for on-premise customers can use the instructions below. This action will require the search index to be rebuilt, which can take hours for larger instances.
+
+For details on the effects of changing the visibility of unpublished queries, see :ref:`Unpublished Query Access`.
+
+To change the visibility of unpublished queries as a Server Admin for on-premise instances of Alation:
+
+.. include:: /shared/AccessingAlationShell.rst
+
+#. You can change the visibility of unpublished queries for all data sources or specific data sources. Use one of the following commands:
+
+   -  To **turn on** the visibility of unpublished queries for **all** data sources, run the following command:
+
+      .. code-block:: bash
+
+         alation_conf alation.catalog.unpublished_query_visibility_level -s visible
+
+   -  To **turn off** the visibility of unpublished queries for **all** data sources, run the following command:
+
+      .. code-block:: bash
+
+         alation_conf alation.catalog.unpublished_query_visibility_level -s not_visible
+
+   -  To turn on visibility of unpublished queries for **specific** data sources, run the following command:
+
+      .. code-block:: bash
+
+         alation_conf alation.catalog.unpublished_query_visibility_level -s per_ds
+
+      Then run the following command, entering into the single quotes the IDs of the data sources for which you want unpublished queries to be **visible**:
+
+      .. code-block:: bash
+
+         alation_conf unpublished_query_visible_ds_ids_csv -s '1,5'
+
+      Unpublished queries will be visible for the data sources you list in the single quotes. Unpublished queries will *not* be visible for data sources that aren’t listed.
+
+#. Run the following command to rebuild the search index:
+
+   .. code-block:: bash
+
+      alation_action rebuild_es_index
+
+   .. note::
+
+   	This command kicks off the rebuild_index task. How long it takes depends on Rosemeta size and may take hours on large instances. You can monitor the task status in **Admin Settings** > **Monitor** > **Active Tasks**.
+
+#. Exit the Alation shell:
+
+   .. code-block:: bash
+
+      exit

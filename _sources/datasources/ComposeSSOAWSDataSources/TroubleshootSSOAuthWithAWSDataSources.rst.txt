@@ -1,0 +1,196 @@
+Troubleshoot SSO Authentication with Amazon Data Sources
+============================================================
+
+*Applies from release 2021.1*
+
+Logs to Review
+-------------------------------
+
+The following log files provide state, event, and error information for the *AuthService* component of Alation (path inside the Alation shell):
+
+    - **/opt/alation/site/logs/authserver_err.log**
+    - **/opt/alation/site/logs/authserver.log**
+    - **/opt/alation/site/logs/authserver_out.log**
+
+Configuration Files to Review
+-------------------------------
+
+AuthService configuration files are stored at **/opt/alation/site/config/authserver/<config_name>.json** (path inside the Alation shell).
+
+Error Messages
+-------------------------------
+
+Most of the error messages listed below will appear on the **Connect** dialog in Compose and the Catalog, for example:
+
+    .. image:: ../../_static/TroubleshootSSOwithAWSSources_01.png
+        :class: with-border
+
+Some error messages will appear on a slide-out on bottom right in Compose:
+
+    .. image:: ../../_static/TroubleshootSSOwithAWSSources_02.png
+        :class: with-border
+
+Some error messages may be visible in AuthService logs only.
+
++---------------------------------+--------------------------------+--------------------------------------------+
+| Error                           | Cause                          | Troubleshooting                            |
++=================================+================================+============================================+
+| Callback Handler: null:         | SAML Response received by the  | Inspect the SAML response for              |
+| state*                          | Callback handler contains      | the required SAML Attributes.              |
+|                                 | invalid information.           | Minimal configuration requires             |
+|                                 |                                | that SAML assertion should                 |
+|                                 |                                | include *Role* and *RoleSessionName*.      |
++---------------------------------+--------------------------------+--------------------------------------------+
+| Redirect handler exception:     | Compose is trying to use an    | Check that the configuration object        |
+| (java.io.FileNotFoundException: | IAM plug-in configuration that | with {name} exists on the Alation          |
+| .\/aws_iam1.json (No such file  | does not exist. In the example | server. If it does not exist, create       |
+| or directory))                  | ``aws_iam1.json`` is the       | it and try again.                          |
+|                                 | config file, and the           | If it exists, check its filesystem         |
+| Configuration {name} does not   | configuration name is          | permissions: the .json file                |
+| exist.                          | ``aws_iam1``. The error means  | must be readable by user ``alation``       |
+|                                 | the configuration object       |                                            |
+|                                 | ``aws_iam1`` may not have      |                                            |
+|                                 | been created.                  |                                            |
++---------------------------------+--------------------------------+--------------------------------------------+
+| Connector Error: failed to      | AuthService is not             | Check ``alation_conf`` and AuthServer      |
+| connect to all addresses        | configured or has stopped.     | status.                                    |
+|                                 |                                | ``alation.authentication.service.enabled`` |
+|                                 |                                | should be in ``True`` and AuthService      |
+|                                 |                                | should be ``operational``.                 |
++---------------------------------+--------------------------------+--------------------------------------------+
+| Missing configuration for       | The URL configuration in the   | Verify configuration or update the         |
+| Redirect URL                    | ``redirect`` parameter is      | configuration.                             |
+|                                 | missing or invalid.            |                                            |
++---------------------------------+--------------------------------+--------------------------------------------+
+| HTTP method GET not supported   | SAML Response is posted using  | IdP should use POST response               |
+|                                 | a GET HTTP call from the SAML  | to configure the SAML assertion.           |
+|                                 | IdP.                           |                                            |
++---------------------------------+--------------------------------+--------------------------------------------+
+| Your request included an        | SAML Response was invalid      | Refer to AWS documentation \*              |
+| invalidSAML response            | and was not accepted by        |                                            |
+|                                 | the AWS STS endpoint.          |                                            |
++---------------------------------+--------------------------------+--------------------------------------------+
+| Not authorized to perform       | The IAM role ARN specified in  | Make sure to use the exact name of the     |
+| sts:AssumeRoleWithSAML          | the SAML response contains a   | role because role names are case           |
+|                                 | typo or does not exist         | sensitive.                                 |
++---------------------------------+--------------------------------+--------------------------------------------+
+| RoleSessionName in              | The RoleSessionName attribute  | Refer to AWS troubleshooting               |
+| AuthnResponse must match ...    | value is too long or contains  | documentation \*                           |
+|                                 | invalid characters             |                                            |
++---------------------------------+--------------------------------+--------------------------------------------+
+| Failed to assume role: Issuer   |                                | Refer to AWS troubleshooting               |
+| not present in specified        |                                | documentation \*                           |
+| provider                        |                                |                                            |
++---------------------------------+--------------------------------+--------------------------------------------+
+| Requested DurationSeconds       | User is trying to assume a     | Refer to AWS troubleshooting               |
+| exceeds MaxSessionDuration      | role with invalid session      | documentation \*                           |
+| set for this role               | duration.                      |                                            |
++---------------------------------+--------------------------------+--------------------------------------------+
+| Error retrieving IAM            | AWS role error: the selected   | Reconnect and select a different role.     |
+| credentials. "User:<username>   | role does not give access to   |                                            |
+| is not authorized to perform:   | the AWS resource a user is     |                                            |
+| <permission> on resource:       | trying to access from Alation. |                                            |
+| <AWS resource ARN> (Service:    |                                |                                            |
+| <AWS Service>; Status Code: 403;|                                |                                            |
+| Error Code: AccessDenied;       |                                |                                            |
+| Request ID: <ID>))              |                                |                                            |
++---------------------------------+--------------------------------+--------------------------------------------+
+| Connector Error: Auth Server    | Role configuration error: the  | Check the AWS role settings: the           |
+| returned an invalid             | role configuration does not    | authentication application used in Alation |
+| authorization authorization     | allow access for the           | to request access must be added to the     |
+| error: Error: AWS Validation    | authentication application     | Trust Relationships of the role.           |
+| Error. Not authorized to        | that is requesting             |                                            |
+| perform sts:AssumeRoleWithSAML  | authorization.                 |                                            |
+| (Service:                       |                                |                                            |
+| AWSSecurityTokenService; Status |                                |                                            |
+| Code: 403; Error Code:          |                                |                                            |
+| AccessDenied; Request ID:<ID>)  |                                |                                            |
++---------------------------------+--------------------------------+--------------------------------------------+
+
+\* `Troubleshooting SAML 2.0 federation with AWS <https://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot_saml.html>`_
+
+
+Operations with AuthService Configuration Objects
+--------------------------------------------------------
+
+The commands below should be run from the Alation Django shell on the Alation host. To enter the Django shell, first enter the Alation shell and then the Django shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        alation_django_shell
+
+Substitute placeholder values in these examples with real values when you run this code.
+
+Configuration Objects of the AWS IAM Plug-in
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Below are examples of operations that can be performed on the AWS IAM plug-in configuration objects.
+
+Check Status of AWS IAM Plug-In of AuthService
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. code-block:: Bash
+
+        AuthClient('aws_iam').status_check()
+
+Create a Configuration Object for the AWS IAM Plug-in
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. code-block:: Bash
+
+        AuthClient('aws_iam').configure(operation='create', config={'config_name':'<your_value>', 'region':'<your_AWS_region>', 'sts_duration':'<your_number>', 'redirect_url':'<your_SSO_URL>'})
+
+Retrieve an Existing AWS IAM Plug-in Configuration Object
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. code-block:: Bash
+
+        AuthClient('aws_iam').configure(operation='read', config={'config_name':'<your_value>'})
+
+Modify an Existing AWS IAM Plug-in Configuration Object
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. code-block:: Bash
+
+        AuthClient('aws_iam').configure(operation='update', config={'config_name':'<your_value>', 'region':'<your_AWS_region>', 'sts_duration':'<your_number>', 'redirect_url':'<your_SSO_URL>'})
+
+Delete an AWS IAM Plug-in Configuration Object
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. code-block:: Bash
+
+        AuthClient('aws_iam').configure(operation='delete', config={'config_name':'<your_value>'})
+
+
+Operations with Compose Configuration Objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Substitute ``<ds_id>`` with your data source ID.
+
+Retrieve an Existing Compose Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. code-block:: Bash
+
+        In [1]: AuthServiceConfiguration.objects.get(ds_id=<ds_id>)
+
+        In [2]: conf.method_name
+        Out[2]: aws_iam
+
+        In [3]: conf.jdbc_config
+        Out[3]:
+        {'auth_obj_to_jdbc_param_map': {},
+          'jdbc_uri_enabler_patterns': [],
+          'jdbc_uri_to_auth_service_args_map': {}
+          'require_strict_jdbc_uri_to_auth_service_args_map': False}
+
+
+Delete Compose Configurations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To delete all Compose configurations for a data source:
+
+    .. code-block:: Bash
+
+        AuthServiceConfiguration.objects.filter(ds_id=<ds_id>).delete()

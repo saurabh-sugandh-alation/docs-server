@@ -1,0 +1,229 @@
+Migrate Custom DB Data Sources to OCF Connectors
+======================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The Custom DB data sources can be migrated to Open Connector Framework (OCF) connectors using the single data source method.
+
+.. note::
+
+      Bulk migration is not supported for Custom DB data sources.
+
+.. Important::
+
+      Do not perform the migration if the Catalog Object Definition type of the OCF connector is different from the Custom DB.
+
+Prerequisites
+-------------------
+
+Before performing the migration:
+
+    - We do not recommend migrating your data sources before you upgrade Alation to 2023.1.5 or newer.
+    - You must first install the relevant OCF connector on your Alation instance. See :doc:`/sources/OpenConnectorFramework/ManageConnectors` for directions. Make sure that the connector version is the latest.
+    - Make sure you have saved the settings information for your Custom DB or made screenshots of its settings of the Custom DB that you want to migrate.
+    - Make sure that the MDE, Profiling, or QLI jobs are not running while you perform the migration.
+
+Catalog Object Definition
+----------------------------
+
+The following table provides the Catalog Object Definition of the OCF connectors:
+
++------------------------------------+---------------------------------+
+| OCF Connector                      | Catalog Object Definition       |
++====================================+=================================+
+| Athena OCF Connector               | catalog.schema.table            |
++------------------------------------+---------------------------------+
+| Azure Databricks OCF Connector     | schema.table                    |
++------------------------------------+---------------------------------+
+| Azure Synapse OCF Connector        | catalog.schema.table            |
++------------------------------------+---------------------------------+
+| Denodo OCF Connector               | schema.table                    |
++------------------------------------+---------------------------------+
+| EMR Presto OCF connector           | catalog.schema.table            |
++------------------------------------+---------------------------------+
+| GCP Databricks OCF Connector       | schema.table                    |
++------------------------------------+---------------------------------+
+| Starburst Enterprise (Trino) OCF   | catalog.schema.table            |
+| Connector                          |                                 |
++------------------------------------+---------------------------------+
+
+Limitations
+--------------
+
+  - SSL certificates will not be migrated. Users need to upload the SSL certificate manually post migration.
+
+  - The following OCF connectors offer only default driver methods of metadata extraction in OCF connector, however in Custom DB both driver methods and custom queries were supported:
+
+      - Athena
+      - Starburst Enterprise (Trino)
+      - EMR Presto
+
+Single Data Source Migration
+----------------------------------
+
+Supported Data Sources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The File System sources listed in the following table are supported for single data source migration of the File System sources to the OCF connector:
+
++------------------------------------+---------------------------------+
+| CustomDB                           | Equivalent OCF Connector        |
++====================================+=================================+
+| Athena                             | Athena OCF Connector            |
++------------------------------------+---------------------------------+
+| Azure Databricks                   | Azure Databricks OCF Connector  |
++------------------------------------+---------------------------------+
+| Azure Synapse Analytics (Azure DW) | Azure Synapse OCF Connector     |
++------------------------------------+---------------------------------+
+| Denodo                             | Denodo OCF Connector            |
++------------------------------------+---------------------------------+
+| EMR Presto                         | EMR Presto OCF connector        |
++------------------------------------+---------------------------------+
+| GCP Databricks                     | GCP Databricks OCF Connector    |
++------------------------------------+---------------------------------+
+| Starburst Enterprise (Trino)       | Starburst Enterprise (Trino) OCF|
+|                                    | Connector                       |
++------------------------------------+---------------------------------+
+
+Single Data Source Migration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/SingleDataSourceMigration.rst
+
+Post Migration Activity
+------------------------------
+
+Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the Custom DB sources that uses custom MDE queries for extraction of metadata needs to modify the custom queries for Table, Column, Index, in its OCF connector after migration as suggested below.
+
+These changes needs to be made to the custom MDE queries in the OCF connectors even though the queries are successfully migrated. The examples provided in the below headings
+
+Table
+^^^^^^^^^^
+
+In the Table query, replace TABLE as TABLE_NAME.
+
+
+Column
+^^^^^^^^^
+
+In the Column query, replace COLUMN as COLUMN_NAME and TABLE as TABLE_NAME.
+
+Index
+^^^^^^^^^^
+
+In the Index query, replace COLUMN as COLUMN_NAME and TABLE as TABLE_NAME.
+
+
+The following is a generic example to explain the differences between the custom MDE queries in Custom DB and OCF connector.
+
+**Custom MDE Query in Custom DB:**
+
+.. code-block:: SQL
+
+      SELECT
+          DB_NAME() AS 'CATALOG',
+          SCHEMA_NAME(t.schema_id) AS 'SCHEMA',
+          t.name AS 'TABLE',
+          COL_NAME(ic.object_id, ic.column_id) AS 'COLUMN',
+          i.name AS INDEX_NAME,
+          i.type_desc AS TYPE,
+          i.filter_definition AS FILTER_CONDITION,
+          NULL AS ASC_OR_DESC,
+          ic.key_ordinal AS ORDINAL_POSITION
+      FROM
+          sys.indexes as i
+      INNER JOIN sys.index_columns AS ic
+        ON i.object_id = ic.object_id
+          AND i.index_id = ic.index_id
+      LEFT OUTER JOIN sys.objects t
+        ON t.OBJECT_ID = i.OBJECT_ID
+      WHERE SCHEMA_NAME (t.schema_id) NOT IN ('''')
+          AND SCHEMA_NAME (t.schema_id) NOT IN ( 'sys' , 'guest' ,
+              'INFORMATION_SCHEMA' , 'db_accessadmin' , 'db_backupoperator' ,
+              'db_datareader' , 'db_datawriter'  , 'db_ddladmin' ,
+              'db_denydatareader' , 'db_denydatawriter' , 'db_owner' ,
+              'db_securityadmin' , 'mdw' , 'ssisdb' , 'pdw' , 'QTables')
+
+**Custom MDE Query in OCF Connector:**
+
+.. code-block:: SQL
+
+      SELECT
+          DB_NAME() AS 'CATALOG',
+          SCHEMA_NAME(t.schema_id) AS 'SCHEMA',
+          t.name AS TABLE_NAME,
+          COL_NAME(ic.object_id, ic.column_id) AS COLUMN_NAME,
+          i.name AS INDEX_NAME,
+          i.type_desc AS TYPE,
+          i.filter_definition AS FILTER_CONDITION,
+          NULL AS ASC_OR_DESC,
+          ic.key_ordinal AS ORDINAL_POSITION
+      FROM
+          sys.indexes as i
+      INNER JOIN sys.index_columns AS ic
+        ON i.object_id = ic.object_id
+          AND i.index_id = ic.index_id
+      LEFT OUTER JOIN sys.objects t
+        ON t.OBJECT_ID = i.OBJECT_ID
+      WHERE SCHEMA_NAME (t.schema_id) NOT IN ('''')
+          AND SCHEMA_NAME (t.schema_id) NOT IN ( 'sys' , 'guest' ,
+              'INFORMATION_SCHEMA' , 'db_accessadmin' , 'db_backupoperator' ,
+              'db_datareader' , 'db_datawriter'  , 'db_ddladmin' ,
+              'db_denydatareader' , 'db_denydatawriter' , 'db_owner' ,
+              'db_securityadmin' , 'mdw' , 'ssisdb' , 'pdw' , 'QTables')
+
+
+Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the Custom DB sources that uses custom QLI query for ingestion of queries needs to modify the custom QLI query in its OCF connector after migration as suggested below.
+
+Replace ‘STARTTIME1’ as STARTTIME and ’STARTTIME2’ as ENDTIME in the custom QLI query. The following is a generic example to explain the differences.
+
+**Custom QLI Query in Custom DB:**
+
+.. code-block:: SQL
+
+      SELECT
+        user AS userName,
+        query AS queryString,
+        source AS defaultDatabases,
+        False AS sessionId,
+        created AS sessionStartTime,
+        started AS startTime,
+        False AS cancelled,
+        date_diff('second',"started", "end") AS secondsTaken,
+        query_id AS sequence
+      FROM
+        system.runtime.queries
+      WHERE
+        state ='FINISHED'
+      AND
+        started between timestamp 'STARTTIME1' and timestamp 'STARTTIME2'
+      ORDER BY
+        sessionId, startTime
+
+
+**Custom QLI Query in OCF Connector:**
+
+.. code-block:: SQL
+
+      SELECT
+         user AS userName,
+         query AS queryString,
+         source AS defaultDatabases,
+         False AS sessionId,
+         created AS sessionStartTime,
+         started AS startTime,
+         False AS cancelled,
+         date_diff('second',"started", "end") AS seconds,
+         query_id AS sequence FROM system.runtime.queries
+       WHERE
+         state ='FINISHED'
+       AND
+         started between timestamp STARTTIME and timestamp ENDTIME
+       ORDER BY
+         sessionId, startTime

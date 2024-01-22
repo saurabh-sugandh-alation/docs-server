@@ -1,0 +1,387 @@
+Schema Path Pattern
+==============================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Specifying a schema path pattern for your schema extraction job helps optimize the extraction. In large-scale analytics systems, or data lakes, data representing a single logical schema is stored as a multi-file resource set. A resource set is a logical group of multiple files which use exactly the same logical schema. Alation uses the schema path pattern to identify resource sets in your storage system containers or buckets.
+
+For example, let’s assume we are storing data as Parquet files. The physical storage of these files looks like this:
+
+.. code-block:: Bash
+
+      "/path/to/sample.parquet/part-1.snappy.parquet",
+      "/path/to/sample.parquet/part-2.snappy.parquet",
+      <...>
+      "/path/to/sample.parquet/part-n.snappy.parquet"
+
+As mentioned above, a resource set would have exactly the same type of files, so if we extract column metadata from each file, it will be the same for all these files. If there are hundreds or thousands of files under one directory, all with the same schema, it would not be efficient to perform column extraction for each file as this is a resource-intensive operation.
+
+Using a schema path pattern in such cases helps discover a schema for the whole resource set, optimizing the amount of data read and streamed by the connector. Use scenarios below to write schema path patterns for your OCF file system sources that support schema extraction.
+
+Scenario 1
+----------------
+
+Single logical schema with multi-file dataset:
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/sales_data/sales_data_1.parquet
+      container/warehouse/production-database/sales_data/sales_data_2.parquet
+      <...>
+      container/warehouse/production-database/sales_data/sales_data_n.parquet
+
+The text string that needs to be provided as input in the **Schema Path Pattern** field can be:
+
+  - ``sales_data``
+  - ``production-database/sales_data``
+
+Detected Logical Schema
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``container/warehouse/production-database/sales_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/sales_data`` folder by reading the columns for file ``sales_data1.parquet``.
+
+Scenario 2
+----------------
+
+Multiple logical schemas with corresponding multi-file datasets. All logical schemas at the same directory depth:
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/sales_data/sales_data_1.parquet
+      container/warehouse/production-database/sales_data/sales_data_2.parquet
+      <...>
+      container/warehouse/production-database/sales_data/sales_data_n.parquet
+
+      container/warehouse/production-database/product_data/product_data_1.parquet
+      container/warehouse/production-database/product_data/product_data_2.parquet
+      <...>
+      container/warehouse/production-database/product_data/product_data_n.parquet
+
+Expected behavior for this kind of scenario is to discover ``sales_data`` and ``product_data`` as two logical schemas.
+
+The text string that needs to be provided as input in the **Schema Path Pattern** field can be:
+
+  - ``production-database/.*``
+  - ``production-database/(.*)_data``
+  - ``production-database/(sales|product)_data``
+
+
+Detected Logical Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - ``container/warehouse/production-database/sales_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/sales_data`` folder by reading the columns for file ``sales_data_1.parquet``.
+
+  - ``container/warehouse/production-database/product_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/product_data`` folder by reading the columns for file ``product_data_1.parquet``.
+
+Scenario 3
+----------------
+
+Multiple logical schemas with corresponding multi-file datasets. Each unique directory at the deepest level for each multi-file dataset to be discovered as a logical schema.
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/sales_data/sales_data_1.parquet
+      container/warehouse/production-database/sales_data/sales_data_2.parquet
+      <...>
+      container/warehouse/production-database/sales_data/sales_data_n.parquet
+
+      container/warehouse/production-database/product_data/product_data_1.parquet
+      container/warehouse/production-database/product_data/product_data_2.parquet
+      <...>
+      container/warehouse/production-database/product_data/product_data_n.parquet
+
+      container/warehouse/production-database/customer/customer_data/customer_data_1.parquet
+      container/warehouse/production-database/customer/customer_data/customer_data_1.parquet
+      <...>
+      container/warehouse/production-database/customer/customer_data/customer_data_n.parquet
+
+Expected behavior for this kind of scenario is to discover ``sales_data``, ``product_data`` and ``customer_data`` as logical schemas.
+
+The text string that needs to be provided as input in the **Schema Path Pattern** field can be:
+
+  - production-database/.*
+
+Detected Logical Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - ``container/warehouse/production-database/sales_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/sales_data`` folder by reading the columns for file ``sales_data_1.parquet``.
+
+    - ``container/warehouse/production-database/product_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/product_data`` folder by reading the columns for file ``product_data_1.parquet``.
+
+    - ``container/warehouse/production-database/customer/customer_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/customer/customer_data`` folder by reading the columns for file ``customer_data_1.parquet``.
+
+
+Scenario 4
+----------------
+
+Single logical schema with multi-file dataset, data divided by year/month/day.
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/inventory/2021/01/01/data.parquet
+      container/warehouse/production-database/inventory/2021/01/02/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2021/01/31/data.parquet
+      container/warehouse/production-database/inventory/2021/02/01/data.parquet
+      container/warehouse/production-database/inventory/2021/02/02/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2021/02/28/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2021/12/31/data.parquet
+
+      container/warehouse/production-database/inventory/2022/01/01/data.parquet
+      container/warehouse/production-database/inventory/2022/01/02/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2022/01/31/data.parquet
+      container/warehouse/production-database/inventory/2022/02/01/data.parquet
+      container/warehouse/production-database/inventory/2022/02/02/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2022/02/28/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2022/12/31/data.parquet
+
+The text string that needs to be provided as input in the **Schema Path Pattern** field can be:
+
+  - ``production-database/inventory``
+  - ``production-database/[a-z0-9A-Z]*``
+
+Detected Logical Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``container/warehouse/production-database/inventory``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/inventory`` folder by reading the columns for file ``container/warehouse/production-database/inventory/2021/01/01/data.parquet``.
+
+Scenario 5
+----------------
+
+Multiple logical schemas with multi-file dataset, data divided by year/month/day.
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/inventory/2021/01/01/data.parquet
+      container/warehouse/production-database/inventory/2021/01/02/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2021/01/31/data.parquet
+      container/warehouse/production-database/inventory/2021/02/01/data.parquet
+      container/warehouse/production-database/inventory/2021/02/02/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2021/02/28/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2021/12/31/data.parquet
+
+      container/warehouse/production-database/inventory/2022/01/01/data.parquet
+      container/warehouse/production-database/inventory/2022/01/02/data.parquet
+      <...>
+      container/warehouse/production-database/inventory/2022/01/31/data.parquet
+      container/warehouse/production-database/inventory/2022/02/01/data.parquet
+      container/warehouse/production-database/inventory/2022/02/02/data.parquet
+      <...>
+      container/warehouse/production-database/order/2022/02/28/data.parquet
+      <...>
+      container/warehouse/production-database/order/2022/12/31/data.parquet
+
+      container/warehouse/production-database/order/2021/01/01/data.parquet
+      container/warehouse/production-database/order/2021/01/02/data.parquet
+      <...>
+      container/warehouse/production-database/order/2021/01/31/data.parquet
+      container/warehouse/production-database/order/2021/02/01/data.parquet
+      container/warehouse/production-database/order/2021/02/02/data.parquet
+      <...>
+      container/warehouse/production-database/order/2021/02/28/data.parquet
+      <...>
+      container/warehouse/production-database/order/2021/12/31/data.parquet
+
+      container/warehouse/production-database/order/2022/01/01/data.parquet
+      container/warehouse/production-database/order/2022/01/02/data.parquet
+      <...>
+      container/warehouse/production-database/order/2022/01/31/data.parquet
+      container/warehouse/production-database/order/2022/02/01/data.parquet
+      container/warehouse/production-database/order/2022/02/02/data.parquet
+      <...>
+      container/warehouse/production-database/order/2022/02/28/data.parquet
+      <...>
+      container/warehouse/production-database/order/2022/12/31/data.parquet
+
+The text string that needs to be provided as input in the **Schema Path Pattern** field can be:
+
+  - ``production-database/([a-z0-9A-Z]*)``
+
+Detected Logical Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  -``container/warehouse/production-database/inventory``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/inventory`` folder by reading the columns for file **container/warehouse/production-database/inventory/2021/01/01/data.parquet**.
+
+  -``container/warehouse/production-database/order``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/order`` folder by reading the columns for file ``container/warehouse/production-database/order/2022/02/28/data.parquet``.
+
+Scenario 6
+----------------
+
+Multiple logical schemas with multi-file dataset, each unique directory under a specific directory to be identified as logical schema.
+
+.. code-block:: Bash
+
+      container/folder/engineering/data/emp1_data/2022/01/1.parquet
+      container/folder/engineering/data/emp1_data/2022/02/1.parquet
+      container/folder/engineering/data/emp1_data/2022/03/1.parquet
+      container/folder/engineering/data/emp1_data/2022/04/1.parquet
+
+      container/folder/engineering/data/emp2_data/2022/01/1.parquet
+      container/folder/engineering/data/emp2_data/2022/02/1.parquet
+      container/folder/engineering/data/emp2_data/2022/03/1.parquet
+      container/folder/engineering/data/emp2_data/2022/04/1.parquet
+
+The text string that needs to be provided as input in the **Schema Path Pattern** field can be:
+
+  - ``engineering/data/([a-z_0-9]*)``
+
+Detected Logical Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  -``container/folder/engineering/data/emp1_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/folder/engineering/data/emp1_data`` folder by reading the columns for file ``container/folder/engineering/data/emp1_data/2022/01/1.parquet``.
+
+  -``container/folder/engineering/data/emp2_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/folder/engineering/data/emp2_data`` folder by reading the columns for file ``container/folder/engineering/data/emp2_data/2022/01/1.parquet``.
+
+Scenario 7
+----------------
+
+Multiple logical schemas with multi-file dataset, complex path pattern.
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/sales_data/sales_data_1.parquet
+      container/warehouse/production-database/sales_data/sales_data_2.parquet
+      <...>
+      container/warehouse/production-database/sales_data/sales_data_n.parquet
+
+      container/warehouse/production-database/product_data/product_data_1.parquet
+      container/warehouse/production-database/product_data/product_data_2.parquet
+      <...>
+      container/warehouse/production-database/product_data/product_data_n.parquet
+
+      container/warehouse/dev-database/sales_data/sales_data_1.parquet
+      container/warehouse/dev-database/sales_data/sales_data_2.parquet
+      <...>
+      container/warehouse/dev-database/sales_data/sales_data_n.parquet
+
+      container/warehouse/dev-database/product_data/product_data_1.parquet
+      container/warehouse/dev-database/product_data/product_data_2.parquet
+      <...>
+      container/warehouse/dev-database/product_data/product_data_n.parquet
+
+
+The text string that needs to be provided as input in the **Schema Path Pattern** field can be:
+
+  - ``(production|dev)-database/.*``
+  - ``production-database/(sales_data|product_data)|(dev-database/(sales|product)_data)``
+
+Detected Logical Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  -``container/warehouse/production-database/sales_data``
+  -``container/warehouse/production-database/product_data``
+  -``container/warehouse/dev-database/sales_data``
+  -``container/warehouse/dev-database/product_data``
+
+Scenario 8
+----------------
+
+Multiple logical schemas with multi-file dataset with hive style column partitioning.
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/sales_data/city=IN/state=GJ/sales_data_1.parquet
+      container/warehouse/production-database/sales_data/city=IN/state=GJ/sales_data_2.parquet
+      container/warehouse/production-database/sales_data/city=IN/state=MH/sales_data_1.parquet
+      container/warehouse/production-database/sales_data/city=IN/state=MH/sales_data_2.parquet
+      <...>
+      container/warehouse/production-database/sales_data/city=XX/state=XX/sales_data_n.parquet
+
+      container/warehouse/production-database/product_data/year=2022/month=01/product_data_1.parquet
+      container/warehouse/production-database/product_data/year=2022/month=01/product_data_2.parquet
+      container/warehouse/production-database/product_data/year=2022/month=02/product_data_1.parquet
+      container/warehouse/production-database/product_data/year=2022/month=02/product_data_2.parquet
+      <...>
+      container/warehouse/production-database/product_data/year=XXX/month=XXX/product_data_n.parquet
+
+The text string that needs to be provided as input in the **Schema Path Pattern** field can be:
+
+  - ``production-database/(sales|product)_data``
+  - ``production-database/(.*)_data``
+  - ``production-database/[^=]*``
+
+Detected Logical Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  -``container/warehouse/production-database/sales_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/sales_data`` folder by reading the columns for file ``container/warehouse/production-database/sales_data/city=IN/state=GJ/sales_data1.parquet``. Additionally, column partitions ``city`` and ``state`` will also be cataloged as columns.
+
+  -``container/warehouse/production-database/product_data``—Columns for this logical schema will be cataloged on the catalog page for ``container/warehouse/production-database/product_data`` folder by reading the columns for file ``container/warehouse/production-database/product_data/year=2022/month=01/product_data_1.parquet``. Additionally, column partitions ``year`` and ``month`` will also be cataloged as columns.
+
+Scenario 9
+----------------
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/inventory/spend/xyz/2021/01/01/data.parquet
+
+      container/warehouse/production-database/inventory/def/2021/01/01/data.parquet
+
+      container/warehouse/production-database/inventory1/2021/01/01/data.parquet
+
+Expectation here is to discover ``spend``, ``def`` and ``inventory1`` as logical schemas; however, that is currently not supported. Within the discovered resource set, the first file (as per the order in the inventory report) with a supported file format is read for columns.
+
+**Example 1:**
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/sales_data/part1.parquet
+      container/warehouse/production-database/sales_data/part2.parquet
+      container/warehouse/production-database/sales_data/part3.parquet
+
+``part1.parquet`` will be read for columns.
+
+**Example 2:**
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/sales_data/part1.csv
+      container/warehouse/production-database/sales_data/part1.parquet
+      container/warehouse/production-database/sales_data/part2.csv
+      container/warehouse/production-database/sales_data/part1.parquet
+      container/warehouse/production-database/sales_data/part3.csv
+      container/warehouse/production-database/sales_data/part1.parquet
+
+``part1.csv`` will be read for columns.
+
+**Example 3:**
+
+.. code-block:: Bash
+
+      container/warehouse/production-database/sales_data/part1.csv
+      container/warehouse/production-database/sales_data/part1.psv
+      container/warehouse/production-database/sales_data/part1.tsv
+      container/warehouse/production-database/sales_data/part3.parquet
+
+``part1.csv`` will be read for columns.
+
+To do an offline validation of the pattern:
+
+1. Prepare a set of sample file paths representative of real data:
+
+     .. code-block:: Bash
+
+            container/folder/engineering/data/emp1_data/2022/01/1.parquet
+            container/folder/engineering/data/emp1_data/2022/02/1.parquet
+            container/folder/engineering/data/emp1_data/2022/03/1.parquet
+            container/folder/engineering/data/emp1_data/2022/04/1.parquet
+
+            container/folder/engineering/data/emp2_data/2022/01/1.parquet
+            container/folder/engineering/data/emp2_data/2022/02/1.parquet
+            container/folder/engineering/data/emp2_data/2022/03/1.parquet
+            container/folder/engineering/data/emp2_data/2022/04/1.parquet
+
+2. Replace the placeholder Schema Path Pattern string in this regular expression:
+
+      ``(.(<PATTERN>))/((.).((?i)\bcsv\b|(?i)\btsv\b|(?i)\bpsv\b|(?i)\bparquet\b))``
+
+      Example: ``(.(engineering/data/([a-z_0-9]*)))/((.).((?i)\bcsv\b|(?i)\btsv\b|(?i)\bpsv\b|(?i)\bparquet\b))``
+
+Use the inputs from point 1 and 2 on a website like `regex101 <https://regex101.com/>`_, selecting **Java 8** as the FLAVOR. Group 1s will be discovered as logical schemas.

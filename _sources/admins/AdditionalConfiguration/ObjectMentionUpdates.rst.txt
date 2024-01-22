@@ -1,0 +1,53 @@
+Updating Object Mentions
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+In Alation is it possible to reference the catalog objects
+by *@-mentioning* them in rich text fields. 
+
+Alation saves these references by wrapping the information on the object
+into the HTMLtag <a> and embedding this tag in the field value.
+
+Before V R5
+~~~~~~~~~~~~~
+
+In releases before V R5 (5.9.x), the embedded <a> tag included the
+title of the referenced object. For example:
+
+.. code-block:: bash
+
+   <a data-oid=5 data-otype="table" href="/table/5/">table.title</a>
+
+To keep the mentioned/referenced objects up-to-date, Alation would
+update these embedded tags every time the title of the object changed.
+This update was propagated with two asynchronous Celery jobs for every
+update being put and processed in the *default* queue of Celery
+workers.
+
+Unfortunately, Alation ran into a performance issue with this approach,
+as the more references had to be updated, the larger number of
+corresponding Celery jobs would have to be triggered. If a large
+amount of catalog data was loaded using the public API, the number of
+references to be updated would kick off so many update mentions Celery
+jobs that the queue would overload and stall.
+
+Changes in V R5
+~~~~~~~~~~~~~~~
+
+Starting with V R5 (5.9.x), Alation stores object references differently
+aiming at a more effective handling of large volumes of catalog data.
+ The <a> tag now includes only the reference of the object without
+storing any data about it (that is, it no longer stores the title):
+
+.. code-block:: bash
+
+   <a data-oid=5 data-otype="table" href="/table/5/"></a>
+
+Instead of triggering the Celery "update mention" jobs, Alation now uses
+the backend APIs to fetch the current name and title of the referenced
+object whenever it is rendered in the UI. Deprecation of the "update
+mention" Celery jobs in R5 allows us to keep the Celery queue healthy
+and moving when a large number of object references has to be updated.
+
+ 

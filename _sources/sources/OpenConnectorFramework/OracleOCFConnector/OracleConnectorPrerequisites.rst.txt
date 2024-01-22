@@ -1,0 +1,190 @@
+Prerequisites
+=================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Before you install the Oracle OCF connector, ensure that you have performed the following:
+
+    - `Configure Network Connectivity`_
+
+    - `Create a Service Account`_
+
+    - `Grant Required Permissions`_ 
+
+Configure Network Connectivity
+--------------------------------
+
+  - Open outbound TCP port **1521** (default) to the Oracle server. You can use the default or any other port configured to the Oracle server. 
+
+  - If connecting over LDAP, open outbound LDAP port **389** to the Oracle LDAP server
+
+  - Kerberos authentication requires the Alation server hostname to be resolvable. Add a DNS record for the Alation server or edit the **/etc/hosts** file on the Alation server.
+
+
+Create a Service Account
+----------------------------
+
+Sample SQL to create an account:
+
+    .. code-block:: SQL
+
+        CREATE USER alation IDENTIFIED BY [password];
+        GRANT CREATE SESSION TO alation;
+
+The ``GRANT CREATE SESSION TO`` permission allows the service account to connect to the database.
+
+Identify the Prefix
+----------------------
+
+You can access the metadata using the following of prefixes for system views:
+
+  - ``CDB_*``
+  
+  - ``DBA_*,`` 
+
+  - ``ALL_*,`` 
+
+  - ``USER_*,``
+
+Alation extracts metadata from the following system views:
+
+  - x_OBJECTS
+
+  - x_TAB_COLUMNS
+
+  - x_CONS_COLUMNS
+
+  - x_CONSTRAINTS
+
+  - x_VIEWS
+
+  - x_MVIEWS
+
+  - x_IND_COLUMNS
+
+  - x_INDEXES
+
+  - x_SYNONYMS
+
+  - x_COL_COMMENTS
+
+  - x_MVIEW_COMMENTS
+
+  - x_TAB_COMMENTS
+
+  - x_SEGMENTS
+
+  - x_LOBS
+
+  - x_ARGUMENTS
+
+  - x_USERS
+  
+The *x* represents the prefix.
+
+The order of access increases from ``CDB_*`` to ``USER_*`` ( ``CDB_*``, ``DBA_*,`` , ``ALL_*``, ``USER_*``), with the ``CDB_*`` prefix having the highest access while the ``USER_*`` prefix has the least.
+During the access check, fetching schemas, and running Metadata Extraction, Alation checks for prefixes to which the service account has access. Alation selects the prefix with the highest access for all the operations. For example, if the service account has access to ``USER_*``, ``ALL_*``, and ``DBA_*`` prefixes, then ``DBA_*`` is selected as the prefix for all the operations.
+
+
+Grant Required Permissions
+-----------------------------
+
+The service account you want to use requires a specific set of permissions on Oracle.
+
+  - `Grant Permission for Metadata Extraction`_ 
+
+  - `Grant Permission for Table Profiling`_ 
+
+.. important::
+
+    To grant these permissions, the service account must have **SYSDBA** privileges. 
+
+
+Grant Permission for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prerequisites
+^^^^^^^^^^^^^
+
+Execute the below queries using compose or any database tool to find which prefix is applicable for a given database
+ 
+  1. ``CDB_*`` : Select 1 from CDB_OBJECTS;
+
+  2. ``DBA_*`` : Select 1 from DBA_OBJECTS;
+
+  3. ``ALL_*`` : Select 1 from ALL_OBJECTS;
+
+  4. ``USER_*`` : Select 1 from USER_OBJECTS;
+
+Execute the queries in the same order as specified above. Whichever query is successfully executed first indicates the given database's prefix. For example, if your first query fails but the second one executes successfully, then the prefix for the database is ``DBA_*``. 
+
+Once you know the prefix, you don't have to execute the remaining queries.
+
+Grant Permissions
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      GRANT SELECT ON <prefix>_OBJECTS TO alation;
+      GRANT SELECT ON <prefix>_TAB_COLUMNS TO alation;
+      GRANT SELECT ON <prefix>_CONS_COLUMNS TO alation;
+      GRANT SELECT ON <prefix>_CONSTRAINTS TO alation;
+      GRANT SELECT ON <prefix>_VIEWS TO alation;
+      GRANT SELECT ON <prefix>_MVIEWS TO alation;
+      GRANT SELECT ON <prefix>_IND_COLUMNS TO alation;
+      GRANT SELECT ON <prefix>_INDEXES TO alation;
+      GRANT SELECT ON <prefix>_SYNONYMS TO alation;
+      GRANT SELECT ON <prefix>_COL_COMMENTS TO alation;
+      GRANT SELECT ON <prefix>_MVIEW_COMMENTS TO alation;
+      GRANT SELECT ON <prefix>_TAB_COMMENTS TO alation;
+      GRANT SELECT ON <prefix>_SEGMENTS TO alation;
+      GRANT SELECT ON <prefix>_LOBS TO alation;
+      GRANT SELECT ON <prefix>_ARGUMENTS to alation;
+      GRANT SELECT ON <prefix>_USERS to alation;
+
++----------------------------------------+------------------------------------------+
+| Permission                             | Purpose                                  |
++========================================+==========================================+
+| SELECT ON <prefix>_OBJECTS             | Required for table extraction            |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_TAB_COLUMNS         | Required for table and column extraction |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_CONS_COLUMNS        | Required for column extraction           |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_CONSTRAINTS         | Required for primary key and foreign key |
+|                                        | extraction                               |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_VIEWS               | Required for view extraction             |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_MVIEWS              | Required for view extraction             |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_IND_COLUMNS         | Required for index extraction            |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_INDEXES             |  Required for index extraction           |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_SYNONYMS            | Required for synonym extraction          |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_COL_COMMENTS        | Required for source comments extraction  |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_MVIEW_COMMENTS      | Required for view comments extraction    |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_TAB_COMMENTS        | Required for table comments extraction   |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_SEGMENTS            | Required for table iteration             |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_LOBS                | Required for table extraction            |
++----------------------------------------+------------------------------------------+
+| SELECT ON <prefix>_ARGUMENTS           | Required for function and function       |
+|                                        | definition extraction                    |
++----------------------------------------+------------------------------------------+
+| SELECT ON DBA_USERS                    | Required for schema extraction           |
++----------------------------------------+------------------------------------------+
+
+Replace <prefix> with ``CDB_*``, ``DBA_*,`` , ``ALL_*``, or ``USER_*``.
+
+Grant Permission for Table Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+      GRANT SELECT on [SCHEMA or TABLE]

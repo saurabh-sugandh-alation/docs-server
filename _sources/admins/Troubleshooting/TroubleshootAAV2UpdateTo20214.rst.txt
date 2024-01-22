@@ -1,0 +1,257 @@
+Troubleshooting Alation Analytics V2 Upgrade to 2021.4
+============================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies to version 2021.4*
+
+.. warning::
+
+    These steps require the root user. When you switch to the root user, always exercise caution. You can lose data or damage the system by moving or deleting critical files. Only perform the task as described in the steps and log out of the root user after completing it.
+
+Issue: Alation Analytics V2 Postgres Upgrade Fails
+-------------------------------------------------------
+
+If during the update of the Alation Analytics V2 application to its 2021.4-compatible version, the upgrade of the Alation Analytics V2 database to version 13.1 fails and the installer exits with the following error in the console:
+
+*[X Failed] Postgres database is now being upgraded. Failure Reason => exit status 1:*
+
+check the Alation Analytics V2 installer log file *installer.log* at **/var/log/alation-analytics** (path inside the Alation shell). A more specific error message will be in this log file.
+
+Error: “initdb: could not access directory "/var/lib/postgresql/data"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you find the following error in the *installer.log*:
+
+*Error: “initdb: could not access directory "/var/lib/postgresql/data": Permission denied”*
+
+ perform the steps given below.
+
+
+1. On the Alation Analytics V2 host, change user to root:
+
+    .. code-block:: Bash
+
+        sudo -i
+
+2. Go to the Postres directory under the Alation Analytics V2 installation directory. By default, it is **/opt/alation-analytics/postgres**. Your installation directory may have a different location and name.
+
+    .. code-block:: Bash
+
+        cd /opt/alation-analytics/postgres
+
+3. Change permissions on the sub-directory **/data** in the **/postgres** directory in the following way:
+
+    .. code-block:: Bash
+
+	       chown -R 70:70 data/
+
+4. Exit the root user:
+
+    .. code-block:: Bash
+
+        exit
+
+5. Run the Alation Analytics installer of version 2021.4 with the update option one more time.
+
+Error: New cluster database "alation_analytics_v2" is not empty
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you find the following error in the *installer.log*:
+
+*Error: New cluster database "alation_analytics_v2" is not empty: found relation "public.django_migrations"*
+
+perform the steps given below.
+
+
+1. On the host of the Alation Analytics V2 application, change user to root:
+
+    .. code-block:: Bash
+
+        sudo -i
+
+2. Go to the Postres directory under the Alation Analytics V2 installation directory. By default, it is **/opt/alation-analytics/postgres**. Your installation directory may have a different location and name.
+
+    .. code-block:: Bash
+
+        cd /opt/alation-analytics/postgres
+
+3. Remove the sub-directory **/13**:
+
+    .. code-block:: Bash
+
+        rm -rf 13/
+
+4. Exit the root user:
+
+    .. code-block:: Bash
+
+        exit
+
+5. Run the Alation Analytics installer of version 2021.4 with the update option one more time.
+
+If solutions do not work
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Also see Also see `Alation Analytics V2 Upgrade Console Errors`_ below.
+
+If the provided solutions do not work and the installer continues to exit with the same or a different failure message, this means that the upgrade of the Alation AnalyticsV2 application on your instance has not been completed. The ETL process will not work and the Alation Analytics V2 database data will not be updated while the system is in this state.
+
+Also see `Alation Analytics V2 Upgrade Console Errors`_ below.
+
+Contact Alation Support to guide you through the troubleshooting process.
+
+If you need the Alation Analytics V2 database to be operational, you can roll the database back to version 9.6 using the steps in `Roll Back Postgres to 9.6`_ below. Note that these steps only bring up the Postgres 9.6 Docker container if Postgres upgrade has not been started. They do not resolve the issue with the upgrade.
+
+Roll Back Postgres to 9.6
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the steps in this section to bring the Alation Analytics V2 Postgres Docker container up after the Alation Analytics V2 database upgrade failed during the update to version 2021.4.
+
+If Postgres upgrade fails at the database upgrade step, it is likely that the installer did not move any further. The Docker image for Postgres still uses version 9.6. There is no need to reload the image and it can be brought up using Docker Compose.
+
+
+1. Go to the the Alation Analytics V2 installation directory. By default, it is **/opt/alation-analytics**. Your installation directory may have a different location and name.
+
+    .. code-block:: bash
+
+        cd /opt/alation-analytics
+
+2. This directory should contain the *docker-compose.yaml* file. View the contents of this file. Locate an entry named **Volumes**. The volume mount should be as shown below:
+
+    .. code-block:: Bash
+
+        Volumes:
+        /opt/alation-analytics/postgres/data:/var/lib/postgresql/data
+
+If this is the volume mapping you see, proceed with the next steps.
+If you see a different mount, for example:
+
+    .. code-block:: Bash
+
+        /opt/alation-analytics/postgres/13/data:/var/lib/postgresql/13/data
+
+then do not proceed and contact Alation Support. If you see the volume mount of version *13*, this means that there was an issue with the database upgrade and it is incomplete. You will not be able to safely start the container with the previous database version.
+
+3. Run the command below to bring up the Postgres container:
+
+    .. warning:
+
+        Only use this command if you found that the volume mount in the *docker-compose.yaml* file is ``/opt/alation-analytics/postgres/data:/var/lib/postgresql/data``.
+
+    .. code-block:: Bash
+
+        sudo /usr/local/bin/docker-compose -f /opt/alation-analytics/docker-compose.yaml up -d
+
+4. Check if the Postgres container is up:
+
+    .. code-block:: Bash
+
+        docker ps -a | grep postgres
+
+5. Validate the Postgres version by running:
+
+    .. code-block:: Bash
+
+        docker exec -it postgres sh
+
+ The version should be 9.6.
+
+Alation Analytics V2 Upgrade Console Errors
+-----------------------------------------------------
+
+exit status 1: initdb: warning: enabling "trust" authentication for local connections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the Alation Analytics V2 installer exits during the upgrade with the following error **in the console**:
+
+*exit status 1: initdb: warning: enabling "trust" authentication for local connections\nYou can change this by editing pg_hba.conf or using the option -A, or\n--auth-local and --auth-host, the next time you run initdb."*
+
+perform the steps given below.
+
+1. Go to the the Alation Analytics V2 installation directory. By default, it is **/opt/alation-analytics**. Your installation directory may have a different location and name.
+
+    .. code-block:: bash
+
+        cd /opt/alation-analytics
+
+2. This directory should contain the *docker-compose.yaml* file. View the contents of this file. Locate an entry named **Volumes**. The volume mount should be as shown below:
+
+    .. code-block:: Bash
+
+        Volumes:
+        /opt/alation-analytics/postgres/data:/var/lib/postgresql/data
+
+If this is the volume mapping you see, proceed with the next steps.
+If you see a different mount, for example:
+
+    .. code-block:: Bash
+
+        /opt/alation-analytics/postgres/13/data:/var/lib/postgresql/13/data
+
+Then do not proceed and contact Alation Support. If you see the volume mount of version *13*, this means that there was an issue with the database upgrade and it is incomplete. You will not be able to safely start the container of the previous database version.
+
+3. Change to root user:
+
+    .. warning:
+
+        Only use this command if you found that the volume mount in the *docker-compose.yaml* file is ``/opt/alation-analytics/postgres/data:/var/lib/postgresql/data``.
+
+    .. code-block:: Bash
+
+        sudo -i
+
+4. Go to the Postres directory under the Alation Analytics V2 installation directory.
+
+    .. code-block:: Bash
+
+        cd /opt/alation-analytics/postgres
+
+5. If the subdirectory **/13** exists in **/postgres**, remove it:
+
+    .. code-block:: Bash
+
+        rm -rf 13/
+
+6. Check permissions of user:group of the **/data** subdirectory:
+
+    .. code-block:: Bash
+
+        ls -ld data/
+
+    You should see the following output:
+
+    .. code-block:: Bash
+
+        drwx------ 19 70 70 4096 Xxx xx xx:xx data/
+
+7. If the permissions are different from the expected, run the command given below:
+
+    .. code-block:: Bash
+
+        chown -R 70:70 data/
+
+8. Exit from the root user:
+
+    .. code-block:: Bash
+
+        exit
+
+9. Restart the Postgres image:
+
+    .. code-block:: Bash
+
+        sudo /usr/local/bin/docker-compose -f /opt/alation-analytics/docker-compose.yaml up -d
+
+10. Proceed with the upgrade by running the Alation Analytics V2 installer of the 2021.4 version with the update option one more time.
+
+Postmaster Error
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the Alation Analytics V2 installer exist during the upgrade with the following error **in the console**:
+
+*There seems to be a postmaster servicing the old cluster.*
+*Please shutdown that postmaster and try again.*
+*Failure, exiting*
+
+this means that the Alation Analytics V2 Postgres cannot be auto-upgraded. Contact Alation Support to guide you through the manual upgrade process for Postgres.

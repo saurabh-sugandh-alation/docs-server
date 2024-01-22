@@ -1,0 +1,163 @@
+Sybase IQ
+=============
+
+.. important::
+
+      Starting **August 30, 2023**, we will remove the ability to create new data sources using the Sybase IQ Native Connector. Support for the Sybase IQ Native Connector will cease on **December 1, 2023**, as set out in Alation’s `Support Policy <https://www.alation.com/tscs/support/>`_. See the `Transition from Native to OCF Connectors <https://community.alation.com/communityhubmicrosite/blogs/diby-malakar/2023/07/12/transition-from-native-to-ocf-connectors>`_ announcement in Alation Community (requires login to Community).
+
+Required Information
+--------------------------
+
+To configure Sybase in Alation, you will need the following information:
+
+-  Hostname or IP address of your server
+-  Port number: Default port is **2638**
+-  Service account
+
+      -  Metadata Extraction Privileges
+      -  Profiling Privileges
+
+-  Query Log Ingestion Setup
+
+.. image:: ../../_static/DS_SybaseIQ01.png
+    :width: 3.5in
+    :align: center
+
+Create Service Account
+-----------------------------
+
+Sample SQL to create an account:
+
+.. code-block:: bash
+
+    CREATE USER alation IDENTIFIED BY '[password]';
+
+Metadata Extraction
+-----------------------
+
+.. code-block:: sql
+
+    GRANT SELECT ON < TABLE > TO alation
+
+<TABLE> is each of the following and ``alation`` is the service account.
+
+All accounts may have select access to some of the following tables:
+
+    - SYS.SYSTABLE - tables & view defs
+    - SYS.SYSCOLUMNS - columns
+    - SYS.SYSINDEXES
+    - SYS.SYSINDEX - index information
+    - SYS.SYSPARTITIONS - partition indexes
+    - SYS.SYSPROCEDURE
+    - SYS.SYSPROCPARM - stored procs & function definitions
+    - SYS.SYSUSERPERMS - required for every one of the above
+    - SYS.SYSUSER - schemas information.
+
+The following are required for reading object permissions:
+
+.. code-block:: sql
+
+    GRANT SELECT ON SYS.SYSROLEGRANTS to alation
+    GRANT EXECUTE TO alation on sp_objectpermissions()
+    GRANT SELECT ON SYS.SYSUSER to alation
+    GRANT SELECT ON SYS.SYSUSERPERM to alation
+    GRANT SELECT ON SYS.SYSUSERS to alation
+    GRANT SELECT ON SYS.SYSCOLUMN to alation
+    GRANT SELECT ON SYS.SYSCOLPERM to alation
+    GRANT SELECT ON SYS.SYSTABLE to alation
+    GRANT SELECT ON SYS.SYSTABLEPERM to alation
+
+Table Profiling
+--------------------
+
+.. code-block:: sql
+
+    GRANT SELECT ON <TABLE or DATABASE>
+
+on tables or databases profiling for which profiling is needed.
+
+Query Log Ingestion Setup
+-------------------------------
+
+Query Log Ingestion requires the setup of an event logging table. The
+following setup needs to be completed by the service account used by
+Alation.
+
+.. note::
+
+   Alation service account needs permission to
+   run ``sa_get_request_times()``. Users with DBA role can execute this stored
+   procedure. QLI must be performed by the same user who runs the following
+   steps to set up QLI.  
+
+Setup Steps in Sybase IQ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Step 1: Check state
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This step must be performed to check the state of Request Logging and
+Request Log file. By default, the value of Request Logging might be NONE
+and the value of Request Log File might be EMPTY. Run the following
+query to check the current state of Request Logging and Request Log
+File.
+
+.. code-block:: bash
+
+       select property('RequestLogFile'),property('RequestLogging');
+
+Step 2: Set state
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. To set Request Logging to ``SQL``, run the following query:
+
+  .. code-block:: sql
+
+      call sa_server_option('RequestLogging','SQL');
+
+2. Execution of this call enables SQL log storage. Set the log file to ``sqllog.txt``:
+
+  .. code-block:: sql
+
+      call sa_server_option('RequestLogFile', 'sqllog.txt');
+
+  .. note::
+
+     Setting the log file to ``sqllog.txt`` must be done every time the database server is restarted.
+
+Step 3: Create a Table for Logging Events
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Create the **user_connections_event_table** in the default schema. The query is represented as follows:
+
+   .. code-block:: sql
+
+        SELECT * INTO user_connections_event_table FROM  sp_iqconnection() WHERE 1=2
+
+   .. note::
+
+          If a failure is observed during the execution of the query, run
+          the following command: ``select * from user_connections_event_table`` to
+          make sure that the **user_connections_event_table** exists.
+
+2. Create the **user_connections_event** and insert it into the **user_connections_event_table**. The query to perform this is represented as follows:
+
+  .. code-block:: bash
+
+         CREATE EVENT { user } _connections_event
+         TYPE CONNECT
+         HANDLER
+         BEGIN
+         INSERT INTO user_connections_event_table
+              SELECT * FROM sp_iqconnection() a
+              WHERE
+              a.Name != '{user}_connections_event'
+              AND datediff(Second, now(), a.conncreatetime) < 1
+         END
+
+The command creates the  **user_connections_event_table** in the default
+schema and populates it.
+Replace {user} with the name of the DBA in the query for creating
+the **user_connections_event**.
+The user who has run steps 3.1 and 3.2 should navigate to the QLI tab
+of the data source Settings page. Click **Preview**.

@@ -1,0 +1,32 @@
+Data Source Names
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query lists all database object uuids, object URLs, and dbnames. 
+
+.. code-block:: sql
+
+    SELECT
+      OFV.object_type_id,
+      OFV.object_uuid,
+      AO.object_url,
+      FV.text_value as dbname
+    FROM
+      public.object_field_value OFV
+      INNER JOIN public.field_value FV ON OFV.value_fp = FV.value_fp
+      INNER JOIN public.alation_object_type OT ON OT.object_type_id = OFV.object_type_id
+      INNER JOIN public.alation_object AO ON AO.object_uuid = OFV.object_uuid
+      AND AO.object_type_id = OFV.object_type_id
+    WHERE
+      OFV.field_id IN (
+        select
+          field_id
+        from
+          public.object_field
+        where
+          field_name = 'title'
+      )
+      AND OT.object_type_name = 'data'

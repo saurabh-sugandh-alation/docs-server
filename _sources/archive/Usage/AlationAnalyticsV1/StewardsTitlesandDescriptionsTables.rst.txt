@@ -1,0 +1,129 @@
+Stewards, Titles, and Descriptions Tables
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query retrieves Steward information for table objects and indicates
+if the object has a Title and Description.
+
+.. code-block:: sql
+
+    -- attaches the steward to objects and includes their popularity
+    WITH id_mapping AS (
+      SELECT
+        DISTINCT object_uuid,
+        OFV.object_type_id,
+        integer_value as id
+      FROM
+        public.object_field_value OFV
+        LEFT JOIN public.field_value FV ON OFV.value_fp = FV.value_fp
+      WHERE
+        (
+          OFV.object_type_id = 38
+          /* groupprofile */
+          AND OFV.field_id IN (
+            select
+              field_id
+            from
+              public.object_field
+            where
+              field_name IN ('group_id')
+          )
+        )
+        OR (
+          OFV.object_type_id = 33
+          /* user */
+          AND OFV.field_id IN (
+            select
+              field_id
+            from
+              public.object_field
+            where
+              field_name IN ('id')
+          )
+        )
+    ),
+    curation AS (
+      SELECT
+        object_uuid,
+        object_type_id,
+        MAX(case when field_id = 3 then 1 else 0 end) as has_title,
+        MAX(case when field_id = 4 then 1 else 0 end) as has_description
+      FROM
+        public.object_field_value OFV
+      WHERE
+        ofv.field_id IN (3, 4)
+        /* title or description */
+        AND ofv.object_type_id IN (
+          select
+            object_type_id
+          from
+            public.alation_object_type
+          where
+            object_type_name = 'table'
+        )
+      group by
+        object_uuid,
+        object_type_id
+    )
+    SELECT
+      DISTINCT ofv.object_uuid,
+      ofv.object_type_id,
+      fv2.text_value as title,
+      object_url,
+      popularity,
+      c.has_title,
+      c.has_description,
+      aot2.object_type_name as steward_type,
+      --fv.object_type_uuid_value as steward_uuid,
+      --coalesce(au.user_id, ag.group_id) as steward_id_number,
+      coalesce(au.user_name, au2.user_name) as steward_username,
+      ag.group_name as steward_groupname
+    FROM
+      public.object_field_value OFV
+      INNER JOIN curation c ON c.object_uuid = ofv.object_uuid
+      AND c.object_type_id = ofv.object_type_id
+      INNER JOIN public.alation_object AO ON ofv.object_uuid = ao.object_uuid
+      AND ofv.object_type_id = ao.object_type_id
+      LEFT JOIN public.alation_object_popularity AOP ON ofv.object_uuid = aop.object_uuid
+      AND ofv.object_type_id = aop.object_type_id
+      INNER JOIN public.field_value FV ON ofv.value_fp = fv.value_fp
+      -- decode the steward object type
+      INNER JOIN public.alation_object_type AOT2 ON aot2.object_type_id = fv.object_type_id_value
+      -- figure out IDs from UUIDs (using temp table from above)
+      LEFT JOIN id_mapping IM ON im.object_uuid = fv.object_type_uuid_value
+      AND im.object_type_id = fv.object_type_id_value
+      -- join the user stewards to the user table
+      LEFT JOIN public.alation_user AU ON au.user_id = im.id
+      AND fv.object_type_id_value = 33
+      -- join the group stewards to the group table
+      LEFT JOIN public.alation_group AG ON ag.group_id = im.id
+      AND fv.object_type_id_value = 38
+      -- join groups to users
+      LEFT JOIN public.user_group_membership UGM ON ugm.group_id = ag.group_id
+      LEFT JOIN public.alation_user AU2 ON au2.user_id = ugm.user_id
+      -- let's join the title of the object
+      LEFT JOIN public.object_field_value OFV2 ON ofv2.object_uuid = ofv.object_uuid
+      AND ofv2.object_type_id = ofv.object_type_id
+      AND ofv2.field_id = 3 /* title */
+      LEFT JOIN public.field_value FV2 ON ofv2.value_fp = fv2.value_fp
+    -- restrict to the steward field (which may differ by instance)
+    WHERE
+      ofv.field_id IN (
+        select
+          field_id
+        from
+          public.object_field
+        where
+          field_name = 'steward'
+      )
+      AND ofv.object_type_id IN (
+        select
+          object_type_id
+        from
+          public.alation_object_type
+        where
+          object_type_name = 'table'
+      );

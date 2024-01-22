@@ -1,0 +1,284 @@
+Query Log Ingestion (Beta)
+==============================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Query log ingestion (QLI) extracts and ingests the query history of a database and powers the lineage, popularity, top user, join and filter information in the catalog. You'll be able to explore examples of ingested queries on schema and table catalog pages.
+
+Query Log Ingestion (QLI) is available from connector version **2.0.2** or newer. The connector supports query history extraction from the system audit log table:
+
+    - `System audit log table in Azure Databricks <https://learn.microsoft.com/en-us/azure/databricks/administration-guide/system-tables/audit-logs>`_
+    - `System audit log table in Databricks on AWS <https://docs.databricks.com/en/administration-guide/system-tables/audit-logs.html>`_
+
+Prerequisites
+-----------------
+
+Before you can perform QLI from your data source in Alation, you will need to:
+
+1. Enable the ``system.access`` schema:
+
+      - `Azure Databricks: Enable system tables <https://learn.microsoft.com/en-us/azure/databricks/administration-guide/system-tables/#enable-system-tables>`_
+      - `Databricks on AWS: Enable system tables <https://docs.databricks.com/en/administration-guide/system-tables/audit-logs.html>`_
+
+2. Configure audit log delivery on your Databricks account and workspace:
+
+    - `Azure Databricks: Configure log delivery <https://learn.microsoft.com/en-gb/azure/databricks/administration-guide/account-settings/audit-log-delivery>`_
+    - `Databricks on AWS: Configure audit log delivery <https://docs.databricks.com/en/administration-guide/account-settings/audit-log-delivery.html>`_
+
+3. Enable verbose audit logging to capture additional events in the audit log table. Your logs will include the following additional events:
+
+    - For notebooks: ``runCommand``
+    - For SQL warehouse: ``commandStart``, ``commandFinish``
+
+    Alation requires these events to be available in the audit table to successfully extract and ingest query history:
+
+    - `Azure Databricks: Enable verbose audit logs <https://learn.microsoft.com/en-gb/azure/databricks/administration-guide/account-settings/audit-log-delivery#--enable-verbose-audit-logs>`_
+    - `Databricks on AWS: Enable verbose audit logging <https://docs.databricks.com/en/administration-guide/account-settings/audit-log-delivery.html#enable-verbose-audit-logs>`_
+
+4. Grant :ref:`Permissions for QLI <uc-permissions-for-qli>` to the Alation service account.
+
+5. In Alation, ensure that you run metadata extraction (MDE) before running QLI. For information on MDE, refer to :doc:`/sources/OpenConnectorFramework/DatabricksUnityCatalog/DatabricksUnityCatalogOCFConfigureExtraction`.
+
+QLI Query
+---------------
+
+Alation runs the following query on the ``system.access.audit`` table to retrieve query history:
+
+.. code-block:: SQL
+
+    SELECT request_event_time AS startAt,
+      username,
+      queryText,
+      TIMESTAMPDIFF(SECOND, request_event_time, response_event_time) AS executionTime,
+      statusCode,
+      errorMessage,
+      session_id
+    FROM (
+      SELECT
+        user_identity.email AS username,
+        request_params.commandText AS queryText,
+        event_time AS request_event_time,
+        request_params.commandId
+      FROM system.access.audit
+      WHERE action_name = 'commandSubmit'
+      ) submitTable
+      LEFT JOIN (
+        SELECT
+          response.status_code AS statusCode,
+          response.error_message AS errorMessage,
+          session_id,
+          event_time AS response_event_time,
+          request_params.commandId
+        FROM system.access.audit
+        WHERE action_name = 'commandFinish'
+        ) finishTable
+    WHERE submitTable.commandId = finishTable.commandId
+      AND submitTable.request_event_time >= "FROM_TIME"
+      AND submitTable.request_event_time <="TO_TIME"
+      AND finishTable.statusCode = 200
+      AND finishTable.errorMessage IS NULL
+    UNION ALL
+    SELECT
+      event_time AS startAt,
+      user_identity.email AS username,
+      request_params.commandText AS queryText,
+      round(request_params.executionTime,0) AS executionTime,
+      response.status_code AS statusCode,
+      response.error_message AS errorMessage,
+      session_id
+    FROM system.access.audit
+    WHERE action_name in ('runCommand')
+      AND event_time >= "FROM_TIME"
+      AND event_time <= "TO_TIME"
+      AND response.status_code = 200
+      AND response.error_message IS NULL;
+
+Performing QLI
+-----------------------
+
+You can either run QLI manually on demand or configure it to run automatically on a schedule.
+
+    .. note::
+
+        Alation supports a maximum SQL query length of 100K rows. There is also a 50 KB limitation on query file size. Queries with more than 100K rows or queries larger than 50 KB cannot be parsed and ingested by QLI jobs.
+
+Depending on your connector version, use the information in the relevant topic:
+
+    - `Version 2.2.0 or Newer`_
+    - `Versions Before 2.2.0`_
+
+Version 2.2.0 or Newer
+-------------------------
+
+Use the information in this section to configure the **Query Log Ingestion** tab for connector version **2.2.0** or newer. In version **2.2.0**, the user interface of the **General Settings** page was redesigned. The new interface will be available if your Alation version is **2023.3.4** or newer.
+
+    .. note::
+
+        On Alation versions older than **2023.3.4**, the Metadata Extraction user interface is different. If you install the connector version **2.2.0** or newer on an Alation version older than **2023.3.4**, refer to `Versions Before 2.2.0`_.
+
+You configure QLI on the Query Log Ingestion tab of the data source settings page. Follow these steps:
+
+    - `Test Access and Query History Size`_
+    - `Preview Results (Optional)`_
+    - `Run QLI`_
+
+Test Access and Query History Size
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before you run QLI, you can validate that the user has access to the QLI tables and estimate the approximate size of the query history metadata. The size is estimated based on the average query volume of the last seven days.
+
+To test the access and query history size:
+
+Under the section of the user interface **Step 1: Test access and query history size**, click **Test**. A dialog box appears displaying the test progress. Upon successful validation, you'll get a confirmation that the user has the required permissions and an estimate of the query history size.
+
+Preview Results (Optional)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before running QLI, you can preview the queries to be ingested.
+
+To preview queries:
+
+1. Under the section **Step 2: Preview Results (optional)**, enter the date range for which you want to generate a preview.
+
+2. Click **Preview**.
+
+3. Click **View Results** to view the generated report.
+
+4. You can download the preview as a JSON file. Click **Download Preview Results** in the preview window to download it.
+
+Run QLI
+~~~~~~~~~~~~~~~~~~
+
+You can either run QLI manually on demand or configure it to run automatically on a schedule:
+
+    - `Run QLI Manually`_
+    - `Schedule QLI`_
+
+Run QLI Manually
+^^^^^^^^^^^^^^^^^^^^^
+
+To run QLI on demand:
+
+1. Under the section **Step 3: Run QLI**, specify the desired date range using the **Date Range** calendar widgets. You will need to specify the start date and the end date of the date range separately.
+
+2. Click **Import**. This will initiate a QLI job.
+
+3. You can monitor the status and history of your QLI jobs on the **QLI Job History** page. To open the QLI job history, click **Go to QLI Job History**.
+
+Find more details about the QLI job history in `View the QLI Job Status`_.
+
+Schedule QLI
+^^^^^^^^^^^^^^^^^^^^^
+
+You can configure QLI to run automatically on a schedule that you select.
+
+To schedule QLI:
+
+1. Under the section **Step 3: Run QLI**, enable the **Enable QLI Schedule** toggle.
+
+2. Specify values for the job recurrence and time. The values are set in your local time. The next QLI job for your data source will run on the schedule you have specified.
+
+View the QLI Job Status
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On the **QLI Job History** sub-tab, view the status of your QLI jobs.
+
+To open the list of QLI jobs that were run on the data source, click the **QLI Job History** sub-tab on top of the page. The QLI jobs are displayed in the query log ingestion log status table.
+
+A QLI job can have one of these statuses:
+
+    - **Succeeded**—The job was successful.
+    - **Partial Success**—The job was successful, but there are some warnings. For example, if Alation fails to ingest some objects, it skips them and proceeds to ingest other objects, with the QLI job resulting in partial success.
+    - **Failed**—The job failed due to errors.
+
+For each of the QLI jobs listed in the ingestion job status table, you can view the detailed log messages. Click the status link or the **View Details** link to open a detailed report in a pop-up info box. If there were errors during QLI, the corresponding error messages are displayed in the **Job errors** table. Follow the instructions in the Hint column for troubleshooting tips.
+
+Versions Before 2.2.0
+-------------------------
+
+Use the information in this section to configure the **Query Log Ingestion** tab for connector versions before **2.2.0**.
+
+Perform QLI Manually
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To perform QLI manually on demand:
+
+1. If you are using connector version **2.0.2.6259**, you must disable lineage auto-generation before running QLI. Open the **General Settings** tab, select the **Disable Automatic Lineage Generation** checkbox under **Application Settings**, and click **Save**. If you are using a newer connector version (**2.0.3.6564** or later), you don't have to manually disable automatic lineage as from this connector version, it's disabled programmatically. The corresponding control is not present in the user interface.
+
+    .. note::
+
+        After every QLI job, the QLI framework in Alation runs a downstream sub-job to calculate lineage based on the query history metadata ingested during QLI. However, for a Databricks Unity Catalog data source, lineage is extracted directly from the system tables. Disabling automatic lineage calculation disables the lineage downstream job and prevents creating duplicate lineage paths from both direct lineage extraction and QLI.
+
+2. On the **Query Log Ingestion** tab of the Settings page of your data source, under **Automated and Manual Query Log Ingestion** ensure that the **Enable Automated Query Log Ingestion** toggle is disabled.
+
+3. Specify the desired date range using the **Date Range** calendar widgets. You will need to specify the start date and the end date separately.
+
+4. Click the **Preview** button to preview the queries that will be ingested. This will run a preview job that will fetch a subset of the queries based on your QLI configuration. The result will be displayed in a table.
+
+5. Click the **Import** button. This will start a query log ingestion job.
+
+View Job Status
+~~~~~~~~~~~~~~~~~~~
+
+The status of preview or QLI jobs is logged in the **Query Log Ingestion Job Status** table at the bottom of the page. In this table, click the status link or the **View Details** link for a job to view the details on its progress.
+
+Schedule Automated QLI
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+To schedule QLI:
+
+1. On the **Query Log Ingestion** tab, under **Automated and Manual Query Log Ingestion**, enable the **Enable Automated Query Log Ingestion** toggle.
+
+2. In the **Automated Query Log Ingestion Time** panel that will appear, specify the values for the job recurrence and time. The values are set in your local time.
+
+    .. note::
+
+        The hourly schedule for automated QLI is not supported.
+
+3. The next QLI will run on the schedule you set.
+
+View Query History in the Catalog
+------------------------------------------
+
+After a successful QLI run on any connector version, you will be able to find and view the following information under your data source:
+
+    - `Query History`_
+    - `Filters, Joins, and Expressions`_
+    - `Popularity`_
+
+.. note::
+
+    Joins, filters, and popularity calculation is a scheduled task that runs asynchronously with query log ingestion. After running QLI for the first time, you will see popularity and join and filter information in the catalog on the next day.
+
+Query History
+~~~~~~~~~~~~~~~~
+
+The query history information that Alation ingests during QLI is made available on the **Queries** tab on the catalog pages for schemas and tables.
+
+To view query history:
+
+1. Navigate to the catalog page of a data source object, such as a schema or a table.
+2. Open the **Queries** tab.
+3. Select the **History** section from the list on the left. All the queries ingested for this object during QLI will be listed here.
+4. You can expand the query panels to see the full query statement and the related properties.
+
+Filters, Joins, and Expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When ingesting query history, Alation parses SQL statements and catalogs joins and filter expressions. The joins and filters can be viewed on the **Joins** and **Filters** tabs on catalog pages of the relevant table objects. Filter expressions are captured under the Expressions tab on catalog pages of the relevant column objects.
+
+To view the joins and filter information:
+
+1. Navigate to the catalog page of a table object under your data source.
+2. Open the **Joins** tab to view the relevant joins.
+3. Open the **Filters** tab to view the relevant filters.
+
+To view filter expressions:
+
+1. Navigate to the catalog page of a column object under your data source.
+2. Open the **Expressions** tab to view the relevant filter expressions.
+
+Popularity
+~~~~~~~~~~~~~~~~~~
+
+Popularity of objects is calculated from the number of mentions an object has in the queries parsed during query history ingestion. Tables that are more frequently accessed by users will have a greater popularity value than tables that are queried rarely. The popularity value is displayed on catalog pages of schema, table, and column objects.

@@ -1,0 +1,49 @@
+2023.3.x Upgrade Fails Due to Postgres Not Starting
+========================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Problem
+----------------
+
+The upgrade to 2023.3.1 or a later minor version of 2023.3 fails due to Postgres failing to start and an error in the Postgres logs that is similar to the following:
+
+    .. code-block:: Bash
+
+        runuser: warning: cannot change directory to /home/postgres: No such file or directory
+        postmaster: could not access directory "/var/lib/pgsql/13/data": Permission denied
+
+
+Location of Postgres logs: :ref:`Postgres Logs <postgres-logs-locations>`.
+
+The issue affects both standalone and high availability types of Alation instances where the installation followed a custom path and the Postgres component had been installed in a Docker container or where the ``/etc/passwd`` file had been modified.
+
+Root Cause
+-----------------
+
+This is a bug. Starting with 2023.3.1, the UID of the ``postgres`` user was changed, which causes misalignment with the ``postgresql`` user/group on existing instances that are being upgraded.
+
+A fix will be provided in a future Alation version.
+
+Solution
+-----------------
+
+If the upgrade fails on your instance due to this issue, perform the following steps on the Alation server **after the upgrade fails**.
+
+    .. important::
+
+        In case of the high availability pair, perform these steps on both primary and secondary servers.
+
+1. On the Alation server, from the Alation shell, run the following command:
+
+    .. code-block:: Bash
+
+        chown -R postgres:postgres /data1/psql /data2/backup/pgbackrest/
+
+2. Restart Alation.
+
+    .. code-block:: Bash
+
+        service alation restart
+
+3. Re-attempt the upgrade.

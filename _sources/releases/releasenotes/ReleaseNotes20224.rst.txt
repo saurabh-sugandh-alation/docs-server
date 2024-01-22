@@ -1,0 +1,608 @@
+Release Notes 2022.4 (General Availability)
+=============================================
+
+RELEASE 2022.4.11
+---------------------------------
+
+*build 14.4.11.45870*
+
+.. note::
+
+    This build is available for customer-managed (on-prem) instances.
+
+
+- Fixed an issue that caused an empty value in the settings of some OCF connectors of newer versions. Alation version 2022.4 didn't recognize AWS_IAM as an authentication option and loaded an empty value into the corresponding dropdown list. This caused the connection test and MDE to fail due to an unknown authentication value. We added logic to handle the new value correctly. (AL-127207)
+
+
+
+RELEASE 2022.4.10
+---------------------------------
+
+*build 14.4.10.43552*
+
+.. note::
+
+    This build is available for customer-managed (on-prem) instances.
+
+
+- Added a backward compatibility fix to resolve an OCF connector upgrade failure on Alation versions that don’t have the cross-account IAM authentication feature yet. The new authentication type in question was added to the OCF SDK in the latest version but is not available on versions prior to 2023.1.6. Without this fix, you would need to first update Alation to version 2023.1.6 or later to install or update some OCF connectors. The fix enables you to install or update an OCF connector without upgrading Alation to 2023.1.6. (AL-123743)
+
+- Fixed a number of issues with the Terms Public API List endpoint:
+
+      - Increased the API performance by re-structuring the way term objects are iterated over, eliminating duplicate permissions checks, and breaking once the limit is reached.
+      - Fixed the behavior of the ``skip`` query parameter.
+      - Fixed an off-by-one error with the ``limit`` query parameter, which had caused one additional term to be returned. (AL-115877)
+
+
+RELEASE 2022.4.9
+---------------------------------
+
+*build 14.4.9.38945*
+
+.. note::
+
+    This build is available for customer-managed (on-prem) instances.
+
+- Fixed an issue causing incorrect displaying of query schedule times in the user interface. Fix ensures the time appears as expected for simple and advanced schedules in query search. (AL-120473)
+
+- Previously, existing query schedules were shown incorrectly in the user interface after the upgrade to versions newer than 2022.3. In addition, users reported other issues with query schedules, for example, the inability to switch to advanced scheduling for schedules created before the upgrade or new query owners seeing incorrect schedules if their time zone was different from that of the previous query owner. All these issues have been fixed. (AL-113141)
+
+- Previously, disabling or enabling a schedule from the query search, Scheduled Query Dashboard, or the scheduling dialog in Compose also modified the time zone of the schedule, causing the user interface to display an incorrect time and triggering query runs at the incorrect time. Now, disabling or enabling a schedule will not alter its time zone. (AL-112937)
+
+
+RELEASE 2022.4.8
+---------------------------------
+
+*build 14.4.8.35994*
+
+.. note::
+
+    This build is available for customer-managed (on-prem) instances.
+
+- Improved the memory usage and performance for the data dictionary upload feature. Previously, in the data dictionary upload preview, we used an HTML table with all the records of the API response. Now, we have replaced the table with a client-side paginated table. In a client-side paginated table, the data is divided into smaller "pages," with only a limited number of rows or items displayed per page.
+
+- Some customers previously reported that displaying a preview of a data dictionary for uploading took a long time, or sometimes resulted in the *No data found* error. The root cause was the previous implementation of this feature, where a large number of database calls was made to form a preview. To resolve this, we have optimized the code to minimize the number of database calls by batching records and temporarily caching results. Additionally, pagination has been introduced on the client side, and results are now rendered in batches across pages. As a result of this optimization, Alation is expected to successfully upload a 3 MB file and its preview in approximately two minutes; and for a 25 MB file, this should take approximately 23 minutes.
+
+
+RELEASE 2022.4.7
+---------------------------------
+
+*build 14.4.7.31281*
+
+.. note::
+
+    This build is available for customer-managed (on-prem) instances.
+
+Lineage Default View Configuration—No Restart Required
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Previously, after the lineage settings were modified in **Admin Settings > Customize Catalog > Lineage**, the lineage service had to be restarted. Starting in 2023.1, the restart is no longer required.
+
+Bug Fix
+~~~~~~~~~~~~~
+
+- Fixed an issue for an Oracle data source where the Compose connection kept timing out with the error *Could not start query. Check your connection and try again* in the UI and the *Connection closed* error in the log. Added a configuration option to enable a check that the Oracle database connection is open before running a query. To enable, append ``-DcheckOracleConnIsOpen=true`` to the **alation_conf** parameter ``connector.extra_flags``.
+
+        .. note::
+
+            Do not override existing values. If the parameter ``connector.extra_flags`` already has some values set, add your new value:
+
+            .. code-block:: Bash
+
+                alation_conf connector.extra_flags -s ' -Darg1=value1 -Darg2=value2 -DcheckOracleConnIsOpen=true'
+
+        On how to use **alation_conf**, see :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.
+
+RELEASE 2022.4.6
+---------------------------------
+
+*build 14.4.6.29505*
+
+.. note::
+
+    This release is available for customer-managed (on-prem) instances.
+
+- Fixed an issue where back references from term objects did not appear in the **See more** dialog. The **See more** link is displayed when there are more than five back references in the **Related Articles** field. Now, the dialog will show all available back references.
+
+- Fixed an issue where users were unable to see the table and column object lists on the **Curate > Assign Stewards** page. The issue was due to the internal APIs used for curation dashboards performing multiple queries to the database in an inefficient manner, which resulted in the 504 error. Added a fix where for every given batch of 1000 curation object records, all related records will get pre-fetched using a single bulk query.
+
+- Fixed a performance issue with Multi-Select Picker custom fields. With multiple populated Multi-Select Picker custom fields on a catalog page, multiple duplicate calls to the internal API were happening to refresh the Multi-Select Picker field data. These extra calls were redundant and caused performance slowness. Fixed by updating the conditional check on Multi-Select Pickers to only fetch data when the selected values have changed.
+
+- The health check API ``http(s)://<your_alation.com>/monitor/i_am_alive`` now has a configurable timeout threshold. The the health status check of the lineage service will be terminated if the threshold is reached. The threshold is controlled by the **alation_conf** parameter ``lineage-service.health_check.timeout``, set in seconds. Previously, this threshold could not be configured. When it was reached, the ``i_am_alive`` API response or the corresponding email alert indicated that the lineage service health check failed but did not contain any specific exception. Now, the API response and the email alert will include a message that the request timed out based on the health check timeout threshold.
+
+
+RELEASE 2022.4.5
+---------------------------------
+
+*build 14.4.5.28479*
+
+- Fixed an issue where the previews of report, document, and dossier metadata objects were not available for a MicroStrategy BI source. Fixed by improving preview extraction performance for MicroStrategy sources.
+
+- Fixed a bug where Alation Analytics containers did not auto-start after a server reboot. Enabled a new start-up ``systemd`` service ``aacontainers_startup.service`` to bring the containers up after a reboot.
+
+- Previously, due to certain race conditions on the server, scheduled query executions failed with the following error: *Could not connect to the database. Please reconnect or reload*. The issue has now been fixed.
+
+- Fixed an issue where the **More nodes** lineage node was not displayed for target tables on Lineage charts. Now, the **More nodes** option will be available for both source and target tables.
+
+- Fixed an issue where the **Curation Progress** report on My Stewardship Dashboard auto-refreshed a short time after loading filtered results and reset to the data source level. The issue was happening due to a race condition that triggered a re-fetch of the table data. The issue has been fixed.
+
+- Corrected a number of typos in the User V2 API documentation.
+
+
+RELEASE 2022.4.4
+---------------------------------
+
+*build 14.4.4.26642*
+
+.. note::
+
+    An Alation Cloud Service release.
+
+    This build is not available for customer-managed (on-prem) instances.
+
+
+- Added a fix to ensure high availability containers are placed in different zones from those of the core ``alationfc`` container, which guarantees high availability.
+- Fixed a bug to exclude configuration replication in cloud native architecture.
+- The first user on the Enterprise Edition can now change their password on the **User Profile** page after logging in.
+- The **Forgot Password** functionality can now be used by the first user on the Enterprise Edition before they log in.
+- Fixed an issue where users were not able to connect to the Alation Analytics database in Compose using their own Alation Analytics account. Added the Connect privilege on the Alation Analytics database for users who create Alation Analytics accounts. This ensures users can connect from Compose.
+- Added internal provisioning enhancements.
+
+
+RELEASE 2022.4.3
+-------------------------------
+
+*build 14.4.3.25341*
+
+New Features
+~~~~~~~~~~~~~~~~~
+
+Granular Access Permissions for Queries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+    In 2022.4.3, the Granular Access Permissions functionality for queries is not enabled by default. The feature can be made available to you for preview on demand. The general availability release of this functionality is planned for version 2023.1 (February, 2023).
+
+Previously, Alation didn't have the capability to set granular access permissions for query objects that would allow only certain users to view, edit, or run them. Starting with this release, you can use the new **Sharing & Access** feature to configure access to queries in Compose and the catalog controlling who can view, edit, and run them. Levels of access supported for queries are: *No access*, *View Access*, *View & Run Access*, *View Run and Edit Access*, and *Owner*. The access rules are set on individual query objects and apply to both unpublished and published queries. For new queries, the default is *View & Run Access* for Everybody.
+
+If you are using the **alation_conf** parameter ``alation.catalog.unpublished_query_visibility_level=not_visible`` to control visibility of unpublished queries, note that this setting will take precedence over individual access permissions on unpublished query objects. If the parameter ``alation.catalog.unpublished_query_visibility_level`` is currently set to ``not_visible`` (unpublished queries can only be accessed by Owners and users with whom they were explicitly shared), then after enabling the **Sharing & Access** feature, unpublished queries will remain invisible to users even if they are given *View Access* in the user interface. We do not recommend changing the parameter ``alation.catalog.unpublished_query_visibility_level`` to visible before all protected unpublished queries have been assigned the correct access privileges.
+
+User V2 Public API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A new public API **User V2** is now available to users with the Server Admin role. The API introduces two endpoints:
+
+    - ``GET {protocol}://{base_URL}/integration/v2/user/``---Lists all users.
+
+    - ``GET {protocol}://{base_URL}/integration/v2/user/{id}/``---Fetches an individual user.
+
+Compared to the already existing API User V1, the User V2 API allows retrieving more user attributes (for example, *user created date* and *user last login date*) as part of the request.
+
+Suspend Duplicate User Account(s) Using API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Two new endpoints were added to the **User V1** public API to provide an alternative way to remove duplicate user accounts. This API is available to users with the Server Admin role.
+
+    - ```GET {protocol}://{base_URL}/integration/v1/generate_dup_users_accts_csv_file/``---Creates a file with a list of duplicate accounts.
+
+    - ``POST {protocol}://{base_URL}/integration/v1/generate_dup_users_accts_csv_file/remove_dup_users_accts/``---Updates user accounts in Alation and eliminates duplicates.
+
+Send Email Notifications About the Lineage V2 to V3 Migration Status
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Lineage V2 to V3 migration script now supports the ability to specify emails to send notifications to users about the lineage migration job status.
+
+Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added the ability to limit Bulk Utility to working with Articles and Terms only. This is controlled by the **alation_conf** parameter ``alation.feature_flags.DEV_enable_bulk_utility_gating``. When this development flag is turned on:
+
+        - If a user attempts to download saved searches that contain objects other than Articles or Terms, those objects will be ignored and not present in the downloaded payload.
+
+        - If a user attempts to upload any files which contain non-Article non-Term rows, those rows will be ignored and no objects created or updated for those rows.
+
+- For the custom API BulkMetadata V2 (available on demand), added flags ``create_new``  and ``replace_values``. BulkMetadata V2 API will update article titles when ``replace_values`` is ``false`` and ``create_new`` is ``true``.
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed an issue where the headline color on the customized homepage was reset to the default dark gray after the upgrade to 2022.4. Now, the custom headline color will stay as was.
+
+- Fixed an issue where for some queries ingested during QLI, the Alation SQL parser issued an error containing an encoded form of emoticons. This exception caused QLI to fail. Now, this exception will be handled gracefully so that the queries causing the error do not cause QLI to fail.
+
+- Fixed a user interface issue with the Lineage diagram where column-level connectors were not highlighted when users selected the corresponding dataflow object node. Now, when users click a dataflow object, its upstream and downstream column-level connectors will be highlighted.
+
+- Improved loading time for catalog pages that contain single picker or multi-picker custom fields. Previously, some customers reported noticeable slowness when opening such pages.
+
+- Added logic for the column filter on catalog pages of column objects to search for characters ``%`` and ``_`` in column names. Previously, they were interpreted as wildcard characters and the search rendered no result.
+
+- Fixed an issue where users were unable to create a Change Request workflow for the **Type** field on policy objects. The approval of such change requests resulted in an error.  Now, we added support for updating the **Type** field for policy objects using Change Request workflows.
+
+- Fixed an issue where Bulk Utility might incorrectly associate a migrated term with an RDBMS object stored as a value in an Object Set field as such values do not contain unique identifiers. Added logic to handle non-unique RDBMS Object Set field values while using Bulk Utility.
+
+- Fixed an issue where custom fields were not displayed in the left-side filter panel on the Search results page when **All** was selected from the **Object Type** filter.
+
+RELEASE 2022.4.2
+-------------------------------
+
+*build 14.4.2.23237*
+
+Encryption Security Fix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    .. important::
+
+        Action required after this Alation update on customer-managed (on-prem) instances.
+
+        Alation Cloud Service customers will receive this update as part of the routine maintenance, and no action is required on the part of instance administrators.
+
+This patch includes a security fix removing a risk identified in the current encryption mechanism which makes Alation potentially susceptible to key reuse attacks. Information about this risk is available in `November 3, 2022 - Encryption Key Reuse Security Advisory <https://community.alation.com/askalationexpertsmicrosite/viewdocument/november-3-2022-encryption-key-r?CommunityKey=ae45134b-412a-4cff-bb26-1e9f3caa2f60>`_ available on Alation Community (requires Community login).
+
+The fix ensures that all new data will be properly encrypted using new, randomized initialization vectors appended to the ciphertext and eliminates the possibility to reuse the non-unique initialization vector.
+
+On customer-managed instances, after the update to this patch, the existing data needs to be re-encrypted. Re-encryption will run as a background process and no separate downtime is required apart from that needed for the regular version upgrade. Users can work in Alation while the re-encryption job is in progress. For re-encryption steps, refer to :doc:`/installconfig/Update/ReencryptData`.
+
+Other Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The Impact Analysis report will now exclude temp objects by default. This is based on the **alation_conf** parameter ``lineage-service.filters.exclude_temp``, which is now ``True`` by default. Previously, the default view of the Impact Analysis report included temp objects.
+
+- Fixed an issue with the order of steps in change request workflows where the change requestor and reviewers saw a different order of steps. This fix ensures that the change requestor and reviewers see the same order of the workflow steps.
+
+- Optimized the lineage service query that is used to enable the Lineage tab on catalog pages. The fix improves page load experience for catalog objects that support lineage.
+
+- Improved page load time for catalog pages of view objects with long definition queries from minutes to a few seconds. Now, Alation will skip SQL highlighting for view definition queries with more than 1,000 characters to ensure faster page load time.
+
+
+RELEASE 2022.4.1
+--------------------
+
+*build 14.4.1.22725*
+
+.. note::
+
+    An Alation Cloud Service release.
+
+    This build is not available for customer-managed (on-prem) instances.
+
+- Updated the Connected Sheets add-on installation URL.
+- Fixed an issue with publishing manual lineage and adding lineage via API, where new lineage did not appear on the diagram after publishing.
+- When migrating a data source connection details to OCF, Alation reads the data from the ``native_to_ocf_mapping`` field in the manifest file. A connector manifest file will have this key when the connector implements ``RdbmsNativeConfigurationMap`` or ``BINativeConfigurationMap``. This change provides a default value if the field does not exist in the manifest file.
+- Fixed an issue of **pgBackRest** failing to initialize.
+- Previously, in case of an OCF metadata extraction job failing, the object counts (for example, tables per schema and attributes per table) were incorrect and attribute breadcrumbs were missing the schema and table references. After this fix, the counts and the objects references should be populated correctly even when extraction fails, and the incorrect counts should be corrected during the next successful extraction.
+- Fixed an issue where the ``backup_all`` action stalled at the Event Bus backup step, resulting in no backups getting generated.
+- On the settings page of data sources, in the Migrate to OCF dialog, added a text box for validation requiring users to type the connector name and version. After the validation, if the text matches with the value in the dropdown list, the **Migrate** button becomes enabled.
+- The Object Set values will now be properly handled by Bulk Utility (Article to Term migration).
+- Fixed an issue with collection nodes not expanding on Lineage diagrams. An error occurred instead. Now, this action is available to users.
+- Fixed an issue where invalid connection strings were successfully added to the **Connection Settings** dialog instead of Alation throwing an error during the Compose connection testing. This fix ensures that connection errors are properly handled.
+- Previously, for Query Service-based connections, DDL and DML queries returned the update count (number of rows updated) in the ``ResultSet`` object instead of the ``Statement`` object as in JDBC-based connections. This caused the system to not process update counts properly. This fix ensures that the update counts are extracted from the ``ResultSet`` object for Query Service-based query executions.
+- Fixed an issue where incremental MDE was not triggered due to a conditional check in Compose, disabling the incremental MDE or QLI flows for Query Service-based data sources. This change removes the conditional check.
+- Fixed an issue where bulk actions failed for the object types ``doc_schema``, ``docstore_folder``, and ``docstore_collection``. Now, bulk actions with these object types will succeed.
+- Fixed an issue with uploading Lexicon terms from a CSV file where the upload resulted in inconsistent handling of existing confirmed titles.
+
+
+RELEASE 2022.4.0 — General Availability
+--------------------------------------------
+
+*build 14.4.0.21319*
+
+Alation Anywhere
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation Anywhere is a set of features that integrates Alation with other software that you use, so that you can access and use Alation data anywhere.
+
+Alation Anywhere for Slack
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With Alation Anywhere for Slack, rich contextual information about data from Alation is surfaced via previews in Slack. Data teams can search the catalog, preview helpful metadata at a glance, and navigate to the object in Alation to get more information. This could be anything from a business glossary term, to a table in a database, or a SQL query someone has published and described.
+
+Alation Anywhere for Tableau
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With Alation Anywhere for Tableau, users of Tableau can see certain metadata from Alation directly within Tableau. This enables Tableau users to see data descriptions, warnings, and more in Tableau itself. Alation serves as the single source of truth while supporting data users in their chosen context.
+
+Connected Sheets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Connected sheets is a new spreadsheet tool using Google Sheets that helps users discover data sources in the catalog, download data using filter and sort criteria, and manage downloaded sheets including auto-refresh. Customers must be on the newly released multi-tenant Alation Cloud Service and a Creator or Explorer License is required.
+
+Catalog
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Term and Glossary Navigation Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Term and Glossary Navigation improvements include:
+
+- Added the ability to recursively add and remove terms in Glossary to a Domain.
+- Added new optional columns to both Term tables (on the Hub as well as Glossary detail pages): **Last Updated**, **Created** and **Term Type**.
+- Term Table column selection can now have a saved default view chosen by Catalog Admins.
+- Added new custom fields search facet for Glossary Terms.
+- Added breadcrumbs to Term catalog detail pages, and added **Last Updated** to Term and Glossary Properties panels.
+- Added a new **Glossary Terms Total Count** feature flag (off by default), which controls whether the total Term count is calculated and displayed at the top of the Glossary Hub Terms table.
+
+Terms Public API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Terms Public API enhancements include:
+
+- The GET endpoint of the Terms Public API now includes additional fields to match the CREATE endpoint plus the unique ID.
+- Added an UPDATE endpoint to the Terms Public API.
+- Indicate in the documentation that search, skip, limit, and deleted=true are supported query parameters in the Term bulk GET request.
+- The Terms Public API List endpoint is now object-level permissions aware.
+
+Bulk Utility
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Bulk Utility is an admin-only feature that enables users to specify which Articles they would like to migrate to Terms easily by leveraging download of a saved search to csv. All critical Article fields will be contained within newly created Terms and associated with Glossaries and Term Types as desired. The Bulk Utility can also be used to create and edit multiple Terms and Articles at a time. Links to detailed instructions for use can be found on the feature page itself.
+
+
+Customized Search User Interface (UI) Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The **More Filters** drawer closes instead of refreshing when users switch otype filters. Flags and Star Watched History filters are compatible with custom filter settings, and move to the filter drawer when removed from the outer filters.
+
+Persona-Based Homepage Preview Mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Custom Homepages can now be previewed using the **Preview** button. The new homepage renders so that users can see their custom homepage in action before enabling it for viewing.
+
+Propagated Data Quality Table on Downstream Data Objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation's Data Quality service now includes built-in quality values being generated from ingestion from OCF data sources. On detection of deleted data objects, Data Quality creates a 'deleted' quality value on that given object which then propagates to downstream nodes on the lineage graph. This information will be displayed for downstream Tables, BIReports, and BIDataSources and is surfaced on the new Data Health > Upstream Issues tab for each respective catalog page.
+
+Search Ranking Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Catalog Admins can now influence the order of how search results appear through ranking by object type. The customization is available via `alation_conf` settings.
+
+Elasticsearch Upgraded to 7.17.6
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Upgraded the Elasticsearch version from 7.17.3 to 7.17.6. This was completed for both on-premise and cloud environments.
+
+Other Catalog Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added a search flag ``alation.search.enable_search_with_literals``. The search will return the exact match for a query with a period.
+
+Governance App
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create Publicly Accessible APIs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Created a Public API to list Policy Groups.
+
+Policy Center Template Support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added support for various multi-template layout functionality for business policy templates, including displaying the business policy template name in the All policies and Policy group links table, registering a new built-in template for business policy, and migrating the existing built in template to a non-built in template.
+
+Updated Database Configuration Settings Modal
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Updated the Connection Settings dialog used in Add Data flow of Policy Center, bringing consistency and providing capabilities around managing multiple connections.
+
+Enabled "Select All" for Stewardship Workbench Bulk Actions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+One-Click approach to select up to 10K objects and update them all at once using bulk actions.
+
+Improved Add/Remove Stewards Bulk Action
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Merged the add or remove Stewards bulk action with the capability to add or remove people-sets as Stewards.
+
+Object-level Permissions for Stewardship Workbench Actions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When a Steward is performing bulk actions in the Stewardship Workbench, the Steward who initiated a bulk action has object-level permissions including edit access to both the selected objects and the selected field.
+
+Policy Center UI/UX Updates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added the "Create Policy Group" and "Create Policy" buttons to replace the "Create New" button on the Policy Center homepage.
+
+Compose
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Query Service Integration with Compose
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Compose now supports connections requiring Alation Agent. This is achieved through the Query Service and requires that an OCF Connector has been modified to support this. This support includes all query execution, manually in either Compose or query forms, using scheduled queries, or using Excel live reports and data upload. This feature requires Query Service enabled OCF Connectors. Oracle OCF Connector is the first supported one. Additional supported OCF Connectors will be announced as they become available.
+
+Alation Analytics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Support for Deploying Alation Analytics V2 on Docker as Non-root User
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Support is added for deploying Alation Analytics V2 on Docker daemon running as a non-root user. Alation Analytics V2 works in Docker rootless mode for the following platforms:
+
+- Redhat 8
+- Fedora 33, 34
+- Ubuntu 18
+- Debian 10
+- Centos 8
+- Oracle Enterprise Linux (OEL)
+
+For installation of docker in rootless mode, see https://docs.docker.com/engine/security/rootless/
+
+Connectors
+~~~~~~~~~~~
+
+Please note that connectors are released independent of Alation releases. The following connectors and connector changes are now available unless specified otherwise.
+
+LA OCF Connectors
+^^^^^^^^^^^^^^^^^^^^^^
+
+- Azure Blob Storage OCF Connector is LA. This connector enables cataloging objects/files in a file/folder heirarchy for Azure Blob Storage and ADLS Gen 2.
+- Databricks Unity OCF Connector is LA. This connector provides connectivity to Databricks' Unity Catalog (AWS and Azure) for metadata extraction.
+- SSRS OCF Connector is LA. The SSRS OCF connector does not support Sharepoint mode, and is verified with 2016, 2017 and 2019.
+- Tibco Spotfire OCF Connector is LA. This connector catalogs Tibco Spotfire as a Business Intelligence source in Alation and catalogs Tibco Spotfire artifacts such as Folders, Reports, Report Fields, Data sources, and Connections.
+
+GA Connectors
+^^^^^^^^^^^^^^^^^^^^^
+
+- :doc:`Amazon S3 OCF Connector </sources/OpenConnectorFramework/AWSS3/index>`
+- Denodo OCF Connector
+- CDATA Azure Analysis Services CustomDB Connector
+- Impala with CDH OCF Connector
+- Google BigQuery OCF Connector
+- MemSQL OCF Connector: All features are implemented as per the support matrix with the exception of LDAP.
+- :doc:`Qlik Sense Connector </sources/OpenConnectorFramework/QlikSense/index>`
+- SAP Business Objects OCF Connector
+- Tableau OCF BI Connector
+
+Other Connector Updates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- CDATA SSAS OCF Connector: Added Expressions in the Catalog and an option to catalog hidden tables
+- Google BigQuery (Native): Profiling timeout is behind a configuration flag to be increased as required.
+- Looker OCF Connector: Upgraded the latest SDK, Fixed the BI connection and Reports preview issues.
+- Power BI OCF Connector: Populate report owner field from scanner API response for Power BI Report
+- Snowflake: Added support for Snowflake system tags for data classification and updated section headers.
+- For BI object catalog pages, the **Source Comments** field is now renamed to **Source Descriptions**.
+
+Alation Connector Manager
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With Alation Connector Manager 1.2.1.1168, you can now configure Alation Connector Manager to use the host network so it appears to be coming from the same host as Alation. This may be needed if your network is configured with an Access Control List. See the Alation Connector Manager :ref:`configuration instructions <OCF_Install_Alation_Connector_Manager-Configuration>` for more information.
+
+Connector Platform Service
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Public APIs for OCF Data Sources and Connectors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- APIs for creating data sources, listing all data sources, getting details for a given data source, and getting details for all OCF connectors are now supported for OCF data sources.
+
+- Metadata extraction and selective extraction are now supported via Public APIs for OCF data sources.
+
+   .. important::
+
+      The existing Data Sources API (v1) will no longer support OCF data sources. It could previously be used to get limited data for OCF data sources. Use the new OCF Data Sources API (v2) for working with OCF data sources.
+
+Lineage
+~~~~~~~~~~~~~~~~~~~~~
+
+Lineage V3 Is Now Enabled by Default
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If the instance is for a new Alation customer, Lineage V3 is enabled by default. If the instance being upgraded to 2022.4 or later has Lineage V3 disabled, it will remain disabled after the upgrade to 2022.4. When Lineage V3 is enabled, the Lineage V3 functionality, such as manual lineage, can be used immediately without a Celery restart. All V2 functionality is also available in V3, using V3 just adds extra functionality and improves the lineage graph performance.
+
+Column Level Lineage (CLL) for DB2 Is Available
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Column Level Lineage (CLL) for DB2 is now generally available (GA).
+
+Column Level Lineage (CLL) for Azure Synapse Is Available
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Column Level Lineage for Azure Synapse is now generally available (GA). Enabled feature flag to turn on Automated Column Level Lineage for Azure Synapse data source.
+
+Lineage Depth Based Filtering improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ability to 'View More' lineage based on lineage-service.max_depth configuration. The default setting is to view all lineage. Change the max_depth value to set the initial view distance for both upstream and downstream.
+
+Default View Settings Page
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default View Settings page adds the ability for server admins to set default settings for lineage graphs through the **Settings** page. The settings can be seen on the customize catalog section of the settings page, that is, **Settings** > **Customize Catalog** > **Lineage**.* After the settings are modified, the lineage service needs to be restarted.
+
+Lineage V2-V3 Migration Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When the Lineage V2 to Lineage V3 migration is run, email notifications are sent to instance admins to inform them about the outcome of the migration. This is for any outcome whether successful or failed. Occasional progress status notifications are also sent for long running jobs. This means monitoring the logs as the migration runs while still recommended is not strictly required unless something goes wrong.
+
+General Platform
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Upgrade Kafka for On-Premise Instances
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Kafka upgraded to version 3.1.1.
+
+Cloud
+~~~~~~~~~~~~~~
+
+Cloud Console Dashboard
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Created a multi-region cloud dashboard to manage cloud accounts.
+
+Certifications
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Connector Certifications
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+OCF PostgreSQL EC2 14.5 Version is certified.
+
+Driver Updates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Driver updates include:
+
+- Azure SQL DB OCF Connector is certified w/ 11.2.0 Driver
+- SQL Server OCF Connector is certified w/ 11.2.0 Driver
+
+Known Issues
+~~~~~~~~~~~~~~~~~~~
+
+Homepage Headline Color Turns to Dark Gray
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After upgrading to 2022.4, any homepages that use the default headline color will default to a dark gray. You can fix this by editing your homepages to enter the desired headline color manually after upgrading. See :doc:`/admins/CustomizableHomePage/CustomizeHomepage2022_3To2023_3_3` for help editing your homepage. (**FIXED in 2022.4.3**)
+
+
+Domain Default Field Should Not Show "remove" Icon
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When navigating to a custom template > Policy template, and hover over the Domain field, the “remove” icon should not display.
+
+Glossary Membership Modal Does Not Show All Glossaries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When viewing the Glossary Membership modal, all glossaries are not shown because of a pagination issue, buttons are disabled, and it’s possible selected glossaries are shown incorrectly.
+
+Relational Update APIs Inconsistency
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+New Data Quality values added to Columns will be shown to be ingested successfully but will not be displayed on the column's table.
+
+NoSQL User Interface Issue
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The NoSQL catalog table data requires to return an indicator whether a schema has nested children with it or not. There is a known issue causing the user to be unable to see a child elements link when the child elements are more than the depth configured, and unable to see the Load More button to load elements in batches.
+
+**Workaround**: Configure the depth flag "alation.feature_flags.docstore_tree_table_depth" to a higher number to see the child elements.
+
+Fixed Issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed an issue where the backup process failed at the Event Bus backup generation stage resulting in no backup file being created in the backup folder.
+- Alation Analytics V2 no longer shows deleted flags.
+- Fixed issue for proper handling of data values in scientific notation when unwrapping.
+- Fixed issue to give access to admins other than server admin when updating OCF settings.
+- Cleaned up older backup files failing because of a permission issue.
+- Fixed issue with Alation's Relational Integration API with column calls on SAP BW Data Source.
+- Fixed issue causing deleted terms through Public APIs to display on Search Page.
+- Fixed issues where users cannot copy rows from results of Run Form.
+- Postgres folders permissions update, secured by default.
+- Fixed issues where search filters are not cleared when more than four options exist.
+- Fixed issue causing high CPU load when backup run after upgrading to 2021.4.12.
+- Added ability to run queries using script mode for Google Big Query (GBQ) datasource.
+- Fixed issue causing Column profiling for Custom DB data sources to not work as expected when custom queries are used for sampling tables.
+- Term-accepting ObjectSet fields that are hydrated with Terms will now properly allow the object types they are placed on to be indexed by search.
+- Fixed issue causing backup status missing in health checklist.
+- Fixed issue causing homepage to always load in default state, instead of custom homepage.
+- Checkbox styling is now consistent across all browsers.
+- Fixed issue causing tables to display governance count percent mismatch.
+- FileSystems in the left pane are now sorted by Title.
+- Restored the ability to add PDF and Excel files as types for upload via Rich Text Fields.
+- After ingesting schemas via API for a NoSQL Virtual Data Source, record types should preserve capitalization style.

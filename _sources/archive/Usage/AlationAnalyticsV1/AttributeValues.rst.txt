@@ -1,0 +1,49 @@
+Attribute Values
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query allows you to analyze all the attribute values (real data
+rather than metadata) and whether they are titled or not. 
+
+.. code-block:: sql
+
+    with attributes_and_titles AS
+    (
+      SELECT value_url, value_, title, O2.object_url AS parent_attribute, attribute_name, description, ts_created, ts_updated
+      FROM
+      (
+            SELECT
+                OFV.object_uuid, -- needed so we can group by it
+                O.object_url  AS value_url,
+                P.parent_object_uuid,
+                MAX(CASE WHEN field_name='id'                  then integer_value end) AS id,
+                MAX(CASE WHEN field_name='title'               then text_value end) AS title,
+                MAX(CASE WHEN field_name='value'               then text_value end)  AS value_,
+                MAX(CASE WHEN field_name='attr_name'           then text_value end) AS attribute_name,
+                MAX(CASE WHEN field_name='description'         then text_value end) AS description,
+                MAX(CASE WHEN field_name='deleted'             then boolean_value::int end)::boolean AS deleted,
+                MAX(CASE WHEN field_name='ts_created'          then datetime_value end) AS ts_created,
+                MAX(CASE WHEN field_name='ts_updated'          then datetime_value end) AS ts_updated
+          FROM public.object_field_value AS OFV
+            JOIN public.object_field     AS OF  ON OFV.field_id    = OF.field_id   -- so we can use the field name
+            JOIN public.alation_object_type   AS OT  ON OT.object_type_id=OFV.object_type_id -- so we can use the object type by name
+            JOIN public.field_value           AS FV  ON FV.value_fp      =OFV.value_fp       -- so we can get the field value
+            JOIN public.alation_object        AS O   ON O.object_uuid    =OFV.object_uuid AND O.object_type_id=OFV.object_type_id
+            JOIN public.object_parent_relationship AS P ON P.object_uuid=OFV.object_uuid AND P.object_type_id=OFV.object_type_id AND parent_object_type_id=1 -- only want to see parents of type attribute
+            WHERE object_type_name = 'attribute_value' -- because the object_uuid is not global
+            GROUP BY OFV.object_uuid, O.object_url, P.parent_object_uuid
+      ) a_value
+      JOIN public.alation_object O2 ON a_value.parent_object_uuid = O2.object_uuid AND O2.object_type_id=1 -- attribute
+      WHERE deleted IS False
+      ORDER BY ts_updated
+    )
+    SELECT * from attributes_and_titles; -- UNCOMMENT THIS IF YOU WANT THE WHOLE TABLE
+    --SELECT count(1), title is null AS empty_title from attributes_and_titles
+    --GROUP BY empty_title;
+    --SELECT * FROM attributes_and_titles WHERE attribute_name='iata' AND title is not null;
+    --SELECT parent_attribute, attribute_name, count(1) AS count FROM attributes_and_titles WHERE title is not null
+    --GROUP BY 1, 2
+    --ORDER BY count DESC;

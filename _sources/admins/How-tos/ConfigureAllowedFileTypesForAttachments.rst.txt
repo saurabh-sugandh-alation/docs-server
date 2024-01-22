@@ -1,0 +1,45 @@
+How to Configure a List of Allowed File Types for Article Attachments
+=======================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from release V R7 (5.12.x)*
+
+This procedure requires server-side access to the Alation application.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+In the ``alation_conf``, there are two parameters that can be used to whitelist or blacklist file types that users may try to upload as attachments to Article objects.
+
+- ``alation.security.whitelisted_file_extensions`` lists the allowed file types
+- ``alation.security.blacklisted_file_extensions`` lists the file types that are not permitted as attachments
+
+File types in the whitelist are allowed as attachments to article objects in Alation. File types in the blacklist are not allowed. A user trying to upload a blacklisted file type will see a warning message in Alation.
+
+To change the lists,
+
+1. SSH to the Alation server.
+
+2. To view  the current values:
+
+    .. code-block:: bash
+
+          sudo /etc/init.d/alation shell
+          alation_conf alation.security.whitelisted_file_extensions
+
+This will output the current parameter settings. For example:
+
+  .. image:: ../../_static/VR7_whitelist.png
+        :width: 5.5in
+        :align: center
+
+3. To add a value to the list, append your value to the list of available values and deploy the updated list. To remove a value, remove it from the list and apply the remaining list. Note that there should be no spaces between values:
+
+.. code-block:: bash
+
+      alation_conf alation.security.whitelisted_file_extensions -s ['pdf','jpeg',
+      'jpg','png','pptx','docx','xls','xml','ppt','gif','xlsx','bmp','doc','rtf',
+      'gz','zip','mp4','mp3','wmv','tiff']
+
+
+Changes will be applied without a restart.

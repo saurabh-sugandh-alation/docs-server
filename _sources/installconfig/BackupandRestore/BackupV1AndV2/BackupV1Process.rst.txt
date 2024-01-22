@@ -1,0 +1,32 @@
+Backup V1 Process
+============================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+The Alation backup process creates one **.tar.gz** backup file ``<timestamp_version>_alation_backup.tar.gz``, for example ``202008140102_5-17-0-116556_alation_backup.tar.gz``.
+
+The Postgres backup tool on these versions is **pg_probackup**.
+
+During the backup process, the backup files are first staged in backup staging directories. Alation creates staging folders in 2 locations: **/data2/tmp** and **/data2/backup/pgbackup** (both paths are given inside the Alation shell).
+
+The directory **/data2/tmp** is always present on **/data2**. If the **/data2/tmp** folder is not initially empty, its contents are cleared automatically at the start of the backup process. It is the default location for staging and compressing the backup data and creating the backup **.tar.gz** file.
+
+.. note::
+
+    This default backup staging location can be changed using the **alation_conf** parameter ``alation.backup.data_temp_dir``. At any time, the ``alation.backup.data_temp_dir`` parameter stores the location of the current staging directory for the creation of the compressed backup files.
+
+The directory **/data2/backup/pgbackup** is created by the first backup process and used for staging the Postgres data for the backup.
+
+When the backup process has completed, the staged contents of the **/tmp** and **/pgbackup** folders are compressed together into a **.tar.gz** file. The name of the backup file includes the date, time, and build number, for example: ``202008140102_5-17-0-116556_alation_backup.tar.gz``.
+
+A compressed backup file will appear in the backup storage directory **/data2/backup** (default location).
+
+The contents of the **/data2/tmp** folder are deleted automatically after the backup is complete, but the folder itself is not deleted.
+
+There is a difference in how the **/data2/backup/pgbackup** staging directory is cleared depending on whether or not incremental backups are in use:
+
+If incremental backups are disabled, the contents of the **/data2/backup/pgbackup** directory and the directory itself are cleared after the backup process has completed. If incremental backups are enabled, the contents of the **/data2/backup/pgbackup** directory are not cleared.
+
+.. note::
+
+    If an incremental backup fails, the database backup staging files in **/data2/backup/pgbackup** should be cleared manually before performing the next backup.

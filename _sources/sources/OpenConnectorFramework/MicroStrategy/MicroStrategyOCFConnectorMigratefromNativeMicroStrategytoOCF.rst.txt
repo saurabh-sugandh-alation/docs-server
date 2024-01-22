@@ -1,0 +1,135 @@
+MicroStrategy OCF Connector: Migrate from Native MicroStrategy to OCF
+===============================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+You can migrate a MicroStrategy source that was previously cataloged using a native (built-in) connector to Open Connector Framework (OCF). To migrate to OCF, the native MicroStrategy source must be on GBMv2. If your native MicroStrategy source is still on GBMv1, :doc:`migrate from GBMv1 to GBMv2 </bisources/AddBISources/MicroStrategy>` before you migrate to OCF.
+
+The MicroStrategy objects in the below table are migrated in Native MicroStrategy to OCF migration:
+
++--------------------------+-----------------------------+----------------------------+
+| MicroStrategy Object     | Object Type in Native       | Object Type in OCF         |
++==========================+=============================+============================+
+| Projects                 | BI Folders                  | BI Folders                 |
++--------------------------+-----------------------------+----------------------------+
+| Folders                  | BI Folders                  | BI Folders                 |
++--------------------------+-----------------------------+----------------------------+
+| MicroStrategy dashboards | BI Reports                  | BI Reports                 |
+| or dossiers              |                             |                            |
++--------------------------+-----------------------------+----------------------------+
+| Reports                  | BI Reports                  | BI Reports                 |
++--------------------------+-----------------------------+----------------------------+
+| Report attributes and    | BI Report Fields            | BI Report Fields           |
+| metrics                  |                             |                            |
++--------------------------+-----------------------------+----------------------------+
+| Cubes                    | BI Datasources              | BI Datasources             |
++--------------------------+-----------------------------+----------------------------+
+| Cube attributes and      | BI Datasource Fields        | BI Datasource Fields       |
+| metrics                  |                             |                            |
++--------------------------+-----------------------------+----------------------------+
+| Permissions              | BI Permissions              | BI Permissions             |
++--------------------------+-----------------------------+----------------------------+
+
+The native MicroStrategy BI source to OCF migration offers limited migration options:
+
+    - The native MicroStrategy GBMv1 to OCF migration is not supported.
+
+    - Limited migration support from the native MicroStrategy GBMv2 BI source to OCF is available, as the following objects will be soft deleted when you run MDE using OCF connector after migration.
+
+          - Derived metrics
+
+              - Report (dossiers or documents or simple reports) derived metrics
+              - Cube derived metrics
+
+          - Prompted reports
+
+.. note::
+
+      These objects are not available in the MicroStrategy OCF connector as they are not supported by the REST APIs currently.
+
+Prerequisites
+-------------------
+
+Before performing the migration:
+
+     - Migration capabilities for MicroStrategy are available from the Alation version 2023.3.2 and later.
+
+     - You must first install the relevant OCF connector on your Alation instance. See :doc:`STEP 1: Install the Connector for directions </sources/OpenConnectorFramework/MicroStrategy/MicroStrategyOCFConnectorInstallandConfigure>`. Make sure that the connector version is the latest.
+
+     - Ensure that you have saved the settings information of your native MicroStrategy BI source or captured screenshots of its configuration. We recommend this as a precaution to help reconfigure a BI source with the same settings if any issues arise during the migration.
+
+     - Ensure that no MDE jobs are running in the **Settings > Extraction Job Status** section while you perform the migration.
+
+     - A Server Admin must first enable the **Enable Native Connector Migration to OCF Connector** toggle:
+
+          - Click the gear icon in the top right corner to open the **Admin Settings** page.
+          - Click **Feature Configuration**.
+          - Enable the **Enable Native Connector Migration to OCF Connector** toggle.
+          - Click **Save Changes**.
+
+.. note::
+
+      Switching from the native to the OCF connector is a permanent change.  Your native data source will no longer be available. We recommend saving the settings of your source before performing the migration. You can use them later to validate the settings of the migrated OCF source.
+
+Migration
+--------------
+
+  1. Select the MicroStrategy source that you want to migrate.
+
+  2. On the catalog page, click **More** on the top right and select **Migrate**.
+
+      .. image:: ../../../_static/MicrostrategyOCF_08.png
+          :width: 400px
+          :class: with-border
+
+  3. Using the **Choose a Connector** drop-down menu, select the OCF connector you’re migrating to. The connector name indicates what type of source it supports. If the needed OCF connector is unavailable in the drop-down list, you must first install the connector. See :doc:`/sources/OpenConnectorFramework/ManageConnectors` for directions.
+
+        .. Important::
+
+              Choosing an incompatible OCF connector can render your BI server source inaccessible.
+
+      .. image:: ../../../_static/MicrostrategyOCF_09.png
+          :width: 400px
+          :class: with-border
+
+  4. To verify that you’ve chosen the right connector, type in the entire connector name and version in capital letters in the **Connector Name** field. Type the exact name as shown in the **Choose a Connector** drop-down menu. This will activate the **Migrate** button.
+
+      .. image:: ../../../_static/MicrostrategyOCF_10.png
+          :width: 400px
+          :class: with-border
+
+  5. Click **Migrate**.
+
+  6. The data source will be migrated to the chosen OCF connector, and the OCF data source settings page will open. Check the notes you made of your previous settings and reconfigure any settings that were not migrated.
+
+  7. On the **Settings** page, under Test Connection, click Test. The test should return the message Network connection successful.
+
+      .. image:: ../../../_static/MicrostrategyOCF_11.png
+          :width: 400px
+          :class: with-border
+
+Migration Log Location
+---------------------------------
+
+For on-premise installations of Alation, the migration logs are available in the **ocf.log** file at the **/opt/alation/site/logs** location within the Alation shell.
+
+For Alation Cloud Instances, logs will be available through Alation Support.
+
+Validate Connection after Migration
+-----------------------------------------
+
+After the migration, validate the connection between Alation and MicroStrategy BI Source. To test the connection:
+
+    1. In the Alation user interface, go to the migrated source's **Settings** page.
+
+    2. Scroll down to the **Test Connection** section.
+
+    3. Under Test Connection, click **Test**. The test should return the message Network connection successful.
+
+       If the connection fails, check and update the connection settings and try again. You can also check the connector logs for any specific connection errors. Go to **Admin Settings > Manage Connectors** and open the MicroStrategy connector page to view the log output.
+
+    4. Run full or selective extraction after the successful connection test.
+
+       .. note::
+
+            Make sure that **Remove Projects that are not captured by the list above** checkbox is set to a desired setting before you perform the extraction.

@@ -1,0 +1,145 @@
+Azure SQL DB OCF Connector: Overview
+====================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The OCF Connector for Azure SQL DB was developed by Alation and is available as a Zip file that can be uploaded and installed in the Alation application. The connector is compiled with the required database driver, so no additional effort is needed to procure and install the driver.
+
+To download the Azure SQL DB OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+This connector can be used to catalog Azure SQL DB as a data source on Alation Cloud Service and on-prem Alation instances. The connector extracts such Azure SQL DB objects as schemas, tables, columns, synonyms, views, primary keys, foreign keys, source comments, functions and functions definitions. It enables end users to search and find Azure SQL DB objects in the Alation user interface.
+
+Team
+--------------
+
+You may need the assistance of your Azure DBA to configure this connector.
+
+    - Azure SQL DB Administrator
+
+        - Creates a service account for Alation
+        - Provides access to public schemas to extract metadata
+        - Provides the JDBC URI to access metadata
+        - Assists in configuring query log ingestion by enabling auditing in Azure portal
+
+    - Alation Administrator
+
+        - Installs the connector
+        - Creates and configures an Azure SQL DB data source in the catalog.
+
+
+Scope
+---------------
+
+The table below shows which metadata objects are extracted by the connector and which Alation functionality is supported.
+
++----------------------------+---------------------------------------------------------------+-------------+
+| Feature                    | Scope                                                         | Availability|
++============================+===============================================================+=============+
+| **Authentication**                                                                                       |
++----------------------------+---------------------------------------------------------------+-------------+
+| Basic authentication       | Authentication with the username and password of              | Yes         |
+|                            | a service account (SQL authentication)                        |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| NTLM                       |                                                               | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Kerberos and keytab        |                                                               | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| LDAP                       |                                                               | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSL                        |                                                               | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Azure Key Vault            |                                                               | No          |
+| integration                |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Metadata extraction (MDE)**                                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| Default MDE                | Extraction of metadata based on default extraction queries    | Yes         |
+|                            | in the connector code                                         |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based MDE     | Extraction of metadata based on extraction                    | Yes         |
+|                            | queries provided by a user                                    |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Extracted metadata objects**                                                                           |
++----------------------------+---------------------------------------------------------------+-------------+
+| Data Source                | Data source object in Alation that is parent to extracted     | Yes         |
+|                            | metadata                                                      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Schemas                    | List of schemas                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Tables                     | List of tables                                                | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Columns                    | List of columns                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column data types          | Column data types                                             | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Views                      | List of views                                                 | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Source comments            | Source comments                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Primary keys               | Primary key information for extracted tables                  | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Foreign keys               | Foreign key information for extracted tables                  | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Functions                  | Function metadata                                             | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Function definitions       | Function definition metadata                                  | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Sampling and Profiling**                                                                               |
++----------------------------+---------------------------------------------------------------+-------------+
+| Table sampling             | Retrieval of data samples from extracted tables               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column sampling            | Retrieval of data samples from extracted columns              | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Deep column profiling      | Profiling of columns with the calculation of                  | Yes         |
+|                            | value distribution stats                                      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Dynamic profiling          | Ability for individual users to connect with                  | Yes         |
+|                            | their own database accounts to retrieve table and column      |             |
+|                            | samples and profiles                                          |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based table   | Ability to use custom queries for sampling specific tables    | Yes         |
+| sampling                   |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based column  | Ability to use custom queries for profiling specific columns  | Yes         |
+| sampling                   |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Query log ingestion (QLI)**                                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| Table-based QLI            | Ingestion of query history based on a table or view that      | No          |
+|                            | contains query history data                                   |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Query-based QLI            | Ingestion of query history based on a custom query            | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| JOINs and filters          | Calculation of JOIN and filter information based on ingested  | Yes         |
+|                            | query history                                                 |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Predicates                 | Ability to parse predicates in ingested queries               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Lineage**                                                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+| Automatic lineage          | Auto-calculation of lineage based on query history ingested   | Yes         |
+| generation                 | from QLI, MDE, and Compose queries                            |             |
+|                            |                                                               |             |
+|                            | For lineage to be generated for views, Alation expects        |             |
+|                            | fully qualified table names to be present in view definitions |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Compose**                                                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+| Customer-managed (on-prem) | Compose on on-prem Alation instances                          | Yes         |
+| Alation instances          |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Alation Cloud Service      | .. include:: ../../../shared/OCF/OCF_Scope_ComposeAgent.rst   | Yes         |
+| instances                  |                                                               |             |
+|                            | Compose via Agent is supported from connector version         |             |
+|                            | **1.2.1.4776**.                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Basic authentication in    | Authentication in Compose with a username and password        | Yes         |
+| Compose                    |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSO authentication in      | Authentication in Compose with SSO credentials                | No          |
+| Compose                    |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Alation API support**    | Support for Datasource API and Relational Integration API     | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+
+|

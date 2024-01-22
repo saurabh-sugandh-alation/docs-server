@@ -1,0 +1,440 @@
+Extraction Queries for PostgreSQL
+======================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The default extraction queries for the PostgreSQL data source are provided below. You can customize them to better suit your catalog needs. Custom queries can be specified on the Metadata Extraction tab of the data source Settings page under Metadata Extraction Queries.
+
+You can customize all or some of the queries.
+
+Schema
+------------
+
+Make sure that  your query has a column labeled as CATALOG in the SELECT statement.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+        CURRENT_DATABASE() AS "CATALOG",
+        nspname AS "SCHEMA"
+      FROM
+        PG_NAMESPACE
+      WHERE
+        nspname NOT LIKE 'pg\\_%'
+        AND nspname NOT IN ('''')
+        AND nspname NOT IN (
+        'information_schema', 'pg_toast',
+        'pg_catalog', 'pg_internal'
+        );
+
+Table
+----------
+
+Make sure that your query has columns labeled as CATALOG, TABLE_NAME, TABLE_TYPE, and REMARKS in the SELECT statement.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+        CURRENT_DATABASE() AS "CATALOG",
+        A.TABLE_SCHEM as "SCHEMA",
+        A.TABLE_NAME,
+        A.OWNER as "TABLE_OWNER",
+        A.TABLE_TYPE,
+        PGDC.DESCRIPTION AS "REMARKS"
+      FROM
+        (
+          SELECT
+            T.SCHEMANAME AS "TABLE_SCHEM",
+            T.TABLENAME AS "TABLE_NAME",
+            T.TABLEOWNER AS "OWNER",
+            'TABLE' AS "TABLE_TYPE"
+          FROM
+            PG_TABLES T
+          where
+            (T.SCHEMANAME || '.' || T.TABLENAME) NOT IN (
+              SELECT
+                ST.SCHEMANAME || '.' || ST.RELNAME
+              FROM
+                PG_INHERITS,
+                PG_CATALOG.PG_STAT_ALL_TABLES ST
+              WHERE
+                PG_INHERITS.INHRELID = ST.RELID
+          )
+        ) A
+        LEFT JOIN(
+          SELECT
+            C.SCHEMANAME,
+            C.RELNAME,
+            PGD.DESCRIPTION
+          FROM
+            PG_CATALOG.PG_STAT_ALL_TABLES C
+            INNER JOIN PG_CATALOG.PG_DESCRIPTION PGD ON (PGD.OBJOID = C.RELID)
+          WHERE
+            PGD.OBJSUBID IS NULL
+            OR PGD.OBJSUBID = 0
+        ) PGDC ON (
+          PGDC.RELNAME = A.TABLE_NAME
+          AND PGDC.SCHEMANAME = A.TABLE_SCHEM
+        )
+      WHERE
+        A.TABLE_SCHEM NOT LIKE 'pg\\_%'
+        AND A.TABLE_SCHEM NOT IN ('''')
+        AND A.TABLE_SCHEM NOT IN (
+        'information_schema', 'pg_toast',
+        'pg_catalog', 'pg_internal'
+        )
+      ORDER BY
+        "TABLE_SCHEM",
+        "TABLE_NAME";
+
+View
+-----------
+
+Make sure that your query has columns labeled as CATALOG, VIEW_NAME, VIEW_CREATE_STATEMENT, 'VIEW' AS VIEW_TYPE, and REMARKS in the SELECT statement.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+        CURRENT_DATABASE() AS "CATALOG",
+        schemaname AS "SCHEMA",
+        viewname AS "VIEW_NAME",
+        ' CREATE OR REPLACE VIEW  ' || schemaname || '.' || viewname || ' AS ' || definition AS "VIEW_CREATE_STATEMENT",
+        'VIEW' AS "VIEW_TYPE",
+        '' AS "REMARKS"
+      FROM
+        PG_VIEWS
+      WHERE
+        schemaname NOT LIKE 'pg\\%'
+        AND schemaname NOT IN ('''')
+        AND schemaname NOT IN (
+        'information_schema', 'pg_toast',
+        'pg_catalog', 'pg_internal'
+        )
+      UNION
+      select
+        CURRENT_DATABASE() AS "CATALOG",
+        schemaname AS "SCHEMA",
+        matviewname AS "VIEW_NAME",
+        ' CREATE MATERIALIZED VIEW ' || schemaname || '.' || matviewname || ' TABLESPACE PG_DEFAULT AS ' || definition AS "VIEW_CREATE_STATEMENT",
+        'MAT_VIEW' AS "VIEW_TYPE",
+        '' AS "REMARKS"
+      FROM
+        PG_MATVIEWS
+      WHERE
+        schemaname NOT LIKE 'pg\\%'
+        AND schemaname NOT IN ('''')
+        AND schemaname NOT IN (
+        'information_schema', 'pg_toast',
+        'pg_catalog', 'pg_internal'
+        )
+      ORDER BY
+        "SCHEMA",
+        "VIEW_NAME";
+
+Column
+-----------
+
+Make sure that your query has columns labeled as CATALOG, TABLE_NAME, TYPE_NAME, DATA_TYPE, COLUMN_NAME, ORDINAL_POSITION, IS_NULLABLE, REMARKS, and COLUMN_DEFAULT in the SELECT statement.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+        *
+      FROM
+        (
+          SELECT
+            CURRENT_DATABASE() AS "CATALOG",
+            S.NSPNAME AS "SCHEMA",
+            O.RELNAME AS "TABLE_NAME",
+            C.ATTNAME AS "COLUMN_NAME",
+            TYP.TYPNAME AS "TYPE_NAME",
+            TYP.TYPNAME AS "DATA_TYPE",
+            C.ATTNUM AS "ORDINAL_POSITION",
+            NOT C.ATTNOTNULL AS "IS_NULLABLE",
+            pgd.description AS "REMARKS",
+            null AS "COLUMN_DEFAULT"
+          FROM
+            PG_ATTRIBUTE C
+            INNER JOIN PG_CLASS O ON C.ATTRELID = O.OID
+            INNER JOIN PG_NAMESPACE S ON O.RELNAMESPACE = S.OID
+            INNER JOIN PG_TYPE TYP ON TYP.OID = C.ATTTYPID
+            LEFT JOIN PG_CATALOG.PG_STAT_ALL_TABLES ca on(
+              ca.relname = O.RELNAME
+              and ca.schemaname = S.NSPNAME
+            )
+            LEFT JOIN PG_CATALOG.PG_DESCRIPTION pgd on (
+              pgd.objoid = ca.relid
+              and pgd.objsubid = C.ATTNUM
+            )
+          WHERE
+            C.ATTNUM > 0
+            AND nspname NOT LIKE 'pg\\_%'
+            AND nspname NOT IN ('''')
+            AND nspname NOT IN (
+              'information_schema', 'pg_toast',
+              'pg_catalog', 'pg_internal'
+            )
+        ) T
+      WHERE
+        (T.SCHEMA || '.' || T.TABLE_NAME) NOT IN (
+          SELECT
+            ST.SCHEMANAME || '.' || ST.RELNAME
+          FROM
+            PG_INHERITS,
+            PG_CATALOG.PG_STAT_ALL_TABLES ST
+          WHERE
+            PG_INHERITS.INHRELID = ST.RELID
+        )
+      ORDER BY
+        "SCHEMA",
+        "TABLE_NAME",
+        "ORDINAL_POSITION";
+
+Primary Key
+----------------
+
+Make sure that your query has columns labeled as  CATALOG, TABLE_NAME, and COLUMN_NAME in the SELECT statement.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+        CURRENT_DATABASE() AS "CATALOG",
+        S.NSPNAME AS "SCHEMA",
+        C.RELNAME AS "TABLE_NAME",
+        CONSTR.CONNAME AS "PK_NAME",
+        ATTR.ATTNAME AS "COLUMN_NAME",
+        ATTR.ATTNUM AS "KEY_SEQ"
+      FROM
+        PG_CONSTRAINT CONSTR
+        INNER JOIN PG_ATTRIBUTE ATTR ON ATTR.ATTNUM = ANY (CONSTR.CONKEY)
+            AND ATTR.ATTRELID = CONSTR.CONRELID
+        INNER JOIN PG_CLASS C ON CONSTR.CONRELID = C.OID
+        INNER JOIN PG_NAMESPACE S ON C.RELNAMESPACE = S.OID
+      WHERE
+        nspname NOT LIKE 'pg\\_%'
+        AND CONSTR.CONTYPE = 'p'
+        AND nspname NOT IN ('''')
+        AND nspname NOT IN (
+          'information_schema', 'pg_toast',
+          'pg_catalog', 'pg_internal'
+        )
+      ORDER BY
+        "SCHEMA",
+        "TABLE_NAME",
+        "PK_NAME",
+        "KEY_SEQ";
+
+Foreign Key
+-------------------
+
+Make sure that your query has columns labeled as CATALOG, PK_SCHEMA, PK_TABLE, PK_COLUMN, FK_CATALOG, FK_SCHEMA, FK_TABLE, and FK_COLUMN  in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+        CURRENT_DATABASE() AS "CATALOG",
+        F.FKTABLE_SCHEM as "FK_SCHEMA",
+        F.FKTABLE_NAME AS "FK_TABLE",
+        F.FK_NAME,
+        F.FKCOLUMN_NAME AS "FK_COLUMN",
+        null AS "FK_CATALOG",
+        F.KEY_SEQ,
+        null AS "PK_CATALOG",
+        P.PKTABLE_SCHEM AS "PK_SCHEMA",
+        P.PKTABLE_NAME AS "PK_TABLE",
+        P.PK_NAME,
+        P.PKCOLUMN_NAME AS "PK_COLUMN"
+      FROM
+        (
+          SELECT
+            S.NSPNAME AS "FKTABLE_SCHEM",
+            C.RELNAME AS "FKTABLE_NAME",
+            CONSTR.CONNAME AS "FK_NAME",
+            ATTR.ATTNAME AS "FKCOLUMN_NAME",
+            ATTR.ATTNUM AS "KEY_SEQ",
+            CONSTR.CONFKEY,
+            CONSTR.CONFRELID
+          FROM
+            PG_CONSTRAINT CONSTR
+            INNER JOIN PG_ATTRIBUTE ATTR ON ATTR.ATTNUM = ANY (CONSTR.CONKEY)
+                AND ATTR.ATTRELID = CONSTR.CONRELID
+            INNER JOIN PG_CLASS C ON CONSTR.CONRELID = C.OID
+            INNER JOIN PG_NAMESPACE S ON C.RELNAMESPACE = S.OID
+            AND CONSTR.CONTYPE = 'f'
+          WHERE
+            nspname NOT LIKE 'pg\\%'
+            AND nspname NOT IN ('''')
+            AND nspname NOT IN (
+              'information_schema', 'pg_toast',
+              'pg_catalog', 'pg_internal'
+            )
+      ) F
+      INNER JOIN (
+        SELECT
+          S.NSPNAME AS "PKTABLE_SCHEM",
+          C.RELNAME AS "PKTABLE_NAME",
+          CONSTR.CONNAME AS "PK_NAME",
+          ATTR.ATTNAME AS "PKCOLUMN_NAME",
+          ATTR.ATTNUM AS "PKEY_SEQ",
+          C.OID
+        FROM
+          PG_CONSTRAINT CONSTR
+          INNER JOIN PG_ATTRIBUTE ATTR ON ATTR.ATTNUM = ANY (CONSTR.CONKEY)
+              AND ATTR.ATTRELID = CONSTR.CONRELID
+          INNER JOIN PG_CLASS C ON CONSTR.CONRELID = C.OID
+          INNER JOIN PG_NAMESPACE S ON C.RELNAMESPACE = S.OID
+          AND (
+            CONSTR.CONTYPE = 'p'
+            OR CONSTR.CONTYPE = 'u'
+          )
+        WHERE
+          nspname NOT LIKE 'pg\\%'
+          AND nspname NOT IN ('''')
+          AND nspname NOT IN (
+            'information_schema', 'pg_toast',
+            'pg_catalog', 'pg_internal'
+          )
+        ) P ON P.PKEY_SEQ = ANY (F.CONFKEY)
+        AND P.OID = F.CONFRELID
+      ORDER BY
+        "FKTABLE_SCHEM",
+        "FKTABLE_NAME",
+        "FK_NAME",
+        "KEY_SEQ";
+
+Index
+-----------
+
+Make sure that your query has columns labeled as CATALOG, TABLE_NAME, and COLUMN_NAME in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+        current_database() AS "CATALOG",
+        stable.schemaname AS "SCHEMA",
+        ind_parent.relname AS "TABLE_NAME",
+        ind_col.attname AS "COLUMN_NAME",
+        ind_child.relname AS "INDEX_NAME",
+        ind_col.attnum AS "POSITION",
+        acc_meth.amname AS "INDEX_TYPE"
+      FROM
+        PG_INDEX index
+        JOIN PG_CLASS ind_parent ON index.indrelid = ind_parent.oid
+        JOIN PG_CLASS ind_child ON index.indexrelid = ind_child.oid
+        JOIN PG_ATTRIBUTE ind_col ON ind_parent.oid = ind_col.attrelid
+        JOIN PG_AM acc_meth ON ind_child.relam = acc_meth.oid
+        JOIN PG_TABLES stable ON ind_parent.relname = stable.tablename
+      WHERE
+        ind_parent.relkind = 'r'
+        AND ind_col.attnum = ANY(index.indkey)
+        AND schemaname NOT LIKE 'pg\\_%'
+        AND schemaname NOT IN ('''')
+        AND schemaname NOT IN (
+          'information_schema', 'pg_toast',
+          'pg_catalog', 'pg_internal'
+        )
+      ORDER BY
+        "SCHEMA",
+        "TABLE_NAME",
+        "COLUMN_NAME";
+
+
+Function
+--------------
+
+Make sure that your query has columns labeled as FUNCTION_CAT, FUNCTION_NAME, and  REMARKS in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+        CURRENT_DATABASE() AS FUNCTION_CAT,
+        S.NSPNAME AS SCHEMA,
+        P.PRONAME AS FUNCTION_NAME,
+        NULL AS SPECIFIC_NAME,
+        NULL AS REMARKS,
+        Pg_get_functiondef(P.oid) AS FUNCTION_DEFINITION
+      FROM
+        PG_PROC P
+        INNER JOIN PG_NAMESPACE S ON P.PRONAMESPACE = S.OID
+        INNER JOIN PG_LANGUAGE L ON P.PROLANG = L.OID
+      WHERE
+      (
+        L.LANNAME IN ('internal', 'sql')
+        AND p.prorettype <> 'pg_catalog.trigger'::pg_catalog.regtype
+        OR L.LANNAME IN ('plpgsql')
+      )
+        AND S.NSPNAME NOT LIKE 'pg\\_%'
+        AND p.prokind NOT IN ('a')
+        AND S.NSPNAME NOT IN ('''')
+        AND S.NSPNAME NOT IN (
+        'information_schema', 'pg_toast',
+        'pg_catalog', 'pg_internal'
+      )
+      ORDER BY
+      FUNCTION_CAT,
+      SCHEMA,
+      FUNCTION_NAME
+
+Function Definition
+--------------------------
+
+Make sure that your query has columns labeled as FUNCTION_CAT, FUNCTION_NAME, ARG_NAME, TYPE_NAME, ARG_TYPE, and ARG_DEF in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+        CURRENT_DATABASE() AS "FUNCTION_CAT",
+        N.NSPNAME AS "SCHEMA",
+        P.PRONAME AS "FUNCTION_NAME",
+        P.PRONAME AS "ARG_NAME",
+        P.PROARGNAMES AS "FUNCTION_ARGS",
+        P.PRONARGS AS "NUM_OF_FUNCTION_ARGS",
+        STRING_TO_ARRAY(
+          REPLACE(
+            OIDVECTORTYPES(P.PROARGTYPES),
+            '"',
+            ''
+          ),
+          ','
+        ) AS "ARG_TYPE",
+        FORMAT_TYPE(P.PRORETTYPE, NULL) AS "TYPE_NAME",
+        P.PROSRC AS "ARG_DEF",
+        NULL AS "REMARKS"
+      FROM
+        PG_PROC P
+        INNER JOIN PG_NAMESPACE N ON P.PRONAMESPACE = N.OID
+        INNER JOIN PG_LANGUAGE L ON P.PROLANG = L.OID
+      WHERE
+        (
+          L.LANNAME IN ('internal', 'sql')
+          AND p.prorettype <> 'pg_catalog.trigger' :: pg_catalog.regtype
+          OR L.LANNAME IN ('plpgsql')
+        )
+        and N.NSPNAME NOT LIKE 'pg\\_%'
+        AND N.NSPNAME NOT IN ('''')
+        AND N.NSPNAME NOT IN (
+          'information_schema', 'pg_toast',
+          'pg_catalog', 'pg_internal'
+        )
+      ORDER BY
+        "FUNCTION_CAT",
+        "SCHEMA",
+        "FUNCTION_NAME";

@@ -1,0 +1,351 @@
+Extraction Queries for Azure Synapse Analytics
+================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+
+The default extraction queries for the Azure Synapse data source are provided below. You can customize them to better suit your catalog needs. Custom queries can be specified on the **Metadata Extraction** tab of the data source Settings page under **Metadata Extraction Queries**.You can customize all or some of the queries.
+
+Catalog
+-----------------------
+
+Ensure that your query has a column labelled as ``CATALOG`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT NAME AS 'CATALOG'
+    FROM
+      sys.databases
+    WHERE NAME NOT IN ('''')
+        AND NAME NOT IN ('msdb' , 'model' , 'resource' , 'tempdb');
+
+Schema
+-------------------------
+
+Ensure that your query has columns labelled as ``CATALOG``, ``SCHEMA`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        CATALOG_NAME AS 'CATALOG',
+        SCHEMA_NAME AS 'SCHEMA'
+    FROM
+        INFORMATION_SCHEMA.SCHEMATA
+    WHERE SCHEMA_NAME NOT IN ('''')
+      AND SCHEMA_NAME NOT IN
+        ( 'sys' , 'guest' , 'INFORMATION_SCHEMA' ,
+        'db_accessadmin' , 'db_backupoperator' ,
+        'db_datareader' , 'db_datawriter' , 'db_ddladmin' ,
+        'db_denydatareader' , 'db_denydatawriter' , 'db_owner' ,
+        'db_securityadmin' , 'mdw' , 'ssisdb' , 'pdw' , 'QTables');
+
+Table
+----------------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TABLE_TYPE``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        t.NAME AS TABLE_NAME,
+        t.CREATE_DATE AS CREATED_DATE,
+        t.MODIFY_DATE AS ALTER_TIME,
+        s.NAME AS 'SCHEMA',
+        CASE
+            WHEN t.TYPE='AF' THEN 'Aggregate function (CLR)'
+            WHEN t.TYPE='C'  THEN 'CHECK constraint'
+            WHEN t.TYPE='D'  THEN 'DEFAULT (constraint or stand-alone)'
+            WHEN t.TYPE='F'  THEN 'FOREIGN KEY constraint'
+            WHEN t.TYPE='FN' THEN 'SQL scalar function'
+            WHEN t.TYPE='FS' THEN 'Assembly (CLR) scalar-function'
+            WHEN t.TYPE='FT' THEN 'Assembly (CLR) table-valued function'
+            WHEN t.TYPE='IF' THEN 'SQL inline table-valued function'
+            WHEN t.TYPE='IT' THEN 'INTERNAL TABLE'
+            WHEN t.TYPE='P'  THEN 'SQL Stored Procedure'
+            WHEN t.TYPE='PC' THEN 'Assembly (CLR) stored-procedure'
+            WHEN t.TYPE='PG' THEN 'Plan guide'
+            WHEN t.TYPE='PK' THEN 'PRIMARY KEY constraint'
+            WHEN t.TYPE='R'  THEN 'Rule (old-style, stand-alone)'
+            WHEN t.TYPE='RF' THEN 'Replication-filter-procedure'
+            WHEN t.TYPE='S'  THEN 'SYSTEM TABLE'
+            WHEN t.TYPE='SN' THEN 'Synonym'
+            WHEN t.TYPE='SO' THEN 'Sequence object'
+            WHEN t.TYPE='U'  THEN 'TABLE'
+            WHEN t.TYPE='V'  THEN 'VIEW'
+            WHEN t.TYPE='EC' THEN 'Edge constraint'
+            WHEN t.TYPE='SQ' THEN 'Service queue'
+            WHEN t.TYPE='TA' THEN 'Assembly (CLR) DML trigger'
+            WHEN t.TYPE='TF' THEN 'SQL table-valued-function'
+            WHEN t.TYPE='TR' THEN 'SQL DML trigger'
+            WHEN t.TYPE='TT' THEN 'Table type'
+            WHEN t.TYPE='UQ' THEN 'UNIQUE constraint'
+            WHEN t.TYPE='X'  THEN 'Extended stored procedure'
+            ELSE t.TYPE
+        END AS 'TABLE_TYPE',
+        CONVERT(VARCHAR(MAX),SEP.VALUE) AS REMARKS,
+        DB_NAME() AS 'CATALOG'
+    FROM
+        sys.objects t
+        LEFT OUTER JOIN sys.indexes i
+          ON t.OBJECT_ID = i.OBJECT_ID
+        LEFT OUTER JOIN sys.partitions p
+          ON i.OBJECT_ID = p.OBJECT_ID
+            AND i.INDEX_ID = p.INDEX_ID
+        LEFT OUTER JOIN sys.schemas s
+          ON t.SCHEMA_ID = s.SCHEMA_ID
+        LEFT JOIN sys.extended_properties SEP
+          ON t.OBJECT_ID = SEP.MAJOR_ID
+            AND SEP.minor_id = 0
+            AND SEP.name = 'MS_Description'
+    WHERE s.NAME NOT IN ( 'sys' , 'guest' , 'INFORMATION_SCHEMA' ,
+        'db_accessadmin' , 'db_backupoperator' , 'db_datareader' ,
+        'db_datawriter' , 'db_ddladmin' , 'db_denydatareader' ,
+        'db_denydatawriter' , 'db_owner' , 'db_securityadmin' ,
+        'mdw' , 'ssisdb' , 'pdw' , 'QTables')
+        AND s.NAME NOT IN ('''')
+        AND t.type IN ('U')
+    GROUP BY
+      t.NAME,
+      s.NAME,
+      p.ROWS,
+      t.CREATE_DATE,
+      t.MODIFY_DATE,
+      t.TYPE ,
+      SEP.VALUE;
+
+View
+-------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``VIEW_NAME``, ``VIEW_CREATE_STATEMENT``, ``'VIEW' AS VIEW_TYPE``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        TABLE_CATALOG AS 'CATALOG',
+        TABLE_SCHEMA AS 'SCHEMA',
+        TABLE_NAME AS 'VIEW_NAME',
+        VIEW_DEFINITION AS 'VIEW_CREATE_STATEMENT',
+        'VIEW' AS 'VIEW_TYPE',
+        SEP.VALUE AS 'REMARKS'
+    FROM INFORMATION_SCHEMA.VIEWS
+    LEFT JOIN sys.extended_properties SEP
+        ON OBJECT_ID(TABLE_NAME) = SEP.MAJOR_ID
+          AND SEP.minor_id = 0
+          AND SEP.name = 'MS_Description'
+    WHERE TABLE_SCHEMA NOT IN ('''')
+        AND TABLE_SCHEMA NOT IN ( 'sys' , 'guest' , 'INFORMATION_SCHEMA' ,
+            'db_accessadmin' , 'db_backupoperator' , 'db_datareader' ,
+            'db_datawriter' , 'db_ddladmin' , 'db_denydatareader' ,
+            'db_denydatawriter' , 'db_owner' , 'db_securityadmin' ,
+            'mdw' , 'ssisdb' , 'pdw' , 'QTables');
+
+Column
+-----------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, ``COLUMN_DEFAULT`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        t.NAME as TABLE_NAME,
+        SCHEMA_NAME(schema_id) AS 'SCHEMA',
+        c.name AS COLUMN_NAME,
+        c.max_length AS MAX_LENGTH,
+        c.precision AS PRECISION,
+        c.scale AS SCALE,
+        DB_NAME() AS 'CATALOG',
+        CASE WHEN TYPE_NAME(c.user_type_id)='char' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+            WHEN TYPE_NAME(c.user_type_id)='nchar' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+            WHEN TYPE_NAME(c.user_type_id)='varchar' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+            WHEN TYPE_NAME(c.user_type_id)='nvarchar' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+            WHEN TYPE_NAME(c.user_type_id)='varbinary' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+            WHEN TYPE_NAME(c.user_type_id)='decimal' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ','+ CAST(c.scale AS varchar)+')')
+            WHEN TYPE_NAME(c.user_type_id)='numeric' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ','+ CAST(c.scale AS varchar) + ')')
+            WHEN TYPE_NAME(c.user_type_id)='binary' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+            WHEN TYPE_NAME(c.user_type_id)='datetimeoffset' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.scale AS varchar)  + ')')
+            WHEN TYPE_NAME(c.user_type_id)='datetime2' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.scale AS varchar)  + ')')
+            WHEN TYPE_NAME(c.user_type_id)='time' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.scale AS varchar)  + ')')
+            ELSE TYPE_NAME(c.user_type_id)
+        END AS TYPE_NAME,
+        TYPE_NAME(c.user_type_id)as DATA_TYPE,	c.column_id as ORDINAL_POSITION,
+        CONVERT(varchar(max), sep.value) AS REMARKS,
+        NULL as COLUMN_DEF,
+        CASE WHEN c.is_nullable=1 THEN 'true'
+          ELSE 'false'
+        END AS IS_NULLABLE,
+        NULL AS COLUMN_DEFAULT
+    FROM
+        sys.tables AS t
+        INNER JOIN sys.columns c
+          ON t.OBJECT_ID = c.OBJECT_ID
+        LEFT JOIN sys.extended_properties sep
+          ON t.object_id = sep.major_id
+            AND c.column_id = sep.minor_id
+            AND sep.name = 'MS_Description'
+    WHERE SCHEMA_NAME (t.schema_id) NOT IN ('''')
+        AND  SCHEMA_NAME (t.schema_id) NOT IN ( 'sys' , 'guest' ,
+            'INFORMATION_SCHEMA' , 'db_accessadmin' , 'db_backupoperator' ,
+            'db_datareader' , 'db_datawriter' , 'db_ddladmin' ,
+            'db_denydatareader' , 'db_denydatawriter' , 'db_owner' ,
+            'db_securityadmin' , 'mdw' , 'ssisdb' , 'pdw' , 'QTables')
+    UNION
+        SELECT
+          t.NAME AS TABLE_NAME,
+          SCHEMA_NAME(schema_id) AS 'SCHEMA',
+          c.name AS COLUMN_NAME,
+          c.max_length AS MAX_LENGTH,
+          c.precision AS PRECISION,
+          c.scale AS SCALE,
+          DB_NAME() AS 'CATALOG',
+          CASE WHEN TYPE_NAME(c.user_type_id)='char' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+              WHEN TYPE_NAME(c.user_type_id)='nchar' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+              WHEN TYPE_NAME(c.user_type_id)='varchar' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+              WHEN TYPE_NAME(c.user_type_id)='nvarchar' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+              WHEN TYPE_NAME(c.user_type_id)='varbinary' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+              WHEN TYPE_NAME(c.user_type_id)='decimal' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ','+ CAST(c.scale AS varchar)+')')
+              WHEN TYPE_NAME(c.user_type_id)='numeric' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ','+ CAST(c.scale AS varchar) + ')')
+              WHEN TYPE_NAME(c.user_type_id)='binary' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.max_length AS varchar)  + ')')
+              WHEN TYPE_NAME(c.user_type_id)='datetimeoffset' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.scale AS varchar)  + ')')
+              WHEN TYPE_NAME(c.user_type_id)='datetime2' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.scale AS varchar)  + ')')
+              WHEN TYPE_NAME(c.user_type_id)='time' THEN (TYPE_NAME(c.user_type_id) + '(' + CAST(c.scale AS varchar)  + ')')
+              ELSE TYPE_NAME(c.user_type_id)
+          END AS TYPE_NAME,
+          TYPE_NAME(c.user_type_id)as DATA_TYPE,	c.column_id as ORDINAL_POSITION,
+          CONVERT(varchar(max),sep.value) AS REMARKS,
+          NULL AS COLUMN_DEF,
+          CASE WHEN c.is_nullable=1 THEN 'true'
+              ELSE 'false'
+          END AS IS_NULLABLE,
+          NULL AS COLUMN_DEFAULT
+    FROM
+      sys.views AS t
+        INNER JOIN sys.columns c
+          ON t.OBJECT_ID = c.OBJECT_ID
+    WHERE SCHEMA_NAME (t.schema_id) NOT IN ('''')
+        AND  SCHEMA_NAME (t.schema_id) NOT IN ( 'sys' , 'guest' ,
+            'INFORMATION_SCHEMA' , 'db_accessadmin' , 'db_backupoperator' ,
+            'db_datareader' , 'db_datawriter' , 'db_ddladmin' ,
+            'db_denydatareader' , 'db_denydatawriter' , 'db_owner' ,
+            'db_securityadmin' , 'mdw' , 'ssisdb' , 'pdw' , 'QTables');
+
+
+Index
+------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``COLUMN_NAME``, ``INDEX_NAME``, ``TYPE``, ``ORDINAL_POSITION`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        DB_NAME() AS 'CATALOG',
+        SCHEMA_NAME(t.schema_id) AS 'SCHEMA',
+        t.name AS TABLE_NAME,
+        COL_NAME(ic.object_id, ic.column_id) AS COLUMN_NAME,
+        i.name AS INDEX_NAME,
+        i.type_desc AS TYPE,
+        i.filter_definition AS FILTER_CONDITION,
+        NULL AS ASC_OR_DESC,
+        ic.key_ordinal AS ORDINAL_POSITION
+    FROM
+        sys.indexes as i
+    INNER JOIN sys.index_columns AS ic
+      ON i.object_id = ic.object_id
+        AND i.index_id = ic.index_id
+    LEFT OUTER JOIN sys.objects t
+      ON t.OBJECT_ID = i.OBJECT_ID
+    WHERE SCHEMA_NAME (t.schema_id) NOT IN ('''')
+        AND SCHEMA_NAME (t.schema_id) NOT IN ( 'sys' , 'guest' ,
+            'INFORMATION_SCHEMA' , 'db_accessadmin' , 'db_backupoperator' ,
+            'db_datareader' , 'db_datawriter'  , 'db_ddladmin' ,
+            'db_denydatareader' , 'db_denydatawriter' , 'db_owner' ,
+            'db_securityadmin' , 'mdw' , 'ssisdb' , 'pdw' , 'QTables');
+
+
+Function
+----------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``FUNCTION_NAME``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        SPECIFIC_CATALOG AS 'CATALOG',
+        SPECIFIC_NAME AS FUNCTION_NAME,
+        SPECIFIC_SCHEMA AS 'SCHEMA',
+        NULL AS REMARKS
+    FROM
+        INFORMATION_SCHEMA.ROUTINES
+    WHERE SPECIFIC_SCHEMA NOT IN ('''')
+        AND SPECIFIC_SCHEMA NOT IN ( 'sys' , 'guest' ,
+            'INFORMATION_SCHEMA' , 'db_accessadmin' , 'db_backupoperator' ,
+            'db_datareader' , 'db_datawriter' , 'db_ddladmin' ,
+            'db_denydatareader' , 'db_denydatawriter' , 'db_owner' ,
+            'db_securityadmin' , 'mdw' , 'ssisdb' , 'pdw' , 'QTables');
+
+Function Definition
+------------------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``FUNCTION_NAME``, ``ARG_NAME``, ``TYPE_NAME``, ``ARG_TYPE``, ``ARG_DEF,COLUMN_TYPE`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+    SELECT
+        DB_NAME() AS 'CATALOG',
+        isr.SPECIFIC_SCHEMA AS 'SCHEMA',
+        isr.SPECIFIC_NAME AS 'FUNCTION_NAME',
+        isr.ROUTINE_DEFINITION AS 'ARG_DEF',
+        isp.DATA_TYPE AS 'TYPE_NAME',
+        isp.DATA_TYPE AS 'ARG_TYPE',
+        CASE isp.PARAMETER_NAME
+            WHEN NULL THEN '@RETURN_VALUE'
+            WHEN '' THEN '@RETURN_VALUE'
+            ELSE isp.PARAMETER_NAME
+        END AS 'ARG_NAME',
+        CASE WHEN (isp.PARAMETER_MODE = 'OUT' AND isp.IS_RESULT = 'YES') THEN 5
+            WHEN (isp.PARAMETER_MODE = 'OUT' AND isp.IS_RESULT = 'NO') THEN 4
+            WHEN (isp.PARAMETER_MODE = 'IN' AND isp.IS_RESULT = 'NO') THEN 1
+            ELSE 3
+        END AS COLUMN_TYPE
+    FROM INFORMATION_SCHEMA.ROUTINES AS isr
+    JOIN sys.objects AS so
+      ON (type_desc LIKE '%FUNCTION%' OR type_desc LIKE '%PROCEDURE%')
+        AND so.name = isr.specific_name
+    JOIN INFORMATION_SCHEMA.PARAMETERS AS isp
+      ON isp.SPECIFIC_SCHEMA = isr.SPECIFIC_SCHEMA
+        AND isp.SPECIFIC_NAME = isr.SPECIFIC_NAME
+    WHERE isr.SPECIFIC_SCHEMA NOT IN ('''')
+        AND isr.SPECIFIC_SCHEMA NOT IN ( 'sys' , 'guest' ,
+            'INFORMATION_SCHEMA' , 'db_accessadmin' , 'db_backupoperator' ,
+            'db_datareader' , 'db_datawriter' , 'db_ddladmin' ,
+            'db_denydatareader' , 'db_denydatawriter' , 'db_owner' ,
+            'db_securityadmin' , 'mdw' , 'ssisdb' , 'pdw' , 'QTables')
+    UNION
+    SELECT
+        DB_NAME() AS 'CATALOG',
+        isr.SPECIFIC_SCHEMA AS 'SCHEMA',
+        isr.SPECIFIC_NAME AS 'FUNCTION_NAME',
+        isr.ROUTINE_DEFINITION AS 'ARG_DEF',
+        isp.DATA_TYPE AS 'TYPE_NAME',
+        isp.DATA_TYPE AS 'ARG_TYPE',
+        '@RETURN_VALUE' AS 'ARG_NAME',
+        5 AS COLUMN_TYPE
+    FROM INFORMATION_SCHEMA.ROUTINES AS isr
+      JOIN sys.objects AS so
+        ON (type_desc LIKE '%FUNCTION%' OR type_desc LIKE '%PROCEDURE%')
+          AND so.name = isr.specific_name
+      JOIN INFORMATION_SCHEMA.PARAMETERS AS isp
+        ON isp.SPECIFIC_SCHEMA = isr.SPECIFIC_SCHEMA
+          AND isp.SPECIFIC_NAME = isr.SPECIFIC_NAME
+          AND NOT EXISTS(
+                    SELECT
+                        1
+                    FROM INFORMATION_SCHEMA.PARAMETERS AS isp
+                    WHERE isp.IS_RESULT = 'YES'
+                      AND isp.SPECIFIC_NAME = isr.SPECIFIC_NAME
+                      AND isp.SPECIFIC_SCHEMA = isr.SPECIFIC_SCHEMA)
+    WHERE isr.SPECIFIC_SCHEMA NOT IN ('''')
+        AND isr.SPECIFIC_SCHEMA NOT IN ( 'sys' , 'guest' ,
+            'INFORMATION_SCHEMA' , 'db_accessadmin' , 'db_backupoperator' ,
+            'db_datareader' , 'db_datawriter' , 'db_ddladmin' ,
+            'db_denydatareader' , 'db_denydatawriter' , 'db_owner' ,
+            'db_securityadmin' , 'mdw' , 'ssisdb' , 'pdw' , 'QTables');

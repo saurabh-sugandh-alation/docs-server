@@ -1,0 +1,452 @@
+Configure Authentication via AWS STS and an IAM Role
+==========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from release 2023.3*
+
+Overview
+------------------
+
+Use the steps below to configure authentication via the AWS Security Token Service (STS) and an AWS IAM role for Amazon sources cataloged in Alation using Open Connector Framework (OCF) connectors.
+
+You can perform this configuration on:
+
+  - Customer-managed (on-premise) Alation instances installed on AWS EC2
+  - Alation Cloud Service instances that have not been migrated to the cloud-native architecture
+  - Enterprise Edition of Alation Cloud Service instances (cloud-native architecture)
+
+
+This configuration will work for the following Amazon sources:
+
+  - **Amazon Athena** (Athena OCF connector version **1.2.0.6527** or newer)
+  - **Amazon Glue** (AWS Glue OCF connector version **1.1.1.6409** or newer)
+  - **Amazon Redshift** (Redshift OCF connector version **1.3.2.6521** or newer)
+  - **Amazon S3** (S3 OCF connector version **3.8.5.6552** or newer)
+
+  .. important::
+
+      STS authentication with an AWS IAM role can be configured between different AWS accounts when the Alation instance is deployed under one AWS account and the Amazon resources are running under another AWS account.
+
+      This configuration will also work if the on-premise Alation instance and the Amazon resources exist under the same AWS account.
+
+STS authentication with an AWS IAM role does not require a service account (an IAM user) on Amazon resources. The IAM role providing access to the Amazon source will be assumed by the Alation instance.
+
+    .. image:: ../../_static/STS_Auth_diagram.png
+        :class: with-border
+        :width: 600px
+
+Workflow
+----------------
+
+The full configuration includes steps in the AWS IAM user interface, the Alation user interface, and in case of an on-premise instance, on the Alation server. You will need to switch between AWS and Alation to complete all the steps.
+
+You must have the role of Server Admin to configure Alation and an advanced role in AWS that allows creating roles and policies.
+
+    - :ref:`Prerequisites <sts-prerequisites>`
+    - :ref:`Step 1—Alation: Start the Connector Access Gateway Service <sts-start-CAG>`
+    - :ref:`Step 2—AWS IAM: Create an IAM Role with Access to Amazon Resources <sts-create-resource-role>`
+    - :ref:`Step 3—Alation: Create an Authentication Profile and Get the Alation Instance Role <sts-create-auth-profile>`
+    - :ref:`Step 4—AWS IAM: Create a Resource Tag and Define the Trust Relationship <sts-create-tag>`
+    - :ref:`Step 5—AWS IAM: Allow the Alation Instance Role to Assume Another Role <sts-configure-assume-role>`
+    - :ref:`Step 6—Alation: Configure Your Source to Use IAM Role Authentication <sts-configure-connectors>`
+
+.. _sts-prerequisites:
+
+Prerequisites
+-------------------
+
+1. AuthService of the Alation instance is up and running (default).
+
+    .. note::
+
+        On an on-premise instance, you can check the state of AuthService with the following command, from the Alation shell:
+
+        ``alation_supervisor status java:authserver``
+
+        The status should be ``RUNNING``.
+
+
+2. **On-premise instances only**—If this has not been done yet for your Alation instance, you must assign it an IAM role allowing the ``sts:AssumeRole`` action. See `How to Assign an AWS IAM Role to the Alation Instance`_ below for more details.
+
+How to Assign an AWS IAM Role to the Alation Instance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform these steps under the AWS account where your Alation instance is running.
+
+To assign an AWS IAM role to the instance:
+
+1. In AWS IAM, create an AWS IAM role selecting the **Type of Trusted Entity** to be **AWS Service** and **Use Case** to be **EC2**.
+
+2. Under the **Trust relationships** tab on the properties page of the role you created, make sure that ``"Principal"`` is set to ``"Service": "ec2.amazonaws.com"`` and ``"Action"`` is set to ``"sts:AssumeRole"``.
+
+    .. image:: ../../_static/STS_Auth_AssignRoleToInstance.png
+        :class: with-border
+
+3. Attach this role to the EC2 instance where Alation is running: navigate to EC2, open the properties of an instance, and select **Action > Security > Modify IAM Role > Select IAM Role > Update IAM Role**. For more information, refer to `Attach an IAM role to an instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#attach-iam-role>`_ in AWS documentation.
+
+.. _sts-start-CAG:
+
+Step 1—Alation: Start the Connector Access Gateway Service
+---------------------------------------------------------------
+
+.. note::
+
+    This step is required on customer-managed (on-premise) Alation instances only. If your instance is in the Alation Cloud, skip this step and start with :ref:`Step 2 <sts-create-resource-role>`.
+
+On an on-premise instance, you'll need to start the Connector Access Gateway (CAG) service that is part of Alation Connector Manager.
+
+To start CAG:
+
+1. Use SSH to connect to the Alation instance.
+
+2. Open the **/etc/hydra/hydra.toml** file for editing. (The path is outside of the Alation shell.)
+
+3. Add the following lines:
+
+    .. code-block:: Bash
+
+        [application_gateway]
+        enabled = true
+
+        [agent]
+        use_host_networking = true
+
+    .. important::
+
+      If any of these sections already exist, you don't need to add them again.
+
+    Example file:
+
+    .. image:: ../../_static/STS_Auth_ModifyHydraConfig.png
+        :class: with-border
+
+4. Save the changes to the file.
+
+5. Restart Alation Connector Manager.
+
+    .. code-block:: Bash
+
+        sudo systemctl restart hydra
+
+    .. note::
+
+        If you installed Docker in rootless mode, in this and the next command do not use ``sudo``.
+
+6. Validate that CAG is now running.
+
+    .. code-block:: Bash
+
+        sudo docker ps
+
+
+    The output should show the ``agent`` and ``application_gateway`` services to be running:
+
+    .. image:: ../../_static/STS_Auth_CAG_Running.png
+        :class: with-border
+
+7. Enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+8. Modify the following **alation_conf** parameters:
+
+    .. code-block:: Bash
+
+        alation_conf alation.ocf.cag.port -s 11000
+        alation_conf alation.ocf.cag.alation_url -s localhost:80
+
+    For more information about **alation_conf**, see :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.
+
+9. Exit the Alation shell.
+
+    .. code-block:: Bash
+
+        exit
+
+.. _sts-create-resource-role:
+
+Step 2—AWS IAM: Create an IAM Role with Access to Amazon Resources
+------------------------------------------------------------------------
+
+Perform this step in AWS IAM of the AWS account where your Amazon resources are running:
+
+1. Create an IAM policy that grants access to the source you are going to connect to from Alation. Further in this instruction we'll refer to this policy as ``<read-resources-policy>``. The policy must fulfill the access requirements for extraction, profiling, and query log ingestion from an Amazon source you are creating this configuration for. Refer to the corresponding OCF connector documentation for recommendations as to what kind of access to give.
+
+    .. note::
+
+        You can also use an existing policy if it fulfills the access requirements for a source.
+
+2. Create an AWS IAM role, for example, ``<access-to-resources-role>``. Further in this instruction we'll refer to this role as ``<access-to-resources-role>``.
+
+3. Attach the ``<read-resources-policy>`` to the ``<access-to-resources-role>``.
+
+4. In the **Summary** section of the role properties page, locate the **Maximum session duration** value. Take a screenshot or write the value down. You will need it for reference in the configuration steps that follow.
+
+    .. image:: ../../_static/STS_Auth_ReadResourcesRoleProperties.png
+        :class: with-border
+
+    .. note::
+
+        If you expect that extraction from your source may take more time than the current maximum session duration and if your AWS security policy allows it, you can change this value to a greater value to avoid frequent token regeneration. For details, refer to `Modifying a role maximum session duration (console) <https://docs.aws.amazon.com/IAM/latest/UserGuide/roles-managingrole-editing-console.html#roles-modify_max-session-duration>`_ in AWS documentation.
+
+.. _sts-create-auth-profile:
+
+Step 3—Alation: Create an Authentication Profile and Get the Alation Instance Role
+------------------------------------------------------------------------------------
+
+Perform this step in Alation:
+
+1. Log in to Alation.
+
+2. Go to **Admin Settings** > **Server Admin > Authentication**.
+
+3. Under **Authentication Configuration Methods for External Systems**, click the **Add Configuration** button.
+
+4. In the list that opens, select **AWS_IAM**. The AWS_IAM authentication profile editor will open in a new browser tab.
+
+5. Add these values:
+
+    - **Config Name**—Provide a name for the profile you are creating. The name is required for you to identify it among all other existing methods and manage its settings.
+
+    - **STS Duration**—Provide the STS token duration in seconds. The value should be less than or equal to the maximum session duration of the IAM role that provides access to the Amazon resource(s). (See :ref:`Step 2 <sts-create-resource-role>`).
+
+    - **Region**—Provide the AWS region of the AWS account where the Amazon resources are running.
+
+    - **Cred Type**—Select the value ``instance_profile``.
+
+    - **SAML authenticate request XML**—Leave clear.
+
+    - **Multi role flow**—Leave this checkbox selected (default).
+
+    - **Encode Relay State**—Leave clear.
+
+    - **Redirect URI**—Leave clear.
+
+    - **Entity Id**—Leave clear.
+
+    - **Token Buffer time**—Leave clear.
+
+    .. note::
+
+        For more information on each field, refer to :ref:`Authentication Configuration Methods for External Systems: AWS IAM <create-aws-iam-profile>`.
+
+6. Click **Save**.
+
+7. Click the **Get Alation Role ARN** button to fetch the role ARN of Alation’s EC2 instance.
+
+    .. note::
+
+        Alation calls the `AWS GetCallerIdentity <https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html>`_ endpoint which returns the Role ARN attached to the instance.
+
+8. A pop-up will appear with the role ARN. Click the **Copy to clipboard** button to copy the role ARN.
+
+    .. note::
+
+        For an on-premise instance, this will be the ARN of the role you assigned to the instance.
+
+9. Save the ARN in a secure location. You will need it during other configuration steps.
+
+10. Click **Close** to close the pop-up.
+
+.. _sts-create-tag:
+
+Step 4—AWS IAM: Create a Resource Tag and Define the Trust Relationship
+---------------------------------------------------------------------------
+
+Perform this step in the AWS IAM user interface under the AWS account where your Amazon resources are running and where you created the role providing access to Amazon resources (:ref:`Step 2 <sts-create-resource-role>`, ``<access-to-resources-role>``).
+
+You will need to define a tag and modify the trust relationship on this role.
+
+1. Prepare the ARN of the Alation instance role. This is the ARN you saved as the result of Step 2. From the ARN, you can find out the name of the instance role: it's the value that comes after the forward slash after the numeric ID. For example, if the ARN looks like this: ``arn:aws:iam::248135293344:role/test_instance_role``, then ``test_instance_role`` is the name of the role.
+
+2. In AWS IAM, under the AWS account where your Amazon resources are running, open your ``<access-to-resources-role>``.
+
+3. Select the **Tags** tab.
+
+    .. image:: ../../_static/STS_Auth_AddTag.png
+        :class: with-border
+
+4. Click **Add new tag** or **Manage tags** to create a new tag. The **Tags** page will open.
+
+5. Click **Add new tag**.
+
+6. In the **Key** field, provide a name for the tag, for example ``AlationStsAssumeRoleName``.
+
+7. In the **Value** field, enter the name of the Alation instance role.
+
+    .. image: ../../_static/STS_Auth_TagKeyValue.png
+        :class: with-border
+
+8. Click **Save changes** to save the tag. The tag will be displayed in the **Tags** table on the **Tags** tab of the role properties page.
+
+9. Copy the tag key and save it in a secure location. You will need it for the next configuration step.
+
+10. Click on **Trust relationships** and then on **Edit trust policy**.
+
+11. Click on the **Add button** next to **Add a principal**.
+
+    .. image:: ../../_static/STS_Auth_EditPolicy_AddPrincipal.png
+        :class: with-border
+
+12. Click on the **Principal type** dropdown and select **IAM Roles** as the principal type since we want to allow another IAM Role to assume this role.
+
+13. Provide the ARN of the other role that will be allowed to assume this role. This should be the ARN of the Alation instance role that you prepared (see item 1 in this Step).
+
+14. After providing the ARN, click **Add principal**.
+
+    .. image:: ../../_static/STS_Auth_EditPolicy_AddPrincipalPopup.png
+        :class: with-border
+
+15. You will see that in the trust policy JSON, the ARN of the instance role is reflected under the **Principal** object.
+
+    .. image:: ../../_static/STS_Auth_EditPolicy_PrincipalJSON.png
+        :class: with-border
+
+16. Next, we’ll define an External ID for this trust relationship. Click the **Add** button next to **Add a condition**.
+
+    .. note::
+
+        External ID configuration is an optional but recommended step that can help avoid the “confused deputy problem”.
+
+        Refer to `How to use an external ID <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html>`_ in AWS documentation for more details.
+
+17. In the **Add condition** dialog that opens, click on the dropdown for **Condition key**.
+
+18. In the search bar type ``externalid``. You will see the result ``sts:ExternalId``. Select it.
+
+19. Click on the **Operator** dropdown and from the list that opens, select ``StringEquals``. A new field **Value** will appear.
+
+20. In the **Value** field, provide a unique value. The value can be a random string generated by a third party. You can use a site like `UUID Generator <https://www.uuidgenerator.net/version4>`_ to generate a value. Do not select the **If exists** checkbox.
+
+      .. image:: ../../_static/STS_Auth_AddCondition.png
+          :class: with-border
+          :width: 400px
+
+21. Save the External ID value to a secure location. You’ll need it during one of the next configuration steps.
+
+22. Click **Add condition**. You will see the condition added to the policy JSON.
+
+      .. image: ../../_static/STS_Auth_ConditionJSON.png
+          :class: with-border
+
+23. On the **Edit trust policy** page, click **Update policy**.
+
+24. If your Alation instance is an Enterprise Edition of the Alation Cloud Service, go to :ref:`Step 6 <sts-configure-connectors>`.
+
+    If your Alation instance is on-premise or an Alation Cloud Service instance that has not been migrated to the cloud native architecture, perform :ref:`Step 5 <sts-configure-assume-role>` and then :ref:`Step 6 <sts-configure-connectors>`.
+
+.. _sts-configure-assume-role:
+
+Step 5—AWS IAM: Allow the Alation Instance Role to Assume Another Role
+-------------------------------------------------------------------------
+
+.. note::
+
+    This step applies if your Alation instance is:
+
+        - An on-premise instance—Perform this step in the AWS IAM user interface under the AWS account where your Alation instance is running.
+        - An Alation Cloud Service instance that has not been migrated to the cloud native architecture—Contact Alation Support to perform this step for you.
+
+    If your instance is an Enterprise Edition of Alation Cloud Service on the cloud native architecture, skip this step and go to :ref:`Step 6 <sts-configure-connectors>`. On this type of instances, the configuration described below is already available by default.
+
+To allow the Alation instance role to assume another role:
+
+1. Prepare the ARN of the role that provides access to the Amazon resources (:ref:`Step 2 <sts-create-resource-role>`, ``<access-to-resources-role>``).
+
+2. Prepare the tag key you created in :ref:`Step 4 <sts-create-tag>`.
+
+3. Prepare the ARN of the Alation instance role. This is the ARN you saved as the result of :ref:`Step 3 <sts-create-auth-profile>`. From this ARN, you can find out the name of the instance role: it’s the value that comes after the forward slash after the numeric ID. For example, if the ARN looks like this: ``arn:aws:iam::248135293344:role/test_instance_role``, then ``test_instance_role`` is the name of the role.
+
+4. Log in to the AWS console of the AWS account where you deployed the Alation instance.
+
+5. Navigate to the user interface of the AWS IAM service.
+
+6. Use the ARN of the Alation instance role to find this role and open its properties.
+
+7. Select the **Permissions** tab.
+
+8. Click **Add permissions** and from the dropdown, select **Create inline policy**. You should see a screen similar to the following:
+
+    .. image:: ../../_static/STS_Auth_SpecifyPermissions.png
+        :class: with-border
+
+9. Under **Select a service**, click on the Search field and type **STS**.
+
+10. From the list of services that appears, select **STS**.
+
+    .. image:: ../../_static/STS_Auth_AddPolicy_SelectSTS.png
+        :class: with-border
+
+11. In the search field under **Actions allowed**, type *assume*. You will see a number of results, including ``AssumeRole``. Select the checkbox for ``AssumeRole``.
+
+    .. image:: ../../_static/STS_Auth_AddPolicy_SelectAction.png
+        :class: with-border
+
+12. Under Resources, ensure that the radio button for **Specific** is selected.
+
+13. Click the **Add ARN** link.
+
+14. In the **Add ARN(s)** dialog that opens, under **Resource in**, select **Other account**.
+
+    .. note::
+
+        If the Amazon resource you will be connecting to from Alation runs under the same AWS account as the Alation instance, select **This account**.
+
+15. Under **ARN**, provide the ARN of the role that gives access to the Amazon resources (``<access-to-resources-role>``). There is no need to populate other fields. They will be auto-populated after you provide the ARN value.
+
+    .. image:: ../../_static/STS_Auth_AddPolicy_AddARN.png
+        :class: with-border
+        :width: 400px
+
+16. Click the **Add ARNs** button to save the ARN. You'll be returned to the policy editor.
+
+17. Click on **Request conditions**, and then click **Add another condition**.
+
+18. The **Add request condition** pop-up will open. Click on the dropdown for the **Condition key**.
+
+    .. image:: ../../_static/STS_Auth_AddPolicy_AddCondition.png
+        :class: with-border
+        :width: 400px
+
+19. From the list of condition keys, select ``aws:ResourceTag``. More fields will appear.
+
+    .. image:: ../../_static/STS_Auth_AddPolicy_AddTagKey.png
+        :class: with-border
+        :width: 400px
+
+20. In the **TagKey** field, provide the tag key you created in :ref:`Step 4 <sts-create-tag>`.
+
+21. Click on the dropdown for **Operator** and from the list, select ``StringEquals``. This will add the **Value** field. Leave the **If exists** checkbox clear.
+
+22. Populate the **Value** field with the name of the **Alation instance** role you retrieved in :ref:`Step 3 <sts-create-auth-profile>`.
+
+23. In the dialog, click **Add condition**. You'll return to the policy editor.
+
+    .. image:: ../../_static/STS_Auth_AddPolicy_AllFields.png
+        :class: with-border
+
+24. Click **Next**. The **Review and create** screen will open.
+
+25. Provide the **Name** for the policy and then click **Create policy** to create it. You will see your policy in the **Permissions policies** table.
+
+.. _sts-configure-connectors:
+
+Step 6—Alation: Configure Your Source to Use IAM Role Authentication
+--------------------------------------------------------------------------
+
+1. Prepare the information you collected from your AWS configuration:
+
+    - The ARN of the role that gives access to Amazon resources (:ref:`Step 2 <sts-create-resource-role>`, ``<access-to-resources-role>``)
+    - The ARN of the Alation instance role (:ref:`Step 3 <sts-create-auth-profile>`)
+    - The STS Duration value (:ref:`Step 3 <sts-create-auth-profile>`)
+    - The External ID from the trust relationship of the ``<access-to-resources-role>`` (:ref:`Step 4 <sts-create-tag>`)
+
+2. Use the information in the relevant OCF connector documentation to configure authentication with the IAM Role. You will need to provide the values listed above on the **General Settings** tab of the settings page of an Amazon source:
+
+    - :ref:`Amazon Athena <athena-configure-sts-with-role>`
+    - :ref:`AWS Glue <glue-configure-sts-with-role>`
+    - :ref:`Amazon Redshift <redshift-configure-sts-with-role>`
+    - :ref:`Amazon S3 <s3-configure-sts-with-role>`

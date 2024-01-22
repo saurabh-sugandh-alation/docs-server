@@ -1,0 +1,226 @@
+Compose SSO for Azure Data Sources: Configure Compose SSO in Alation
+=======================================================================
+
+*Available from version 2021.4*
+
+Compose SSO for Azure SQL data sources uses the OAuth plug-in of Alation's *AuthService* and requires the AuthService to be enabled on your Alation server.
+
+Prerequisites
+-------------------------------------
+
+Before performing this configuration:
+
+1. Make sure you have registered Compose with Azure AD: :doc:`Compose SSO for Azure Data Sources: Register an Application in Azure AD <../../datasources/ComposeSSOAzureDataSources/RegisterAADappForComposeSSO>`.
+
+2. Make sure you have the required Azure AD information at hand:
+
+    - The client ID of the Compose application registration in Azure AD
+    - Application client secret value
+    - OAuth 2.0 endpoints
+
+       - OAuth token endpoint URL
+       - OAuth authorize endpoint URL
+
+3. Prepare the Alation IDs of the data sources for which you are configuring Compose SSO. See :doc:`How to Find Data Source ID <../../admins/How-tos/HowToFindDataSourceID>` for details.
+
+STEP 1: Enable AuthService
+------------------------------------------------------
+
+.. include:: ../../shared/EnableAuthService.rst
+
+Stay in the Alation shell.
+
+
+STEP 2: Configure the AuthService OAuth Plug-in
+------------------------------------------------------
+
+1. From the Alation shell, enter the Django shell:
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+2. From the Django shell, initiate the OAuth plug-in configuration script by using the following commands:
+
+    .. code-block:: Bash
+
+        from rosemeta.one_off_scripts.configure_oauth import config_oauth_in_alation_shell
+
+        config_oauth_in_alation_shell()
+
+This script will guide you through the configuration of every OAuth plug-in parameter. You will need to enter the information you collected from Azure AD. Refer to the table `OAuth Configuration Properties`_ below for descriptions of the properties that are configured with this script.
+
+To apply a *default* value and move to the next prompt, press Enter.
+
+Note that some prompts offer *sample* values. Sample values are examples of what a value should look like, but they cannot be applied as they are not equal to the default values. Provide your own values in place of sample values.
+
+    .. important::
+
+        During configuration, you will be required to specify a name for the OAuth configuration object (or use the default value of ``azure_conf``). Save the name you use. It will be required if you need to perform any of the supported CRUD operations on this configuration object later.
+
+See an example of script usage below. After you move through all the steps in the configuration script, the SSO configuration is complete and you can test it in Alation.
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_10.png
+
+OAuth Configuration Properties
+-------------------------------------------
+
+.. tabularcolumns:: |p{3cm}|p{3cm}|p{9cm}|
+
+.. table::
+   :widths: auto
+   :class: longtable
+
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | Prompt             | Corresponding      | Description                                                                 |
+   |                    | property           |                                                                             |
+   |                    | in *AuthService*   |                                                                             |
+   +====================+====================+=============================================================================+
+   | Please provide     | config_name        | Name (string) representing this OAuth configuration.                        |
+   | a name for         |                    | The name can be any string; however, it cannot be an                        |
+   | this configuration |                    | existing name that was already used for another Auth Server                 |
+   | set                |                    | plugin.                                                                     |
+   |                    |                    |                                                                             |
+   |                    |                    | Default: ``azure_conf``                                                     |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | OAuth token        | token_endpoint     | The token endpoint URL in the standard OAuth flow. The auth                 |
+   | endpoint URL       |                    | code received from the authorize_endpoint is passed to the                  |
+   |                    |                    | ``token_endpoint`` to retrieve access and refresh tokens.                   |
+   |                    |                    |                                                                             |
+   |                    |                    | Example:                                                                    |
+   |                    |                    | ``https://login.microsoftonline.com/common/oauth2/v2.0/token``              |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | OAuth authorize    | authorize_endpoint | The authorization endpoint URL in the standard OAuth flow                   |
+   | endpoint URL       |                    | used to authorize a user principal. In Azure AD, if the app                 |
+   |                    |                    | is registered as multi-tenant, ``/common/`` is used in the                  |
+   |                    |                    | URL. If the app is registered as single-tenant, the tenant                  |
+   |                    |                    | ID is used in place of ``/common/``.                                        |
+   |                    |                    |                                                                             |
+   |                    |                    | Example:                                                                    |
+   |                    |                    | ``https://login.microsoftonline.com/common/oauth2/v2.0/authorize``          |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | OAuth user info    | user_info_endpoint | The user info endpoint in the standard OAuth flow. For Azure                |
+   | endpoint URL       |                    | cloud, it is the following value:                                           |
+   |                    |                    | ``https://graph.microsoft.com/oidc/userinfo``                               |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | OAuth redirect     | redirect_url       | The URL within Alation to accept the auth code from the OAuth               |
+   | URL for            |                    | provider (in this case Azure).                                              |
+   | receiving auth     |                    |                                                                             |
+   | code               |                    | Example:                                                                    |
+   |                    |                    | ``https://myalation.com/auth/callback/?method=oauth&config_name=azure_conf``|
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | Application Client | client_id          | Client ID of the application registered in Azure AD to represent            |
+   | ID                 |                    | Alation.                                                                    |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | Access Scope       | scope              | The access scopes associated with the tokens. These scopes will             |
+   |                    |                    | be presented to the user for approval when redirected to the OAuth          |
+   |                    |                    | provider. The following scopes are the minimum required                     |
+   |                    |                    | for Compose, representing user-impersonation and access to a                |
+   |                    |                    | refresh token:                                                              |
+   |                    |                    | ``https://database.windows.net/.default,offline_access``                    |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | (Optional) Names   | subject            | JWT token field that identifies the user principal authenticated.           |
+   | to use for         |                    | This field value is used to display the user session in Compose.            |
+   | the authenticated  |                    | This is an optional field that is not required to be provided when          |
+   | user               |                    | creating the configuration. Only use this configuration if the              |
+   |                    |                    | user info that is identified in the JWT token uses any other key.           |
+   |                    |                    |                                                                             |
+   |                    |                    | Default: ``ComposeAzureUser``                                               |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | (Optional) Access  | token_buffer_time  | Buffer time to calculate if a new access token needs to                     |
+   | Token lifespan     |                    | be generated or not.                                                        |
+   | (in minutes)       |                    |                                                                             |
+   | before refetching  |                    | Default: 10 (min)                                                           |
+   | with Refresh Token |                    |                                                                             |
+   |                    |                    | Example:                                                                    |
+   |                    |                    | If lifetime of a token is 60 min and Alation acquired the token             |
+   |                    |                    | at 1:00 PM (UTC), Alation will reuse the same token till 1:50 PM            |
+   |                    |                    | (UTC) even though the token is valid for 60 min. Then,                      |
+   |                    |                    | a new token will be generated if request comes at 1:51 PM (UTC).            |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | Now please provide | n/a                | The client secret for the Azure app representing Compose.                   |
+   | the Application    |                    | Alation will store the client secret in the encrypted format.               |
+   | Client Secret      |                    |                                                                             |
+   | for encryption     |                    |                                                                             |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+   | Please provide a   | n/a                | Alation IDs of the data sources which are going                             |
+   | comma separated    |                    | to use OAuth with Azure AD in Compose and for Dynamic Profiling.            |
+   | list of data       |                    |                                                                             |
+   | source IDs in      |                    |                                                                             |
+   | Alation with       |                    |                                                                             |
+   | which to use       |                    |                                                                             |
+   | OAuth SSO.         |                    |                                                                             |
+   +--------------------+--------------------+-----------------------------------------------------------------------------+
+
+Test the Configuration
+-----------------------------------
+
+To test your SSO setup:
+
+1. Log in to Alation as a user who should be able to query an Azure data source from Compose.
+
+2. From your Azure data source, go to Compose and establish a new connection. Instead of the Username and Password fields, the Data Source Authorization dialog should display the link **Click here to authorize access before connecting...**
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_11.png
+
+3. Click the authorization link. The Azure AD login screen should open in a new browser tab.
+
+4. Log in with your Azure AD credentials. After a successful login, the connection should be successfully established and you should be able to run queries in Compose.
+
+Note that with Compose SSO set up for your Azure data source, Dynamic Profiling will also require that users log in with their Azure AD credentials. When running a column profile, in the **Connect to Data Source** dialog, choose your SSO account and click **Test Authorization**:
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_12.png
+
+After authenticating with Azure AD, you will be able to submit your query by clicking **Submit**:
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_13.png
+
+Compose SSO and Scheduled Queries
+--------------------------------------
+
+With Compose SSO set up for an Azure data source, users are able to schedule published queries in Compose. Scheduled queries use the same OAuth flow as unscheduled Compose queries where Alation uses an existing access token to authorize Compose to use the data source. When it expires, Alation automatically requests a new access token using the previously acquired refresh token if the same session is maintained.
+
+If users notice that their scheduled query failed, this may mean that the refresh token has expired. They need to go to Compose and re-authenticate with their Azure AD credentials in order to renew OAuth tokens.
+
+Troubleshooting Compose SSO with Azure AD
+----------------------------------------------------
+
++-------------------------------------+-------------------------------------+---------------------------------------------------+
+| Error                               | Use Case                            | Solutions                                         |
++=====================================+=====================================+===================================================+
+| {"message": "failed to connect to   | *AuthServer* is not running so      | Restart the web services or restart the           |
+| all addresses: <...>}               | GRPC calls fail                     | Alation server.                                   |
+|                                     |                                     |                                                   |
+|                                     |                                     | To restart the web services:                      |
+|                                     |                                     |                                                   |
+|                                     |                                     | .. code-block:: Bash                              |
+|                                     |                                     |                                                   |
+|                                     |                                     |     alation_supervisor start java:authserver      |
+|                                     |                                     |                                                   |
+|                                     |                                     |     alation_supervisor restart web:*              |
+|                                     |                                     |                                                   |
+|                                     |                                     | Or to restart Alation:                            |
+|                                     |                                     |                                                   |
+|                                     |                                     | .. code-block:: Bash                              |
+|                                     |                                     |                                                   |
+|                                     |                                     |     alation_action restart_alation                |
+|                                     |                                     |                                                   |
++-------------------------------------+-------------------------------------+---------------------------------------------------+
+| Login failed for user               | Azure AD authentication is          | In Azure Portal, verify that the user can access  |
+| '<token-identified principal>'      | successful, but authorization for   | the resource with correct permissions.            |
+|                                     | the subject (user) failed because   |                                                   |
+|                                     | the user does not have access       |                                                   |
+|                                     | to the data source.                 |                                                   |
++-------------------------------------+-------------------------------------+---------------------------------------------------+
+| Authorization terminated            | The user did not go through         | Try again by clicking                             |
+| unexpectedly.                       | the Azure redirect. This may happen | **Click here to authorize access**                |
+|                                     | if the browser tab was closed       | **before connecting...**                          |
+|                                     | before before Alation cloud receive |                                                   |
+|                                     | a response from Azure AD.           |                                                   |
++-------------------------------------+-------------------------------------+---------------------------------------------------+
+| Test Result: Error verifying        | Azure AD authentication is          | In the Azure Portal, verify that the user can     |
+| credentials. Please check your      | successful, but authorization       | access the resource with correct permissions.     |
+| username and password.              | for the subject (user) failed       |                                                   |
+|                                     | because the user does not have      |                                                   |
+|                                     | access to the data source.          |                                                   |
++-------------------------------------+-------------------------------------+---------------------------------------------------+

@@ -1,0 +1,215 @@
+PostgreSQL Connector RDS: Query Log Ingestion
+================================================
+
+Before performing QLI, perform the QLI setup on PostgreSQL RDS.
+
+Perform the following steps to configure the pre-requisites for PostgreSQL RDS QLI:
+
+1. In the AWS console, go to **Amazon RDS > Parameter groups > Create parameter group**.
+
+2. Provide the values in the following fields and click **Create**.
+
+      - Parameter group family
+      - Type
+      - Group Name
+      - Descriptions
+
+   .. image:: ../../../_static/PostgreSQLOCF_05.png
+        :width: 400px
+        :class: with-border
+
+3. Go to **Parameter groups** and select the newly created parameter group.
+
+    .. image:: ../../../_static/PostgreSQLOCF_06.png
+        :width: 600px
+        :class: with-border
+
+4. Click **Edit parameters** and update the following parameters with the values below:
+
+    +--------------------------------+------------------------------+
+    | **Parameter**                  | **Value**                    |
+    +================================+==============================+
+    | ``log_destination``            | ``csvlog``                   |
+    +--------------------------------+------------------------------+
+    | ``log_filename``               | ``postgresql.log.%Y-%m-%d``  |
+    +--------------------------------+------------------------------+
+    | ``log_hostname``               | ``1``                        |
+    +--------------------------------+------------------------------+
+    | ``log_min_duration_statement`` | ``0``                        |
+    +--------------------------------+------------------------------+
+    | ``log_rotation_age``           | ``1440``                     |
+    +--------------------------------+------------------------------+
+    | ``log_statement``              | ``all``                      |
+    +--------------------------------+------------------------------+
+    | ``rds.log_retention_period``   | ``4320``                     |
+    +--------------------------------+------------------------------+
+
+5. Go to **Databases > RDS Instance**.
+
+6. Associate the DB parameter group with the RDS instance. Click **Modify > Additional Configuration > DB parameter group** and select the DB parameter group.
+
+    .. note::
+
+        The RDS instance major version and DB parameter group instance selection version must be the same. If the version is not same, then the DB parameter group will not be listed in this dropdown.
+
+    .. image:: ../../../_static/PostgreSQLOCF_07.png
+        :width: 600px
+        :class: with-border
+
+7. Restart the database.
+
+Configure QLI in Alation
+--------------------------
+
+In Alation you must configure QLI in:
+
+    - Compose (see `Configuration in Compose`_)
+
+    - **Connector Settings** section of the **Query Log Ingestion** tab in the OCF data source Settings page
+        The PostgreSQL OCF connector supports the following configurations for QLI:
+
+            - `View-Based QLI`_
+
+            - `Custom Query-Based QLI`_
+
+        On the **Connector Settings** section, configure `View-Based QLI`_ or `Custom Query-Based QLI`_.
+
+Configuration in Compose
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prerequisite 
+^^^^^^^^^^^^^^^^
+
+To run queries in Compose, you must have the ``CREATE`` privileges on the schema you want to create the foreign table and view.
+
+Configure QLI in Compose
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Perform these steps to configure QLI in Compose:
+
+1. Log in to Alation.
+
+2. Open the catalog page of your OCF PostgreSQL data source.
+
+3. Open Compose and establish a connection for the data source.
+
+4. Run the following query:
+
+    .. code-block:: sql
+
+          CREATE EXTENSION log_fdw;
+
+          CREATE SERVER log_server FOREIGN DATA WRAPPER log_fdw;
+
+          CREATE OR REPLACE PROCEDURE public.p_getcurrentlog(
+          )
+          LANGUAGE 'plpgsql'
+          AS $BODY$
+          declare
+          log_file_date varchar;
+          log_file_prefix varchar := 'postgresql.log.';
+          log_file_suffix varchar := '.csv';
+          full_log_file varchar;
+          current_log_server varchar := 'log_server';
+          current_log_table varchar := 'postgres_logs';
+          begin
+          --Create a foreign table over the previous day's CSV log file
+          RAISE LOG '****Starting p_getcurrentlog Procedure';
+          EXECUTE FORMAT('select cast(current_date AS varchar)') INTO log_file_date;
+          RAISE LOG 'Processing log file date: %', log_file_date;
+          EXECUTE FORMAT('select %L || %L ||%L', log_file_prefix, log_file_date, log_file_suffix) INTO
+          full_log_file;
+          EXECUTE FORMAT('DROP FOREIGN TABLE IF EXISTS %I CASCADE', current_log_table);
+          EXECUTE FORMAT('SELECT create_foreign_table_for_log_file(%L, %L, %L)', current_log_table,
+          current_log_server, full_log_file);
+          RAISE LOG '****Ending p_getcurrentlog Procedure';
+          end;
+          $BODY$;
+
+2. Run the query to view the .CSV files:
+
+    .. code-block:: sql
+
+          SELECT * FROM list_postgres_log_files() ORDER BY 1;
+
+3. Execute the query given below for procedure call.
+
+    .. code-block:: sql
+
+          CALL public.p_getcurrentlog();
+
+    .. image:: ../../../_static/PostgreSQLOCF_08.png
+        :width: 400px
+        :class: with-border
+
+
+
+
+View-Based QLI
+~~~~~~~~~~~~~~~~~~
+
+Create a view for Alation to retrieve query logs from.
+
+    .. code-block:: sql
+
+          CREATE VIEW <Schema_Name>.<View_Name> AS
+          SELECT a.*
+            FROM
+            (
+              SELECT
+                user_name AS userName,
+                session_start_time AS startTime,
+                message AS queryString,
+                session_id AS sessionId,
+                session_start_time AS sessionStarttime,
+                virtual_transaction_id as transactionid,
+                'N' AS cancelled,
+                database_name AS defaultDatabases
+              FROM
+                <FOREIGN_TABLE>
+            ) AS a;
+
+
+In <FOREIGN_TABLE>, provide the name of the foreign table in which the query logs are available. For example, the foreign table (``public.postgres_log``) created earlier during the QLI setup.
+
+The CREATE VIEW statement allows you to have the latest rows from the FOREIGN TABLE.
+
+    .. note::
+
+        The above view applies to PostgreSQL OCF connector version 1.1.9. If you upgrade from an earlier version to version 1.1.9, create a new view using the above template or change your view with a ``CREATE OR REPLACE`` query using the above template.
+
+
+Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_QLI_CustomQueryQLI.rst
+
+
+QLI Query Template
+^^^^^^^^^^^^^^^^^^^^
+
+
+    .. code-block:: sql
+
+          SELECT
+            user_name AS userName,
+            session_start_time AS startTime,
+            message AS queryString,
+            session_id AS sessionId,
+            session_start_time AS sessionStarttime,
+            virtual_transaction_id as transactionid,
+            'N' AS cancelled,
+            database_name AS defaultDatabases
+          FROM <FOREIGN_TABLE>
+          WHERE
+            session_start_time >= TO_DATE(STARTTIME, 'YYYY-MM-DD HH24:MI:SS')
+          AND
+            session_start_time < TO_DATE(ENDTIME, 'YYYY-MM-DD HH24:MI:SS')
+          ORDER BY transactionid;
+
+In <FOREIGN_TABLE>, provide the name of the foreign table in which the query logs are available. For example, the foreign table (``public.postgres_log``) created earlier during the QLI setup.
+
+Perform QLI
+^^^^^^^^^^^^^
+
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst

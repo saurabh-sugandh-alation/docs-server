@@ -1,0 +1,290 @@
+Manage Postgres Backups Separately
+====================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Available from version 2023.1*
+
+.. note::
+
+    The information in this section applies to **Backup V2**. Refer to :doc:`/installconfig/BackupandRestore/BackupV1AndV2/CheckCurrentBackupTool` for information on how to check your current backup framework.
+
+
+**From version 2023.1**, Alation Postgres backups are created using the `pgBackRest tool <https://pgbackrest.org/>`_ by default. If necessary, the pgBackRest tool allows you to separate Postgres backups from the Alation application backups. Excluding Postgres backups from Alation backups can noticeably decrease the backup creation time and can be recommended for large implementations of the catalog. However, in this case Postgres backups will have to be maintained separately from Alation backups. The restore process is affected too as it requires the full set of backups of all components.
+
+    .. note::
+
+        On previous releases, starting with **2022.2**, the default backup tool was **pg_probackup**. The pgBackRest tool was additionally available and could be enabled by an Alation admin on demand.
+
+Check if PgBackRest Is in Use
+---------------------------------
+
+If necessary, you can validate that the pgBackRest tool is enabled on your Alation instance by checking the **alation_conf** parameter ``alation.feature_flags.enable_pgbackrest``. From 2023.1, by default, this parameter is set to ``True``.
+
+To check the pgBackRest setting:
+
+1. Use SSH to connect to your Alation instance.
+
+2. Enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Run the command given below. The output will show the current value of the parameter.
+
+    .. code-block:: Bash
+
+        alation_conf alation.feature_flags.enable_pgbackrest
+
+4. Exit the Alation shell.
+
+    .. code-block:: Bash
+
+        exit
+
+
+Enable pgBackRest
+------------------------------
+
+*Applies to versions 2022.2 - 2022.4*
+
+To enable pgbackRest:
+
+1. Use SSH to connect to your Alation instance.
+
+2. Enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Run the following command:
+
+    .. code-block:: Bash
+
+        alation_conf alation.feature_flags.enable_pgbackrest -s True
+
+4. Enabling pgBackRest changes the WAL archive directory from **pg_probackup** (default) to **pgbackrest**. This change needs to be propagated down to the Postgres configuration on the Alation server. For this to happen, run the ``enable_backupv2`` action after enabling pgBackRest:
+
+    .. code-block:: Bash
+
+      alation_action enable_backupv2
+
+    No restart is required.
+
+5. Because pgBackRest does not support Celery-based scheduled backups, you need to disable them to avoid a daily backup failure. You can schedule pgBackRest backups using Crontab: `Schedule pgBackRest Backups`_.
+
+    Run the following command to disable daily backup schedule:
+
+    .. code-block:: Bash
+
+        alation_conf snapshot.enabled -s False
+
+    .. important::
+
+        If you later decide to return to the default backup tool, you'll need to re-enable the daily backup schedule and disable the corresponding cron job.
+
+6. If you are going to continue the backup configuration at this point, stay in the Alation shell. If not, exit the Alation shell:
+``exit``.
+
+Except for backup scheduling, pgBackRest supports most of the backup configuration options available for Backup V2. With pgBackRest enabled, you can use incremental backups. For more information, see :doc:`/installconfig/BackupandRestore/ConfigureBackups/ConfigureIncrementalBackups`.
+
+After enabling pgBackRest, decide if you want to exclude the Postgres backup from the compressed Alation backup. Excluding the Postgres backup from the Alation backup can noticeably decrease the backup creation time and is recommended for large implementations of the Catalog. However, in this case the Postgres backup must be maintained separately from the Alation backup files. Maintaining separate Postgres backups also affects the restore process as the Postgres backup needs to be provided in addition to the Alation backup.
+
+Exclude Postgres Backup from Alation Backup
+-------------------------------------------------
+
+When using pgBackRest, you can exclude the Postgres backup from the Alation backup and maintain Postgres backups separately.
+
+Whether or not the Postgres backup is excluded from the Alation backup is controlled by the **alation_conf** parameter ``alation.backup_v2.pgbackup_compression``.
+
+By default, the Postgres backup **is included** in the Alation backup and compressed together with the backup of the Alation application into the Alation **.tar.gz** file. The default state is reflected by the following setting of the parameter ``alation.backup_v2.pgbackup_compression``:
+
+    .. code-block:: Bash
+
+        alation.backup_v2.pgbackup_compression = True
+
+To exclude the Postgres backup from the Alation backup, you need to modify the value of ``alation.backup_v2.pgbackup_compression`` and set it to ``False``.
+
+To exclude the Postgres backup from the Alation backup:
+
+1. Use SSH to connect to your Alation instance.
+
+2. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Disable the Postgres compression:
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup_v2.pgbackup_compression -s False
+
+4. Next, you can designate a directory on the Alation host to store the uncompressed Postgres backups. By default, the Postgres backups will be created in the directory **data2/pgbackrest**. You can create a different directory in the Alation chroot for the Postgres backups. Use the following command to designate a custom pgBackRest directory:
+
+    .. code-block:: Bash
+
+        alation_conf pgsql.pgbackrest.repo_dir_name -s path/to/directory
+
+5. Exit the Alation shell.
+
+    .. code-block:: Bash
+
+        exit
+
+With this pgBackRest configuration, the next backup process will create three backup files:
+
+    - In the backup directory **data2/backup** (default) or in the directory that you designated for backups using the parameter ``alation.backup.data_dump_dir``, Alation will create the Alation backup and the Event Bus backup:
+
+          - **<timestamp_version>_alation_backup.tar.gz** - A compressed Alation backup that does not include the Postgres backup.
+
+          - **<timestamp_version>_alation_eb_backup.tar.gz** - A compressed Event Bus backup.
+
+    - Separately, in the directory **data2/pgbackrest** or in the directory that you designated for Postgres backups using the parameter ``pgsql.pgbackrest.repo_dir_name``, Alation will create a separate Postgres backup. Note that the Postgres backup is not one file but a set of files and directories.
+
+.. note::
+
+    For more information on how to create backups, see :doc:`CreateBackupsManually`.
+
+
+
+Configure External Storage on Amazon S3
+-------------------------------------------
+
+You can use Amazon S3 as external storage for Postgres backups. If S3 is configured as external storage, every time you run the backup action or when a backup is created on schedule, Alation will copy the Postgres backup to the designated S3 bucket. Note that the backups are *copied* to S3, not moved. They will remain available in the backup folder of the Alation host, too. S3 serves as additional remote storage.
+
+When restoring Alation, you can specify the S3 bucket as the source of the Postgres backup in order to restore Alation.
+
+.. note::
+
+    The existing configuration option for moving Alation backups to external storage ``alation.backup.post_script.path`` does not cover separate Postgres backups and only relocates the Alation backup and the Event Bus backup.
+
+Perform this configuration after enabling pgBackRest with Postgres compression disabled.
+
+Prerequisites
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. You will need to specify information about your Amazon S3 bucket in this configuration. Make sure you have these values at hand:
+
+    - S3 bucket name
+    - Your Amazon S3 region
+    - AWS API key
+    - AWS API secret
+
+Your Alation instance must be able to establish a connection to S3. Make sure your Amazon S3 environment allows connections from the Alation IP address.
+
+Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To configure the external Postgres backup storage on Amazon S3:
+
+1. From the Alation shell, set the following parameters:
+
+    .. code-block:: Bash
+
+        alation_conf pgsql.pgbackrest.redundancy.enabled -s True
+        alation_conf pgsql.pgbackrest.redundancy.type -s s3
+        alation_conf pgsql.pgbackrest.redundancy.s3.endpoint -s s3.amazonaws.com
+        alation_conf pgsql.pgbackrest.redundancy.s3.bucket -s <your_ AWS_S3_bucket>
+        alation_conf pgsql.pgbackrest.redundancy.s3.region -s <AWS_region_for_S3_bucket>
+        alation_conf pgsql.pgbackrest.redundancy.s3.key -s <AWS_API_key>
+        alation_conf pgsql.pgbackrest.redundancy.s3.secret -s <AWS_API_secret>
+
+    .. note::
+
+        Alation will store the AWS API key and secret in the encrypted format.
+
+2. No restart is required. When you run the backup action next time, Alation will copy the Postgres backup to the S3 bucket as per this configuration.
+
+    .. important::
+
+        When you restore Alation from the backup on a new instance, before you run the restore command, you will need to repeat the same configuration for S3 as was on the old instance. See :ref:`Restore from S3`.
+
+
+Schedule pgBackRest Backups
+----------------------------------
+
+Use the information for your Alation version.
+
+Versions 2022.3 and Newer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From Version 2022.3, pgBackRest backups can be scheduled using **alation_conf**. See :doc:`/installconfig/BackupandRestore/ConfigureBackups/SetupCustomBackupSchedule`.
+
+Version 2022.2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Scheduled pgBackRest backups are based on UTC. The current backup scheduling capabilities using **alation_conf** are based on Celery task scheduling which uses PST. This results in a failure of scheduled backups when pgBackRest is enabled.
+
+In order to schedule backups when using pgBackRest, turn off Celery-based daily backups and set up the corresponding system Cron job.
+
+To schedule backups when using pgBackRest:
+
+1. On the Alation host, enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+2. Make sure that the Celery-based backup schedule is turned off or turn it off.
+
+    - To check if Celery-based schedule is turned off:
+
+        .. code-block:: Bash
+
+            alation_conf snapshot.enabled
+
+        If this command returns ``False``, it has already been turned off and you can proceed to the next step. If this command returns ``True``, change the value to ``False``:
+
+        .. code-block:: Bash
+
+            alation_conf snapshot.enabled -s False
+
+3. Exit the shell.
+
+    .. code-block:: Bash
+
+        exit
+
+4. Outside of chroot, add the following crontab entry. It sets the backup job to run daily at 4 AM.
+
+    .. code-block:: Bash
+
+        sudo crontab -l | { cat; echo "0 4 * * * source /opt/alation/alation/opt/alation/ops/alation_constants; sudo chroot "${ALATION_CHROOT}" /bin/su - ${ALATION_USER} -c "alation_action backup_all""; } | sudo crontab -
+
+5. Check the new setting.
+
+    .. code-block:: Bash
+
+        sudo crontab -l
+
+    The output should be:
+
+    .. code-block:: Bash
+
+          * * * * * /opt/alation/alation/opt/alation/ops/actions/unjailed_update_auto_alation > /dev/null 2>&1
+
+          0 4 * * * source /opt/alation/alation/opt/alation/ops/alation_constants; sudo chroot "${ALATION_CHROOT}" /bin/su - ${ALATION_USER} -c "alation_action backup_all"
+
+You can generate your preferred crontab using `<https://crontab.guru>`_ and configure a custom crontab. Use the following example to change to a new schedule:
+
+    .. code-block:: Bash
+
+        sudo crontab -e # replace "0 4 * * *" with "0 6 * * *"
+        sudo crontab -l
+
+The output should be similar to:
+
+    .. code-block:: Bash
+
+        * * * * * /opt/alation/alation/opt/alation/ops/actions/unjailed_update_auto_alation > /dev/null 2>&1
+
+        0 6 * * * source /opt/alation/alation/opt/alation/ops/alation_constants; sudo chroot "${ALATION_CHROOT}" /bin/su - ${ALATION_USER} -c "alation_action backup_all"
+
+Location of pgBackRest Logs
+--------------------------------
+
+Enabling and using pgBackRest does not change the location of the backup logs **/var/lib/pgsql/<version>/** inside the Alation chroot.

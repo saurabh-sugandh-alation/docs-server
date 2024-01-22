@@ -1,0 +1,383 @@
+AWS PrivateLink with Alation Cloud Service
+==========================================
+
+.. include:: /shared/ProductLabels/Cloud_Label.rst
+
+Amazon’s AWS PrivateLink allows for secure connections between Alation Cloud Service and your AWS-based data sources.
+
+AWS PrivateLink Overview
+------------------------
+
+`AWS PrivateLink <https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html>`__ is a networking service that provides secure connectivity between AWS virtual private clouds (VPCs), supported AWS services, and your on-premises networks without exposing your traffic to the public internet.
+
+With PrivateLink, you can connect native AWS services and partner services, like Alation, to other AWS services, like your data sources that run in AWS. PrivateLink connections stay within AWS boundaries, so traffic through PrivateLink isn’t exposed to the public internet. Data is only transmitted to Alation in response to requests from Alation Cloud Service.
+
+Architecture
+~~~~~~~~~~~~
+
+The following diagram summarizes the architecture of the PrivateLink networking option. Your data source’s VPC is the provider, and Alation’s VPC is the consumer. See Amazon’s `PrivateLink documentation <https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html>`__ for more information about these concepts.
+
+.. image:: /_static/AWSPrivateLinkArchitecture.png
+
+Permissions
+~~~~~~~~~~~
+
+PrivateLink does not interact or interfere with Alation Identity and Access Management (IAM) settings or permissions. In terms of the seven-layer network model, PrivateLink operates primarily at the network layer, while Alation IAM settings and permissions operate at the application layer.
+
+However, you must add permissions that allow specific AWS principals to create an interface VPC endpoint to connect to your endpoint service. This is documented below.
+
+Set Up PrivateLink
+------------------
+
+Follow this procedure to create an AWS PrivateLink connection between Alation Cloud Service and a data source located in an AWS virtual private cloud (VPC).
+
+The overall process involves three main steps:
+
+#. `Create a Network Load Balancer in Your AWS Account`_
+#. `Create an Endpoint Service in Your AWS Account`_
+#. `Establish the Connection`_
+
+   .. warning::
+
+      This final step involves some back-and-forth between you and Alation Support. It also requires your Alation instance to be restarted, which will result in brief downtime. You'll be able to arrange an appropriate time for Alation Support to restart your instance.
+
+Prerequisites
+~~~~~~~~~~~~~
+
+-  Your data source must be in an AWS virtual private cloud (VPC) that’s in the same AWS region as your Alation Cloud Service instance.
+
+-  You need the IP address and port of the data source you’re connecting to.
+
+Create a Network Load Balancer in Your AWS Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A network load balancer forwards incoming PrivateLink traffic to your data source. You can forward traffic to multiple data sources if needed. To create a network load balancer:
+
+1.  |Go to EC2|
+
+2.  |Click Load Balancers|
+
+3.  Click **Create load balancer**.
+
+4.  Choose **Network Load Balancer**.
+
+5.  Click the **Create** button.
+
+6.  Fill out the **Basic configuration** section:
+
+    a. For **Load balancer name**, enter a name that’s unique within your AWS account.
+
+    b. For **Scheme**, select **Internal**.
+
+    c. For **IP address type**, select **IPv4**.
+
+7.  Fill out the **Network mapping** section:
+
+    a. |Select VPC|
+
+    b. Under **Mappings**, select the availability zones where your data source is located.
+
+.. _Load Balancer Step 8:
+
+8.  In the **Listeners and routing** section, choose the protocol and port for the connection coming into your load balancer.
+
+9.  |Select existing target group| and proceed to the final step. |Create new target group|
+
+    a. |Select IP addresses|
+
+    b. |Enter target group name|
+
+    c. |Enter protocol and port|
+
+    d. |Select VPC|
+
+    e. |Click Next|
+
+    f. |Enter IP and port|
+
+       .. note::
+
+          |Update IP if it changes|
+
+    g. |Click Create target group|
+
+    h. |Return to load balancer tab|
+
+10. Repeat the prior two steps for any additional data sources you may have.
+
+11. Click **Create load balancer**.
+
+12. For increased availability, scalability, and fault tolerance, we recommend turning on cross-zone load balancing:
+
+    a. Click **View load balancer** to return to the list of your load balancers.
+
+    b. Under **Load balancers**, click on the name of your load balancer to edit it.
+
+    c. Click the **Attributes** tab.
+
+    d. On the Attributes tab, click the **Edit** button.
+
+    e. Enable the **Cross-zone load balancing** toggle.
+
+    f. Click the **Save changes** button.
+
+
+Once you’ve created a network load balancer, you need to create an endpoint service and associate it with the load balancer.
+
+Create an Endpoint Service in Your AWS Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. |Go to VPC|
+
+2. |Click Endpoint services|
+
+3. Click **Create endpoint service**.
+
+4. Enter a name.
+
+5. For **Load balancer type**, select **Network**.
+
+6. Select the load balancer you created. If you just created it, it may take some time to become available.
+
+7. Click **Create**.
+
+8. Once the endpoint is created, take note of the **Service name**. You will need to provide the service name to Alation.
+
+Now that you have an endpoint service connected to a network load balancer, you will work with Alation to establish the connection between Alation and your data source.
+
+Establish the Connection
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+After creating the network load balancer and endpoint service, you will need to work with Alation Support to establish the connection between Alation and your data source.
+
+1. Open a :ref:`support ticket <ServiceCloud>` with Alation Support and provide the following information:
+
+   a. **Subject:** AWS PrivateLink support requested
+
+   b. **Body:**
+
+      -  Provide the endpoint service name.
+
+      -  Provide the port for connections coming into your load balancer (from :ref:`step 8 <Load Balancer Step 8>` under Create a Network Load Balancer in Your AWS Account).
+
+2. When Alation gets the support ticket, we’ll send you an Amazon resource name (ARN) for the required IAM role.
+
+3. Add the provided IAM role ARN as a principal to your endpoint service:
+
+   a. |Navigte to endpoint service|
+
+   b. |Click Allow principals tab & button|
+
+   c. |Enter the ARN|
+
+   d. |Click Allow principals|
+
+4. |Notify Alation|
+
+5. Alation will set up an endpoint in Alation Cloud Service, initiate the connection, restart your Alation instance, and notify you that it’s ready. We’ll also send the DNS name for the endpoint (you’ll need it later for setting up your data source in Alation).
+
+   .. warning::
+
+      This step will require your Alation instance to be restarted, which will cause downtime. Arrange for an appropriate time with Alation Support.
+
+6. |Accept connection|
+
+   a. |Navigte to endpoint service|
+
+   b. |Click Endpoint connections tab|
+
+   c. |Select the endpoint|
+
+   d. |Click Actions|
+
+   e. |Click Accept endpoint connection request|
+
+   f. |Accept confirmation|
+
+Your PrivateLink connection should now be active. Proceed to add your data source(s) to Alation as described below.
+
+Add a PrivateLink-based Data Source in Alation
+----------------------------------------------
+
+Once you've set up PrivateLink, the process for adding a PrivateLink data source in Alation is essentially the same as adding any other data source, with a few minor differences.
+
+Host and Port
+~~~~~~~~~~~~~
+
+When adding your data source in Alation, the host name and port for the data source depends on your PrivateLink configuration.
+
+-  For the **host** name, use the DNS name that Alation provided when establishing the connection (see step 2 under Establish the Connection). This host name is unique to PrivateLink. If you don’t know the host name, `contact <mailto:support@alation.com>`__ Alation Support.
+
+-  For the **port**, use the port for connections coming into your network load balancer (from :ref:`step 8 <Load Balancer Step 8>` under Create a Network Load Balancer in Your AWS Account).
+
+.. note::
+
+   For SQL Server data sources on PrivateLink, you may need to add ``trustServerCertificate=true`` to the connection string. This may be necessary if the SQL Server certificate has a domain name that’s different from the VPC endpoint address.
+
+Test the Connection
+~~~~~~~~~~~~~~~~~~~
+
+|Test the connection|
+
+|Can now use if successful|
+
+|Troubleshooting if failed|
+
+Help with Adding Data Sources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For help with adding OCF data sources, see the :doc:`/sources/OpenConnectorFramework/index` section of the docs, then scroll down to find your specific data source.
+
+For help adding native connectors, see :doc:`/datasources/DSConfiguration/AddingaDataSource`.
+
+Add a New PrivateLink-based Data Source in AWS
+----------------------------------------------
+
+If you’ve already set up a data source using PrivateLink in the past, you can add new data sources to your existing PrivateLink connection. |PrivateLink connection limit|
+
+1. |Go to EC2|
+
+2. |Click Load Balancers|
+
+3. Select the load balancer for your PrivateLink connection.
+
+4. In the **Listeners** section, click **Add listener**.
+
+5. |Select existing target group|. |Create new target group|
+
+   a. |Select IP addresses|
+
+   b. |Enter target group name|
+
+   c. |Enter protocol and port|
+
+   d. |Select VPC|
+
+   e. |Click Next|
+
+   f. |Enter IP and port|
+
+      .. note::
+
+         |Update IP if it changes|
+
+   g. |Click Create target group|
+
+   h. |Return to load balancer tab|
+
+See **Add a Data Source in Alation** for remaining steps to set up your data source.
+
+Migrate PrivateLink to Alation’s Cloud Native Architecture
+----------------------------------------------------------
+
+When you migrate to Alation’s cloud native architecture, your Alation instance will move to a new VPC. You will need to make some configuration changes during the migration to ensure your PrivateLink data sources continue to work. These changes are described below.
+
+.. note::
+
+   The exact migration steps may vary. For example, the Alation engineer handling your migration may ask you to accept the new endpoint connection before migration instead of afterward. Work with your Alation account manager and Alation Support to determine the exact steps and schedule.
+
+Endpoint Service Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before migrating to Alation’s cloud native architecture, you’ll need to update your PrivateLink configuration to prepare for the migration. You'll need to accept a new incoming endpoint connection. In some cases, you may also need to add a new Amazon resource name (ARN) to your endpoint service.
+
+To reconfigure PrivateLink before migrating to Alation’s cloud native architecture:
+
+1. If needed, Alation will provide you a new Amazon resource name (ARN) for the required IAM role. Add the provided IAM role ARN as a principal to your endpoint service:
+
+   a. |Go to VPC|
+
+   b. |Click Endpoint services|
+
+   c. Select the endpoint service you created.
+
+   d. |Click Allow principals tab & button|
+
+   e. |Enter the ARN|
+
+   f. |Click Allow principals|
+
+2. |Notify Alation|
+
+3. Alation will initiate a new connection and migrate your Alation instance to the cloud native architecture. Your Alation instance will be offline during this process. We will notify you when it’s back online.
+
+4. |Accept connection|
+
+   a. |Navigte to endpoint service|
+
+   b. |Click Endpoint connections tab|
+
+   c. |Select the endpoint|
+
+   d. |Click Actions|
+
+   e. |Click Accept endpoint connection request|
+
+   f. |Accept confirmation|
+
+Data Source Settings
+~~~~~~~~~~~~~~~~~~~~
+
+Once Alation has set up the new endpoint, we may send you a new DNS name for the data source. On the data source settings page in Alation, go to the **General Settings** tab and update the host name with the DNS name we provided.
+
+If a private DNS name was previously created, it will remain the same, and you won’t need to update your data source settings.
+
+.. _test-the-connection-1:
+
+Test the Connection
+~~~~~~~~~~~~~~~~~~~
+
+|Test the connection|
+
+|Can now use if successful|
+
+|Troubleshooting if failed|
+
+Limitations
+-----------
+
+Data Source Location
+~~~~~~~~~~~~~~~~~~~~
+
+To use PrivateLink, your AWS-based data sources must be located in an AWS virtual private cloud (VPC) in the same AWS region as your Alation Cloud Service instance. To determine which AWS region your Alation Cloud Service instance is located in, contact your Alation account manager.
+
+PrivateLink connections with data sources that are located on-premises, in cloud systems other than AWS, or in a different AWS region than your Alation Cloud Service instance aren’t supported by Alation at this time.
+
+Number of Connections
+~~~~~~~~~~~~~~~~~~~~~
+
+You’re limited to one PrivateLink connection per Alation Cloud Service instance. |PrivateLink connection limit|
+
+.. Substitutions
+
+.. |PrivateLink connection limit| replace:: A single PrivateLink connection can typically support up to 50 data sources, depending on your network configuration and traffic.
+
+.. |Go to EC2| replace:: In the AWS Console, go to **EC2**.
+.. |Click Load Balancers| replace:: Click **Load Balancers**.
+.. |Select existing target group| replace:: If you have an existing target group with your data source in it, select it
+.. |Create new target group| replace:: Otherwise, click **Create target group**. A new tab will open. Fill out the following information:
+.. |Select IP addresses| replace:: Select **IP addresses**.
+.. |Enter target group name| replace:: Enter a **Target group name**.
+.. |Enter protocol and port| replace:: Choose the protocol and port that’s listening on your data source.
+.. |Select VPC| replace:: Select the **VPC** where your data source is located.
+.. |Click Next| replace:: Click **Next**.
+.. |Enter IP and port| replace:: Enter the IP address and port that’s listening on your data source, then click **Include as pending** below.
+.. |Update IP if it changes| replace:: If the IP address of your data source changes for any reason, you’ll have to update your load balancer to route traffic from Alation to the new IP address.
+.. |Click Create target group| replace:: Click **Create target group**.
+.. |Return to load balancer tab| replace:: Once the target is healthy, return to the load balancer tab.
+.. |Go to VPC| replace:: In the AWS Console, go to **VPC**.
+.. |Click Endpoint services| replace:: Click **Endpoint services**.
+.. |Click Allow principals tab & button| replace:: Click the **Allow principals** tab, then the **Allow principals** button.
+.. |Enter the ARN| replace:: Enter the **ARN** that Alation gave you.
+.. |Click Allow principals| replace:: Click **Allow principals**.
+.. |Notify Alation| replace:: Notify Alation that you’ve entered the IAM role ARN.
+.. |Accept connection| replace:: Accept the incoming connection from Alation:
+.. |Navigte to endpoint service| replace:: Navigate to the endpoint service you created.
+.. |Click Endpoint connections tab| replace:: Click the **Endpoint connections** tab. You should see a new endpoint listed.
+.. |Select the endpoint| replace:: Select the endpoint.
+.. |Click Actions| replace:: Click **Actions**.
+.. |Click Accept endpoint connection request| replace:: Click **Accept endpoint connection request**.
+.. |Accept confirmation| replace:: In the confirmation that appears, type **accept** in the provided box, then click the **Accept** button. The VPC endpoint state will change to **Available**.
+.. |Test the connection| replace:: When you’re done configuring your data source and endpoint service settings, test that the connection works. On the data source settings page, go to the **General Settings** tab and find the **Test Connection** or **Network Connection** section. Click the **Test** button.
+.. |Can now use if successful| replace:: If the test is successful, you can now use the data source for metadata extraction, query log ingestion, sampling, and profiling.
+.. |Troubleshooting if failed| replace:: If the test fails, read the error message for information about what went wrong. Double check your connection information, such as the host name and port, and update it if needed. If you can’t troubleshoot the error on your own, `contact <mailto:support@alation.com>`__ Alation Support.

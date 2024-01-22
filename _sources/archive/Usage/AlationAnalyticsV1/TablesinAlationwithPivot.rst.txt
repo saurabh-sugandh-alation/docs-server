@@ -1,0 +1,35 @@
+Tables in Alation with Pivot
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+A table in Alation has a name, a title, a description, and some other
+attributes. Each attribute is saved in ``public.object_field_value``
+(Object Field Value).
+
+To display the attributes as columns in the result set we need to pivot
+them.
+
+.. code-block:: sql
+
+    -- we want to see certain fields and values belonging to tables:
+    SELECT
+      object_url,
+      MAX(CASE WHEN field_name = 'name' THEN text_value end) AS name,
+      MAX(CASE WHEN field_name = 'title' THEN text_value end) AS title,
+      MAX(
+        CASE WHEN field_name = 'schema_original_name' THEN text_value end
+      ) AS schema,
+      MAX(
+        CASE WHEN field_name = 'description' THEN text_value end
+      ) AS description
+    FROM
+      public.object_field_value AS OFV
+      JOIN public.object_field AS OF ON OFV.field_id = OF.field_id
+      -- so we can use the field name
+      JOIN public.alation_object_type as OT ON OT.object_type_id = OFV.object_type_id
+      -- so we can use the object type by name JOIN public.field_value AS FV ON FV.value_fp  =OFV.value_fp
+      -- so we can get the field value JOIN public.alation_object AS O ON O.object_uuid = OFV.object_uuid and O.object_type_id=OFV.object_type_id WHERE object_type_name = 'table'
+      -- because the object_uuid is not global GROUP BY object_url;

@@ -1,0 +1,57 @@
+Auto-Install Docker as Alation Connector Manager Dependency
+====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies to releases 2020.3.x - 2021.1.x*
+
+Depending on the operating system, you can run Alation Connector Manager installation command in the *with-dependencies* or *without-dependencies* mode. When run with dependencies, it will attempt to automatically install the required Docker version. For the mode with dependencies, the Alation host must have internet access or be configured to use an internal YUM or APT repository in order to allow for auto-installation of Docker.
+
+Installation with the Docker dependency is supported for:
+
+    - AWS Linux 2
+    - CentOS 7
+    - Ubuntu.
+
+.. note::
+
+    Auto-installation of Docker cannot be done on all operating systems supported by Alation. For example, RHEL-based operating systems do not natively contain Docker in the core repository, and as a result, it cannot be auto-installed as a dependency by Alation Connector Manager installation command. On such operating systems, Docker has to be installed separately before installing Alation Connector Manager. See :doc:`Install Docker for Alation Versions 2020.3.x - 2021.1.x <../../sources/OpenConnectorFramework/InstallDocker2020_3_To_2021_1>`.
+
+Alation Connector Manager installation command described below will attempt to auto-install Docker if it is not installed on the host. This command installs both Docker and Alation Connector Manager.
+
+CentOS 7.x and AWS Linux 2
+-------------------------------
+
+SSH to the Alation host and install Alation Connector Manager RPM located at **/opt/alation/alation/opt/addons/hydra.rpm** from outside the Alation Chroot using the command given below. This YUM command attempts to download and install Docker if Docker is not installed on the host. Accept all prompts regarding the installation of Docker dependencies:
+
+      .. code-block:: Bash
+
+          # to auto-install Docker and install Alation Connector Manager:
+          sudo yum -y install /opt/alation/alation/opt/addons/hydra/hydra.rpm
+
+.. note::
+
+    On these systems, if a supported version of Docker is already pre-installed on the host, install Alation Connector Manager without the Docker dependency using the command:
+
+    ``sudo rpm -Uvh --nodeps /opt/alation/alation/opt/addons/hydra/hydra.rpm``
+
+
+Ubuntu
+------------
+
+SSH to the Alation host and install Alation Connector Manager DEB located at **/opt/alation/alation/opt/addons/hydra.deb** from outside the Alation chroot using the commands given below. You may need to sync the local APT directory to get the latest metadata:
+
+      .. code-block:: Bash
+
+          # to update the APT directory:
+          sudo apt update
+          # to auto-install Docker and install Alation Connector Manager:
+          sudo apt install /opt/alation/alation/opt/addons/hydra/hydra.deb
+
+.. note::
+
+    On Ubuntu, if a supported version of Docker is already pre-installed on the host, install Alation Connector Manager without the Docker dependency using the command:
+
+    ``sudo apt install --nodeps /opt/alation/alation/opt/addons/hydra/hydra.deb``
+
+After installing Alation Connector Manager, proceed to configure it: :ref:`STEP 3: Configure Alation Connector Manager <OCF_Install_Alation_Connector_Manager-Configuration>`.

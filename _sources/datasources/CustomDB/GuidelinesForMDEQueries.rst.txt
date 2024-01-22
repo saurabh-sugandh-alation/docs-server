@@ -1,0 +1,575 @@
+Guidelines for Creating Queries for MDE
+========================================
+
+Query Structure
+-----------------
+
+During MDE, Alation will query the system catalog tables of your database to retrieve the metadata. Find out which tables in your database have the metadata types you want to extract.
+The queries you will write will use your database type-specific syntax, but they all must include the required *result set columns* expected by Alation. These result set columns are mandatory. If a required column is not relevant to your data source, it still should be included in the query with the null value. Not including the required columns into a query will produce an error when you try to save the query.
+
+For specific database types, the mandatory result set column names, such as CATALOG or SCHEMA may be part of reserved keywords. Use the appropriate escape characters to enclose the result set columns.
+
+Example
+~~~~~~~~
+
+For Oracle data sources, the result set column names should be escaped in double quotes:
+
+.. code-block:: sql
+
+    SELECT  ''  AS "CATALOG",
+       USERNAME AS "SCHEMA"
+    FROM SYS.ALL_USERS;
+
+For MySQL, you can `escape with backquotes <https://dev.mysql.com/doc/refman/5.7/en/keywords.html>`_ :
+
+.. code-block:: sql
+
+    SELECT
+       catalog_name AS `CATALOG`,
+       schema_name AS `SCHEMA`
+    FROM information_schema.schemata
+       WHERE schema_name NOT IN ('information_schema');
+
+See the tables below for the list of required result set columns for each metadata type that can be extracted and for the skeleton structure of the queries. For more examples, see :doc:`Example Queries for Query-Based MDE <../../datasources/CustomDB/ReferenceForQueryBasedMDE>`.
+
+.. note::
+
+    Some data sources, for example, DB2, do not have a "Catalog" concept. In such cases, an empty string ``''`` will work.
+
+In "Query Structure" sections below, such entities as  <CATALOG> or <sys_schema.table> represent the columns in the system catalog tables that store the corresponding metadata or your query-specific data objects.
+
+SCHEMA
+-----------
+
++---------------------+------------------------------------------------------+----------------+
+| Result Set Column   | Description                                          | Data type      |
+| (Mandatory)         |                                                      |                |
++=====================+======================================================+================+
+| CATALOG             | Name of the column that stores the required catalog  | String         |
++---------------------+------------------------------------------------------+----------------+
+| SCHEMA              | Name of the column that stores schema names          | String         |
++---------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG
+      <SCHEMA> AS SCHEMA
+    FROM <sys_schema.table>  WHERE <clause>  ORDER BY <clause>;
+
+Example (MySQL)
+~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      catalog_name AS `CATALOG`,
+      schema_name AS `SCHEMA`
+    FROM information_schema.schemata
+      WHERE schema_name NOT IN ('information_schema', 'performance_schema', 'mysql', 'innodb', 'sys');
+
+TABLE
+---------
+
++---------------------+------------------------------------------------------+----------------+
+| Result Set Column   | Description                                          | Data type      |
+| (Mandatory)         |                                                      |                |
++=====================+======================================================+================+
+| CATALOG             | Name of the column that stores the required catalog  | String         |
++---------------------+------------------------------------------------------+----------------+
+| SCHEMA              | Name of the column that stores schema names          | String         |
++---------------------+------------------------------------------------------+----------------+
+| TABLE               | Name of the column that stores table names           | String         |
++---------------------+------------------------------------------------------+----------------+
+| TABLE_TYPE          | Table type (Expected values are "TABLE" or "VIEW"))  | String         |
++---------------------+------------------------------------------------------+----------------+
+| REMARKS             | Description/Remarks                                  | String         |
++---------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG,
+      <SCHEMA> AS SCHEMA,
+      <TABNAME> AS TABLE,
+      <TABTYPE> AS TABLE_TYPE,
+      <REMARKS> AS REMARKS
+    FROM <sys_schema.table>  WHERE <clause>  ORDER BY <clause>;
+
+Example (MySQL)
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+       table_catalog AS `CATALOG`,
+       table_schema AS `SCHEMA`,
+       table_name AS `TABLE`,
+       CASE WHEN table_type = 'BASE TABLE' THEN `TABLE` ELSE `VIEW` END AS TABLE_TYPE,
+       table_comment AS REMARKS
+    FROM information_schema.tables
+        WHERE table_schema NOT IN ('information_schema' , 'performance_schema' , 'mysql' , 'innodb' , 'sys');
+
+COLUMN
+-----------
+
++---------------------+------------------------------------------------------+----------------+
+| Result Set Column   | Description                                          | Data type      |
+| (Mandatory)         |                                                      |                |
++=====================+======================================================+================+
+| CATALOG             | Name of the column that stores the required catalog  | String         |
++---------------------+------------------------------------------------------+----------------+
+| SCHEMA              | Name of the column that stores schema names          | String         |
++---------------------+------------------------------------------------------+----------------+
+| TABLE               | Name of the column that stores table names           | String         |
++---------------------+------------------------------------------------------+----------------+
+| COLUMN              | Name of the column that stores column names          | String         |
++---------------------+------------------------------------------------------+----------------+
+| TYPE_NAME           | Name of the column that stores the column type       | String         |
++---------------------+------------------------------------------------------+----------------+
+| DATA_TYPE           | Name of the column that stores the column data type; | String         |
++---------------------+------------------------------------------------------+----------------+
+| ORDINAL_POSITION    | Position of the column in the table                  | String         |
++---------------------+------------------------------------------------------+----------------+
+| IS_NULLABLE         | Column can/cannot have null values                   | Boolean        |
++---------------------+------------------------------------------------------+----------------+
+| COLUMN_DEF          | Name of the column that stores table                 | String         |
++---------------------+------------------------------------------------------+----------------+
+| REMARKS             | Description/Remarks                                  | String         |
++---------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG,
+      <SCHEMA> AS SCHEMA,
+      <TABNAME> AS TABLE,
+      <COLNAME> AS COLUMN,
+      <TYPENAME> AS TYPE_NAME,
+      <TYPENAME> AS DATA_TYPE,
+      <COLNUM> AS ORDINAL_POSITION,
+      <NULLS> AS IS_NULLABLE,
+      <DEFAULT> AS COLUMN_DEF,
+      <REMARKS> AS REMARKS
+    FROM <sys_schema.table>  WHERE <clause>  ORDER BY <clause>;
+
+Example (MySQL)
+
+.. code-block:: sql
+
+    SELECT
+      null AS `CATALOG`,
+      c.table_schema AS `SCHEMA`,
+      c.table_name AS `TABLE`,
+      c.column_name AS `COLUMN`,
+      c.data_type AS 'DATA_TYPE',
+      c.column_type AS 'TYPE_NAME',
+      c.is_nullable AS 'IS_NULLABLE',
+      c.ordinal_position AS 'ORDINAL_POSITION',
+      c.column_default AS 'COLUMN_DEF',
+      c.column_comment AS REMARKS
+   FROM information_schema.columns AS c, information_schema.tables AS t
+      WHERE
+        c.table_schema = t.table_schema AND c.table_name = t.table_name AND  c.table_schema NOT IN ('information_schema', 'performance_schema', 'mysql', 'innodb', 'sys')
+
+PRIMARY KEY
+--------------
+
++---------------------+------------------------------------------------------+----------------+
+| Result Set Column   | Description                                          | Data type      |
+| (Mandatory)         |                                                      |                |
++=====================+======================================================+================+
+| CATALOG             | Name of the column that stores the required catalog  | String         |
++---------------------+------------------------------------------------------+----------------+
+| SCHEMA              | Name of the column that stores schema names          | String         |
++---------------------+------------------------------------------------------+----------------+
+| TABLE               | Name of the column that stores table names           | String         |
++---------------------+------------------------------------------------------+----------------+
+| PK_NAME             | Name of the primary key constraint                   | String         |
++---------------------+------------------------------------------------------+----------------+
+| PK_COLUMN           | Column name of the primary key field                 | String         |
++---------------------+------------------------------------------------------+----------------+
+| ORDINAL_POSITION    | Position of the primary key column in the table      | String         |
++---------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG,
+      <SCHEMA> AS SCHEMA,
+      <TABNAME> AS TABLE,
+      <PK_COLUMN> AS PK_COLUMN,
+      <PK_NAME> AS PK_NAME,
+      <KEY_SEQ> AS ORDINAL_POSITION
+    FROM <sys_schema.table>   WHERE <clause>  ORDER BY <clause>;
+
+Example (MySQL)
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS CATALOG,
+      k.table_schema AS 'SCHEMA',
+      k.table_name AS 'TABLE',
+      k.ordinal_position AS 'ORDINAL_POSITION',
+      k.constraint_name AS 'PK_NAME',
+      k.column_name AS 'PK_COLUMN'
+    FROM information_schema.table_constraints t
+    JOIN information_schema.key_column_usage k
+      USING(constraint_name,table_schema,table_name)
+        WHERE t.constraint_type='PRIMARY KEY'
+
+FOREIGN KEY
+-----------
+
++---------------------+------------------------------------------------------+----------------+
+| Result Set Column   | Description                                          | Data type      |
+| (Mandatory)         |                                                      |                |
++=====================+======================================================+================+
+| CATALOG             | Name of the column that stores the required catalog  | String         |
++---------------------+------------------------------------------------------+----------------+
+| SCHEMA              | Name of the column that stores schema names          | String         |
++---------------------+------------------------------------------------------+----------------+
+| TABLE               | Name of the column that stores table names           | String         |
++---------------------+------------------------------------------------------+----------------+
+| PK_CATALOG          | Catalog of the referenced primary key                | String         |
++---------------------+------------------------------------------------------+----------------+
+| PK_SCHEMA           | Schema of the referenced primary key                 | String         |
++---------------------+------------------------------------------------------+----------------+
+| PK_TABLE            | Table of the referenced primary key                  | String         |
++---------------------+------------------------------------------------------+----------------+
+| PK_COLUMN           | Column of the referenced primary key                 | String         |
++---------------------+------------------------------------------------------+----------------+
+| PK_NAME             | Name of the primary key constraint                   | String         |
++---------------------+------------------------------------------------------+----------------+
+| FK_NAME             | Name of the foreign key constraint                   | String         |
++---------------------+------------------------------------------------------+----------------+
+| FK_COLUMN           | Column name of the foreign key field                 | String         |
++---------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG,
+      <SCHEMA> AS SCHEMA,
+      <TABNAME> AS TABLE,
+      <FK_COLUMN> AS FK_COLUMN,
+      <PK_CATALOG> AS PK_CATALOG,
+      <PK_SCHEMA> AS PK_SCHEMA,
+      <PK_TABNAME> AS PK_TABLE,
+      <PK_COLUMN> AS PK_COLUMN,
+      <PK_NAME> AS PK_NAME,
+      <FK_NAME> AS FK_NAME
+    FROM <sys_schema.table> WHERE <clause> ORDER BY <clause>;
+
+Example (MySQL)
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS CATALOG,
+      t.table_schema AS 'SCHEMA',
+      k.table_name AS 'TABLE',
+      k.ordinal_position AS 'ORDINAL_POSITION',
+      k.CONSTRAINT_NAME AS 'FK_NAME',
+      k.column_name as 'FK_COLUMN',
+      '' AS 'PK_CATALOG',
+      k.REFERENCED_TABLE_SCHEMA AS 'PK_SCHEMA',
+      k.REFERENCED_TABLE_NAME AS 'PK_TABLE',
+      'PRIMARY' AS 'PK_NAME',
+      k.REFERENCED_COLUMN_NAME AS 'PK_COLUMN'
+    FROM information_schema.table_constraints t
+    JOIN information_schema.key_column_usage k
+      USING(constraint_name,table_schema,table_name)
+          WHERE t.constraint_type='FOREIGN KEY'
+
+
+INDEX
+----------
+
++---------------------+------------------------------------------------------+----------------+
+| Result Set Column   | Description                                          | Data type      |
+| (Mandatory)         |                                                      |                |
++=====================+======================================================+================+
+| CATALOG             | Name of the column that stores the required catalog  | String         |
++---------------------+------------------------------------------------------+----------------+
+| SCHEMA              | Name of the column that stores schema names          | String         |
++---------------------+------------------------------------------------------+----------------+
+| TABLE               | Name of the column that stores table names           | String         |
++---------------------+------------------------------------------------------+----------------+
+| INDEX_NAME          | Name of the column that stores index names           | String         |
++---------------------+------------------------------------------------------+----------------+
+| COLUMN              | Name of the column that stores column names          | String         |
++---------------------+------------------------------------------------------+----------------+
+| TYPE                | Index Type                                           | String         |
++---------------------+------------------------------------------------------+----------------+
+| ORDINAL_POSITION    | Position of the index column in the table            | Integer        |
++---------------------+------------------------------------------------------+----------------+
+| ASC_OR_DESC         | Ascending or Descending order                        | String         |
++---------------------+------------------------------------------------------+----------------+
+| FILTER_CONDITION    | Filter condition used on the index                   | String         |
++---------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG,
+      <SCHEMA> AS SCHEMA,
+      <TABNAME> AS TABLE,
+      <COLNAME> AS COLUMN,
+      <INDEXNAME> AS INDEX_NAME,
+      <INDEXTYPE> AS INDEX_TYPE,
+      <KEY_SEQ> AS ORDINAL_POSITION,
+      <ASC_OR_DESC> AS ASC_OR_DESC,
+      <FILTER> AS FILTER_CONDITION
+    FROM <sys_schema.table>  WHERE <clause> ORDER BY <clause>;
+
+Example
+~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS `CATALOG`,
+      table_schema AS `SCHEMA`,
+      table_name AS `TABLE`,
+      index_name AS 'INDEX_NAME',
+      index_type AS 'TYPE',
+      column_name AS 'COLUMN',
+      '' AS 'FILTER_CONDITION',
+      seq_in_index AS 'ORDINAL_POSITION',
+      collation AS 'ASC_OR_DESC'
+    FROM information_schema.statistics
+      WHERE table_schema NOT IN ('information_schema' , 'performance_schema' , 'mysql', 'innodb' , 'sys')
+
+VIEW
+---------
+
++-----------------------+------------------------------------------------------+----------------+
+| Result Set Column     | Description                                          | Data type      |
+| (Mandatory)           |                                                      |                |
++=======================+======================================================+================+
+| CATALOG               | Name of the column that stores the required catalog  | String         |
++-----------------------+------------------------------------------------------+----------------+
+| SCHEMA                | Name of the column that stores schema names          | String         |
++-----------------------+------------------------------------------------------+----------------+
+| VIEW_NAME             | Name of the column that stores view names            | String         |
++-----------------------+------------------------------------------------------+----------------+
+| VIEW_CREATE_STATEMENT | Statement used to create the view                    | String         |
++-----------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG,
+      <SCHEMA> AS SCHEMA,
+      <VIEW_NAME> AS VIEW_NAME,
+      <VIEW_SQL> AS VIEW_CREATE_STATEMENT
+    FROM <sys_schema.table>   WHERE <clause>  ORDER BY <clause>;
+
+Example (MySQL)
+
+.. code-block:: sql
+
+    SELECT
+      null AS `CATALOG`,
+      table_schema AS `SCHEMA`,
+      table_name AS 'VIEW_NAME',
+      view_definition AS 'VIEW_CREATE_STATEMENT'
+    FROM information_schema.views
+      WHERE table_schema NOT IN ('information_schema' , 'performance_schema' , 'mysql', 'innodb' , 'sys')
+
+FUNCTION
+-------------
+
++-----------------------+------------------------------------------------------+----------------+
+| Result Set Column     | Description                                          | Data type      |
+| (Mandatory)           |                                                      |                |
++=======================+======================================================+================+
+| CATALOG               | Name of the column that stores the required catalog  | String         |
++-----------------------+------------------------------------------------------+----------------+
+| SCHEMA                | Name of the column that stores schema names          | String         |
++-----------------------+------------------------------------------------------+----------------+
+| FUNCTION_NAME         | Name of the column that stores function names        | String         |
++-----------------------+------------------------------------------------------+----------------+
+| SPECIFIC_NAME         | Specific Name                                        | String         |
++-----------------------+------------------------------------------------------+----------------+
+| REMARKS               | Definition of the function                           | String         |
++-----------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG,
+      <SCHEMA> AS SCHEMA,
+      <FUNCTION_NAME> AS FUNCTION_NAME,
+      <SPECIFIC_NAME> AS SPECIFIC_NAME,
+      <REMARKS> AS REMARKS
+    FROM <sys_schema.table> WHERE <clause> ORDER BY <clause>;
+
+Example (MySQL)
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+       '' AS `CATALOG`,
+       routine_schema AS `SCHEMA`,
+       routine_type AS 'FUNCTION_TYPE',
+       routine_name AS 'FUNCTION_NAME',
+       specific_name AS 'SPECIFIC_NAME',
+       routine_definition AS 'REMARKS'
+    FROM information_schema.routines
+        WHERE routine_schema NOT IN ('information_schema' , 'performance_schema' , 'mysql', 'innodb' , 'sys')
+
+PARTITION
+------------
+
++-----------------------------+------------------------------------------------------+----------------+
+| Result Set Column           | Description                                          | Data type      |
+| (Mandatory)                 |                                                      |                |
++=============================+======================================================+================+
+| CATALOG                     | Name of the column that stores the required catalog  | String         |
++-----------------------------+------------------------------------------------------+----------------+
+| SCHEMA                      | Name of the column that stores schema names          | String         |
++-----------------------------+------------------------------------------------------+----------------+
+| TABLE                       | Name of the column that stores table names           | String         |
++-----------------------------+------------------------------------------------------+----------------+
+| PARTITION_NAME              | Name of the Partition                                | String         |
++-----------------------------+------------------------------------------------------+----------------+
+| PARTITION_ORDINAL_POSITION  | Position of the partition column in the table        | Integer        |
++-----------------------------+------------------------------------------------------+----------------+
+| PARTITION_DESCRIPTION       | Partition constraint texts                           | String         |
++-----------------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG,
+      <SCHEMA> AS SCHEMA,
+      <TABNAME> AS TABLE,
+      <PART_NAME> AS PARTITION_NAME,
+      <PART_POSITION> AS PARTITION_ORDINAL_POSITION,
+      <PART_DESCRIPTION> AS PARTITION_DESCRIPTION
+    FROM <sys_schema.table> WHERE <clause> ORDER BY <clause>;
+
+Example (MySQL)
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+      SELECT
+        '' AS `CATALOG`,
+        table_schema AS `SCHEMA`,
+        table_name AS `TABLE`,
+        partition_name AS 'PARTITION_NAME',
+        partition_ordinal_position AS 'PARTITION_ORDINAL_POSITION',
+        partition_expression AS 'PARTITION_DESCRIPTION'
+      FROM information_schema.partitions
+        WHERE table_schema NOT IN ('information_schema' , 'performance_schema' , 'mysql', 'innodb' , 'sys')
+
+SYNONYMS
+--------
+
++---------------------+------------------------------------------------------+----------------+
+| Result Set Column   | Description                                          | Data type      |
+| (Mandatory)         |                                                      |                |
++=====================+======================================================+================+
+| CATALOG             | Name of the column that stores the required catalog  | String         |
++---------------------+------------------------------------------------------+----------------+
+| SCHEMA              | Name of the column that stores schema names          | String         |
++---------------------+------------------------------------------------------+----------------+
+| TABLE               | Name of the column that stores table names           | String         |
++---------------------+------------------------------------------------------+----------------+
+| SYNONYM_NAME        | Name of the column that stores synonym names         | String         |
++---------------------+------------------------------------------------------+----------------+
+| BASE_OBJ_CATALOG    | Name of the column that stores the required catalog  | String         |
+|                     | of the synonym’s base object                         |                |
++---------------------+------------------------------------------------------+----------------+
+| BASE_OBJ_SCHEMA     | Name of the column that stores the schema of         | String         |
+|                     | the base object of the synonym                       |                |
++---------------------+------------------------------------------------------+----------------+
+| BASE_OBJ_NAME       | Name of the column that stores the name of the       | String         |
+|                     | base object of the synonym                           |                |
++---------------------+------------------------------------------------------+----------------+
+| BASE_OBJ_LINK       | Name of the column that stores the remote link of    | String         |
+|                     | the base object of the synonym                       |                |
++---------------------+------------------------------------------------------+----------------+
+
+Query Structure
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT <CATALOG> AS CATALOG,
+      <SYNONYM_NAME> AS SYNONYM_NAME,
+      <SYNONYM_OWNER> AS OWNER,
+      <BASE_OBJ_OWNER> AS BASE_OBJECT_OWNER,
+      <BASE_OBJ_NAME> AS BASE_OBJECT_NAME
+    FROM <sys_schema.table> WHERE <clause> ORDER BY <clause>;
+
+Example (Oracle)
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+      SELECT '' AS "CATALOG",
+        OWNER AS "SCHEMA",
+        SYNONYM_NAME AS "SYNONYM_NAME",
+        '' AS "BASE_OBJ_CATALOG",
+        TABLE_OWNER AS "BASE_OBJ_SCHEMA",
+        TABLE_NAME AS "BASE_OBJ_NAME",
+        '' AS "BASE_OBJ_LINK"
+      FROM ALL_SYNONYMS
+        WHERE OWNER = 'PUBLIC'
+
+.. _Guidelines_for_MDE_Queries-Troubleshooting:
+
+Troubleshooting Query-Based MDE
+-----------------------------------
+
++-----------------------------------------+---------------------------------------------------------+
+| Error Message                           | Solution                                                |
++=========================================+=========================================================+
+| Mandatory columns missing from result   | Add all the mandatory columns as described in the       |
+| set: <list of columns missing from the  | guidelines section. Remember that NULL values  may be   |
+| query result set>                       | acceptable but omitting a mandatory column is not.      |
++-----------------------------------------+---------------------------------------------------------+
+| Unable to show preview. Enter a         | Debug your query in Compose and click **Preview** again |
+| valid query.                            | to view the result set.                                 |
++-----------------------------------------+---------------------------------------------------------+
+| Query-based extraction is on, but no    | This error occurs when you forget to click the          |
+| custom queries saved.                   | **Save Queries** button. If you do not save the queries |
+|                                         | first, the metadata will not be extracted.              |
++-----------------------------------------+---------------------------------------------------------+
+| Unable to save queries. Enter a         | Ensure that you do not leave the query textbox blank.   |
+| valid query to extract.                 | Enter a valid query.                                    |
++-----------------------------------------+---------------------------------------------------------+
+| Enter a valid query. SQL                | SQL exceptions may depend on the choice of the JDBC     |
+| Exception: "<Exception text>"           | driver you are using. Ensure that you enter an          |
+|                                         | appropriate query.                                      |
++-----------------------------------------+---------------------------------------------------------+
+| No result set found for the query       | Debug your query in Compose checking the filter         |
+| entered. Check your filter              | conditions and make sure it shows the expected output.  |
+| conditions.                             |                                                         |
++-----------------------------------------+---------------------------------------------------------+

@@ -1,0 +1,336 @@
+OCF Connector for Amazon Athena: Install and Configure
+==========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Network Connectivity
+--------------------------
+
+Port **443** must be open and port **444** may need to be open too (see :ref:`MDE Works But Profiling And Compose Time Out <troubleshoot_Athena>`).
+Any load balancers and proxy servers must be configured to forward traffic over these ports to the Alation instance.
+
+Authentication
+--------------------------
+
+The OCF connector for Amazon Athena supports several authentication methods:
+
+    - :ref:`Basic Authentication <athena-basic-auth>`
+    - :ref:`STS Authentication with an IAM User <athena-sts-auth-user>`
+    - :ref:`STS Authentication with an IAM Role <athena-sts-auth-role>`
+
+.. _athena-basic-auth:
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Basic authentication requires an AWS IAM user and the access key ID and secret access key for this user.
+
+To use basic authentication, create an AWS IAM user account and generate and save an access key ID and a secret access key.
+
+Grant the IAM user the required permissions (see `Permissions for IAM User Account`_ below).
+
+    .. note::
+
+        If you choose to use an existing IAM account instead of creating a new one, note that the billing for queries run by Alation during MDE and profiling and the billing for queries run by this account in Amazon Athena and in Compose will be combined.
+
+Permissions for IAM User Account
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We recommend using the following AWS managed policy:
+
+    - ``AmazonAthenaFullAccess``
+
+This policy:
+
+    - Creates a default **athena-examples** bucket
+    - Grants the user access:
+
+          - To all Athena actions
+          - To most Glue actions (such as ``CREATE DATABASE``)
+          - To the default Amazon S3 results bucket with query results ``"arn:aws:s3:::aws-athena-query-results-*"``
+
+You may need to edit the inline policies as prescribed by your company’s AWS access rules.
+
+If granting the ``AmazonAthenaFullAccess`` policy is not allowed, grant the required permissions separately:
+
+    - S3 permissions allowing the following actions on the S3 buckets with data sets you want to catalog:
+
+          - ``s3:GetBucketLocation``
+          - ``s3:GetObject``
+          - ``s3:ListBucket``
+          - ``s3:ListBucketMultipartUploads``
+          - ``s3:ListMultipartUploadParts``
+          - ``s3:AbortMultipartUpload``
+          - ``s3:PutObject``
+    - A Glue policy allowing the action ``GetCatalogImportStatus``
+    - An Athena policy allowing the List and Read actions.
+
+.. _athena-sts-auth-user:
+
+STS Authentication with an IAM User
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+STS Authentication with an IAM user requires an IAM user account and an AWS role.
+
+To use this type of authentication:
+
+1. Create an IAM user and assign it the required permissions as it's described in :ref:`Basic Authentication <athena-basic-auth>`.
+
+2. Perform the configuration described in `Create an IAM Role for STS Authentication`_ below.
+
+Create an IAM Role for STS Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To set up STS authentication with an IAM user:
+
+1. In the AWS IAM service, create an IAM policy (for example, ``<read_resources_policy>``) that grants access to the AWS resources you are going to catalog. We recommend using the ``AmazonAthenaFullAccess`` managed policy as ``<read_resources_policy>``. You may need to edit the inline policies as prescribed by your company's AWS access rules.
+
+2. Create an IAM role (for example, ``<read_resources_role>``) selecting the **Type of Trusted Entity** to be **AWS Service** and **Use Case** to be **EC2**. To this role, attach the policy (``<read_resources_policy>`` or ``AmazonAthenaFullAccess``). This role will be assumed by the service account when performing MDE, profiling, and QLI from your Athena data source.
+
+3. Save the ARN of the role ``<read_resources_role>``. It is required for the next configuration steps in AWS and during the configuration in Alation.
+
+4. Create an IAM policy (for example, ``<assume_role_policy>``) that allows the ``AssumeRole`` action for the IAM role created in step 2. When creating this policy:
+
+    - Select **STS** as **Service**.
+    - Under **Actions > Access Level > Write**, select ``AssumeRole``.
+    - Under **Resources**, specify the ARN of the role that gives access to the AWS resources (your ``<read_resources_role>``).
+
+    .. image:: ../../../_static/AWS_MDEwithIAM_02.png
+        :width: 500px
+        :class: with-border
+
+5. Open the Properties page of the role that gives access to the AWS resources (your ``<read_resources_role>``). Edit the **Trust Relationship** of this role by adding your IAM user account ARN as ``Principal``.
+
+    .. image:: ../../../_static/OCF_Athena_EditTrust.png
+        :width: 400px
+        :class: with-border
+
+.. _athena-sts-auth-role:
+
+STS Authentication with an AWS IAM Role
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+STS authentication with an AWS IAM role does not require an IAM user. This authentication method uses an instance profile that assumes a role allowing access to Amazon resources. This authentication method works for authenticating across AWS accounts.
+
+    .. note::
+
+        This authentication method is available with connector version **1.2.0.6527** or newer.
+
+.. include:: ../../../shared/OCF/OCF_STS_Auth_with_Amazon_sources.rst
+    :start-after: .. start-reference-main-doc
+    :end-before: .. end-reference-main-doc
+
+Configuration in Alation
+-----------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_Install_NoAgent.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **Athena OCF connector**.
+
+Access
+------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+-------------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+JDBC URI
+~~~~~~~~~~~
+
+The URI format depends on the authentication type you use. You can only include one bucket as the ``S3OutputLocation`` parameter value.
+
+Basic Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Format
+''''''''''''
+
+.. code-block:: Bash
+
+    awsathena://<your_AWS_URL>:<port>;S3OutputLocation=s3://<S3_bucket>
+
+- If the S3 output location is defined in the default workgroup:
+
+    .. code-block:: Bash
+
+        awsathena://<your_AWS_URL>:<port>;S3OutputLocation=s3://<S3_bucket>
+
+- If the S3 output location is defined in a workgroup other than default:
+
+    .. code-block:: Bash
+
+        awsathena://<your_AWS_URL>:443;workgroup=<your workgroup>;S3OutputLocation=s3://<S3_bucket>
+
+Example
+'''''''''''''
+
+.. code-block:: Bash
+
+    awsathena://athena.us-east-1.amazonaws.com:443;S3OutputLocation=s3://test94605
+
+STS Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use this format if you are authenticating with either of the STS-based authentication methods:
+
+  - `STS Authentication with an IAM User`_
+  - `STS Authentication with an AWS IAM Role`_
+
+Format
+''''''''''''
+
+.. code-block:: Bash
+
+    awsathena://<your_AWS_URL>:<port>;S3OutputLocation=s3://S3_bucket>;AwsCredentialsProviderClass=com.example.CustomSessionCredentialsProvider
+
+Example
+'''''''''''''
+
+.. code-block:: Bash
+
+    awsathena://athena.us-east-1.amazonaws.com:443;S3OutputLocation=s3://test94605;AwsCredentialsProviderClass=com.example.CustomSessionCredentialsProvider
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under the **Connector Settings** section of the **General Settings** tab, populate the data source connection information and save the values by clicking **Save**.
+
++------------------------------+------------------------------------------------------+
+| Parameter                    | Description                                          |
++==============================+======================================================+
+| Basic Authentication         | Default. Leave this radio button selected if you are |
+|                              | going to authenticate with basic authentication.     |
++------------------------------+------------------------------------------------------+
+| STS Authentication           | Select this radio button if you are going to         |
+|                              | configure STS Authentication with an IAM User.       |
++------------------------------+------------------------------------------------------+
+| JDBC URI                     | Specify the JDBC UI in the required format.          |
+|                              | Refer to `JDBC URI`_ for examples.                   |
++------------------------------+------------------------------------------------------+
+
+.. include:: ../../../shared/OCF/OCF_STS_Auth_with_Amazon_sources.rst
+   :start-after: .. start-important-note
+   :end-before: .. end-important-note
+
+Configure Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you selected the **Basic Authentication** radio button, specify the information in the **Basic Authentication** section of **General Settings**. Save the values by clicking **Save**.
+
+Refer to :ref:`Basic Authentication <athena-basic-auth>` for more information about this authentication method.
+
++------------------------------+------------------------------------------------------+
+| Parameter                    | Description                                          |
++==============================+======================================================+
+| Username                     | Specify the access key ID of your IAM user account.  |
++------------------------------+------------------------------------------------------+
+| Password                     | Specify the secret access key of your IAM user       |
+|                              | account.                                             |
++------------------------------+------------------------------------------------------+
+
+Configure STS Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you selected the **STS Authentication** radio button, specify the information in the **STS Authentication** section of **General Settings**. Save the values by clicking **Save**.
+
+Refer to :ref:`STS Authentication with an IAM User <athena-sts-auth-user>` for more information about this authentication method.
+
++------------------------------+------------------------------------------------------+
+| Parameter                    | Description                                          |
++==============================+======================================================+
+| Region                       | Specify your AWS region.                             |
++------------------------------+------------------------------------------------------+
+| DB username                  | Specify the username of your IAM user account.       |
++------------------------------+------------------------------------------------------+
+| STS: AWS Access Key ID       | Specify the access key ID of your IAM user account.  |
++------------------------------+------------------------------------------------------+
+| STS: AWS Access Key Secret   | Specify the secret access key of your IAM user       |
+|                              | account.                                             |
++------------------------------+------------------------------------------------------+
+| STS: Role ARN                | Specify the ARN of the ``<read_resources_role>``     |
+|                              | you created for the service account. See             |
+|                              | `Create an IAM Role for STS Authentication`_ for     |
+|                              | details.                                             |
++------------------------------+------------------------------------------------------+
+| STS Duration                 | Duration of the role session in seconds.             |
++------------------------------+------------------------------------------------------+
+
+.. _athena-configure-sts-with-role:
+
+Configure STS Authentication with an AWS IAM Role
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_STS_Auth_with_Amazon_sources.rst
+    :start-after: .. start-configure-sts-with-role
+    :end-before: .. end-configure-sts-with-role
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+      - If the test connection fails, make sure the JDBC URI and Service Account credentials are entered correctly.
+
+      - If the test connection fails with an error similar to the following:
+
+            *Caused by: com.Simba.Athena.support.exceptions.GeneralException: [Simba]AthenaJDBC An error has been thrown from the AWS Athena client. Access denied when writing to the location: s3://dmf-alation-sand/1c294091-13ef-47a6-8d2a-6150a5d3bd25.txt*
+
+        then check the user account permissions on the AWS side. Make sure it has been granted the Glue permission ``GetCatalogImportStatus``.
+
+      - Check that the user account has been granted the List and Read actions for the Athena service.
+
+
+Logging Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ObfuscateLiterals.rst
+
+
+Metadata Extraction
+---------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+The OCF Athena data source supports default MDE.
+
+Custom query-based extraction is not supported.
+
+Compose
+-------------------
+
+For details about configuring the **Compose** tab of the Settings page, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+OCF Athena data sources support the SSO authentication flow for Compose. For information on how to set it up, refer to :doc:`/sources/OpenConnectorFramework/AthenaOCFConnector/AthenaOCF_ConfigureComposeSSO`.
+
+Sampling and Profiling
+---------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Query Log Ingestion
+----------------------------
+
+For information on configuring QLI, refer to :doc:`/sources/OpenConnectorFramework/AthenaOCFConnector/AthenaOCF_ConfigureQLI`.
+
+Troubleshooting
+------------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting` for information about logs.

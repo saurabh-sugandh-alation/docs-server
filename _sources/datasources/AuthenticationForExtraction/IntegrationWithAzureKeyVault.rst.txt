@@ -1,0 +1,340 @@
+Integration with Azure Key Vault for Data Source Authentication
+=======================================================================
+
+*Applies from version 2022.1*
+
+Overview
+-------------------
+
+Alation can be configured to retrieve the username and password of a database service account from an Azure key vault. In this case, the service account credentials are not stored on the Alation server. Alation reads the credentials from the key vault when a Data Source Admin launches metadata extraction (MDE), query log ingestion (QLI), and profiling or when users perform profiling of specific tables and columns.
+
+.. note::
+
+    This configuration does not affect *Dynamic Profiling* when users are required to authenticate with their own database credentials.
+
+Integration with an Azure key vault can be set up for data sources that use native or Custom DB connectors. Data sources added on the OCF framework and BI sources do not support this configuration.
+
+To set up the integration with an Azure key vault for a data source:
+
+1. Perform the configuration in MS Azure portal and collect the information required for configuring the Alation server. Refer to `Registering an Application for Azure Key Vault Integration`_ below for instructions.
+
+2. Perform the configuration on the Alation server using the information you collected in MS Azure portal. Note that this configuration requires SSH access to the Alation server and the use of the Alation shell. Refer to `Configuring Integration with Azure Key Vault for a Data Source`_ below.
+
+Note that the configuration on the Alation server needs to be performed for every data source that you want to work with an Azure key vault.
+
+.. include:: /shared/ConfigureAzureKeyVault.rst
+
+Configuring Integration with Azure Key Vault for a Data Source
+-------------------------------------------------------------------------
+
+Follow the steps below to configure your data source to read the service account username and password for metadata extraction (MDE), query log ingestion (QLI), and Sampling and Profiling from an Azure key vault.
+
+This configuration requires SSH access to the Alation server and access to the setting page of the data source (*Server Admin* role or *Data Source Admin* privileges).
+
+Note that before you perform this configuration, the Service Account section of the General Settings tab of the data source settings page only has the option to enter the username and password. After you enable key vault integration for this data source, the UI of the Service Account section will change and display a dropdown list that will allow for selecting authentication with Azure key vault.
+
+**Before enabling authentication with Azure key vault**:
+
+    .. image:: ../../_static/Azure_KeyVault_09.png
+
+**After enabling authentication with Azure key vault**:
+
+    .. image:: ../../_static/Azure_KeyVault_14.png
+
+
+To integrate your data source with an Azure key vault:
+
+1. From the Alation UI, get the ID of the data source: :doc:`How to Find Data Source ID <../../admins/How-tos/HowToFindDataSourceID>`.
+
+2. Make sure you have the required information from Azure portal at hand:
+
+    - Application (client) ID
+    - Application client secret value
+    - Key vault Directory ID (Tenant ID)
+    - Key vault URI
+    - Name of the key vault secret that stores the username of the service account
+    - Name of the key vault secret that stores the password of the service account
+
+3. Use SSH to connect to the Alation server.
+
+4. Enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+5. To use an Azure key vault with Alation, the Alation AuthService component must be enabled. Check if it is enabled on your instance using the **alation_conf** command:
+
+    .. code-block:: bash
+
+        alation_conf alation.authentication.service.enabled
+
+    The output will show if the parameter is set to ``True`` or ``False``.
+
+6. If the ``alation.authentication.service.enabled`` parameter is set to ``True``, AuthService is already enabled. If it is set to ``False``, change it to ``True`` using the commands below.
+
+    .. warning::
+
+        Enabling AuthService requires a restart of the Java component, which will cause the Alation UI to reload. Alation recommends to perform this configuration during off-peak hours so that users do not lose their work.
+
+
+    6.1. Change the value to True:
+
+        .. code-block:: bash
+
+            alation_conf -s True alation.authentication.service.enabled
+
+    6.2. Deploy the configuration:
+
+        .. code-block:: bash
+
+            alation_action deploy_conf_all
+
+    6.3. Restart the Java component:
+
+        .. code-block:: bash
+
+            alation_supervisor restart java:*
+
+7. After making sure that AuthService is enabled, enter the Django shell:
+
+    .. code-block:: bash
+
+        alation_django_shell
+
+8. Run the command below to begin the configuration:
+
+    .. code-block:: bash
+
+        from rosemeta.one_off_scripts.azure_keyvault_utils import *
+
+    .. note::
+
+        You can view the help for the key vault configuration in the console by running the following command:
+
+        .. code-block:: bash
+
+            show_help()
+
+9. Create a new Azure key vault connection using the
+``create_new_azure_keyvault_config`` function. It takes the following mandatory arguments:
+
+    - ``config_name``: name for the Azure key vault configuration you are creating. Alation will identify this configuration using this name. It can be used for managing this specific key vault connection and will be required for linking the key vault connection to a specific data source.
+
+        .. note::
+
+            Store the value of the ``config_name`` property safely. You will need it for managing this key vault connection if necessary.
+
+    - ``tenant_id``: key vault Directory ID
+
+    - ``vault_url``: key vault URI
+
+    - ``client_id``: application (client) ID of the application registered in Azure for the integration with Alation
+
+    Format:
+
+      .. code-block:: bash
+
+          create_new_azure_keyvault_config('config_name', 'tenant_id', 'vault_url', 'client_id')
+
+      .. important::
+
+          The order of the arguments cannot be changed and should always be ``config_name``, ``tenant_id``, ``vault_url``, ``client_id``. These four values are mandatory.
+
+          Use single quotes when listing the values.
+
+    **Example**:
+
+      .. code-block:: bash
+
+          create_new_azure_keyvault_config('azure_keyvault', '784e800a-4684-4d76-9548-b1jcf312f0ff', 'https://el-keyvault-for-alation.vault.azure.net/', 'fe5eb2dc-7b85-4df0-a608-109e879d20bf')
+
+10. Next, you will be prompted to enter the client secret. As you type, the secret will not be displayed in the terminal window. The prompt accepts input from the clipboard. After entering the secret, press Enter. The client secret value is encrypted and stored as an encrypted field.
+
+11. Next, you need to link the key vault connection to the data source. One key vault connection identified with a unique ``config_name`` can be used for multiple data sources. This configuration object can connect multiple data sources to the same key vault. However, the links between a specific data source and the credentials must be created for each data source. You will use the ``link_keyvault_to_datasource`` function to create a link between a data source and a key vault. It takes the following arguments:
+
+    - ``ds_id``: the Alation ID for the data source that will use key vault to read the service account credentials
+
+    - ``keyvault_config_name``: the value of ``config_name`` of this Azure key vault configuration
+
+    **Format**:
+
+    .. code-block:: bash
+
+        link_keyvault_to_datasource(<ds_id>, '<keyvault_config_name>')
+
+    .. important::
+
+        The order of the arguments cannot be changed. Use single quotes when listing the values.
+
+    **Example**:
+
+    .. code-block:: bash
+
+        link_keyvault_to_datasource(43, 'azure_keyvault')
+
+    When you link the data source to Azure key vault, the **Service Account** field on the data source General Settings page will display a dropdown allowing Data Source Admins to select Azure key vault as the source of the service account credentials.
+
+12. Exit the Django shell: ``exit``
+13. Exit the Alation shell: ``exit``
+
+Next, log in to the Alation UI to complete the configuration in the data source settings.
+
+
+Configuring Authentication with Azure Key Vault in Data Source Settings
+-----------------------------------------------------------------------------------
+
+Use the steps in this section to configure your data source to read the service account credentials from an Azure key vault.
+
+1. Log in to Alation and go to the settings page of the data source for which you're setting up authentication with Azure key vault.
+
+2. Open the **General Settings** tab of the settings page and locate the **Service Account** section.
+
+3. Select **Azure Key Vault** from the service account dropdown:
+
+4. Click the **Click here** link next to the setting **Currently saved keyvault identifier pair is…** This will display two input fields, **Keyvault Username Id** and **Keyvault Password Id**:
+
+    .. image:: ../../_static/Azure_KeyVault_10.png
+
+5. As the **Username Id**, enter the name of the Azure key vault secret that stores the username of the database service account.
+
+6. As the **Password Id**, enter the name of the Azure key vault secret that stores the password of the database service account.
+
+7. Click **Save**. These identifiers will be used to look up the actual username and password stored in the Azure key vault.
+
+Now, when a Data Source Admin performs MDE, QLI, Sampling, and Profiling, Alation will read the Service Account credentials from the Azure key vault.
+
+Deactivating Integration with Azure Key Vault for a Data Source
+----------------------------------------------------------------------
+
+It is possible to deactivate authentication using Azure key vault for a data source. To deactivate it, on the data source **Settings** page > **General Settings** tab > **Service Account** section, select **Stored Credentials** from the **where to read credentials from** list. This will disable the association with the key vault for this data source. When a Data Source Admin performs the next MDE or QLI or when users run Sampling and Profiling, the authentication will use the basic built-in authentication with the service account credentials stored on the Alation server.
+
+    .. important::
+
+        If you deactivate the Azure key vault connection for a data source, make sure to provide valid service account credentials.
+
+Troubleshooting
+--------------------------
+
++---------------------------------+--------------------------------------+----------------------------------------------+
+| Error                           | Use case                             | Solution                                     |
++=================================+======================================+==============================================+
+| Error verifying DB credentials  | Admin gets the *Error verifying DB   | Check the following:                         |
+|                                 | credentials* in the Service Account  |                                              |
+|                                 | section or in the Job History table  | - Ensure the client ID and secret are        |
+|                                 | during for MDE                       |   correct.                                   |
+|                                 |                                      |   Run ``update_existing_keyvault_config``    |
+|                                 |                                      |   with all parameters specified to ensure    |
+|                                 |                                      |   this is correct                            |
+|                                 |                                      |                                              |
+|                                 |                                      | - Ensure the credentials specified           |
+|                                 |                                      |   actually exist in the key vault            |
+|                                 |                                      |                                              |
+|                                 |                                      | - Check ``authserver.log`` for any           |
+|                                 |                                      |   *authserver* or *keyvault* errors.         |
+|                                 |                                      |                                              |
+|                                 |                                      | - Ensure the credentials in the key vault    |
+|                                 |                                      |   are actually correct.                      |
++---------------------------------+--------------------------------------+----------------------------------------------+
+
+
+Updating the Key Vault Connection Parameters
+---------------------------------------------------
+
+It is possible to update an existing Azure key vault configuration object that is identified with a unique ``config_name``. An Azure configuration object stores the association between the AuthService configuration object (``config_name``) You can update any of the parameters of a configuration, including the value of the client secret.
+
+To update an existing Azure key vault configuration, perform the following steps:
+
+1. Prepare the values of these properties of the Azure key vault configuration object you are about to update.
+
+    - ``config_name``: the configuration object name that was provided when this configuration object was created
+    - ``tenant_id:`` the key vault Directory ID
+    - ``vault_url``: the key vault URI
+    - ``client_id``: the Application (client) ID of the application registered in Azure for the integration with Alation
+
+    If you are updating any of them, prepare all the new values. Even if you only want to update the client secret, you still need to pass all the existing values in the update function.
+
+2. Prepare the new client secret value if it needs to be updated.
+
+3. Use SSH to connect to the Alation server.
+
+4. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+5. Enter the Alation Django shell:
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+6. Run the command below to begin the configuration:
+
+    .. code-block:: Bash
+
+        from rosemeta.one_off_scripts.azure_keyvault_utils import *
+
+You will use the update function ``update_existing_keyvault_config`` specifying the new and existing mandatory values. You can update the existing values and the client secret value:
+
+  - `Update the configuration properties without updating the client secret value`_
+  - `Update the client secret value`_
+
+
+Update the configuration properties without updating the client secret value
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Format
+^^^^^^^^^^^
+
+.. code-block:: bash
+
+    update_existing_keyvault_config(<config_name>, <tenant_id>, <vault_url>, <client_id>)
+
+.. important::
+
+      The order of the properties cannot be changed.
+
+Example
+^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    update_existing_keyvault_config('azure_keyvault', '784e800a-4786-4d74-9358-b1jcf312l0ff', 'https://el-keyvault-for-alation.vault.azure.net/', 'fa5eb1dc-7b67-4dc0-a608-108e878d22bd')
+
+This command will update the existing values of the mandatory configuration properties.
+
+Update the client secret value
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Format
+^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    update_existing_keyvault_config(<config_name>, <tenant_id>, <vault_url>, <client_id>, update_client_secret=True)
+
+Example
+^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    update_existing_keyvault_config('azure_keyvault', '784e800a-4786-4d74-9358-b1jcf312l0ff', 'https://el-keyvault-for-alation.vault.azure.net/', 'fa5eb1dc-7b67-4dc0-a608-108e878d22bd', update_client_secret=True)
+
+This command will result in a prompt to specify the new secret value without displaying it in the console.
+
+Exit the Shell
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Exit the Django shell: ``exit``
+
+2. Exit the Alation shell: ``exit``
+
+.. image:: ../../_static/Azure_KeyVault_11.png
+
+
+Deleting a Key Vault Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At this time, deleting a key vault configuration from the Alation server is not supported.

@@ -1,0 +1,91 @@
+Alation Analytics Article Fields
+=====================================================================
+
+.. note::
+
+    This section is for **Alation Analytics Version 1 (V1)**.
+
+An article in Alation always has a name and a body. It may be based on
+the standard article template or on one or more custom templates.
+
+There are a few complications in getting all the attributes belonging to
+an article from Alation Analytics.
+
+First, the body is not saved directly with the *article* object, but
+rather the body is in the text field of the *post* object that is
+associated with the *article*. So to get to the body you need to read
+the post_id field then look up the body text field based on the
+post_id.
+
+Secondly, some custom fields for articles are of *HSTORE* data type.
+*HSTORE* means that the custom field is stored as a key-value pair in
+hstore_value column of the public.field_value table. For
+additional information on HSTORE fields, see :doc:`Understanding Analytics Object Queries </archive/Usage/AlationAnalyticsV1/ObjectQueries>`.
+
+A sample query below retrieves all fields for the Article:
+
+All Fields For Articles
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    -- This table is needed to pick the article text which is saved as a post
+
+    WITH article_text AS
+    (
+    SELECT
+          ofv.object_uuid,
+          MAX(CASE WHEN field_name='text' THEN text_value END) AS text,
+          MAX(CASE WHEN field_name='id' THEN integer_value END) AS id,
+          MAX(CASE WHEN field_name='deleted' THEN boolean_value::int END) AS deleted
+          FROM public.object_field_value AS OFV
+          JOIN public.object_field AS OF
+              ON OFV.field_id = OF.field_id -- so we can use the field name
+          JOIN public.alation_object_type AS OT
+              ON OT.object_type_id=OFV.object_type_id -- so we can use the object type by name
+          JOIN public.field_value AS FV
+              ON FV.value_fp =OFV.value_fp -- so we can get the field value
+    --JOIN public.alation_object AS O ON O.object_uuid = OFV.object_uuid AND O.object_type_id=OFV.object_type_id
+          WHERE object_type_name = 'post'
+          GROUP BY ofv.object_uuid
+    ) 
+    SELECT * FROM 
+    (
+    SELECT
+          OFV.object_uuid, -- needed so we can group by it
+          MAX(CASE WHEN field_name='id' THEN integer_value END) AS id,
+          MAX(CASE WHEN field_name='title' THEN text_value END) AS title,
+          MAX(CASE WHEN field_name='post_id' THEN
+              (SELECT text FROM article_text WHERE id=integer_value)
+              END) AS body,
+          MAX(CASE WHEN field_name='deleted' THEN boolean_value::int END)::boolean AS deleted,
+          MAX(CASE WHEN field_name='Approval Date' THEN datetime_value END) AS Approval_Date,
+          MAX(CASE WHEN field_name='Creation Date' THEN datetime_value END) AS Creation_Date,
+          MAX(CASE WHEN field_name='Summary' THEN text_value END) AS Summary,
+          MAX(CASE WHEN field_name='builtin_name' THEN text_value END) AS builtin_name,
+          MAX(CASE WHEN field_name='business_glossary_status' THEN text_value END) AS business_glossary_status,
+          MAX(CASE WHEN field_name='private' THEN boolean_value::int END)::boolean AS private,
+          MAX(CASE WHEN field_name='private_edit' THEN text_value END) AS private_edit,
+          MAX(CASE WHEN field_name='ts_created' THEN datetime_value END) AS ts_created,
+          MAX(CASE WHEN field_name='ts_updated' THEN datetime_value END) AS ts_updated,
+          MAX(CASE WHEN field_name='users_can_share' THEN boolean_value::int END)::boolean AS users_can_share,
+          MAX(CASE WHEN field_name='vote_score' THEN integer_value END) AS vote_score
+    FROM public.object_field_value AS OFV
+          JOIN public.object_field AS OF
+              ON OFV.field_id = OF.field_id -- so we can use the field name
+          JOIN public.alation_object_type AS OT
+              ON OT.object_type_id=OFV.object_type_id -- so we can use the object type by name
+          JOIN public.field_value AS FV
+              ON FV.value_fp = OFV.value_fp -- so we can get the field value
+          JOIN public.alation_object AS O
+              ON O.object_uuid = OFV.object_uuid AND O.object_type_id = OFV.object_type_id
+          WHERE 
+              object_type_name = 'article' -- because the object_uuid is not global
+          GROUP BY OFV.object_uuid
+    ) Article 
+    WHERE deleted IS False
+    ORDER BY id DESC;
+
+
+The query is hard-coded in the sense that it works for the set of custom
+fields mentioned by name in the query.

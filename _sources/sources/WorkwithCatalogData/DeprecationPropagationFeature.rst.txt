@@ -1,0 +1,26 @@
+Deprecation Propagation Feature
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from version 4.18.0*
+
+Scenario
+-------------
+
+A user deprecates a DB object such as a table, a schema, or even a
+datasource, and every entity related to it will get deprecated or get a
+warning flag. 
+
+Result
+---------
+
+- Deprecation will get propagated to those entities connected by hierarchy. For example, if a schema is deprecated, all the tables and columns under this schema will get deprecated with a message "Deprecation propagated from <source of deprecation>". All the queries and predicates that mention the schema or its children will also get the deprecation flag. 
+- Warning will get propagated to tables and Business Intelligence (BI) objects connected by lineage, with a message "Warning propagated from the deprecation of <source of deprecation>". If a schema gets deprecated, all its tables will get a deprecation flag by (1). Any table that is sourced by any of the newly deprecated tables will get a warning flag. BI data tables or BI reports that are sourced by deprecated tables will also get the warning flag. 
+- Un-deprecating the object will remove propagated deprecation/warning flags. 
+
+Caveats
+--------
+
+- After deprecating a schema, a metadata extraction job runs, and new tables and columns are added to this schema. These new objects won't have the propagated deprecation flag. Similarly for new queries and predicates mentioning deprecated objects, created after objects were deprecated. 
+- Deprecation/warning works only in the realm of database. (Deprecating, for example, a BI report won't trigger any propagation.)

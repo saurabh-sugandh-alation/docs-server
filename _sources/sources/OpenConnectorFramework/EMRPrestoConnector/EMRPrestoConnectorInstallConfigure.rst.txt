@@ -1,0 +1,368 @@
+Amazon EMR OCF Connector: Install and Configure
+================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Network Connectivity
+-----------------------
+
+Open outbound TCP port **8889** to the Amazon EMR Presto server.
+
+Service Account
+-----------------------
+
+Sample SQL to Create a Role
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    CREATE ROLE moderator WITH ADMIN USER alation;
+
+
+Permissions for Profiling and Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    GRANT SELECT ON <catalog>.<schema>.<tablename> TO alation WITH GRANT OPTION;
+
+Permissions
+-----------------------
+
+The service account must be granted read access to the tables in the ``system.jdbc`` schema.
+
+JDBC URI
+------------
+
+Use the following format to build the JDBC URI:
+
+.. code-block:: Bash
+
+    presto://<hostname_or_ip>:<port>/<service_name>
+
+**Example**
+
+.. code-block:: Bash
+
+    presto://ec2-3-220-155-20.compute.amazonaws.com:8889/hive
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~
+
+You'll need the following credentials for basic authentication:
+
+    - Username of the service account
+    - Password of the service account
+
+JDBC URI for Basic Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the following JDBC URI in Alation to connect to the Presto instance:
+
+.. code-block:: Bash
+
+    presto://<hostname_or_ip>:<port>/<service_name>
+
+Example
+''''''''''
+
+.. code-block:: Bash
+
+	presto://ip-10-13-61-118.alation.com:7778/hive
+
+Kerberos Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You'll need the following credentials and resources for kerberos authentication:
+
+    - Username of the service account
+    - Password of the service account
+    - The ``krb5.conf`` file
+    - The Presto key tab file
+
+Keytab Authentication
+^^^^^^^^^^^^^^^^^^^^^^^
+
+You'll need the following credentials and resources for the keytab authentication:
+
+    - Username of the service account
+    - The ``krb5.conf`` file
+    - The ``presto.jks`` key file
+        - Download this file from the EMR Presto server: **/etc/presto/presto.jks**
+    - The keytab file
+    - The Presto keytab file for the service account
+
+JDBC URI for Kerberos Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the following JDBC URI in Alation to connect to the Presto instance:
+
+.. code-block:: Bash
+
+    presto://<hostname_or_ip>:<port>/<service_name>/default?SSL=true&KerberosRemoteServiceName=presto&KerberosPrincipal=presto/<hostname_or_ip>&KerberosUseCanonicalHostname=false
+
+Example
+''''''''''
+
+.. code-block:: Bash
+
+    presto://ip-10-13-61-118.alation.com:7778/hive/default?SSL=true&KerberosRemoteServiceName=presto&KerberosPrincipal=presto/ip-10-13-61-118.alation.com@ALATION.COM&KerberosUseCanonicalHostname=false
+
+
+JDBC Parameters and Usage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
++------------------------------+-------------------------------------------------------------+
+| Parameter                    | Description                                                 |
++==============================+=============================================================+
+| KerberosRemoteServiceName    | The Presto coordinator Kerberos service name. This parameter|
+|                              | is required for Kerberos authentication.                    |
++------------------------------+-------------------------------------------------------------+
+| KerberosPrincipal            | The principal to use when you authenticate to the Presto    |
+|                              | coordinator.                                                |
++------------------------------+-------------------------------------------------------------+
+| KerberosUseCanonicalHostname | The canonical hostname of the Presto coordinator for        |
+|                              | the Kerberos service principal. You must resolve the        |
+|                              | hostname to an IP address and then do a reverse DNS         |
+|                              | lookup for that IP address. This is enabled by default.     |
++------------------------------+-------------------------------------------------------------+
+
+For more information, refer to the `JDBC driver parameter reference in the Presto documentation <https://prestodb.io/docs/current/installation/jdbc.html?highlight=kerberosusecanonicalhostname#parameter-reference>`_.
+
+SSL Authentication
+~~~~~~~~~~~~~~~~~~~~
+
+You'll need the following credentials and resources for authentication:
+    - Username of the service account
+    - Password of the service account
+    - The SSL certificate file
+        - Export the SSL certificate in the CRT file format from the EMR Presto server. You'll need to upload it to Alation.
+    - The TrustStore password
+        - The default password is ``changeit``
+
+JDBC URI for SSL Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the following JDBC URI in Alation to connect to the Presto instance:
+
+.. code-block:: Bash
+
+	presto://<hostname>:<port>/<service_name>/?SSL=true
+
+Example
+''''''''''
+
+.. code-block:: Bash
+
+	presto://ip-10-13-61-118.alation.com:7778/hive/default?SSL=true
+
+LDAP Authentication
+~~~~~~~~~~~~~~~~~~~~~
+
+You'll need the following credentials and resources for authentication:
+
+    - Username of the service account
+    - Password of the service account
+    - SSL Certificate file
+        - Download the ``keystore.jks`` file from EMR Presto server: **/usr/share/aws/emr/security/conf/Keystore.jks**
+    - TrustStore password
+        - Copy truststore password from EMR Presto server: In ``config.properties`` : **etc/presto/conf**
+
+
+Configuration in Alation
+-------------------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **EMR Presto OCF Connector**.
+
+
+Access
+--------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+
+General Settings
+---------------------
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Populate the data source connection information and save the values by clicking **Save** in this section.
+
++---------------------------------+---------------------------------------------------+
+| Parameter                       | Description                                       |
++=================================+===================================================+
+| JDBC URI                        | Specify the JDBC URI in the required format.      |
++---------------------------------+---------------------------------------------------+
+| Username                        | Specify the service account username.             |
++---------------------------------+---------------------------------------------------+
+| Password                        | Specify the service account password.             |
++---------------------------------+---------------------------------------------------+
+| Enable Kerberos authentication  | Select this checkbox if using Kerberos            |
+|                                 | authentication and upload the ``krb5.conf`` file  |
+|                                 | using the **upload** link under the checkbox.     |
++---------------------------------+---------------------------------------------------+
+| Use Presto keytab               | If you enable Kerberos authentication, select     |
+|                                 | **Use Presto Keytab** checkbox and upload the     |
+|                                 | Presto keytab file.                               |
++---------------------------------+---------------------------------------------------+
+| Use keytab                      | Select this checkbox if using keytabs and upload  |
+|                                 | the keytab file for the service account using     |
+|                                 | the **upload** link under the checkbox.           |
++---------------------------------+---------------------------------------------------+
+| Enable LDAP                     | Select this checkbox to use LDAP                  |
+|                                 | authentication.                                   |
+|                                 | Also, select **Enable SSL** if you've enabled the |
+|                                 | LDAP authentication.                              |
++---------------------------------+---------------------------------------------------+
+| Enable SSL                      | Enable or disable SSL authentication              |
+|                                 | by selecting or clearing the **Enable SSL**       |
+|                                 | checkbox.                                         |
+|                                 |                                                   |
+|                                 | If the **Enable SSL** checkbox is enabled,        |
+|                                 | upload the SSL certificate using the upload       |
+|                                 | link below.                                       |
++---------------------------------+---------------------------------------------------+
+| Truststore password             | Specify the password for the SSL certificate.     |
+|                                 |                                                   |
+|                                 | The password will be deleted if the data source   |
+|                                 | connection is deleted.                            |
++---------------------------------+---------------------------------------------------+
+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ObfuscateLiterals.rst
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+If the connection test fails, make sure the JDBC URI and service account credentials are correct.
+
+Metadata Extraction
+---------------------------
+
+You can configure metadata extraction (MDE) for an OCF data source on the **Metadata Extraction** tab of the Settings page. Refer to :doc:`/sources/OpenConnectorFramework/ConfigureMDEforOCFDataSources` for information about the available configuration options.
+
+This connector supports default query-based MDE. Custom query-based extraction is not supported.
+
+
+Compose
+-------------------
+
+For details about configuring the **Compose** tab of the Settings page, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+
+Sampling and Profiling
+---------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+
+Query Log Ingestion
+----------------------------
+
+To use Query Log Ingestion, run the custom query-based QLI.
+
+Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+For custom query-based QLI to succeed, ensure that the service account has enough permissions to select from the query log table.
+
+Find an example of a custom query for QLI below. You can customize it by adding, removing, or changing the filter, but the columns and their aliases must remain as is since the connector expects this query structure.
+
+.. note::
+
+    When using the QLI query template, do not substitute the ``STARTTIME`` and ``ENDTIME`` parameters in the ``WHERE`` filter.
+    These parameters are not actual column names and should stay as is. They are expected by the connector and will be substituted with the start and end date of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+.. code-block:: Bash
+
+    SELECT user AS username,
+        query AS queryString,
+        source AS defaultDatabases,
+        False AS sessionid,
+        created AS sessionstarttime,
+        started AS starttime,
+        False AS cancelled,
+        date_diff('second',"started", "end") AS seconds
+    FROM system.runtime.queries
+    WHERE state ='FINISHED'
+        AND date(started) BETWEEN date STARTTIME
+        AND date ENDTIME
+    ORDER BY sessionId, startTime;
+
+To configure query-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+2. Under **Connector Settings** > **Query Extraction**, in the Custom QLI Query field, provide the QLI query.
+3. Click **Save**.
+
+Automated and Manual Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can either perform QLI manually on demand or enable automated QLI:
+
+To perform manual QLI, under the **Automated and Manual Query Log Ingestion** section of the **Query Log Ingestion** tab, ensure that the **Enable Automated Query Log Ingestion** toggle is disabled.
+
+.. note::
+
+    Metadata extraction must be completed first before running QLI.
+
+1. Click **Preview** to get a sample of the query history data to be ingested.
+
+2. Click the **Import** button to perform QLI on demand.
+
+3. To schedule QLI, enable the **Enable Automated Query Log Ingestion** toggle.
+
+4. Set a schedule under **Automated Query Log Ingestion Time** by specifying values in the week, day, hour, and time fields.
+   The next QLI job will run on the schedule you have specified.
+
+Troubleshooting
+------------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting` for information about logs.
+
+Map FQDN in the Presto Server Host File
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you use Kerberos authentication, you need to map the EMR Presto server domain name with the Kerberos Principal domain name.
+If you see the following error while authenticating via Kerberos, you may need to do the mapping:
+
+    "*KrbException: Server not found in Kerberos database (7) - LOOKING_UP_SERVER*"
+
+To map the domain name, follow these steps to edit the EMR Presto host file:
+
+1. Log in to the EMR Presto server using SSH.
+2. Navigate to the **etc/** path and open the host file.
+3. Add the following IP mapping to the hostname:
+
+    - **IP address**—Example: ``​10.13.63.118``
+    - **Fully qualified name**—Example: ``ip-10-13-63-118.alation.com``
+    - **Alias name**—Example: ``ip-10-13-63-118``

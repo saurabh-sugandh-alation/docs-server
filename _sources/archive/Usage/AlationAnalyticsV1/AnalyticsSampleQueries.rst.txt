@@ -1,0 +1,189 @@
+Alation Analytics Sample Queries
+=====================================================================
+
+.. note::
+
+    These queries are for **Alation Analytics Version 1 (V1)**.
+
+Users and Groups: Who Works With Alation and Which Group They Are In
+---------------------------------------------------------------------
+
+.. code-block:: sql
+
+   SELECT
+    g.display_name as group_name,
+    user_name,
+    u.display_name as user_name,
+    CASE user_type
+      WHEN 1 THEN 'Business'
+      WHEN 2 THEN 'IT'
+      WHEN 3 THEN 'Officer'
+      WHEN 4 THEN 'Analyst'
+      WHEN 5 THEN 'Steward'
+    ELSE 'Other' end as user_type,
+    u.email as user_email
+   FROM public.user_group_membership m
+    INNER JOIN  public.alation_user u ON  m.user_id = u.user_id
+    INNER JOIN public.alation_group g ON m.group_id = g.group_id
+   ORDER BY group_name
+   ;
+
+.. note::
+
+    An Alation User can be in multiple groups.
+
+Catalog Browsing: Most Popular Objects (Count of Visits)
+--------------------------------------------------------
+
+.. code-block:: sql
+
+   SELECT  
+    OT.object_type_name as object_type,
+    FV.text_value as title,
+    o.object_url,
+    count(distinct V.user_id) as count_of_users_visiting_page
+    FROM public.alation_visits V
+    INNER JOIN public.alation_object o ON v.object_uuid = o.object_uuid
+    AND V.object_type_id = o.object_type_id
+    INNER JOIN public.object_field_value OFV ON V.object_uuid =
+    OFV.object_uuid AND V.object_type_id = OFV.object_type_id
+    INNER JOIN public.field_value FV ON OFV.value_fp = FV.value_fp
+    INNER JOIN public.alation_object_type OT ON OT.object_type_id =
+    V.object_type_id
+    WHERE ofv.field_id IN (select field_id from public.object_field where field_name = 'title')
+    GROUP BY object_type, title, object_url
+    ORDER BY count_of_users_visiting_page desc
+    ;
+
+Writing Queries: Who and How Many
+---------------------------------
+
+.. code-block:: sql
+
+  WITH
+  queries_created AS (
+    SELECT DISTINCT
+      OFV.object_uuid as query_uuid,
+      first_value(FV.integer_value) OVER (partition by object_uuid order by integer_value IS NULL) as author_id,
+      first_value(FV.datetime_value) OVER (partition by object_uuid order by datetime_value IS NULL) as ts_created
+    FROM public.object_field_value as OFV
+      INNER JOIN public.field_value AS FV ON OFV.value_fp = FV.value_fp
+    WHERE OFV.object_type_id = 16 -- query
+        AND OFV.field_id IN (3355, 3014)) -- 3355 is ts_created and 3014 is author_id
+  SELECT
+  u.user_id,
+  u.user_name,
+  u.display_name as user_display_name,
+  u.email as user_email,
+  count(distinct query_uuid) as count_of_queries_written
+  FROM queries_created QC
+  INNER JOIN public.alation_user U ON QC.author_id = U.user_id
+  GROUP BY user_id, user_name, user_display_name, user_email
+  ORDER BY count_of_queries_written desc
+  ;
+
+Articles: Who and How Many
+--------------------------
+
+.. code-block:: sql
+
+  WITH  post_article AS
+  (
+        SELECT DISTINCT  ofv.object_uuid as post_uuid, first_value(FV.integer_value) OVER (partition by object_uuid
+  order by
+     integer_value IS NULL) as author_id, first_value(FV.datetime_value) OVER (partition by object_uuid
+  order by
+     datetime_value IS NULL) as ts_created FROM public.object_field_value as OFV INNER JOIN public.field_value AS FV
+     ON OFV.value_fp = FV.value_fp WHERE (OFV.object_type_id = 15 -- post
+     AND
+     (
+        OFV.field_id IN
+        (
+           3355, 3014 -- 3355 is ts_created and 3014 is author_id
+        )
+     )
+  )
+     AND object_uuid IN
+     (
+        select
+           object_uuid
+        from
+           public.object_field_value
+        where
+           field_id   = 3250 -- post_type
+           AND value_fp = 2703180129937755557 -- article type of post
+     )
+  )
+  select
+      user_name,
+      u.email,
+      count(distinct post_uuid) as count_of_articles_written
+  from
+     post_article p  INNER JOIN public.alation_user u
+     ON p.author_id = u.user_id
+  GROUP BY
+     u.user_id,
+     user_name,
+     u.email
+  ORDER BY
+     count_of_articles_written desc;
+
+Running Queries: Who
+--------------------
+
+.. code-block:: sql
+
+  WITH
+  queries AS (
+    SELECT
+      user_id,
+      count(distinct query_statement_fp) as distinct_queries_run,
+      count(query_statement_fp) as queries_run
+    FROM public.compose_query_log
+    GROUP BY user_id)
+  SELECT
+  display_name as user_display_name,
+  user_name,
+  u.email,
+  distinct_queries_run,
+  queries_run
+  FROM queries q
+  INNER JOIN public.alation_user u ON q.user_id = u.user_id
+  ORDER BY distinct_queries_run desc
+ ;
+
+
+Understanding Alation Analytics
+-------------------------------
+
+This query uses specific object IDs. You can substitute them
+with object IDs existing in your Alation instance.
+
+.. code-block:: sql
+
+    SELECT   *  FROM public.alation_object_type
+    ORDER BY object_type_name;
+    -- Table is Object Type ID 27
+    SELECT object_uuid,  object_url
+      FROM public.alation_object WHERE object_type_id = 27
+      ORDER BY object_url;
+    -- we learn that object_uuid seems to be the hexadecimal equivalent of the numerical ID!
+    -- we want to get to table: https:demo-sales.alationcatalog.comtable1758 How do we do that?
+    SELECT object_uuid FROM public.alation_object WHERE object_url = 'table1758';
+    -- we want to see all fields and values belonging to a table:
+    SELECT field_name,  text_value,  datetime_value,  bigint_value,  uuid_value
+    FROM public.object_field_value AS OFV
+    JOIN public.object_field AS OF ON OFV.field_id = OF.field_id  -- so we can use the field name
+    JOIN public.alation_object_type
+        AS OT ON OT.object_type_id = OFV.object_type_id  -- so we can use the object type
+    JOIN public.field_value
+        AS FV ON FV.value_fp = OFV.value_fp  -- so we can get the field value
+    WHERE object_uuid =
+    (
+       SELECT object_uuid
+          FROM public.alation_object
+          WHERE object_url = 'table316'
+    )
+    --AND field_name in ('title', 'name', 'custom_field_values')
+     AND object_type_name = 'table'   -- because the object_uuid is not global
+    ;

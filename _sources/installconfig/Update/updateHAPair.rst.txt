@@ -1,0 +1,420 @@
+Update HA Pair Configuration (4.7 and above)
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+.. note::
+
+    It is recommended to update to the *latest available* patch version of a release.
+
+This article provides the steps for updating Alation releases 4.7 and
+above when it is installed as an HA Pair configuration.
+
+This instruction describes updating the HA Pair with preserving
+replication between the Primary and Secondary nodes.
+
+1. Prerequisites
+-----------------
+
+.. important::
+
+    Perform the update only after you have familiarized yourself with and completed the required pre-upgrade steps for your release.
+
+Before updating:
+
+Check system upgradeability
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**On both Primary and Secondary nodes**, confirm the system upgradeability
+by validating that a minimum of 15 GB space is free at ``/opt/alation/``. On the host, outside the Alation shell, run:
+
+    .. code-block:: bash
+
+        df -h
+
+The output will show the used and available disk space for the disks. Find the main data disk. It is usually called ``/data``. Find the number in the **Avail** column. This number should be equal or more than 15 GB.
+
+    .. code-block:: console
+
+          [root@C74X ~]# df -h
+
+          Filesystem              Size Used   Avail Use% Mounted on
+          /dev/mapper/centos-root 44G   17G   27G   38%   /
+          /dev/sdc1               69G   2.2G  67G   4%    /BACKUP
+          /dev/sdb1               44G   11G   34G   24%   /DATA
+
+Check for backup in progress
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**On Primary**, check that there are currently no backup
+processes in progress. A backup in progress is not compatible with the
+update. To check, you can:
+
+-  *Version V R3 (5.6.x) and above*: In the Alation Catalog UI, navigate to **Admin
+   Settings > Monitor > Active Tasks** (requires the *Server Admin* role) and check if there are any active backup tasks in the current queue.
+
+-  Using Linux commands, check for active processes that have ``backup`` in the process name.
+
+Continue with update after the backup process has finished.
+
+Check the replication status of your HA Pair
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To check,
+
+From the UI of the Primary, check the following URL:  **<your_alation_URL>/monitor/replication**
+
+It will return the byte lag with Postgres (all versions) and Mongo (releases before V R5). If replication is running, it will return some realistic byte lag values, and you can
+proceed with the update. If replication is not running, it will
+return "unknown", and this may be indicative of replication failure. You
+may need to decide how to proceed: rebuild replication for the HA Pair
+or update the Primary and Secondary servers as standalone instances and
+rebuild replication after the update.
+
+Check permissions on extra_config
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On Primary, check permissions on the folder **extra_config** at **/opt/alation/site/config/extra_config** (inside the Alation shell).
+
+The permissions should be set to **755**.
+
+    .. code-block:: Bash
+
+        ls -al  /opt/alation/site/config/
+
+Example output:
+
+    .. image:: ../../_static/Update_Check_extra_config.png
+        :width: 350px
+
+If you see other permissions on **extra_config**, change to 755:
+
+    .. code-block:: Bash
+
+        sudo chmod 755 /opt/alation/site/config/extra_config
+
+2. Configure Network for Reporting Usage Data
+-------------------------------------------------
+
+*Recommended by Alation*
+
+If you have not done so yet, configure your network to allow
+communicating with the Alation Cloud. This is required for reporting Alation
+usage data automatically. For details on reporting usage data and why it
+is important to Alation, see :doc:`Reporting Usage <../../admins/AdminSettings/ReportUsage>`.
+
+The time before you run the update may be a good moment to do this
+change because it enables usage data reporting in the updated Alation instance.
+
+To configure the network for automatic reporting, make sure the
+following ports are open on both Primary and Secondary:
+
+================== =============== =============== ==========================
+**Function**       **Direction**   **Ports**       **Destination**
+================== =============== =============== ==========================
+Usage Stats        outbound        TCP 443         Alation Cloud: 52.4.59.229
+================== =============== =============== ==========================
+
+3. Update the HA Pair
+-------------------------
+
+1. Make sure you have a valid backup.
+
+2. **CONDITIONAL STEP**
+
+      .. warning::
+
+          Perform this step if you are updating:
+
+              - **to 2021.2 from 2020.4.x or 2020.3.x**
+              - **to 2021.1 from 2020.3.x or VR7 (5.12.x)**
+
+   The update to 2021.1 or the update that skips 2021.1 requires key rotation to have been performed at least once on the instance. Key rotation must be performed on **Primary**. If you have not recently done so, rotate the keys. After key rotation is completed, allow some time for replication between Primary and Secondary to catch up.
+
+3. **CONDITIONAL STEP**
+
+      .. warning::
+
+          Perform this step if you are updating Alation:
+
+              - **to 2021.2 from 2020.3.x**
+              - **to 2021.1 from 2020.3 or VR7 (5.12.x)**
+              - **to 2020.4.x from 2020.3 or VR7 (5.12.x)**
+
+          If you are performing the update to a release older than 2020.4.x, skip this step.
+
+          If you are performing the update from 2020.4 to a newer patch release of 2020.4 or a newer version, skip this step.
+
+   If you have not done so yet, run the 2020.4 pre-upgrade reindexing script provided by Alation. It should be run on the Primary server. The instructions can be found in:
+
+      - :ref:`Update 2020.3 To 2021.2 <Update_20212-20203_20212>`
+      - :ref:`Update V R7 (5.12.x) or 2020.3 To 2021.1 <Update_20211-VR7-20211>`
+      - :ref:`V R7 (5.12.x) and 2020.3.x to 2020.4.x <Update_20204-VR7-20204>`.
+
+
+
+   After running the 2020.4 pre-upgrade script, proceed to **step 4** of this instruction.
+
+
+4. **On Primary**: If you haven't done so yet, check the byte lag and then stop UWSGI to let replication drain to Secondary.
+
+      - To check the byte lag:
+
+            .. code-block:: bash
+
+                curl -L --insecure http://localhost/monitor/replication/
+
+      - To stop UWSGI:
+
+            .. code-block:: bash
+
+                sudo /etc/init.d/alation shell
+                alation_action stop_uwsgi
+
+5. **On Primary, still in the Alation shell**: Check for replication to complete by looking for **lag 0**. Because UWSGI is stopped, use a different way to get the lag information:
+
+      .. code-block:: Bash
+
+          alation_psql
+          SELECT client_hostname, client_addr,
+          pg_wal_lsn_diff(pg_stat_replication.sent_lsn,pg_stat_replication.replay_lsn)
+          AS byte_lag FROM pg_stat_replication;
+
+   Look for ``byte_lag = 0``.
+
+6. **On Secondary, outside of the Alation shell**: Stop Alation services.
+
+      .. code-block:: bash
+
+          sudo /etc/init.d/alation stop
+
+7. **CONDITIONAL STEP**
+
+      .. warning::
+
+          Perform this step only if you are updating to:
+
+              - **2021.2 from version 2020.3.x**
+              - **2021.1 from versions 2020.3.x or V R7 (5.12.x)**.
+              - **2020.4.x from versions 2020.3.x or V R7 (5.12.x)**
+
+
+          If you are performing the update to a version older than 2020.4, skip this step and proceed to step 7.
+
+          If you already are on 2020.4 and are updating to a later patch version of 2020.4 or a newer release, skip this step and proceed to step 7.
+
+
+   Create the following file **on the Secondary node from the Alation shell**:
+
+      .. code-block:: bash
+
+          # To enter the Alation shell
+          sudo /etc/init.d/alation shell
+          # Create the success file
+          touch /opt/alation/site/site_data/reindex_rosemeta_success
+
+8. **On Primary, outside of the Alation shell**: install the package. The update package can be downloaded from Alation `Customer Portal <https://customerportal.alationdata.com>`_. It should be placed on the host to a location outside of the Alation shell.
+
+      .. important::
+
+          The ``sudo /etc/init.d/alation update`` command can take a few hours, therefore, Alation recommends that you run it with ``nohup`` or in a Screen session.
+
+
+    -  Installing the RPM package (RHEL or CENTOS)
+
+          .. code-block:: Bash
+
+              sudo rpm -Uvh <path_to_the_RPM_package>/<package_name>
+              sudo /etc/init.d/alation update
+
+          .. note::
+
+              If you receive an error ``headerRead failed: hdr data: BAD, no. of bytes(...) out of range`` at this step, troubleshoot using recommendations in :doc:`RPM Installation Error During Update <../../admins/Troubleshooting/RPMInstallationErrorDuringUpdate>`.
+
+
+    -  Installing the DEB package (Ubuntu)
+
+          .. code-block:: Bash
+
+              sudo dpkg -i <path_to_the_DEB_package>/<package_name>
+              sudo /etc/init.d/alation update
+
+9. You can monitor the progress using ``/opt/alation/<alation-####>/var/log/installer.log`` (path outside of the Alation shell):
+
+      .. note::
+
+          ``####`` represents the Alation version number in ``x.y.z.nnnn`` format (``x`` = major, ``y`` = minor, ``z`` = patch, and ``nnnn`` = build).
+
+      .. code-block:: bash
+
+          tail -f /opt/alation/<alation-####>/var/log/installer.log
+
+      **Example**:
+
+      .. code-block:: bash
+
+          tail -f /opt/alation/alation-4.14.7.20232/var/log/installer.log
+
+
+10. After the update is complete and the services are started on Primary, log in to Alation as a user and test the system.
+
+11. Perform the update (Step 8) on Secondary after confirmation from users who tested the system on Primary.
+
+12. **CONDITIONAL STEP**
+
+    .. warning::
+
+        Perform this step if you are updating to release 2021.3 from a previous release. If not, skip to the next step.
+
+    Postgresql upgrade does not run on Secondary; instead, run the replicate Postgres script to sync with the Primary. On Secondary, run:
+
+    .. code-block:: Bash
+
+        alation_action cluster_replicate_postgres
+
+    To check that Postgres on Secondary is operational after the replication, on Secondary, run:
+
+    .. code-block:: Bash
+
+        alation_psql
+
+    This command should return the updated Postgres version **13.1**
+
+    If this command returns the following error:
+
+    "could not connect to server: No such file or directory. Is the server running locally and accepting connections on Unix domain socket "/tmp/.s.PGSQL.5432 Failed to execute command with exception details: Command failed: PGPASSWORD=(hidden) psql rosemeta -h /tmp -p 5432 -U alation"
+
+    troubleshoot by running the replicate files to replicate the conf and then re-run the replicate Postgres action:
+
+    .. code-block:: Bash
+
+        alation_action cluster_replicate_files
+        alation_action cluster_replicate_postgres
+
+13. Check Postgres and Mongo\* lags on Primary again to ensure the HA Pair is syncing.
+
+      .. code-block:: Bash
+
+          curl -L --insecure http://localhost/monitor/replication/
+
+\* Mongo is only available in releases before V R5. In V R5+, it is Postgres only.
+
+Because Secondary may have been stopped for a long time, depending on how much the upgrade takes, the replication may not start. If this occurs, rebuild the database on Secondary.
+
+14. **CONDITIONAL STEP**
+
+    .. warning::
+
+        Do this step if you are updating to release 2021.2 or 2021.3 from a previous release and your Primary server was on the Backup V1 tool before the update.
+
+        See `Update Backup Settings on Primary After Update`_ below.
+
+
+Update Backup Settings on Primary After Update
+--------------------------------------------------------------------------------------
+
+**This section applies if your Primary server was on Backup V1 before the update to 2021.2 or 2021.3**.
+
+After the update, decide which backup tool you will use. Backup V2 is the default backup tool starting with release 2021.2. Backup V1 can also be used in versions 2021.2 and 2021.3.
+
+If your decision is to use the Backup V2 tool, you need to explicitly enable Backup V2 **on Primary**. This step needs to be performed manually as the HA Pair configuration does not allow to fully enable Backup V2 programmatically during the update to 2021.2.
+
+If your decision is to continue using Backup V1, you need to manually disable Backup V2 **on Primary**.
+
+To enable Backup V2,
+
+**On Primary**, run the ``alation_action`` given below from the Alation shell. Note that this action will restart the Postgres service on your Alation instance:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        alation_action enable_backupv2
+
+To disable Backup V2 and revert to Backup V1,
+
+**On Primary**, run the ``alation_action`` given below from the Alation shell. Note that this action will restart the Postgres service on your Alation instance:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        alation_action disable_backupv2
+
+
+Next, validate your backup configuration.
+
+Validating Your Backup Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To confirm that your Backup configuration is correct, check the set of **alation_conf** values given below.
+
+    .. important::
+
+        Do not attempt to modify the alation_conf values for Backup V2 manually. They are handled by the dedicated ``alation_action`` commands that enable or disable Backup V2.
+
+Backup V2 fully enabled
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you find that the parameters listed below have these values, it means that Backup V2 has been successfully enabled and the instance will be automatically backed up on schedule using the Backup V2 tool:
+
++--------------------------------+----------------------------------------------------------------+
+| Parameter name                 | Value should be:                                               |
++================================+================================================================+
+| alation.backup_v2.enabled      | True                                                           |
++--------------------------------+----------------------------------------------------------------+
+| pgsql.config.archive_mode      | True                                                           |
++--------------------------------+----------------------------------------------------------------+
+| pgsql.config.archive_command   |  - **2021.3.x and newer**                                      |
+|                                |                                                                |
+|                                |      ``pg_probackup-13 archive-push -B/data2/backup/pgbackup`` |
+|                                |      ``–-instance alation –-wal-file-path=%p``                 |
+|                                |      ``--wal-file-name=%f``                                    |
+|                                |                                                                |
+|                                |  - **2021.2.x**                                                |
+|                                |                                                                |
+|                                |      ``pg_probackup-9.6 archive-push -B/data2/backup/pgbackup``|
+|                                |      ``--instance alation --wal-file-path=%p``                 |
+|                                |      ``--wal-file-name=%f``                                    |
++--------------------------------+----------------------------------------------------------------+
+
+Backup V2 disabled
+^^^^^^^^^^^^^^^^^^^^^^
+
+If you find that the parameters listed below have these values, it means that Backup V2 has been disabled and the instance may be automatically backed up with the Backup V1 tool.
+
++--------------------------------+---------------------------------------------------------+
+| Parameter name                 | Value should be:                                        |
++================================+=========================================================+
+| alation.backup_v2.enabled      | False                                                   |
++--------------------------------+---------------------------------------------------------+
+| pgsql.config.archive_mode      | False                                                   |
++--------------------------------+---------------------------------------------------------+
+| pgsql.config.archive_command   | - **2021.3.x and newer**                                |
+|                                |                                                         |
+|                                |      gzip < %p > /data2/pgsql/13/archive/%f.gzip        |
+|                                |                                                         |
+|                                | - ** 2021.2.x**                                         |
+|                                |                                                         |
+|                                |      gzip < %p > /data2/pgsql/9.6/archive/%f.gzip       |
++--------------------------------+---------------------------------------------------------+
+
+Backup V1 enabled
+^^^^^^^^^^^^^^^^^^^^^^^
+
+If you find that the parameter below is in ``True``, Backup V1 is enabled. If at the same time Backup V2 is enabled too, this means the instance is backed up using Backup V2 (Backup V1 is ignored). If at the same time Backup V2 is disabled, this means your instance will be backed up using the Backup V1 tool.
+
++--------------------------------+---------------------------------------------------------+
+| Parameter name                 | Value should be:                                        |
++================================+=========================================================+
+| alation.backup.enabled         | True                                                    |
++--------------------------------+---------------------------------------------------------+
+
+Backup V1 disabled
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you find that the parameter below is in ``False``, this state means that Backup V1 is disabled. If at the same time Backup V2 is enabled, this means the instance is backed up using Backup V2. If at the same time Backup V2 is disabled, this means the backup process is completely disabled on your instance: the instance is not backed up automatically on schedule. If you perform a manual backup, it will run using the Backup V1 tool.
+
++--------------------------------+---------------------------------------------------------+
+| Parameter name                 | Value should be:                                        |
++================================+=========================================================+
+| alation.backup.enabled         | False                                                   |
++--------------------------------+---------------------------------------------------------+

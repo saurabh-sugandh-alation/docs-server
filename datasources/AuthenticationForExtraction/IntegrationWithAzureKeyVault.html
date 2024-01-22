@@ -1,0 +1,827 @@
+
+<!DOCTYPE html>
+<html lang="" >
+<head>
+  <meta charset="utf-8"/>
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="book-version"      content=""/>
+  <meta name="book-release"      content=""/>
+  <meta name="docsearch:name"    content="Alation User Guide" />
+  <meta name="docsearch:version" content="" />
+  <meta name="docsearch:package_type" content="" />
+	<meta name="robots" content="noindex" />
+
+  
+  <title>Integration with Azure Key Vault for Data Source Authentication &mdash; Alation User Guide</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/css/main.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/sphinx_collapse.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/css/rtd_sphinx_search.min.css" type="text/css" />
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="Alation User Guide" href="#"/>
+        <link rel="up" title="Authentication for Extraction" href="index.html"/>
+        <link rel="next" title="Custom DB" href="../CustomDB/index.html"/>
+        <link rel="prev" title="Troubleshoot the Configuration of MDE with IAM Authentication" href="TroubleshootAWS_MDEwithIAMsetup.html"/>
+
+	
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-67846571-1"></script>
+	<script>
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+
+	gtag('config', 'UA-67846571-1');
+	</script>
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<!-- Second Google Analytics tag to assist mapping with mattermost.com visits --> 
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120238482-1"></script>
+	<script>
+	  window.dataLayer = window.dataLayer || [];
+	  function gtag(){dataLayer.push(arguments);}
+	  gtag('js', new Date());
+
+	  gtag('config', 'UA-120238482-1');
+	</script>
+
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <header>
+    <div class="header__container wy-max-content-width">
+        <a href="/" class="header__logo">
+            <img width="176" src="../../_static/img/logo-alation.svg" alt="Alation" />
+        </a>
+        <ul class="header__links">
+            <li><a href="https://help.alation.com/s/">Alation Help Center</a></li>
+        </ul>
+    </div>
+</header>
+
+  <div class="wy-grid-for-nav wy-max-content-width">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-scroll__content">
+          <div class="wy-side-nav-search">
+            
+
+            <ul class="sidebartop">
+              <li class="nolink search"><div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search this project" aria-label="Search this project" id="searchinput" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+</li>
+
+            </ul>
+
+            
+          </div>
+
+          <div class="wy-menu wy-sidebar wy-sidebar--hidden" data-spy="affix" role="navigation" aria-label="main navigation">
+            
+              
+              
+              
+                  <p class="caption" role="heading"><span class="caption-text">Welcome to Alation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/About/index.html">About Alation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/CloudAndOnPrem/index.html">Alation Cloud and On-Premise</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/QuickStart/index.html">Quick Start Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/UserProfileandPreferences/index.html">User Profile and Preferences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/CatalogBasics/index.html">Catalog Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/Conversations/index.html">Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/Domains/index.html">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/BestPractices/index.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/Glossary/index.html">Alation Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation Cloud Service</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud/StatusPage/index.html">Status Page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud/CloudOverview/index.html">Cloud Service Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud/CloudConfiguration/index.html">Configuration for Cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud/AlationAgent/index.html">Alation Agent</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation Integration</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../integration/AlationAnywhere/index.html">Alation Anywhere</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../integration/AlationConnectedSheets/index.html">Alation Connected Sheets</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Installation &amp; Configuration</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/ServerInstallation/index.html">Install Alation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/HighAvailability/index.html">High Availability</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/Runbook/index.html">Runbook for Administrators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/Update/index.html">Update Alation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/BackupandRestore/index.html">Back Up and Restore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/LineageV2/index.html">Lineage V2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/LineageV3/index.html">Lineage V3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/AlationAnalyticsV2/index.html">Alation Analytics V2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/AlationContainerService/index.html">Alation Container Service</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Sources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../sources/CatalogSources/index.html">Catalog Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sources/VirtualDataSources/index.html">Virtual Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sources/Lineage/index.html">Lineage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sources/APIResources/index.html">API Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sources/WorkwithCatalogData/index.html">Working with Catalog Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sources/OpenConnectorFramework/index.html">Open Connector Framework</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Sources</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../DSConfiguration/index.html">Data Source Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../AddDataSources/index.html">Adding Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ComposeSSOAWSDataSources/index.html">Compose SSO for Amazon Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ComposeSSOAzureDataSources/index.html">Compose SSO for Azure Data Sources</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Authentication for Extraction</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="ConfigureMDEwithAWS_IAM_Auth.html">Configure Extraction with AWS IAM Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="TroubleshootAWS_MDEwithIAMsetup.html">Troubleshoot the Configuration of MDE with IAM Authentication</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Integration with Azure Key Vault for Data Source Authentication</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../CustomDB/index.html">Custom DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../GBQ/index.html">Google BigQuery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Hive/index.html">Hive</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">BI Sources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../bisources/AddBISources/index.html">Add BI Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bisources/AddTableauServer/index.html">Add Tableau Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bisources/WorkwithBISources/index.html">Working with BI Sources</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">File System Sources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../filesystems/FileSystems/index.html">Add File Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../filesystems/VirtualFileSystems/index.html">Virtual File Systems</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation for Analysts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/UserAuthenticationForDataSources/index.html">User Authentication for Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/ShareAndAccessQueries/index.html">Share and Access Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/WriteQueries/index.html">Write Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/DevelopQueries/index.html">Develop Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/WorkwithQueryResults/index.html">Work with Query Results</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation for Data Stewards</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/GovernanceApp/index.html">Governance App</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/PolicyCenter/index.html">Policy Center</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/Workflow/index.html">Workflow Center</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/GovernanceDashboard/index.html">Governance Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/StewardshipWorkbench/index.html">Stewardship Workbench</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/AnalyticsStewardship/index.html">Analytics Stewardship</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/Glossary/index.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/ArticlesAndTags/index.html">Articles and Tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/ArticleGroups/index.html">Article Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/DataCatalogCustomization/index.html">Customize Your Data Catalog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/DataDocumentation/index.html">Data Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/AutoTitlingandLexicon/index.html">Auto-titling and Lexicon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/SnowflakeTags/index.html">Snowflake Tags</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation for Server Administrators</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/CustomizableHomePage/index.html">Customizable Homepage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/AdminSettings/index.html">Administrator Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/AdditionalConfiguration/index.html">Additional Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/RunbookForAdministrators/index.html">Runbook for Administrators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/AlationAPIs/index.html">Alation APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/How-tos/index.html">How-tos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/Troubleshooting/index.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Release Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/releasenotes/index.html">Release Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/supportmatrices/index.html">Support Matrices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/endofsupport/index.html">End Of Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/snowflakeclladdon/index.html">Snowflake Parser Add-On</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/fieldnotices/index.html">Important Notices and Security Alerts</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Archived Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../archive/About/index.html">About the Documentation Archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../archive/AdminConfig/index.html">Administration and Update Archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../archive/ReleaseNotes/index.html">Release Notes Archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../archive/Usage/index.html">Usage and Customization Archive</a></li>
+</ul>
+
+              
+            
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="wy-nav-top-icon"></i>
+        <a href="../../index.html">Alation User Guide</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+
+          <div role="navigation" aria-label="breadcrumbs" class="breadcrumbs">
+    <a href="../../index.html">Docs</a>
+    <span class="separator">&gt;</span>
+    <a href="index.html">Authentication for Extraction</a>
+    <span class="separator">&gt;</span>
+    <span>Integration with Azure Key Vault for Data Source Authentication</span>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody" class="toBeIndexed">
+            
+  <section id="integration-with-azure-key-vault-for-data-source-authentication">
+<h1>Integration with Azure Key Vault for Data Source Authentication<a class="headerlink" href="#integration-with-azure-key-vault-for-data-source-authentication" title="Permalink to this headline">¶</a></h1>
+<p><em>Applies from version 2022.1</em></p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Alation can be configured to retrieve the username and password of a database service account from an Azure key vault. In this case, the service account credentials are not stored on the Alation server. Alation reads the credentials from the key vault when a Data Source Admin launches metadata extraction (MDE), query log ingestion (QLI), and profiling or when users perform profiling of specific tables and columns.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This configuration does not affect <em>Dynamic Profiling</em> when users are required to authenticate with their own database credentials.</p>
+</div>
+<p>Integration with an Azure key vault can be set up for data sources that use native or Custom DB connectors. Data sources added on the OCF framework and BI sources do not support this configuration.</p>
+<p>To set up the integration with an Azure key vault for a data source:</p>
+<ol class="arabic simple">
+<li><p>Perform the configuration in MS Azure portal and collect the information required for configuring the Alation server. Refer to <a class="reference internal" href="#registering-an-application-for-azure-key-vault-integration">Registering an Application for Azure Key Vault Integration</a> below for instructions.</p></li>
+<li><p>Perform the configuration on the Alation server using the information you collected in MS Azure portal. Note that this configuration requires SSH access to the Alation server and the use of the Alation shell. Refer to <a class="reference internal" href="#configuring-integration-with-azure-key-vault-for-a-data-source">Configuring Integration with Azure Key Vault for a Data Source</a> below.</p></li>
+</ol>
+<p>Note that the configuration on the Alation server needs to be performed for every data source that you want to work with an Azure key vault.</p>
+</section>
+<section id="registering-an-application-for-azure-key-vault-integration">
+<h2>Registering an Application for Azure Key Vault Integration<a class="headerlink" href="#registering-an-application-for-azure-key-vault-integration" title="Permalink to this headline">¶</a></h2>
+<p>Use the steps in this section to register an application in Azure Active Directory in order to configure integration with an Azure key vault for your data sources in Alation.</p>
+<p>During the configuration in Azure, collect these values while you are performing the steps and store them safely:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Application (client) ID</p></li>
+<li><p>Application client secret value</p></li>
+<li><p>Key vault Directory ID (Tenant ID)</p></li>
+<li><p>Key vault URI</p></li>
+<li><p>Name of the key vault secret that stores the username of the service account</p></li>
+<li><p>Name of the key vault secret that stores the password of the service account.</p></li>
+</ul>
+</div></blockquote>
+<p>These values are required for configuration in Alation.</p>
+<section id="register-an-application-and-get-the-client-id-and-secret-value">
+<h3>Register an Application and Get the Client ID and Secret Value<a class="headerlink" href="#register-an-application-and-get-the-client-id-and-secret-value" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p>Sign in to Azure portal.</p></li>
+<li><p>If you have access to multiple tenants, make sure to switch to the tenant in which you want to register the application.</p></li>
+<li><p>Go to Azure Active Directory.</p></li>
+<li><p>In the left-hand menu, under <strong>Manage</strong>, select <strong>App registrations</strong> and then click <strong>New registration</strong>.</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can refer to the following Microsoft documentation about registering an app: <a class="reference external" href="https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app">Quickstart: Register an app in the Microsoft identity platform</a></p>
+</div>
+</div></blockquote>
+</li>
+<li><p>On the <strong>Register an application page</strong> that opens when you begin registering an app, enter a display name for your application.</p></li>
+<li><p>Select an appropriate value under <strong>Who can use the application or access this API?</strong></p></li>
+<li><p>Leave the field <strong>Redirect URI (optional)</strong> empty. Do not select or enter any values.</p></li>
+<li><p>Click <strong>Register</strong> to complete the app registration.</p></li>
+<li><p>After your application is registered, you will be navigated to its <strong>Overview</strong> page. Under <strong>Essentials</strong>, look for <strong>Application (client) ID</strong>. This value will be required during the configuration on the Alation server. Store this value safely.</p>
+<blockquote>
+<div><img alt="../../_images/Azure_KeyVault_01.png" class="with-border" src="../../_images/Azure_KeyVault_01.png" />
+</div></blockquote>
+</li>
+<li><p>Next, you will need to generate a client secret for your registered app. In the left-hand menu, select <strong>Certificates &amp; secrets &gt; Client secrets</strong> and then click <strong>New client secret</strong>.</p>
+<img alt="../../_images/Azure_KeyVault_02.png" class="with-border" src="../../_images/Azure_KeyVault_02.png" />
+</li>
+<li><p>Add a description for your client secret.</p></li>
+<li><p>Select an expiration period for the secret or specify a custom lifetime.</p></li>
+<li><p>Click <strong>Add</strong>.</p></li>
+<li><p>The secret will be added and its value will be available in the <strong>Value</strong> column of the table with secrets. The value of the secret is required for further configuration on the Alation server. Store this value safely. It is never displayed again after you leave this page.</p>
+<img alt="../../_images/Azure_KeyVault_03.png" class="with-border" src="../../_images/Azure_KeyVault_03.png" />
+</li>
+</ol>
+<p>Next, collect the information from the key vault and make sure the database credentials that you want to use for authentication in Alation are available there.</p>
+</section>
+<section id="create-a-key-vault-and-collect-the-vault-information">
+<h3>Create a Key Vault and Collect the Vault Information<a class="headerlink" href="#create-a-key-vault-and-collect-the-vault-information" title="Permalink to this headline">¶</a></h3>
+<p>If a key vault does not exist, follow these steps to create it:</p>
+<ol class="arabic">
+<li><p>On the homepage of Azure Portal, click <strong>Create a resource</strong>.</p></li>
+<li><p>In the Search box, enter <em>Key Vault</em>.</p></li>
+<li><p>From the results list, choose <strong>Key Vault</strong>. This will open the Key Vault resource page.</p></li>
+<li><p>Click the <strong>Create</strong> button to begin creating a new key vault. This will open a new key vault editor page.</p>
+<blockquote>
+<div><a class="with-border reference internal image-reference" href="../../_images/Azure_KeyVault_12.png"><img alt="../../_images/Azure_KeyVault_12.png" class="with-border" src="../../_images/Azure_KeyVault_12.png" style="width: 350px;" /></a>
+</div></blockquote>
+</li>
+<li><p>Select the appropriate Subscription and Resource group.</p></li>
+<li><p>In the <strong>Key vault name</strong> field, enter a name for your key vault.</p></li>
+<li><p>Make sure that the values for the <strong>Region</strong> and <strong>Pricing tier</strong> fields are correct.</p></li>
+<li><p>Click <strong>Next: Access policy</strong> at the bottom of the page.</p></li>
+<li><p>Add <em>Get</em> and <em>List</em> permissions for <strong>Key permissions</strong>.</p></li>
+<li><p>Add <em>Get</em> and <em>List</em> permissions for <strong>Secret permissions</strong>.</p>
+<a class="with-border reference internal image-reference" href="../../_images/Azure_KeyVault_04.png"><img alt="../../_images/Azure_KeyVault_04.png" class="with-border" src="../../_images/Azure_KeyVault_04.png" style="width: 350px;" /></a>
+</li>
+<li><p>Select your registered application as the principal in the <strong>Select principal</strong> field.</p></li>
+<li><p>Click <strong>Add</strong>. The policy will be added to the key vault.</p></li>
+<li><p>Select <strong>Review + create</strong>. This will start the deployment process for your key vault. After Azure confirms the deployment, go to the resource page for your new key vault.</p></li>
+</ol>
+<blockquote>
+<div><img alt="../../_images/Azure_KeyVault_05.png" class="with-border" src="../../_images/Azure_KeyVault_05.png" />
+</div></blockquote>
+<ol class="arabic" start="14">
+<li><p>On the <strong>Overview</strong> tab of the key vault page, look for <strong>Directory ID</strong> and <strong>Vault URI</strong>. These values are required for configuration on the Alation server. Store these values safely.</p>
+<img alt="../../_images/Azure_KeyVault_13.png" class="with-border" src="../../_images/Azure_KeyVault_13.png" />
+</li>
+<li><p>Next, add the secrets that will be used in the integration with Alation. Click the <strong>Secrets</strong> tab from the sidebar to open the <strong>Secrets</strong> page.</p></li>
+<li><p>You will need to create two secrets for the data source catalogued in Alation: one to store the username and the second to store the password. Click <strong>Generate/Import</strong> to begin creating a secret.</p>
+<img alt="../../_images/Azure_KeyVault_07.png" class="with-border" src="../../_images/Azure_KeyVault_07.png" />
+</li>
+<li><p>In the <strong>Name</strong> field, specify a name for the secret. The Name field serves as the identifier of the secret. This value is required for the configuration in Alation. Store this value safely.</p></li>
+<li><p>In the <strong>Value</strong> field, specify the username of the service account that should be used by Alation to authenticate on the data source.</p></li>
+<li><p>If necessary, set the activation and expiration dates according to your organization’s password policy.</p></li>
+<li><p>Click <strong>Create</strong>.</p>
+<a class="with-border reference internal image-reference" href="../../_images/Azure_KeyVault_08.png"><img alt="../../_images/Azure_KeyVault_08.png" class="with-border" src="../../_images/Azure_KeyVault_08.png" style="width: 350px;" /></a>
+</li>
+<li><p>Create one more secret for the value of the service account password. The value of the Name field will be required for the configuration on the Alation server. Store this value safely.</p></li>
+</ol>
+<p>Next, proceed to configure integration with the Azure key vault on the Alation server: <a class="reference internal" href="../../sources/OpenConnectorFramework/ConfigureSecretsforOCFConnectors/OCFIntegrationWithAzureKeyVault.html#configure-authentication-with-azure-key-vault-for-a-data-source"><span class="std std-ref">Configure Authentication with Azure Key Vault for a Data Source</span></a>.</p>
+</section>
+</section>
+<section id="configuring-integration-with-azure-key-vault-for-a-data-source">
+<h2>Configuring Integration with Azure Key Vault for a Data Source<a class="headerlink" href="#configuring-integration-with-azure-key-vault-for-a-data-source" title="Permalink to this headline">¶</a></h2>
+<p>Follow the steps below to configure your data source to read the service account username and password for metadata extraction (MDE), query log ingestion (QLI), and Sampling and Profiling from an Azure key vault.</p>
+<p>This configuration requires SSH access to the Alation server and access to the setting page of the data source (<em>Server Admin</em> role or <em>Data Source Admin</em> privileges).</p>
+<p>Note that before you perform this configuration, the Service Account section of the General Settings tab of the data source settings page only has the option to enter the username and password. After you enable key vault integration for this data source, the UI of the Service Account section will change and display a dropdown list that will allow for selecting authentication with Azure key vault.</p>
+<p><strong>Before enabling authentication with Azure key vault</strong>:</p>
+<blockquote>
+<div><img alt="../../_images/Azure_KeyVault_09.png" src="../../_images/Azure_KeyVault_09.png" />
+</div></blockquote>
+<p><strong>After enabling authentication with Azure key vault</strong>:</p>
+<blockquote>
+<div><img alt="../../_images/Azure_KeyVault_14.png" src="../../_images/Azure_KeyVault_14.png" />
+</div></blockquote>
+<p>To integrate your data source with an Azure key vault:</p>
+<ol class="arabic">
+<li><p>From the Alation UI, get the ID of the data source: <a class="reference internal" href="../../admins/How-tos/HowToFindDataSourceID.html"><span class="doc">How to Find Data Source ID</span></a>.</p></li>
+<li><p>Make sure you have the required information from Azure portal at hand:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Application (client) ID</p></li>
+<li><p>Application client secret value</p></li>
+<li><p>Key vault Directory ID (Tenant ID)</p></li>
+<li><p>Key vault URI</p></li>
+<li><p>Name of the key vault secret that stores the username of the service account</p></li>
+<li><p>Name of the key vault secret that stores the password of the service account</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Use SSH to connect to the Alation server.</p></li>
+<li><p>Enter the Alation shell:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>/etc/init.d/alation<span class="w"> </span>shell
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>To use an Azure key vault with Alation, the Alation AuthService component must be enabled. Check if it is enabled on your instance using the <strong>alation_conf</strong> command:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alation_conf<span class="w"> </span>alation.authentication.service.enabled
+</pre></div>
+</div>
+<p>The output will show if the parameter is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</div></blockquote>
+</li>
+<li><p>If the <code class="docutils literal notranslate"><span class="pre">alation.authentication.service.enabled</span></code> parameter is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, AuthService is already enabled. If it is set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, change it to <code class="docutils literal notranslate"><span class="pre">True</span></code> using the commands below.</p>
+<blockquote>
+<div><div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Enabling AuthService requires a restart of the Java component, which will cause the Alation UI to reload. Alation recommends to perform this configuration during off-peak hours so that users do not lose their work.</p>
+</div>
+<p>6.1. Change the value to True:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alation_conf<span class="w"> </span>-s<span class="w"> </span>True<span class="w"> </span>alation.authentication.service.enabled
+</pre></div>
+</div>
+</div></blockquote>
+<p>6.2. Deploy the configuration:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alation_action<span class="w"> </span>deploy_conf_all
+</pre></div>
+</div>
+</div></blockquote>
+<p>6.3. Restart the Java component:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alation_supervisor<span class="w"> </span>restart<span class="w"> </span>java:*
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+</li>
+<li><p>After making sure that AuthService is enabled, enter the Django shell:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alation_django_shell
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Run the command below to begin the configuration:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>from<span class="w"> </span>rosemeta.one_off_scripts.azure_keyvault_utils<span class="w"> </span>import<span class="w"> </span>*
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can view the help for the key vault configuration in the console by running the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>show_help<span class="o">()</span>
+</pre></div>
+</div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<p>9. Create a new Azure key vault connection using the
+<code class="docutils literal notranslate"><span class="pre">create_new_azure_keyvault_config</span></code> function. It takes the following mandatory arguments:</p>
+<blockquote>
+<div><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">config_name</span></code>: name for the Azure key vault configuration you are creating. Alation will identify this configuration using this name. It can be used for managing this specific key vault connection and will be required for linking the key vault connection to a specific data source.</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Store the value of the <code class="docutils literal notranslate"><span class="pre">config_name</span></code> property safely. You will need it for managing this key vault connection if necessary.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tenant_id</span></code>: key vault Directory ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vault_url</span></code>: key vault URI</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">client_id</span></code>: application (client) ID of the application registered in Azure for the integration with Alation</p></li>
+</ul>
+<p>Format:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>create_new_azure_keyvault_config<span class="o">(</span><span class="s1">&#39;config_name&#39;</span>,<span class="w"> </span><span class="s1">&#39;tenant_id&#39;</span>,<span class="w"> </span><span class="s1">&#39;vault_url&#39;</span>,<span class="w"> </span><span class="s1">&#39;client_id&#39;</span><span class="o">)</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The order of the arguments cannot be changed and should always be <code class="docutils literal notranslate"><span class="pre">config_name</span></code>, <code class="docutils literal notranslate"><span class="pre">tenant_id</span></code>, <code class="docutils literal notranslate"><span class="pre">vault_url</span></code>, <code class="docutils literal notranslate"><span class="pre">client_id</span></code>. These four values are mandatory.</p>
+<p>Use single quotes when listing the values.</p>
+</div>
+</div></blockquote>
+<p><strong>Example</strong>:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>create_new_azure_keyvault_config<span class="o">(</span><span class="s1">&#39;azure_keyvault&#39;</span>,<span class="w"> </span><span class="s1">&#39;784e800a-4684-4d76-9548-b1jcf312f0ff&#39;</span>,<span class="w"> </span><span class="s1">&#39;https://el-keyvault-for-alation.vault.azure.net/&#39;</span>,<span class="w"> </span><span class="s1">&#39;fe5eb2dc-7b85-4df0-a608-109e879d20bf&#39;</span><span class="o">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+<ol class="arabic" start="10">
+<li><p>Next, you will be prompted to enter the client secret. As you type, the secret will not be displayed in the terminal window. The prompt accepts input from the clipboard. After entering the secret, press Enter. The client secret value is encrypted and stored as an encrypted field.</p></li>
+<li><p>Next, you need to link the key vault connection to the data source. One key vault connection identified with a unique <code class="docutils literal notranslate"><span class="pre">config_name</span></code> can be used for multiple data sources. This configuration object can connect multiple data sources to the same key vault. However, the links between a specific data source and the credentials must be created for each data source. You will use the <code class="docutils literal notranslate"><span class="pre">link_keyvault_to_datasource</span></code> function to create a link between a data source and a key vault. It takes the following arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ds_id</span></code>: the Alation ID for the data source that will use key vault to read the service account credentials</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">keyvault_config_name</span></code>: the value of <code class="docutils literal notranslate"><span class="pre">config_name</span></code> of this Azure key vault configuration</p></li>
+</ul>
+<p><strong>Format</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>link_keyvault_to_datasource<span class="o">(</span>&lt;ds_id&gt;,<span class="w"> </span><span class="s1">&#39;&lt;keyvault_config_name&gt;&#39;</span><span class="o">)</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The order of the arguments cannot be changed. Use single quotes when listing the values.</p>
+</div>
+<p><strong>Example</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>link_keyvault_to_datasource<span class="o">(</span><span class="m">43</span>,<span class="w"> </span><span class="s1">&#39;azure_keyvault&#39;</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>When you link the data source to Azure key vault, the <strong>Service Account</strong> field on the data source General Settings page will display a dropdown allowing Data Source Admins to select Azure key vault as the source of the service account credentials.</p>
+</li>
+<li><p>Exit the Django shell: <code class="docutils literal notranslate"><span class="pre">exit</span></code></p></li>
+<li><p>Exit the Alation shell: <code class="docutils literal notranslate"><span class="pre">exit</span></code></p></li>
+</ol>
+<p>Next, log in to the Alation UI to complete the configuration in the data source settings.</p>
+</section>
+<section id="configuring-authentication-with-azure-key-vault-in-data-source-settings">
+<h2>Configuring Authentication with Azure Key Vault in Data Source Settings<a class="headerlink" href="#configuring-authentication-with-azure-key-vault-in-data-source-settings" title="Permalink to this headline">¶</a></h2>
+<p>Use the steps in this section to configure your data source to read the service account credentials from an Azure key vault.</p>
+<ol class="arabic">
+<li><p>Log in to Alation and go to the settings page of the data source for which you’re setting up authentication with Azure key vault.</p></li>
+<li><p>Open the <strong>General Settings</strong> tab of the settings page and locate the <strong>Service Account</strong> section.</p></li>
+<li><p>Select <strong>Azure Key Vault</strong> from the service account dropdown:</p></li>
+<li><p>Click the <strong>Click here</strong> link next to the setting <strong>Currently saved keyvault identifier pair is…</strong> This will display two input fields, <strong>Keyvault Username Id</strong> and <strong>Keyvault Password Id</strong>:</p>
+<blockquote>
+<div><img alt="../../_images/Azure_KeyVault_10.png" src="../../_images/Azure_KeyVault_10.png" />
+</div></blockquote>
+</li>
+<li><p>As the <strong>Username Id</strong>, enter the name of the Azure key vault secret that stores the username of the database service account.</p></li>
+<li><p>As the <strong>Password Id</strong>, enter the name of the Azure key vault secret that stores the password of the database service account.</p></li>
+<li><p>Click <strong>Save</strong>. These identifiers will be used to look up the actual username and password stored in the Azure key vault.</p></li>
+</ol>
+<p>Now, when a Data Source Admin performs MDE, QLI, Sampling, and Profiling, Alation will read the Service Account credentials from the Azure key vault.</p>
+</section>
+<section id="deactivating-integration-with-azure-key-vault-for-a-data-source">
+<h2>Deactivating Integration with Azure Key Vault for a Data Source<a class="headerlink" href="#deactivating-integration-with-azure-key-vault-for-a-data-source" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to deactivate authentication using Azure key vault for a data source. To deactivate it, on the data source <strong>Settings</strong> page &gt; <strong>General Settings</strong> tab &gt; <strong>Service Account</strong> section, select <strong>Stored Credentials</strong> from the <strong>where to read credentials from</strong> list. This will disable the association with the key vault for this data source. When a Data Source Admin performs the next MDE or QLI or when users run Sampling and Profiling, the authentication will use the basic built-in authentication with the service account credentials stored on the Alation server.</p>
+<blockquote>
+<div><div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>If you deactivate the Azure key vault connection for a data source, make sure to provide valid service account credentials.</p>
+</div>
+</div></blockquote>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 32%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Error</p></th>
+<th class="head"><p>Use case</p></th>
+<th class="head"><p>Solution</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Error verifying DB credentials</p></td>
+<td><p>Admin gets the <em>Error verifying DB
+credentials</em> in the Service Account
+section or in the Job History table
+during for MDE</p></td>
+<td><p>Check the following:</p>
+<ul class="simple">
+<li><p>Ensure the client ID and secret are
+correct.
+Run <code class="docutils literal notranslate"><span class="pre">update_existing_keyvault_config</span></code>
+with all parameters specified to ensure
+this is correct</p></li>
+<li><p>Ensure the credentials specified
+actually exist in the key vault</p></li>
+<li><p>Check <code class="docutils literal notranslate"><span class="pre">authserver.log</span></code> for any
+<em>authserver</em> or <em>keyvault</em> errors.</p></li>
+<li><p>Ensure the credentials in the key vault
+are actually correct.</p></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="updating-the-key-vault-connection-parameters">
+<h2>Updating the Key Vault Connection Parameters<a class="headerlink" href="#updating-the-key-vault-connection-parameters" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to update an existing Azure key vault configuration object that is identified with a unique <code class="docutils literal notranslate"><span class="pre">config_name</span></code>. An Azure configuration object stores the association between the AuthService configuration object (<code class="docutils literal notranslate"><span class="pre">config_name</span></code>) You can update any of the parameters of a configuration, including the value of the client secret.</p>
+<p>To update an existing Azure key vault configuration, perform the following steps:</p>
+<ol class="arabic">
+<li><p>Prepare the values of these properties of the Azure key vault configuration object you are about to update.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">config_name</span></code>: the configuration object name that was provided when this configuration object was created</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tenant_id:</span></code> the key vault Directory ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vault_url</span></code>: the key vault URI</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">client_id</span></code>: the Application (client) ID of the application registered in Azure for the integration with Alation</p></li>
+</ul>
+<p>If you are updating any of them, prepare all the new values. Even if you only want to update the client secret, you still need to pass all the existing values in the update function.</p>
+</div></blockquote>
+</li>
+<li><p>Prepare the new client secret value if it needs to be updated.</p></li>
+<li><p>Use SSH to connect to the Alation server.</p></li>
+<li><p>Enter the Alation shell:</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>/etc/init.d/alation<span class="w"> </span>shell
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Enter the Alation Django shell:</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>alation_django_shell
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Run the command below to begin the configuration:</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>from<span class="w"> </span>rosemeta.one_off_scripts.azure_keyvault_utils<span class="w"> </span>import<span class="w"> </span>*
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<p>You will use the update function <code class="docutils literal notranslate"><span class="pre">update_existing_keyvault_config</span></code> specifying the new and existing mandatory values. You can update the existing values and the client secret value:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="#update-the-configuration-properties-without-updating-the-client-secret-value">Update the configuration properties without updating the client secret value</a></p></li>
+<li><p><a class="reference internal" href="#update-the-client-secret-value">Update the client secret value</a></p></li>
+</ul>
+</div></blockquote>
+<section id="update-the-configuration-properties-without-updating-the-client-secret-value">
+<h3>Update the configuration properties without updating the client secret value<a class="headerlink" href="#update-the-configuration-properties-without-updating-the-client-secret-value" title="Permalink to this headline">¶</a></h3>
+<section id="format">
+<h4>Format<a class="headerlink" href="#format" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>update_existing_keyvault_config<span class="o">(</span>&lt;config_name&gt;,<span class="w"> </span>&lt;tenant_id&gt;,<span class="w"> </span>&lt;vault_url&gt;,<span class="w"> </span>&lt;client_id&gt;<span class="o">)</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The order of the properties cannot be changed.</p>
+</div>
+</section>
+<section id="example">
+<h4>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>update_existing_keyvault_config<span class="o">(</span><span class="s1">&#39;azure_keyvault&#39;</span>,<span class="w"> </span><span class="s1">&#39;784e800a-4786-4d74-9358-b1jcf312l0ff&#39;</span>,<span class="w"> </span><span class="s1">&#39;https://el-keyvault-for-alation.vault.azure.net/&#39;</span>,<span class="w"> </span><span class="s1">&#39;fa5eb1dc-7b67-4dc0-a608-108e878d22bd&#39;</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>This command will update the existing values of the mandatory configuration properties.</p>
+</section>
+</section>
+<section id="update-the-client-secret-value">
+<h3>Update the client secret value<a class="headerlink" href="#update-the-client-secret-value" title="Permalink to this headline">¶</a></h3>
+<section id="id1">
+<h4>Format<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>update_existing_keyvault_config<span class="o">(</span>&lt;config_name&gt;,<span class="w"> </span>&lt;tenant_id&gt;,<span class="w"> </span>&lt;vault_url&gt;,<span class="w"> </span>&lt;client_id&gt;,<span class="w"> </span><span class="nv">update_client_secret</span><span class="o">=</span>True<span class="o">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h4>Example<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>update_existing_keyvault_config<span class="o">(</span><span class="s1">&#39;azure_keyvault&#39;</span>,<span class="w"> </span><span class="s1">&#39;784e800a-4786-4d74-9358-b1jcf312l0ff&#39;</span>,<span class="w"> </span><span class="s1">&#39;https://el-keyvault-for-alation.vault.azure.net/&#39;</span>,<span class="w"> </span><span class="s1">&#39;fa5eb1dc-7b67-4dc0-a608-108e878d22bd&#39;</span>,<span class="w"> </span><span class="nv">update_client_secret</span><span class="o">=</span>True<span class="o">)</span>
+</pre></div>
+</div>
+<p>This command will result in a prompt to specify the new secret value without displaying it in the console.</p>
+</section>
+</section>
+<section id="exit-the-shell">
+<h3>Exit the Shell<a class="headerlink" href="#exit-the-shell" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Exit the Django shell: <code class="docutils literal notranslate"><span class="pre">exit</span></code></p></li>
+<li><p>Exit the Alation shell: <code class="docutils literal notranslate"><span class="pre">exit</span></code></p></li>
+</ol>
+<img alt="../../_images/Azure_KeyVault_11.png" src="../../_images/Azure_KeyVault_11.png" />
+</section>
+<section id="deleting-a-key-vault-configuration">
+<h3>Deleting a Key Vault Configuration<a class="headerlink" href="#deleting-a-key-vault-configuration" title="Permalink to this headline">¶</a></h3>
+<p>At this time, deleting a key vault configuration from the Alation server is not supported.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  
+<div class="navigation-bar">
+
+    <div class="navigation navigation--prev">
+        
+        <a class="navigation__link" href="TroubleshootAWS_MDEwithIAMsetup.html">
+            <button class="navigation__button">
+                <i class="icon icon-left"></i>
+            </button>
+            <div class="navigation__title">
+                <span class="heading">Previous</span> <br />Troubleshoot the Configuration of MDE with IAM Authentication
+            </div>
+        </a>
+        
+    </div>
+
+    <div class="navigation navigation--next">
+        
+        <a class="navigation__link" title="Accesskey Alt(+Shift)+p" accesskey="p" href="../CustomDB/index.html">
+            <div class="navigation__title">
+                <span class="heading">Next</span> <br />Custom DB
+            </div>
+            <button class="navigation__button" title="Accesskey Alt(+Shift)+n" accesskey="n">
+                <i class="icon icon-right"></i>
+            </button>
+        </a>
+        
+    </div>
+
+</div>
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+    <div class="wy-nav-side wy-nav-secondary">
+      <div class="wy-side-scroll">
+        <div class="wy-side-scroll__content">
+          <div class="wy-menu-secondary">
+              <div class="comments">
+    <a href="mailto:no-reply-docs-feedback@alation.com?subject=Documentation Feedback on datasources/AuthenticationForExtraction/IntegrationWithAzureKeyVault&body=Alation%20welcomes%20your%20comments%20on%20typos,%20content%20accuracy%20and%20completeness,%20and%20whether%20you%20found%20this%20page%20helpful.%20You%20will%20not%20receive%20a%20reply%20to%20this%20email.">
+        <i class="icon icon-envelope" aria-hidden="true"></i>Request docs changes
+    </a>
+    <a href="#open-modal-pdf">
+        <i class="icon icon-pdf" aria-hidden="true"></i>Download PDF
+    </a>
+</div>
+              
+                <p class="wy-menu-secondary-header">On this page</p>
+                <ul>
+<li><a class="reference internal" href="#">Integration with Azure Key Vault for Data Source Authentication</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#registering-an-application-for-azure-key-vault-integration">Registering an Application for Azure Key Vault Integration</a><ul>
+<li><a class="reference internal" href="#register-an-application-and-get-the-client-id-and-secret-value">Register an Application and Get the Client ID and Secret Value</a></li>
+<li><a class="reference internal" href="#create-a-key-vault-and-collect-the-vault-information">Create a Key Vault and Collect the Vault Information</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuring-integration-with-azure-key-vault-for-a-data-source">Configuring Integration with Azure Key Vault for a Data Source</a></li>
+<li><a class="reference internal" href="#configuring-authentication-with-azure-key-vault-in-data-source-settings">Configuring Authentication with Azure Key Vault in Data Source Settings</a></li>
+<li><a class="reference internal" href="#deactivating-integration-with-azure-key-vault-for-a-data-source">Deactivating Integration with Azure Key Vault for a Data Source</a></li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li><a class="reference internal" href="#updating-the-key-vault-connection-parameters">Updating the Key Vault Connection Parameters</a><ul>
+<li><a class="reference internal" href="#update-the-configuration-properties-without-updating-the-client-secret-value">Update the configuration properties without updating the client secret value</a><ul>
+<li><a class="reference internal" href="#format">Format</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#update-the-client-secret-value">Update the client secret value</a><ul>
+<li><a class="reference internal" href="#id1">Format</a></li>
+<li><a class="reference internal" href="#id2">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#exit-the-shell">Exit the Shell</a></li>
+<li><a class="reference internal" href="#deleting-a-key-vault-configuration">Deleting a Key Vault Configuration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              
+            </div>
+          </div>
+      </div>
+    </div>
+
+  </div>
+
+  
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+  
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../../_static/copybutton.js"></script>
+      <script type="text/javascript" src="../../_static/js/rtd_sphinx_search.min.js"></script>
+  
+  <script type="text/javascript" src="../../_static/searchtools.js"></script> <script type="text/javascript" id="idPiwikScriptPlaceholder"></script><script type="text/javascript" src="../../_static/js/main.bundle.js"></script>
+  <script type="text/javascript" src="../../_static/js/runtime.bundle.js"></script>
+
+  
+  
+
+  
+    <div id="open-modal-pdf" class="modal-window">
+<div>
+  <a href="#" title="Close" class="modal-close">Close</a>
+  <h4>Alation Documentation PDF</h4>
+  <p>This PDF contains all our documentation and is more than <b>120 MB</b> in size. We recommend using an ethernet or Wi-Fi connection for downloading.</p>
+  <br>
+  <div class="modal-buttons">
+    <a href="https://pdf-docs.alation.com/AlationUserDocs.pdf" class="btn-cta btn-cta--primary" target="_blank">
+      Download PDF
+    </a>
+    <a href="#" title="Close" class="btn-cta">Cancel</a>
+  </div>
+</div>
+  
+
+</body>
+</html>
+<!--3.6.17-->

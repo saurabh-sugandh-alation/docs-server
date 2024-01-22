@@ -1,0 +1,111 @@
+Install OCF BI Connectors
+===============================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from release 2020.3.x*
+
+.. note::
+
+    In releases 2020.3.x up to 2021.2.x, the installation of OCF connectors is done on the backend of the Alation server. Starting with release 2021.3, connectors can be installed using the  **Connectors Dashboard** in **Admin Settings** > **Server Admin** > **Manage Connectors**.
+
+Connector Manifest File
+---------------------------
+
+Each out-of-the-box OCF connector package includes a manifest file with metadata about the connector in the JSON format. In the manifest file, the value of the key ``name`` in the ``source`` JSON object of the name of the connector as it will appear in the Alation UI.
+
+Example:
+
+    .. image:: ../../_static/OCF_Install_Connector01.png
+        :width: 350px
+
+
+Installation
+----------------
+
+    .. important::
+
+          Installation of an OCF connector requires Alation Connector Manager to be installed as a prerequisite. If this has not been done on your instance, install the Connector Manager before installing any OCF connectors: :doc:`Install Alation Connector Manager <../../sources/OpenConnectorFramework/OCFInstallAlationConnectorManager>`.
+
+STEP 1: Install an OCF Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Copy the Zip file with the connector package to a directory on the Alation host accessible from **inside the Alation Chroot**, for example **/tmp**.
+
+2. On the Alation host, install the connector from the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        sudo su alation
+        cd /tmp
+        alation_ypireti install --path <connector-x.x.x.x.zip>
+
+
+An example of a successful output message is shown below:
+
+    .. image:: ../../_static/PowerBI_21.png
+                :width: 600px
+
+.. important::
+
+      OCF connectors that are installed or updated on the Alation version 2021.2 or newer are copied to the backup path at **/opt/alation/site/site_data/ocf/connectors/** (path inside the shell) and backed up by the Alation backup process.
+
+STEP 2: Enable OCF Connector Usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If this has not been done yet on your instance, enable the OCF connector-based BI Servers in Alation.
+
+In order to use OCF connectors in Alation, the following two **alation_conf** parameters must be set to ``True``:
+
+    - ``alation.feature_flags.enable_gbm_v2_connector_strategy``
+    - ``alation.feature_flags.enable_lineage_v2``
+
+To check their values on your instance, run the following commands from the Alation shell:
+
+    .. code-block:: Bash
+
+        alation_conf alation.feature_flags.enable_gbm_v2_connector_strategy
+        alation_conf alation.feature_flags.enable_lineage_v2
+
+This will print the current parameter values to the console.
+
+To set the values:
+
+1. To set the parameter ``alation.feature_flags.enable_gbm_v2_connector_strategy``, from the the Alation shell, run the following command:
+
+    .. code-block:: Bash
+
+        alation_conf alation.feature_flags.enable_gbm_v2_connector_strategy -s True
+
+
+2. Note that the parameter **alation_conf alation.feature_flags.enable_lineage_v2** enables the Lineage V2 framework in the Alation Catalog. On how to set it, see :doc:`Enabling Lineage V2 <../../installconfig/LineageV2/EnableLineageV2>`. This parameter does not need enabling in release 2021.2 and newer releases (enabled by default).
+
+After the OCF connector was installed and the required parameters were enabled, you can add BI sources to the Alation Catalog using this OCF connector.
+
+Configuration in Alation
+----------------------------
+
+Add an OCF BI Source to Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This section describes the steps to add an BI source that uses an installed OCF connector. Such sources will have the type ``CONNECTOR`` in Alation. The type is displayed in the **Properties** field of the BI server catalog page:
+
+    .. image:: ../../_static/OCF_Install_Connector02.png
+
+To add a BI source:
+
+1. Create a new BI server source in Alation: click **Apps > Sources > Add > BI Server**:
+
+    .. image:: ../../_static/OCF_Install_Connector03.png
+
+2. From the **Select a Business Intelligence server type** list, select the name of the connector you have installed. Provide a **Title** and a **Description** for the new BI server source and click **Add**:
+
+    .. image:: ../../_static/OCF_Install_Connector04.png
+        :width: 400px
+
+3. The BI source Settings page will open. Specify the settings and perform extraction. For information about settings of specific OCF connectors, refer to documentation describing each available connector:
+
+    - :doc:`Looker Connector: Install and Configure </sources/OpenConnectorFramework/Looker/LookerConnectorInstallAndConfigure>`
+    - :doc:`Power BI Connector: Install and Configure </sources/OpenConnectorFramework/PowerBIOCFConnector/PowerBIConnectorInstallAndConfigure>`
+    - :doc:`SAP BusinessObjects Connector: Install and Configure </sources/OpenConnectorFramework/SAPBOConnector/SAPBOConnectorInstallAndConfigure>`

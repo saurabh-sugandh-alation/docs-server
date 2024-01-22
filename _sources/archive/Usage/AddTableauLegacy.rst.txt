@@ -1,0 +1,152 @@
+Add Tableau Sources on Legacy Framework
+==============================================
+
+*Applies to releases V R5 (5.9.x) - V R7 (5.12.x)*
+
+Already existing Tableau sources continue to use the Legacy model unless you choose to migrate them to GBM V2.
+
+This requires the role of the Server Admin.
+
+To add a Tableau Server source to Alation,
+
+#. Make sure you have the required information at hand. For details, see :doc:`Prerequisites for Adding a Tableau Source to Alation <../../bisources/AddTableauServer/PrerequisitesForAddingTableauSource>`.
+
+#. Sign in to Alation as a Server Admin and on the main toolbar click **Sources** to open the sources page.
+
+#. Follow the generic instruction in :doc:`Add a BI Server as a Source <../../bisources/AddBISources/AddingaBIServerasaSource>` until you are on the Settings page for your Tableau source.
+
+   .. image:: ../../_static/bi_image16.png
+       :width: 447.50px
+       :align: center
+       :height: 636.31px
+       :alt: image
+
+#. Parameters in the **Server Connection** section of the Settings page will be inherited from the first setup step. You now need to provide the parameters for metadata extraction and lineage:
+
+   .. tabularcolumns:: |p{5cm}|p{10cm}|
+
+   .. table::
+      :widths: auto
+      :class: longtable
+
+      ================================== =====================================================================================================================
+
+      **PostgreSQL Connection**
+
+      Host                               Hostname for the Tableau
+                                          PostgreSQL database
+
+      Database Name                      Name of the Tableau PostgreSQL
+                                          database. ``workgroup`` will be used
+                                          by default.
+
+      Port                               Port to connect to Tableau
+                                          PostgreSQL database. **8060** will be
+                                          used by default.
+
+      Username and password              Service account credentials for
+                                          Tableau PostgreSQL
+                                          database. ``readonly`` is the default
+                                          account.
+
+      **Extraction Settings**
+
+      Timeout                            Set a maximum time interval (in
+                                          seconds) for Alation to extract a
+                                          single preview item (for example,
+                                          a thumbnail, a PNG or a CSV
+                                          file). The default is 10s, which
+                                          is usually enough time for
+                                          successful extraction.
+
+                                          If extracting a preview item
+                                          takes longer than this timeout,
+                                          Alation will drop the object and
+                                          try to extract the next one.
+                                          This prevents extraction from
+                                          stalling because of a faulty
+                                          object.
+
+      **Selective Extraction**
+
+      Number of Workbooks                The maximum number of workbooks
+                                          to extract during a single
+                                          extraction. This parameter helps
+                                          to balance the load on the
+                                          Tableau server during extraction.
+
+      Extract High-Resolution Previews   Enable this parameter if you want
+                                          to extract high-resolution
+                                          previews. Extraction of
+                                          high-res previews can demand more
+                                          resources on the Tableau server.
+
+                                          If this parameter is disabled,
+                                          Alation will extract
+                                          lower-resolution previews.
+
+      Extract CSV Files                  Enable this parameter if you want
+                                          the CSV files to be extracted.
+
+                                          Some Tableau reports are created
+                                          from source data in a CSV file.
+                                          If such a file is extracted with
+                                          the reports that use it as
+                                          source, Alation can catalog
+                                          the dimensions and measures used
+                                          to generate these reports.
+
+                                          Extracting CSV files
+                                          can demand more resources on the
+                                          Tableau server.
+
+      Disable Permission Enforcement     Select this checkbox if you want
+                                          the extracted Tableau metadata to
+                                          be viewable by all Alation users
+                                          without restriction.
+
+                                          Clear this checkbox if you want
+                                          Alation to respect the user
+                                          permissions defined on the
+                                          Tableau server. If you use
+                                          this option, Alation will apply
+                                          the same permissions that are
+                                          assigned to the users on Tableau
+                                          server. Only users who have
+                                          access to objects on Tableau
+                                          server will have access to the
+                                          same objects metadata in Alation.
+
+      Automated and Manual Extraction     See :ref:`Scheduling Extraction <Extracting_BI_Server_Metadata-Schedule_Extraction>`.
+      ================================== =====================================================================================================================
+
+
+5. After you have specified the parameters for extraction, you can perform selective or full extraction from Tableau.
+
+Full Extraction
+-------------------
+
+Full extraction from Tableau on Legacy model is a little different from
+the Generic scenario: there is no toggle to enable selective extraction,
+and Alation does not perform full extraction by default.
+
+To perform full extraction,
+
+#. On the **Settings** page, under **Extraction Settings/Selective Extraction**, click **Get List of Projects**.
+#. Refresh the browser window.
+#. Hover over the **Site/Project** title and click **Add+** on the right to view the list of the projects fetched.
+#. From this list, select all the projects.
+
+   .. image:: ../../_static/bi_image10.png
+       :width: 551.50px
+       :align: center
+       :height: 177.65px
+       :alt: image
+
+#. Click **Run Extraction Now** to begin extraction
+
+Selective Extraction
+----------------------------
+
+Selective extraction from Tableau follows the generic scenario for all
+BI Tools: see :ref:`Selective Extraction <Extracting_BI_Server_Metadata-Selective_Extraction>`.

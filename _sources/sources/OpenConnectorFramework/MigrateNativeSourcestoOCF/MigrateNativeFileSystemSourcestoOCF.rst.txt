@@ -1,0 +1,71 @@
+Migrate Native File System Sources to OCF Connectors
+=========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The native File System sources can be migrated to the OCF connector using the single data source method.
+
+.. note::
+
+      Bulk migration is not supported for File System sources.
+
+Prerequisites
+-------------------
+
+Before performing the migration:
+
+    - Migration capabilities are available from the Alation version 2023.1.5 and later for migration from the UI. However, for HDFS OCF connector, migration capability is available only from the Alation version 2023.3.2 and later.
+
+    - You must first install the relevant OCF connector on your Alation instance. See :doc:`/sources/OpenConnectorFramework/ManageConnectors` for directions. Make sure that the connector version is the latest.
+
+    - Make sure you have saved the settings information for your File System source or made screenshots of its settings of the File System sources that you want to migrate.
+
+    - Make sure that the MDE or sampling jobs are not running while you perform the migration.
+
+    - Set up the :doc:`Inventory Configuration for Amazon S3 </sources/OpenConnectorFramework/AWSS3/S3OCFConnectorInstallandConfigure>` and  :doc:`Inventory Configuration for Azure Blob Storage </sources/OpenConnectorFramework/AzureBlobStorage/AzureBlobStorageOCFConnectorInstallandConfigure>` as per their requirement before migrating, if they fail to do that then MDE will not work post-migration.
+
+Limitations
+-----------------
+
+    - For Amazon S3:
+
+          - Migration of native File System source with IAM role-based authentication to OCF is supported from Alation version **2023.3 and later**.
+
+    - For Amazon S3 and Azure Blob Storage:
+
+          - **Path Prefixes to Extract** field configuration will not be available post-migration as it is not supported in OCF. Users can avail this feature using the inventory configuration method.
+
+
+Single Data Source Migration
+----------------------------------
+
+Supported Data Sources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The File System sources listed in the following table are supported for single data source migration of the File System sources to the OCF connector:
+
++------------------------------------+---------------------------------+
+| Native File System Source          | Equivalent OCF Connector        |
++====================================+=================================+
+| Amazon S3                          | Amazon S3 OCF connector         |
++------------------------------------+---------------------------------+
+| Azure Blob Storage                 | Azure Blob Storage OCF connector|
++------------------------------------+---------------------------------+
+| HDFS                               | HDFS OCF connector              |
++------------------------------------+---------------------------------+
+
+Single Data Source Migration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/SingleDataSourceMigration.rst
+
+Post Migration Activity
+------------------------------
+
+  - For Amazon S3:
+
+        - If STS configurations are used in the native file system source, then configuration apart from Role ARN needs to be performed manually. See :doc:`General Settings </sources/OpenConnectorFramework/AWSS3/S3OCFConnectorInstallandConfigure>` for the STS configuration details.
+        - Configure :doc:`Destination Bucket Configuration </sources/OpenConnectorFramework/AWSS3/S3OCFConnectorInstallandConfigure>` manually.
+        - If you are using IAM role-based authentication, after migration perform the steps in :doc:`IAM role-based authentication </sources/OpenConnectorFramework/ConfigureAuthWithIAMRole>` to configure manually.
+
+  - For Azure Blob Storage, :doc:`Configure Destination Container and Inventory Rule Name </sources/OpenConnectorFramework/AzureBlobStorage/AzureBlobStorageOCFConnectorInstallandConfigure>` information.

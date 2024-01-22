@@ -1,0 +1,32 @@
+Active and Inactive Users
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query retrieves Alation users and marks them as active or inactive based on the number of days since their last visit.
+
+.. code-block:: sql
+
+  -- User active/inactive
+  SELECT
+        AU.user_name,
+        MAX(DATE(AV.timestamp)) AS lastVisitDate,
+        CURRENT_DATE - MAX(DATE(AV.timestamp)) AS daysBecauseLastLogin,
+        -- If a user has not logged in for more than 60 days, they can be marked as inactive
+        CASE
+              WHEN (CURRENT_DATE - MAX(DATE(AV.timestamp))) > 60 THEN 'Inactive'
+              WHEN (CURRENT_DATE - MAX(DATE(AV.timestamp))) <= 60 THEN 'Active'
+        END AS activityFlag
+  FROM
+        public.alation_visits AS AV
+  JOIN
+        public.alation_user AS AU
+        ON
+              AU.user_id = AV.user_id
+  WHERE
+        AU.is_active = True
+  GROUP BY
+        AU.user_name;
+ 

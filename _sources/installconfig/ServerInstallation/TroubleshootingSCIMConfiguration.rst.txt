@@ -1,0 +1,252 @@
+Troubleshooting SCIM Configuration
+======================================
+
+*Applies from release 2021.3*
+
+Logs
+---------
+
+SCIM-related API calls are logged at different logger levels (Debug, Info, and Error) in different files in **site/logs/** (path inside the Alation Chroot):
+
+    - **scim-error.log**: Logs the unexpected exceptions
+    - **scim-info.log**: SCIM configuration errors and exceptions, authentication errors, and received API requests.
+    - **scim-debug.log**: application behaviors pertaining to user lifecycle and group lifecycle.
+
+
+Checking the Configuration
+----------------------------
+
+View SCIM Credentials
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The currently set SCIM service account credentials can be viewed from the Alation Django shell. To view the service account credentials for SCIM:
+
+1. On the Alation host, enter the Alation shell and then enter the Django shell:
+
+    .. code-block:: Bash
+
+        sudo etc/init.d/alation shell
+        alation_django_shell
+
+2. From the Django shell, run the following code:
+
+    .. code-block:: Bash
+
+        from rosemeta.utils.users_and_groups.configuration_utils import get_scim_basic_auth_info
+
+        get_scim_basic_auth_info()
+
+This will print the credentials to the console.
+
+View SCIM Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SCIM configuration values are saved in **alation_conf**. To check the currently set values, you can use the **alation_conf** command and the corresponding parameter name: :doc:`Viewing SCIM Configuration in alation_conf <../../installconfig/ServerInstallation/ViewSCIMConfiguration>`.
+
+.. _TroubleShooting_SCIM-Allow_Okta:
+
+Allowing Okta IP Addresses
+---------------------------------
+
+Issue in Okta
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the Okta user interface, when testing the connection between Alation and Okta during SCIM configuration, the following error occurs:
+
+    .. code-block:: Bash
+
+        Error Authenticating: Null
+
+Solution
+^^^^^^^^^^^^^^^^^
+
+1. Check the basic authentication username and password saved within Django.
+2. Check the SCIM-related information in the SCIM application.
+3. Check ``alation-debug.log`` for any authentication-specific errors.
+
+If none of the above checks renders a solution, this may be a network issue. The SCIM protocol requires network access to the Alation instance in order to send user and group packages to the corresponding REST API endpoint. To allow Okta to reach Alation, you need to allow access from the Okta IP address range relevant to your region to the network hosting the Alation server. Refer to the following Okta documentation for more details:
+
+    - `Okta IP address allow list <https://help.okta.com/en/prod/Content/Topics/Security/ip-address-allow-listing.htm>`_.
+
+Test the connection again after you have enabled network access from the Okta IP addresses.
+
+.. _TroubleShooting_SCIM-Allow_Azure:
+
+Allowing Azure AD IP Addresses
+--------------------------------------
+
+Issue in Azure AD
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the Azure portal interface, when testing the connection between Alation and the Azure application during SCIM configuration, the following error occurs:
+
+    .. code-block:: Bash
+
+        Error code: systemForCrossDomainIdentitiyManagementCredentialValidationUnavilable
+        Details: We received this unexpected response from your application:
+        Message: An error occurred while sending the request
+
+Solution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Check the basic authentication username and password saved within Django.
+2. Check the SCIM-related information.
+3. Check alation-debug.log for any authentication-specific errors.
+
+If none of the above checks renders a solution, this may be a network issue:
+
+    - The Alation server in your network does not allow traffic from Azure AD
+    - Azure AD cannot resolve the DNS of the SCIM endpoint of the Alaiton server.
+
+You need to ensure that the network policy in your network allows access from the Azure AD IP addresses for the Azure public cloud.
+
+Find the Azure AD IP Range
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Azure AD provisioning service currently operates using the IP ranges for Azure Active Directory as listed in `Azure IP Ranges and Service Tags – Public Cloud <https://www.microsoft.com/en-us/download/details.aspx?id=56519&WT.mc_id=rss_alldownloads_all>`_.
+
+    .. important::
+
+        The IPs in this list change every week. Alation strongly recommends adding an automation to regularly refresh the IPs in the load balancer security group.
+
+In the file you download from Azure, find the ``AzureActiveDirectory`` tag and the IPs listed under this tag. The screenshot below shows an example of the IP address range as can be seen in the file.
+
+    .. image:: ../../_static/SCIM_sync_prereq.png
+
+
+Add Azure IPs to the Security Group of the Load Balancer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To allow traffic from the Azure AD provisioning service to the Alation server on your network, add the Azure IP range for ``AzureActiveDirectory`` to the security group of the load balancer of the network that hosts the Alation server.
+
+After the IPs are added the connection test should be successful.
+
+If not, this could be a DNS issue. Azure should be able to resolve the REST API endpoint of the Alation instance used by SCIM. This endpoint follows this format: ``https://mycatalog.alationdata.com/scim/v2/``. Use the tips below to check if Azure AD can reach Alation.
+
+Check if Azure AD Can Access Alation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run ``dig <alation server name>`` from the Azure AD network to check if it can access the Alation server.
+
+The screenshot below shows the output when we are not able to get an IP for the DNS name.
+
+    .. image:: ../../_static/SCIM_sync_prereq2.png
+
+If you get a similar output, this may be due to the fact that the server can only be accessed through the internal VPN. Compare the output that shows that the DNS is successfully resolved and that returns IP addresses:
+
+    .. image:: ../../_static/SCIM_sync_prereq3.png
+
+The solution will be specific to your network configuration. You can also contact Alation Support to help find a solution.
+
+Error Messages
+-----------------
+
+Alation follows exception handling as prescribed in the `SCIM specification <https://datatracker.ietf.org/doc/html/rfc7644#section-3.12>`_ that defines exception types. Use the table below to interpret exceptions found in the logs.
+
+.. collapse:: Error Messages Table
+
+   .. table::
+      :widths: auto
+      :class: longtable
+
+      +---------------------------+---------------------------+------------------------+------------------------+
+      | Symptoms                  | Example of Error Message  | Cause                  | Resolution             |
+      +===========================+===========================+========================+========================+
+      | Admin changes a username  | Exception - Integrity:    | The username was       | Change the username    |
+      | in the IdP but the change | Can't update username     | updated to a username  | to a username value    |
+      | is not reflected in       | to <username>, user       | that already exists    | that does not exist    |
+      | Alation after the SCIM    | with that name already    | in Alation             | in Alation             |
+      | push                      | exists                    |                        |                        |
+      +---------------------------+---------------------------+------------------------+------------------------+
+      | Admin does not see        | Exception - NotFound:     | The user with UUID     | Re-assign the user     |
+      | a user in the SCIM group  | Not found user by         | <uid> is not found     | to the SCIM app in the |
+      | in Alation                | identifier <uid>          | in Alation.            | IdP                    |
+      |                           |                           |                        |                        |
+      | An update to a user       |                           |                        |                        |
+      | profile is not reflected  |                           |                        |                        |
+      | in Alation                |                           |                        |                        |
+      |                           |                           |                        |                        |
+      | Un-assigning a user from  |                           |                        |                        |
+      | the SCIM app did not      |                           |                        |                        |
+      | deactivate this user in   |                           |                        |                        |
+      | Alation                   |                           |                        |                        |
+      +---------------------------+---------------------------+------------------------+------------------------+
+      | Users are not synced to   | Exception - InvalidValue: | The *userName* field   | Set *userName* as user |
+      | Alation                   | Required userName field   | is missing             | resource identifier    |
+      |                           | is missing                |                        | in the IdP             |
+      +---------------------------+---------------------------+------------------------+------------------------+
+      | Admin changes a Group     | Exception - Integrity:    | The *displayName* of a | Change the group       |
+      | name in the IdP but this  | Can't update displayName  | Group is updated       | *displayName* to a     |
+      | change is not reflected   | to <name>, group with     | to a name which        | value that does not    |
+      | in Alation after the SCIM | that name already exists  | already exists         | exist in Alation       |
+      | push                      |                           | in Alation             |                        |
+      +---------------------------+---------------------------+------------------------+------------------------+
+      | Admin does not see a SCIM | Exception - NotFound:     | The group with UUID    | Re-push the group      |
+      | group in Alation          | Not found group by        | <uid> is not not found | in the IdP             |
+      |                           | identifier <uid>          | in Alation             |                        |
+      | *DisplayName* updated in  |                           |                        |                        |
+      | the IdP for a group is    |                           |                        |                        |
+      | not updated in Alation    |                           |                        |                        |
+      |                           |                           |                        |                        |
+      | Updated group members are |                           |                        |                        |
+      | not updated in Alation    |                           |                        |                        |
+      +---------------------------+---------------------------+------------------------+------------------------+
+      | Authentication errors     | Exception - UnAuthorized: | Username and password  | Check the SCIM client  |
+      |                           | Authentication            | set up in Alation for  | credentials in both    |
+      |                           | credentials were not      | the SCIM client and    | Alation and the IdP.   |
+      |                           | provided                  | the credentials        | Make sure they match   |
+      |                           |                           | provided for SCIM      |                        |
+      |                           | Exception - UnAuthorized: | Basic Auth in the IdP  |                        |
+      |                           | Authentication Failed     | do not match           |                        |
+      |                           | for user <user> Incorrect |                        |                        |
+      |                           | username or password      |                        |                        |
+      +---------------------------+---------------------------+------------------------+------------------------+
+      | Bad API request errors    | Sync from directory       | SCIM sync is not       | Enable SCIM sync in    |
+      |                           | provider flag is off or   | enabled                | the Alation Django     |
+      |                           | protocol flag is not      |                        | shell                  |
+      |                           | SCIM on the Alation       |                        |                        |
+      |                           | server. Please make sure  |                        |                        |
+      |                           | enable sync from          |                        |                        |
+      |                           | directory provider flag   |                        |                        |
+      |                           | and choose SCIM as        |                        |                        |
+      |                           | protocol                  |                        |                        |
+      |                           |                           |                        |                        |
+      |                           | SAML authentication mode  |                        |                        |
+      |                           | is disabled at Service    |                        |                        |
+      |                           | Provider (Alation).       |                        |                        |
+      |                           | Please use SAML           |                        |                        |
+      |                           | authentication method     |                        |                        |
+      |                           | in Alation                |                        |                        |
+      +---------------------------+---------------------------+------------------------+------------------------+
+      | Filter query errors       | Exception - InvalidFilter:| Filtering users or     | Verify the resource    |
+      |                           | Incorrect filtering       | groups resource format | format set in the IdP  |
+      |                           | format. More info <...>   | is incorrect           | or raise a Support     |
+      |                           |                           |                        | ticket for Alation     |
+      |                           | Exception - InvalidFilter:|                        | to review the errors   |
+      |                           | Invalid filter operation  |                        | and propose a solution |
+      |                           | or unsupported operator.  |                        |                        |
+      |                           | Supported operation:      |                        |                        |
+      |                           | ['eq']                    |                        |                        |
+      |                           |                           |                        |                        |
+      |                           | Exception - InvalidFilter:|                        |                        |
+      |                           | Invalid filter attribute. |                        |                        |
+      |                           | Only support userName     |                        |                        |
+      |                           | for users and displayName |                        |                        |
+      |                           | for groups.               |                        |                        |
+      +---------------------------+---------------------------+------------------------+------------------------+
+      | PATCH method Bad request  | Exception - BadRequest:   | The patch request does | Verify the IdP         |
+      |                           | PATCH call made without   | not follow the SCIM    | settings               |
+      |                           | operations array          | specification or       | or raise a Support     |
+      |                           |                           | is not supported by    | ticket for Alation     |
+      |                           | Exception - InvalidFilter:| Alation                | to review the errors   |
+      |                           | Unknown PATCH op          |                        | and propose a solution |
+      |                           |                           |                        |                        |
+      |                           | Exception - InvalidFilter:|                        |                        |
+      |                           | "value" must be specified |                        |                        |
+      |                           | during "add" PATCH calls  |                        |                        |
+      |                           |                           |                        |                        |
+      |                           | Exception - NoTarget:     |                        |                        |
+      |                           | "path" must be specified  |                        |                        |
+      |                           | during "remove" PATCH     |                        |                        |
+      |                           | calls                     |                        |                        |
+      +---------------------------+---------------------------+------------------------+------------------------+

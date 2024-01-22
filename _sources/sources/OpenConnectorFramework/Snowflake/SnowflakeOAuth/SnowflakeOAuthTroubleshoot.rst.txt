@@ -1,0 +1,182 @@
+Authorization Error Messages
+====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+In case the OAuth configuration is incorrect and does not match the Authorization Server configurations, you may get authorization errors in Alation. The error usually contains details about possible causes and may include some troubleshooting tips.
+
+Authorization Errors
+------------------------
+
+.. tabularcolumns:: |p{5cm}|p{10cm}|
+
+.. table::
+   :widths: auto
+   :class: longtable
+
+   +------------------------------------------------+---------------------------------------------------------------+
+   | Error                                          | Description                                                   |
+   +================================================+===============================================================+
+   | Authorization terminated unexpectedly.         | This message is shown:                                        |
+   |                                                |                                                               |
+   |                                                | - If the redirect browser window or tab is manually closed    |
+   |                                                |   before authorization completes;                             |
+   |                                                |                                                               |
+   |                                                | - The Client ID specified in the OAuth configuration may be   |
+   |                                                |   incorrect;                                                  |
+   |                                                |                                                               |
+   |                                                | - The authorization endpoint may be incorrect.                |
+   |                                                |                                                               |
+   |                                                | Check the OAuth configuration in Alation and ensure that you  |
+   |                                                | are passing the correct Client ID, authorization endpoint.    |
+   +------------------------------------------------+---------------------------------------------------------------+
+   | The authorization server reported a failed     | If authorization fails, the authorization server may respond  |
+   | authorization attempt:                         | with error details which will be listed after                 |
+   |                                                | such an error message. Examples:                              |
+   |                                                |                                                               |
+   |                                                | - Invalid scope defined as Default Scope in the data source   |
+   |                                                |   OAuth configuration;                                        |
+   |                                                |                                                               |
+   |                                                | - Invalid scope defined as Refresh Scope in the data source   |
+   |                                                |   OAuth configuration;                                        |
+   |                                                |                                                               |
+   |                                                | - A Snowflake role is specified in the connection URI and does|
+   |                                                |   not map to an allowed scope on the authorization server;    |
+   |                                                |                                                               |
+   |                                                | - The authorization step is canceled by some UI control on an |
+   |                                                |   authorization, authentication, or consent screen;           |
+   |                                                |                                                               |
+   |                                                | - The authorization step is canceled due to an authentication |
+   |                                                |   failure.                                                    |
+   |                                                |                                                               |
+   |                                                | Check the OAuth configuration in Alation and ensure that you  |
+   |                                                | are passing the correct property values.                      |
+   +------------------------------------------------+---------------------------------------------------------------+
+   | Token request failed following successful      | In some cases after successful authorization, the request     |
+   | authorization.                                 | for tokens can fail. This message will be followed by further |
+   |                                                | details and troubleshooting tips, for example:                |
+   |                                                |                                                               |
+   |                                                | - Please check that the PKCE, client secret, and              |
+   |                                                |   other OAuth settings for the data source are correct        |
+   |                                                |                                                               |
+   |                                                | - Please check the authorization server token                 |
+   |                                                |   request endpoint and other OAuth settings for               |
+   |                                                |   the data source                                             |
+   |                                                |                                                               |
+   |                                                | - Please check the OAuth settings for the data source         |
+   +------------------------------------------------+---------------------------------------------------------------+
+   | There was a problem extracting username        | Username extraction failure. After a successful authorization |
+   | information following successful authorization | and subsequent token request, Alation attempts to extract     |
+   | and token retrieval. Please check the OAuth    | username information from the authorization server response.  |
+   | settings for the data source.                  | If this fails, this error is issued. Possible causes:         |
+   |                                                |                                                               |
+   |                                                |                                                               |
+   |                                                | - The OAuth configuration specifies that the username should  |
+   |                                                |   be extracted as a JWT claim and:                            |
+   |                                                |                                                               |
+   |                                                |        - the access token can not be decoded as a JWT;        |
+   |                                                |                                                               |
+   |                                                |        - no JWT claim is specified in the OAuth configuration;|
+   |                                                |                                                               |
+   |                                                |        - the specified claim does not exist in the token's    |
+   |                                                |          claim set;                                           |
+   |                                                |                                                               |
+   |                                                | - The OAuth configuration specifies that the username should  |
+   |                                                |   not be extracted as a JWT claim and:                        |
+   |                                                |                                                               |
+   |                                                |        - no username field is specified in the OAuth config;  |
+   |                                                |                                                               |
+   |                                                |        - the specified field does not exist in the response   |
+   |                                                |          returned from the authorization server upon token    |
+   |                                                |          request.                                             |
+   +------------------------------------------------+---------------------------------------------------------------+
+
+Post-Authorization Errors
+-----------------------------
+
+In some cases, authorization completes successfully and a connection is attempted but an error immediately results.
+These errors may be caused by an issue with:
+
+    - Snowflake configuration
+    - Snowflake access controls
+    - Some incompatibility to:
+
+        - assigned scopes and policies within the authorization server or
+        - assigned scopes specified in the Alation configuration.
+
+These errors will be shown when a connection is made during query execution but will not necessarily be shown when testing authorization at the time of configuring connections for the other features (query scheduling, dynamic profiling, and others). Instead, a generic error will be shown: **Error verifying credentials. Please check your username and password.** A more specific error may be shown when the connection is established later; for instance, if a scheduled query fails due to one of these errors, the notification email will contain the details.
+
+Some examples of the more specific errors and causes are below.
+
+.. tabularcolumns:: |p{5cm}|p{10cm}|
+
+.. table::
+   :widths: auto
+   :class: longtable
+
+   +------------------------------------------------+---------------------------------------------------------------+
+   | Error                                          | Description                                                   |
+   +================================================+===============================================================+
+   | No default role has been assigned to the user, | Displayed if there is no default role assigned to the user    |
+   | contact a local system administrator to assign | in Snowflake and none is specified in the connection URI.     |
+   | a default role and retry.                      |                                                               |
+   +------------------------------------------------+---------------------------------------------------------------+
+   | Role <role_name> specified in the connect      | Displayed if the role is not accessible to the user and this  |
+   | string is not granted to this user.            | role is specified in the connection URI and is authorized     |
+   | Contact your local system administrator,       | either explicitly in the scope or via SESSION:ROLE-ANY scope. |
+   | or attempt to login with another role,         |                                                               |
+   | e.g. PUBLIC.                                   |                                                               |
+   +------------------------------------------------+---------------------------------------------------------------+
+   | The role requested in the connection or the    | Displayed if either:                                          |
+   | default role if none was requested in the      |                                                               |
+   | connection ('SYSADMIN') is not listed in the   | - the role is assigned as the default role to a user but this |
+   | Access Token or was filtered. Please specify   |   role is not authorized because it is not specified in the   |
+   | another role, or contact your OAuth            |   URI or in the Default Scope;                                |
+   | Authorization server administrator.            |                                                               |
+   |                                                | - the role is specified in the connection URI but the user    |
+   |                                                |   does not have access to that role.                          |
+   +------------------------------------------------+---------------------------------------------------------------+
+   | User's configured default role 'SYSADMIN' is   | Displayed if the role is not accessible to the user in        |
+   | not granted to this user. Contact your local   | Snowflake but this role is authorized either via Default Scope|
+   | system administrator, or attempt to login      | by Alation or a role-related scope on the authorization       |
+   | using a CLI client with a connect string       | server.                                                       |
+   | selecting another role, e.g. PUBLIC.           |                                                               |
+   +------------------------------------------------+---------------------------------------------------------------+
+
+Other Errors
+------------------
+
+The following errors require troubleshooting beyond configuration changes.
+
+Missing Code Verifier
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If Alation is unable to retrieve the code verifier it cached prior to authorization redirect when PKCE is enabled when it is needed for token request, an error reading **A PKCE code verifier for the token request could not be found** will be issued.
+
+Unknown Authorization Failure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If at any time during the authorization redirect flow an unexpected, unclassifiable error occurs then one of two errors may be shown:
+
+    - if the error occurs in preparation for the redirect to the authorization server: **There was a problem preparing redirection to the authorization server**
+    - if the error occurs following successful authorization: **Token request failed following successful authorization**
+
+Connection Errors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When there is a problem reaching Alation's database connector component: **Could not connect to database**
+When the user's Alation log-in has expired: **You have been logged out of Alation. Please refresh and try again**
+
+OAuth-Related
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following errors may be issued apart from authorization when a database connection is attempted when pressing "Connect" on the Connection dialog:
+
+- OAuth access token not found. Authorization may not have been performed or has failed to complete successfully.
+- OAuth access token expired and refresh failed.
+- OAuth access token unavailable or expired while refresh token is either unavailable or expired. Either re-authorization is required or prior authorization attempt failed.
+
+Log Location
+----------------
+
+The log entries for OAuth authorization are to be found in ``/opt/alation/site/logs/uwsgi.log`` (path inside the Alation shell).

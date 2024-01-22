@@ -1,0 +1,447 @@
+Enabling Lineage V3
+====================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from version 2022.1.2*
+
+
+Lineage V3 must be enabled if users want the ability to create lineage manually. From Alation version 2022.4, Lineage V3 is enabled by default on all new Alation instances.
+
+In order to enable Lineage V3 on an existing Alation instance, you need to migrate your lineage data from Lineage V2 to Lineage V3. Lineage V3 will become enabled automatically after the migration completes. If the migration fails, your instance will remain on Lineage V2.
+
+.. important::
+
+    Alation recommends upgrading your Alation instance to version 2022.1.2 or newer in order to perform migration from Lineage V2 to V3.
+
+.. warning::
+
+    The Lineage V2 to V3 migration may be a time-consuming and resource-intensive process, depending on the size of the existing lineage data. It requires a restart of several important Alation services. We recommend performing the lineage migration during off-peak hours when there is little user activity and when other resource-intensive processes, such as MDE, QLI, or search indexing are not running. The migration may take from a few minutes to a few hours depending on the size of the existing lineage data.
+
+The migration process requires backend access to the Alation server. In case of HA pair configuration, perform the migration on the primary instance.
+
+Prerequisites
+-------------------------------
+
+There are two situations in which you might run the migration:
+
+- You have no Lineage V3 data and you are running the migration script for the first time.
+- You have run the migration script and it failed at some point.
+
+If you have no Lineage V3 data and this is your first time migrating the lineage data from Lineage V2 to V3, go to `Lineage Migration Steps`_.
+
+If you are retrying the migration after a failed attempt, begin with `Reset the Migration Status Pointer`_ and then rerun the migration.
+
+Reset the Migration Status Pointer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you had previously attempted to migrate the lineage data from Lineage V2 to V3 but your attempt resulted in a failure, you can rerun the migration from the very beginning. In order to do this, begin with resetting the migration status pointer to zero. The migration status pointer is a record in the internal database that documents the number of lineage links that were successfully migrated before the migration failed.
+
+To reset the pointer:
+
+.. include:: /shared/AccessPSQL.rst
+
+4. Run the query given below to reset the migration pointer to zero:
+
+    .. code-block:: Bash
+
+        update message_queue_pointer set pointer=0 where job_name='Lineage_V2_To_V3_Migration';
+
+5. Run the next query to ensure that the `message_queue_pointer` was updated. The result should be zero.
+
+    .. code-block:: Bash
+
+        select * from message_queue_pointer where job_name='Lineage_V2_To_V3_Migration';
+
+6. Exit the Postgres shell:
+
+    .. code-block:: Bash
+
+        \q
+
+7. Stay in the Alation shell and perform the lineage migration steps below to rerun the migration from the beginning.
+
+If you continue to have difficulties completing the migration, contact Alation Support for assistance.
+
+Lineage Migration Steps
+----------------------------
+
+Use the steps below to migrate lineage data from Lineage V2 to Lineage V3 and to activate the Lineage V3 functionality:
+
+1. Before migrating, in your Alation Catalog, find data sources or BI sources that have lineage data. Save the URLs for Table or BI report pages with lineage. After running the migration script, you can use these data objects to validate that the lineage data is successfully migrated and the lineage diagrams are displayed without issues.
+
+2. Use SSH to connect to the Alation server.
+
+3. Enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+4. Set the lineage logger level to ``debug``. This logger setting will create more detailed logs, which will be helpful if troubleshooting is necessary.
+
+    4.1 Change the logger level:
+
+        .. code-block:: bash
+
+            alation_conf lineage-service.logger.level -s debug
+
+    4.2 Restart the lineage service for the changes to take effect:
+
+        .. code-block:: bash
+
+            alation_supervisor restart lineage
+
+5. Ensure that the lineage service is running:
+
+    .. code-block:: bash
+
+        alation_supervisor status lineage
+
+    This command should return the status *Running*, for example:
+
+    .. code-block:: bash
+
+        $ alation_supervisor status lineage
+        lineage                   RUNNING   pid 1184, uptime 5 days, 19:10:35
+
+
+    The Lineage service should be in the *Running* state even though Lineage V3 has not been enabled yet. It is the expected state of the system.
+
+6. Ensure that the Event Bus is running:
+
+    .. code-block:: bash
+
+        alation_supervisor status event-bus:*
+
+    This command should return the status *Running*, for example:
+
+    .. code-block:: bash
+
+        $ alation_supervisor status event-bus:*
+        event-bus:kafka-server       RUNNING   pid 1128, uptime 5 days, 19:11:05
+        event-bus:zookeeper-server   RUNNING   pid 1127, uptime 5 days, 19:11:05
+    
+    Also ensure that the Event Bus is receiving messages:
+
+    6.1 Enter the Django shell:
+
+       .. code-block:: bash
+
+          alation_django_shell
+    
+    6.2 Enter the following commands:
+
+       .. code-block:: bash
+
+          from alation_event_bus_utils import check_event_bus
+          check_event_bus
+
+    If you see any errors, do not proceed with the migration. Contact Alation Support to help resolve the issue.
+    
+    6.3 Exit the Django shell:
+
+        .. code-block:: bash
+
+            exit
+
+7.  Next, check the size of the lineage data to be migrated. This number can be used to estimate the time required for the migration. It takes about an hour to migrate 1GB of lineage data on an instance where the migration is not competing for resources with multiple other processes.
+
+    7.1 Enter the Postgres shell:
+
+        .. code-block:: bash
+
+            alation_psql
+
+    7.2 Run the following query:
+
+        .. code-block:: bash
+
+            select pg_size_pretty(pg_total_relation_size('object_lineage_link'));
+
+    **Sample output**:
+
+    .. code-block:: bash
+
+        rosemeta=# select pg_size_pretty(pg_total_relation_size('object_lineage_link'));
+
+        pg_size_pretty
+        ----------------
+        1358 MB
+        (1 row)
+
+8. Still in the Postgres shell, run the next query to get the unique link count from the ``object_lineage_link`` table. This number shows how many lineage links will need to be migrated. Take note of this number. It will be used to validate the completeness of the migration later.
+
+    .. code-block:: bash
+
+        select count(*) from (select distinct source, source_otype, target, target_otype from object_lineage_link) as links;
+
+    **Sample output**:
+
+    .. code-block:: bash
+
+        rosemeta=# select count(*) from (select distinct source, source_otype, target, target_otype from object_lineage_link) as links;
+
+        count
+        -------
+        427947
+        (1 row)
+
+9. Exit the Postgres shell:
+
+    .. code-block:: bash
+
+        \q
+
+10. *(Optional)* If your lineage data is very large, you can optionally enable the Event Bus consumer throttling. If not, you can skip this step. During a very large V2 to V3 migration, the lineage service can potentially use a lot of memory which may affect other applications. Event Bus consumers can be throttled to allow small breaks between every batch so that they use less memory. This results in a slightly slower migration.
+
+    To enable the Event Bus consumer throttling:
+
+    10.1. In the Alation shell, enable the throttling:
+
+        .. code-block:: bash
+
+            alation_conf lineage-service.kafka.topics.consumer_throttling.enabled -s True
+
+    10.2. By default, the throttling begins when memory usage of the lineage service is at 90%. To change this value, use the command given below:
+
+        .. code-block:: bash
+
+            alation_conf lineage-service.kafka.topics.consumer_throttling.threshold -s <new threshold>
+
+        Example:
+
+        .. code-block:: bash
+
+            alation_conf lineage-service.kafka.topics.consumer_throttling.threshold -s 60
+
+    10.3. By default, the throttling allows for 1,000 milliseconds (1 second) to pass before another batch is consumed. To change this value, run:
+
+        .. code-block:: bash
+
+            alation_conf lineage-service.kafka.topics.consumer_throttling.duration -s <new duration in milliseconds>
+
+        Example:
+
+        .. code-block:: bash
+
+            alation_conf lineage-service.kafka.topics.consumer_throttling.duration -s 2000
+
+    10.4. Restart the service for the changes to take effect:
+
+        .. code-block:: bash
+
+            alation_supervisor restart lineage
+
+
+11. Beginning with Alation version 2022.4, the logs resulting from the lineage migration are written to the file **celery-lineagepublishing_error.log** file and email notifications of the migration's progress will be sent to all admins of the instance. Alation recommends tailing this file during the migration. Open a separate terminal window and prepare to tail the logs, in the Alation shell. If you’re using a screen multiplexer, prepare to tail in a separate screen:
+
+      .. code-block:: bash
+
+          tail -f  /opt/alation/site/logs/celery-lineagepublishing_error.log
+
+    In versions of Alation before 2022.4, the log files are written to the file **celery-default_error.log**. You can tail this file in a similar manner:
+
+      .. code-block:: bash
+
+          tail -f /opt/alation/site/logs/celery-default_error.log
+
+12. In the terminal window that is connected to the Alation host and Alation shell, enter the Alation Django shell:
+
+    .. code-block:: bash
+
+        alation_django_shell
+
+13. Run the Lineage V3 migration script:
+
+    .. code-block:: bash
+
+        from rosemeta.tasks.migrations import migrate_lineage_v2_data_to_v3_database
+        migrate_lineage_v2_data_to_v3_database.delay()
+
+    This will kick off the migration job. Information about progress will be written to either **celery-lineagepublishing_error.log** (Alation version 2022.4 and later) or **celery-default_error.log** (on versions before 2022.4). At the end of the migration, you should see a success message similar to the following:
+
+    .. code-block:: bash
+
+        [2022-03-05 00:12:51,622: INFO/ForkPoolWorker-8] rosemeta.tasks.migrations.migrate_lineage_v2_data_to_v3_database[23e9a161-64cf-4da7-a1d0-ee1b1e783b8c]:
+        Lineage v2 to v3 migration task completed successfully.
+        You can check the job status in alation_django_shell by running....`j = Job.objects.filter(job_type=33).order_by('-ts_finished')` and then `j[0].__dict__`
+
+
+14. After the migration completes, check the migration status for the **links** migration job and the **link nodes** migration job. 
+
+    14.1. To check the job status for the **links** migration job, run the following commands from within the Django shell:
+
+    .. code-block:: bash
+
+        job = Job.objects.filter(job_type=33).order_by("ts_started")
+        job[0].__dict__
+
+    In the output, look for the lines which contain ``status`` and ``state``. Migration has succeeded if you find:
+
+            - ``status: 1`` means SUCCEEDED (migration has completed successfully)
+            - ``state: 3`` means FINISHED (migration has finished)
+
+    If you find out that the migration failed or has issues (the result is different from ``status: 1`` and ``state: 3``), see :doc:`Troubleshooting Lineage V3 Migration <../../installconfig/LineageV3/TroubleshootingLineageV3Migration>`.
+
+    .. note::
+
+        Job Status values:
+
+            - N/A = ``0``
+            - SUCCEEDED = ``1``
+            - FAILED = ``2``
+            - PARTIAL_SUCCESS = ``3``
+            - SKIPPED = ``4``
+
+        Job State values:
+
+          - NOT_STARTED = ``0``
+          - QUEUED = ``1``
+          - STARTED = ``2``
+          - FINISHED = ``3``
+
+
+    The output will look similar to the following:
+
+    .. code-block:: bash
+
+        In [3]: job = Job.objects.filter(job_type=33).order_by("ts_started")
+
+        In [4]: job[0].__dict__
+        Out[4]:
+        {'_state': <django.db.models.base.ModelState at 0x7f7c402c6438>,
+        'id': 1695,
+        'user_id': None,
+        '_enum_job_type': 33,
+        'job_type': 33,
+        'external_service_aid': None,
+        '_enum_external_service_otype': None,
+        'external_service_otype': None,
+        'ts_started': datetime.datetime(2021, 12, 9, 2, 7, 45, 937116, tzinfo=<UTC>),
+        'ts_updated': datetime.datetime(2021, 12, 9, 2, 7, 48, 2729, tzinfo=<UTC>),
+        'ts_finished': datetime.datetime(2021, 12, 9, 2, 7, 48, 2729, tzinfo=<UTC>),
+        '_enum_status': 1,
+        'status': 1,
+        '_enum_state': 3,
+        'state': 3,
+        'state_message': 'Published 435 links',
+        'persisting_message': ['Processed batch with 545 links, is_last_batch: True',
+        'Published 435 links'],
+        'details': None,
+        'sync_subprocess_info': {'LINEAGE_V2_TO_V3_DATA_MIGRATION': '18685_797741740'},
+        'async_subprocess_info': {},
+        'disabled_task_name': None}
+
+    14.2 To check the job status for the **link nodes** migration job, run the following commands from within the Django shell:
+
+       .. code-block:: bash
+
+        j = Job.objects.filter(job_type=34).order_by("-ts_finished")
+        j[0].__dict__
+
+    Check the job detail records, it should show the number of messages that the lineage service received. Each message is a Kafka message and contains a max of 100 links.
+
+       .. code-block:: bash
+
+        d = j[0].job_details.all()
+        d[0].__dict__
+        d[1].__dict__
+ 
+
+    The link nodes migration job is a subprocess of the links migration job and it migrates Alation objects that are part of lineage links. If links appear in the UI but their nodes appear to be all temp even though they are not known to be temp or deleted in Lineage V2 then the status of this job can be checked to see if it has completed running. Once it completes, all non-temp objects should appear as such in the lineage graphs.
+
+
+15. Exit the Django shell:
+
+    .. code-block:: bash
+
+        exit
+
+16. Validate the number of the migrated lineage links.
+
+    16.1. Enter the Postgres shell:
+
+      .. code-block:: bash
+
+         alation_psql
+
+    16.2. Switch to the lineage database:
+
+      .. code-block:: bash
+
+         \c lineage
+
+    16.3. Run the following query:
+
+      .. code-block:: bash
+
+        select count(*) from edge where relation_type=1;
+
+      The count should be equal to the count of unique links you retrieved in Step 8 from the ``object_lineage_link`` table in Rosemeta. If the counts are not equal then there is some issue with the migration. See :doc:`Troubleshooting Lineage V3 Migration <../../installconfig/LineageV3/TroubleshootingLineageV3Migration>`.
+
+    16.4. Exit the Postgres shell:
+
+      .. code-block:: bash
+
+        \q
+
+17. If you are running a version of Alation before 2022.4, you must restart the Celery component:
+
+    .. code-block:: bash
+
+      alation_supervisor restart celery:*
+
+18. You can return to the default lineage logger level (``info``).
+
+      18.1. Run the following command:
+
+          .. code-block:: bash
+
+              alation_conf -s info lineage-service.logger.level
+
+      18.2. Restart the lineage service:
+
+          .. note::
+
+              If you enabled Event Bus throttling before the migration, you can first disable it and then perform this restart. See the next step.
+
+          .. code-block:: bash
+
+              alation_supervisor restart lineage
+
+19. If before the migration you enabled Event Bus throttling, you can now disable it.
+
+      19.1. Disable the corresponding **alation_conf** flag:
+
+          .. code-block:: bash
+
+              alation_conf lineage-service.kafka.topics.consumer_throttling.enabled -s False
+
+      19.2. Restart the service:
+
+          .. code-block:: bash
+
+              alation_supervisor restart lineage
+
+
+20. Exit the Alation shell:
+
+    .. code-block:: bash
+
+        exit
+
+21. Log in to Alation and verify your lineage data in the Alation UI. There should be no changes to the content of the lineage diagrams. If the lineage data does not appear or there are issues with the diagrams, for example, existing objects appear as temporary objects or diagrams only show partial data, contact Alation Support.
+
+The migration script automatically enables the Lineage V3 service. No additional actions are required to enable it. Next, you can enable Manual Lineage Curation. See :ref:`Enabling Manual Lineage Curation <Manual_Lineage_Curation-Enable>`.
+
+Disabling Lineage V3
+-----------------------------
+
+Alation does not recommend going back to Lineage V2 after enabling and using Lineage V3 as disabling V3 will result in an outdated state of the lineage data in the Catalog. Although not recommended, turning off Lineage V3 is still possible.
+
+If you observe issues with the CPU or memory consumption while using Lineage V3 that you consider critical to the instance health, you can fall back onto Lineage V2.
+
+Note that the new lineage data that was created on Lineage V3 will not be auto-migrated to Lineage V2 when you disable Lineage V3. The lineage graphs that were created manually, automatically, or using the API on Lineage V3 will not be available after Lineage V3 is disabled. The lineage data will return to the state before the lineage data was migrated to Lineage V3.
+
+Contact Alation Support to help you return to using Lineage V2.

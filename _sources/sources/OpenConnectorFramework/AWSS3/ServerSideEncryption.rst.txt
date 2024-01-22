@@ -1,0 +1,424 @@
+Configure Server-Side Encryption
+=====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Server-side encryption is the encryption of data at its destination by the application or service that receives it. More details in `Protecting data with server-side encryption <https://docs.aws.amazon.com/AmazonS3/latest/userguide/serv-side-encryption.html>`_ in AWS documentation.
+
+To perform metadata extraction, incremental extraction, and sampling of encrypted files in Alation, you may need to set additional permissions to the service account:
+
+    - The default server-side encryption is with Amazon S3 managed keys (SSE-S3). It does not require any additional permissions (**no action required**).
+
+    - If you are using KMS keys (SSE-KMS), additional configuration is required: `Configure Access with SSE-KMS`_
+
+.. note::
+
+    Server-side encryption with customer-provided keys (SSE-C) is not currently supported by Alation.
+
+Configure Access with SSE-KMS
+---------------------------------
+
+This section provides information about the permissions that need to be set if you use the KMS key for server-side encryption. You will need to do the following:
+
+    - Attach additional permissions to the KMS key
+
+    - Attach additional permissions to the IAM user (Basic authentication) or IAM role (STS authentication) you are using in Alation
+
+    - Grant additional permissions to actual users who will perform dynamic sampling in Alation
+
+    - Attach additional permissions to the IAM role for Lambda function. This is applicable only if you are using the incremental extraction feature.
+
+.. note:
+
+      Additional permissions required to be set up on the AWS side only and do not require setting up any configuration in Alation.
+
+Refer to the sections below for details.
+
+
+Attach Additional Permissions to the KMS Key
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The policy on the KMS key must include the ``kms:GenerateDataKey`` action, which will allow generating a key from the S3 service for source buckets. You can append this permission to the existing policy.
+
+See the permission example below. When using this example, replace ``{ACCOUNT_ID}`` with your account ID and ``SOURCE_BUCKET_{N}`` with your source bucket name.
+
+.. code-block:: Bash
+
+      {
+          "Sid": "Allow Amazon S3 use of the customer managed key",
+          "Effect": "Allow",
+          "Principal": {
+              "Service": "s3.amazonaws.com"
+          },
+          "Action": "kms:GenerateDataKey",
+          "Resource": "*",
+          "Condition": {
+              "StringEquals": {
+                  "aws:SourceAccount": "{ACCOUNT_ID}"
+              },
+              "ArnLike": {
+                  "aws:SourceARN": [
+                      "arn:aws:s3:::{SOURCE_BUCKET_1}",
+                      "arn:aws:s3:::{SOURCE_BUCKET_2}"
+                  ]
+              }
+          }
+      }
+
+Attach Additional Permissions to the IAM User or Role
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are using an IAM user for basic authentication or an IAM role for STS authentication, add the following permission to the IAM user or IAM role to decrypt the KMS key used in source buckets and destination buckets:
+
+.. code-block:: Bash
+
+      {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Sid": "VisualEditor0",
+                  "Effect": "Allow",
+                  "Action": "kms:Decrypt",
+                  "Resource": [
+                      "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID}"
+                  ]
+              }
+          ]
+      }
+
+Grant Additional Permissions to Users
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For dynamic sampling, the permission  to decrypt the KMS key used in the source buckets must be assigned to the user who performs the dynamic sampling user.
+
+.. code-block:: Bash
+
+      {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Sid": "VisualEditor0",
+                  "Effect": "Allow",
+                  "Action": "kms:Decrypt",
+                  "Resource": [
+                      "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID}"
+                  ]
+              }
+          ]
+      }
+
+Grant Additional Permissions to the IAM Role for the Lambda Function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the IAM role is used in a Lambda function, add the following permission to the IAM role:
+
+.. code-block:: Bash
+
+      {
+          "Sid": "VisualEditor0",
+          "Effect": "Allow",
+          "Action": "kms:GenerateDataKey",
+          "Resource": [
+              "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID_OF_KEY_B}"
+          ]
+      }
+
+
+Use cases
+---------------
+
+The Same Key for Source and Destination Buckets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Criteria
+^^^^^^^^^^^^^^
+
+    - Source buckets have the SSE-KMS encryption enabled using a KMS key **key-A**.
+    - Destination bucket has the SSE-KMS encryption enabled using a KMS key **key-A**.
+
+Steps
+^^^^^^^^^^
+
+  1. Create a KMS key **key-A**, see `How to set up SSE KMS in S3 bucket? <https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-kms-encryption.html>`_.
+
+          - You must choose key type as **symmetric** and key usage as **encrypt and decrypt**.
+
+  2. Create a source bucket with SSE-KMS encryption enabled by selecting KMS key **key-A**.
+
+  3. Create a destination bucket with SSE-KMS encryption enabled by selecting KMS key **key-A**.
+
+  4. Update the KMS **key-A** policy to allow access from the source bucket to use the key.
+
+          a. Go to the KMS service and click **Customer-managed keys**.
+
+          b. Search for your key **key-A**.
+
+          c. Edit the key policy and append the below permission. Make sure that you do not remove the existing permission codes. Replace **ACCOUNT_ID** with your **account_id** and **SOURCE_BUCKET_{N}** with the source bucket name.
+
+          .. code-block:: Bash
+
+                {
+                    "Sid": "Allow Amazon S3 use of the customer managed key",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "s3.amazonaws.com"
+                    },
+                    "Action": "kms:GenerateDataKey",
+                    "Resource": "*",
+                    "Condition": {
+                        "StringEquals": {
+                            "aws:SourceAccount": "{ACCOUNT_ID}"
+                        },
+                        "ArnLike": {
+                            "aws:SourceARN": [
+                                "arn:aws:s3:::{SOURCE_BUCKET_1}",
+                                "arn:aws:s3:::{SOURCE_BUCKET_2}"
+                            ]
+                        }
+                    }
+                }
+
+          d. Save the policy.
+
+  5. If configuring incremental MDE, follow the steps in :doc:`/sources/OpenConnectorFramework/AWSS3/S3OCFConnectorSetUpIncrementalMDE` to set up the Lambda function with the following modifications:
+
+        - While setting up the inventory configuration, choose the destination bucket created in step 3.
+
+        - While setting up the IAM role for the lambda function, along with the ``PutObject`` permission append the below permission. Replace the ``DESTINATION_BUCKET`` with your destination bucket name, ``ACCOUNT_ID`` with your account ID and ``KEY_ID`` with your key ID.
+
+        .. code-block:: Bash
+
+              {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                      {
+                          "Sid": "VisualEditor0",
+                          "Effect": "Allow",
+                          "Action": "kms:GenerateDataKey",
+                          "Resource": [
+                              "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID}"
+                          ]
+                      },
+                      {
+                          "Action": [
+                              "s3:PutObject"
+                          ],
+                          "Effect": "Allow",
+                          "Resource": [
+                              "arn:aws:s3:::{DESTINATION_BUCKET}/*"
+                          ]
+                      }
+                  ]
+              }
+
+  6. When setting up authentication (:ref:`Configure Access and Permissions <set-up-s3-auth>`), append the following additional permission to support SSE-KMS. Replace **ACCOUNT_ID** and **KEY_ID** with your **account_id** and **key_id**. If you are using STS auth, make sure to add the below permission to your STS Role.
+
+  .. code-block:: Bash
+
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "VisualEditor0",
+                    "Effect": "Allow",
+                    "Action": "kms:Decrypt",
+                    "Resource": [
+                        "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID}"
+                    ]
+                }
+            ]
+        }
+
+  7. Perform MDE, schema extraction, and sampling.
+
+        - For sampling to work, assign the policy created in step 6 to the user (IAM or SSO) who is going to perform sampling.
+
+Different Keys for Source and Destination Buckets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Criteria
+^^^^^^^^^^^^^^^
+
+    - Source buckets have the SSE-KMS encryption enabled using a KMS key **key-A**.
+    - The destination bucket has the SSE-KMS encryption enabled using a KMS key **key-B**.
+
+Steps
+^^^^^^^^^^
+
+  1. Create KMS keys **key-A** and **key-B**. See `How to set up SSE KMS in S3 bucket? <https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-kms-encryption.html>`_ in Amazon documentation.
+
+          - You must choose key type as **symmetric** and key usage as **encrypt and decrypt**.
+
+  2. Create a source bucket with the SSE-KMS encryption enabled by selecting the KMS key **key-A**.
+
+  3. Create a destination bucket with SSE-KMS encryption enabled by selecting the KMS key **key-B**.
+
+  4. Update the KMS **key-B** policy to allow access from the source bucket to use the key.
+
+          a. Go to the KMS service and click **Customer-managed keys**.
+
+          b. Search for your key **key-B**.
+
+          c. Edit the key policy and append the below permission. Make sure that you do not remove the existing permission codes. Replace ``ACCOUNT_ID`` with your account ID and ``SOURCE_BUCKET_{N}`` with the source bucket name.
+
+          .. code-block:: Bash
+
+              	{
+                  "Sid": "Allow Amazon S3 use of the customer managed key",
+                  "Effect": "Allow",
+                  "Principal": {
+                      "Service": "s3.amazonaws.com"
+                  },
+                  "Action": "kms:GenerateDataKey",
+                  "Resource": "*",
+                  "Condition": {
+                      "StringEquals": {
+                          "aws:SourceAccount": "{ACCOUNT_ID}"
+                      },
+                      "ArnLike": {
+                          "aws:SourceARN": [
+                              "arn:aws:s3:::{SOURCE_BUCKET_1}",
+                              "arn:aws:s3:::{SOURCE_BUCKET_2}"
+                          ]
+                      }
+                  }
+              }
+
+          d. Save the policy.
+
+  5. If configuring incremental MDE, follow the steps in :doc:`/sources/OpenConnectorFramework/AWSS3/S3OCFConnectorSetUpIncrementalMDE` to set up an inventory and a Lambda function with the following modifications:
+
+        - While setting up the inventory configuration, choose the destination bucket created in step 3.
+
+        - While setting up the IAM role for lambda function, along with the **PutObject** permission append the below permission. Replace the **DESTINATION_BUCKET** with your destination bucket name, **ACCOUNT_ID** with your **account_id** and **KEY_ID** with your **key_id** of **key-B**.
+
+        .. code-block:: Bash
+
+            	{
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "VisualEditor0",
+                        "Effect": "Allow",
+                        "Action": "kms:GenerateDataKey",
+                        "Resource": [
+                            "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID_OF_KEY_B}"
+                        ]
+                    },
+                    {
+                        "Action": [
+                            "s3:PutObject"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": [
+                            "arn:aws:s3:::{DESTINATION_BUCKET}/*"
+                        ]
+                    }
+                ]
+            }
+
+  6. When setting up authentication (:ref:`Configure Access and Permissions <set-up-s3-auth>`), append the following additional permission to support SSE-KMS, append the following additional permission to support SSE-KMS. Replace ``ACCOUNT_ID`` and ``KEY_ID`` with your account ID and key ID. If you are using STS authentication, make sure to add the below permission to your STS role.
+
+  .. code-block:: Bash
+
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "VisualEditor0",
+                    "Effect": "Allow",
+                    "Action": "kms:Decrypt",
+                    "Resource": [
+                        "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID_OF_KEY_A}",
+                        "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID_OF_KEY_B}"
+                    ]
+                }
+            ]
+        }
+
+  7. Perform MDE, schema extraction and sampling.
+
+          - For sampling to work, assign the policy created in step 6 to the user (IAM or SSO) who is going to perform sampling.
+
+Different Encryption Types for Source and Destination Buckets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Criteria
+^^^^^^^^^^^^
+
+    - Source buckets have the SSE-KMS encryption enabled using a KMS key **key-A**.
+    - The destination bucket has the default SSE-S3 encryption.
+    - Enable the SSE-KMS encryption using KMS key **key-B** while doing inventory configuration of the source bucket.
+
+Steps
+^^^^^^^^^
+
+  1. Create KMS keys **key-A** and **key-B**. See `How to set up SSE KMS in S3 bucket? <https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-kms-encryption.html>`_.
+
+          - You must choose the key type as **symmetric** and key usage as **encrypt and decrypt**.
+
+  2. Create a source bucket with the SSE-KMS encryption enabled by selecting KMS key **key-A**.
+
+  3. Create a destination bucket with the SSE-KMS encryption.
+
+  4. Update the KMS **key-B** policy to allow access from the source bucket to use the key.
+
+          a. Go to the KMS service and click **Customer-managed keys**.
+
+          b. Search for your key **key-B**.
+
+          c. Edit the key policy and append the below permission. Make sure that you do not remove the existing permission codes. Replace ``ACCOUNT_ID`` with your account ID and ``SOURCE_BUCKET_{N}`` with the source bucket name.
+
+          .. code-block:: Bash
+
+                {
+                    "Sid": "Allow Amazon S3 use of the customer managed key",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "s3.amazonaws.com"
+                    },
+                    "Action": "kms:GenerateDataKey",
+                    "Resource": "*",
+                    "Condition": {
+                        "StringEquals": {
+                            "aws:SourceAccount": "{ACCOUNT_ID}"
+                        },
+                        "ArnLike": {
+                            "aws:SourceARN": [
+                                "arn:aws:s3:::{SOURCE_BUCKET_1}",
+                                "arn:aws:s3:::{SOURCE_BUCKET_2}"
+                            ]
+                        }
+                    }
+                }
+
+          d. Save the policy.
+
+  5. If configuring incremental MDE, follow the steps in :doc:`/sources/OpenConnectorFramework/AWSS3/S3OCFConnectorSetUpIncrementalMDE` to set up an inventory and a Lambda function with the following modifications:
+
+        - Choose the destination bucket created in step 3.
+
+        - Choose the encryption mode to be **SSE-KMS** and choose the key **key-B**.
+
+  6.  When setting up authentication (:ref:`Configure Access and Permissions <set-up-s3-auth>`), append the following additional permission to support SSE-KMS. Replace ``ACCOUNT_ID`` and ``KEY_ID`` with your account ID and key ID of **key-A** and **key-B**. If you are using STS authentication, make sure to add the below permission to your STS role.
+
+  .. code-block:: Bash
+
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Sid": "VisualEditor0",
+                  "Effect": "Allow",
+                  "Action": "kms:Decrypt",
+                  "Resource": [
+                      "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID_OF_KEY_A}",
+                      "arn:aws:kms:us-east-1:{ACCOUNT_ID}:key/{KEY_ID_OF_KEY_B}"
+                  ]
+              }
+          ]
+      }
+
+  7. Perform MDE, schema extraction, and sampling.
+
+        - For sampling to work, assign the policy created in step 6 to the user (IAM or SSO) who is going to perform sampling.

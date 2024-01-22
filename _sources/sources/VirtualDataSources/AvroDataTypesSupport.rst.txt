@@ -1,0 +1,245 @@
+
+Avro Data Types Support
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from release V R6 (5.10.x)*
+
+API Body Skeleton Structure
+
+.. code-block:: console
+
+   {
+       "folders": [
+          {"name": "$folder_name",
+              "collections": [
+                  {"name": "$collection_name",
+                      "schemata": [...]
+                   }
+                 ]
+             }
+          ]
+      }
+
+Creating the API Request Body for Avro Schemas
+----------------------------------------------
+
+You will need to nest your Avro schema as a **schemata** sub-object in a
+folder and collection parent objects. Add it as a JSON
+object in the schemata key of the request Body JSON object. 
+
+The schemata key for an Avro schema must be an array of Avro data type
+objects, with each object having the required and optional properties
+of this Avro data type. Alation supports all Avro data types: `Avro Data Types`_.
+
+::
+
+   {
+     "folders": [
+                   {"name": "$folder_name",
+                    "collections": [
+                           {"name": "$collection_name", 
+                            "schemata": [
+                                {
+                                  "type": "record",
+                                  "name": "$value",
+                                  "namespace": "$value",
+                                  "fields": [
+                                           {"name": "$value", "type": "string"},
+                                           {"name": "$value", "type": "int"}
+                  ]
+               }
+             ]
+           }
+         ]
+        }
+     ]
+   }
+
+
+
+Avro Data Types
+-----------------------
+
+Alation supports  `Avro 1.8.0 and above <http://avro.apache.org/docs/1.9.0/spec.html>`_ for
+defining schemas in collections for the NoSQL API calls. All Avro data types and their attributes are supported.
+
+Primitive Types
+~~~~~~~~~~~~~~~
+
+- Boolean
+- Bytes
+- Double
+- Float
+- Long
+- Null
+- String
+
+Complex Types
+~~~~~~~~~~~~~
+
+record data type
+^^^^^^^^^^^^^^^^
+
+Syntax for NoSQL API:
+
+::
+
+   "name":""                       ;required
+   "namespace":""                  ;optional
+   "doc":""                        ;optional
+   "aliases":""                    ;optional
+   "type":"record"                 ;required
+   "fields":[                      ;required
+        {
+         "name":"",(required)
+         "type":"",(required)
+         "doc":"", (optional)
+         "order":"", (optional)
+         "aliases":"", (optional)
+         "default":"" (optional)
+        }
+   ]
+
+Full syntax:
+
+::
+
+   {
+   "name":"",
+   "namespace":"",
+   "doc":"",
+   "aliases":"",
+   "type":"record",
+   "fields":[
+      {
+         "name":"",
+         "type":"",
+         "doc":"",
+         "order":"",
+         "aliases":"",
+         "default":""
+      }
+    ]
+   }
+
+enum data type
+^^^^^^^^^^^^^^^^
+
+Syntax for NoSQL API:
+
+::
+
+   "name":""            ;required
+   "type": "enum"       ;required
+   "namespace":""       ;optional
+   "doc":""             ;optional
+   "aliases":""         ;optional
+   "symbols":""         ;required
+
+Full syntax:
+
+::
+
+   {
+   "name":"",
+   "type": "enum",
+   "namespace":"",
+   "doc":"",
+   "aliases":"",
+   "symbols":""
+   }
+
+array data type
+^^^^^^^^^^^^^^^^
+
+Syntax for NoSQL API:
+
+::
+
+   {
+   "type": "array"         ;required
+   "items":{"type":"",     ;required
+      "attribute1":"",
+      "attribute2":""
+   }
+
+Full syntax:
+
+::
+
+   {
+   "type": "array",
+   "items":{
+      "type":"",
+      "attribute1":"",
+      "attribute2":""
+    }
+   }
+
+map data type
+^^^^^^^^^^^^^^^^
+
+Syntax for NoSQL API:
+
+::
+
+   "type": "map"        ;required
+   "values":""          ;required
+
+Full syntax:
+
+::
+
+   {
+   "type": "map",
+   "values":""
+   }
+
+union data type
+^^^^^^^^^^^^^^^^
+
+Syntax for NoSQL API:
+
+::
+
+   ["", ""]
+
+
+
+fixed data type
+^^^^^^^^^^^^^^^^
+
+Syntax for NoSQL API:
+
+::
+
+   "type" : "fixed"        ;required
+   "name" : ""             ;required
+   "size" : ""             ;required
+
+Full syntax:
+
+::
+
+   {
+   "type" : "fixed",
+   "name" : "",
+   "size" : ""
+   }
+
+Related Topics
+----------------
+
+ :doc:`Virtual Data Source for NoSQL Databases <../../sources/VirtualDataSources/VirtualDataSourceforNoSQLDatabases>`
+
+ :doc:`Loading Metadata Into a NoSQL Virtual Data Source <../../sources/VirtualDataSources/LoadMetadataintoNoSQLVirtualDataSource>`
+
+ :doc:`Adding a NoSQL Virtual Data Source <../../sources/VirtualDataSources/AddNoSQLVirtualDataSource>`
+
+ :doc:`Schema Versioning for NoSQL Virtual Data Sources <../../sources/VirtualDataSources/SchemaVersioningforNoSQLVirtualDataSources>`
+
+ :doc:`Viewing the Avro Schema Catalog Page <../../sources/VirtualDataSources/ViewAvroSchemaCatalogPage>`
+
+ :doc:`Viewing NoSQL Schemas in Virtual Data Sources <../../sources/VirtualDataSources/ViewNoSQLSchemasinVirtualDataSources>`

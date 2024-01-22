@@ -1,0 +1,48 @@
+How to Change the Base URL
+=====================================================================
+
+This article provides steps for changing the Alation Base URL. 
+
+The Base URL is a value in ``alation_conf`` that can be changed like other
+values.  Alation uses this value to determine which URL is used for
+internal web services calls, and what value to display when users log
+in.  You may need to change the ``base_url`` if you set up or disable
+``https`` or if you make a DNS change.
+
+IP change/change IP/restore VM snapshot
+---------------------------------------
+If you restore an Alation instance from a VM snapshot and have a new IP for the virtual machine,
+or otherwise change the server IP address, you need to change the
+``base_url`` value to match the new IP.
+
+Change Base URL
+---------------
+
+To change the Alation Base URL:
+
+#. Check the current Base URL value from the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        alation_conf alation.install.base_url
+
+2. Change the old value to the new value. Include the ``http ://`` or ``https ://`` (depending on the SSL setting) when entering the new value:
+
+      .. code-block:: Bash
+
+          alation_conf alation.install.base_url -s <new_value>
+
+3. Confirm the new value.
+
+      .. code-block:: Bash
+
+          alation_conf alation.install.base_url
+
+4. Restart the web processes.
+
+      .. code-block:: Bash
+
+          alation_supervisor restart web:uwsgi
+
+ 

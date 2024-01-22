@@ -1,0 +1,48 @@
+Lineage V3 Feature Flag in alation_conf
+==========================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from version 2021.4*
+
+You can enable Lineage V3 using **alation_conf** on a new installation of Alation where there is no lineage data yet.
+
+However, if your instance has lineage data, do not use **alation_conf** to enable Lineage V3. Instead, perform lineage data migration from V2 to V3.
+
+To enable the Lineage V3 feature flag using **alation_conf** on a new Alation instance:
+
+.. include:: /shared/AccessingAlationShell.rst
+
+#. Run the command given below to enable Lineage V3:
+
+    .. code-block:: bash
+
+        alation_conf -s True lineage-service.enabled
+
+#. Restart the Celery component:
+
+    .. code-block:: bash
+
+        alation_supervisor restart celery:*
+
+#. Ensure that the lineage service is running:
+
+    .. code-block:: bash
+
+        alation_supervisor status lineage
+
+    This command should return the status *Running*, for example:
+
+    .. code-block:: bash
+
+        (env) PROD [admin@ip-177-71-27-47 /]$ alation_supervisor status lineage
+        lineage                    RUNNING   pid 1184, uptime 5 days, 19:10:35
+
+
+    If it's in the *Stopped* state, then restart it:
+
+    .. code-block:: bash
+
+        alation_supervisor restart lineage
+
+If Lineage V3 service is in the *Running* state with the Lineage V3 feature flag enabled, this means that all sources for lineage data, such as MDE, QLI, Compose, and Lineage V2 APIs are now using the lineage service.

@@ -1,0 +1,375 @@
+HTTPS
+=====
+
+Alation server can be configured to use HTTPS. This requires shell
+access to the Alation server.
+
+Requirements for HTTPS
+----------------------
+
+-  Create a DNS record for your server
+-  Create a PEM encoded, SSL Private Key
+-  Configure SSL on the Alation side:
+
+        - Obtain the SSL certificate
+        - Configure SSL
+        - Handle redirection of HTTP requests to HTTPS
+        - Set base URL
+        - Redeploy the configuration
+        - Restart the services
+
+Obtain the SSL Certificate
+-----------------------------
+
+Alation requires:
+
+  -  A PEM encoded, SSL Private Key. The file should begin with one of:
+
+          -  BEGIN PRIVATE KEY
+          -  BEGIN RSA PRIVATE KEY
+          -  BEGIN ECDSA PRIVATE KEY
+
+  -  A PEM encoded, X509 format SSL certificate signed by the Private Key
+
+          -  The file should begin with BEGIN CERTIFICATE
+          -  The file should include the full certificate chain to validate the SSL certificate.
+
+There are two ways to get a certificate:
+
+-  Have a certificate issued by the Certification Authority used at your company. Work with  your IT department to get one.
+-  Use a self-signed certificate. Note that in this case the browser may still display an "insecure connection" warning.
+
+.. note::
+
+    To generate a self-signed certificate, you can use the following command (requires openssl to be installed):
+
+          .. code-block:: Bash
+
+              openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ssl.key -out ssl.crt
+
+      See `How To Create a Self-Signed SSL Certificate for Apache in Ubuntu 16.04 <https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-apache-in-ubuntu-16-04>`_ for details.
+
+To verify that the ``Subject`` in the SSL certificate matches the server name, you can run the following command (requires **openssl**):
+
+          .. code-block:: Bash
+
+               openssl x509 -in <path to certificate> -text | grep Subject:
+
+Certificate Chain
+~~~~~~~~~~~~~~~~~
+
+If the certificate is signed by intermediate CAs, make sure that the SSL certificate you provide to Alation includes the full certificate chain. This step will not be required if the certificate is self-signed as in self-signed certificates the intermediate CA is not present.
+
+If you have separate certificates from each signing authority, you need to create a certificate chain. To concatenate certificates, you can run the following command:
+
+    .. code-block:: Bash
+
+      cat <mydomain.crt> <trustedCA1.crt> <trustedCA2.crt> <CARoot.crt> > PublicSSL_cert.crt
+
+For example, an **ssl.crt** file with intermediate certificate information concatenated into it has the following structure:
+
+      ::
+
+            -----BEGIN CERTIFICATE-----
+
+            <encrypted certificate here>
+
+            -----END CERTIFICATE-----
+
+            Intermediate CA
+
+            -----BEGIN CERTIFICATE-----
+
+            <encrypted intermediate CA here>
+
+            -----END CERTIFICATE----- 
+
+Converting SSL Certificates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This section provides information on converting SSL certificate packages to formats that are accepted by Alation. There are several different formats based on the platform you may be using.
+
+.. note::
+
+    For more information about SSL certificates, see:
+
+        -  `SSL Shopper <https://www.sslshopper.com/article-most-common-openssl-commands.html>`_
+        -  `Global Sign <https://support.globalsign.com/customer/portal/articles/1353601-converting-certificates---openssl>`_
+
+Convert .pem file to a ssl.crt and ssl.key
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To convert **.pem** to **ssl.crt** and **ssl.key** files, run the following:
+
+    .. code-block:: Bash
+
+        openssl x509 -in <your_file>.pem -out ssl.crt
+        openssl rsa -in <your_file>.pem -out ssl.key
+
+Convert p7b to ssl.crt
+^^^^^^^^^^^^^^^^^^^^^^
+To convert **p7b** to **ssl.crt**:
+
+    .. code-block:: Bash
+
+        openssl pkcs7 -print_certs -in <certificate.p7b> -out ssl.crt
+
+Validate the SSL Certificate (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To validate that the format works, you can run the following set of commands:
+
+    .. code-block:: Bash
+
+        openssl rsa -in ssl.key -check
+        openssl x509 -in ssl.crt -check
+        openssl x509 -in ssl.crt -text -noout | less
+
+Enable SSL
+-----------
+
+Have the SSL certificates prepared. To enable HTTPS on the Alation server:
+
+#. Confirm that Alation is started:
+
+    .. code-block:: Bash
+
+        sudo service alation status
+
+2. Copy the certificate and the key to the Data disk.
+
+    .. code-block:: Bash
+
+        # copy certs to your server
+        rsync -i <path_to_ssl_dir>/ssl.* <your_instance_ip>:/tmp/
+        # log in to the Alation server
+        ssh <your_instance_ip>
+        # move ssl key and cert to its location on the Alation server
+        sudo mv /tmp/ssl* /opt/alation/alation/data1/site_data/ssl/
+
+3. Change ownership to ``alation`` and protect the files with permissions:
+
+    .. code-block:: Bash
+
+        sudo chown alation:alation /opt/alation/alation/data1/site_data/ssl/ssl.*
+        sudo chmod 600 /opt/alation/alation/data1/site_data/ssl/ssl.*
+
+
+    **To test**:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        ls -l /opt/alation/site/ssl/ssl.*
+
+
+    The output will look like:
+
+    .. code-block:: Bash
+
+        -rw------- 1 alation alation 8536 Sep 28 17:23 <path_to_ssl_dir>/ssl.crt
+        -rw------- 1 alation alation 1708 Sep 28 17:22 <path_to_ssl_dir>/ssl.key
+
+4. From the Alation shell, enable SSL:
+
+    .. code-block:: Bash
+
+         #if not in the Alation shell yet
+         sudo /etc/init.d/alation shell
+         # enable SSL
+         alation_conf nginx.use_ssl -s True
+
+5. Still from the shell, redirect HTTP requests to HTTPS :
+
+    .. code-block:: Bash
+
+        alation_conf nginx.redirect_http_to_https -s True
+        alation_conf nginx.redirect_load_balancer_http_to_https -s False
+
+6. Update the base URL to reflect SSL:
+
+    .. code-block:: Bash
+
+         alation_conf alation.install.base_url -s https://<base_url>
+
+7. Redeploy the configuration:
+
+    .. code-block:: Bash
+
+        alation_action deploy_conf_nginx
+
+8. Restart NGINX and uWSGI:
+
+    .. code-block:: Bash
+
+        alation_action stop_nginx
+        alation_action start_nginx
+        alation_supervisor restart web:uwsgi
+
+
+Disable HTTPS
+--------------
+
+To disable HTTPS:
+
+1. On the Alation host, enter the Alation shell:
+
+    .. code-block:: Bash
+
+         sudo /etc/init.d/alation shell
+
+2. Disable SSL using ``alation_conf``:
+
+    .. code-block:: Bash
+
+        alation_conf nginx.use_ssl -s False
+
+3. Disable the redirect of HTTP requests to HTTPS:
+
+    .. code-block:: Bash
+
+        alation_conf nginx.redirect_load_balancer_http_to_https -s False
+        alation_conf nginx.redirect_http_to_https -s False
+
+4. Update the base URL to reflect the change:
+
+    .. code-block:: Bash
+
+        alation_conf alation.install.base_url -s http://<base_url>
+
+5. To apply the changes, redeploy the configuration:
+
+    .. code-block:: Bash
+
+        alation_action deploy_conf_nginx
+
+6. Restart uWSGI and NGINX:
+
+    .. code-block:: Bash
+
+        # Restart uWSGI
+        alation_supervisor restart web:uwsgi
+        # Restart NGINX
+        alation_action stop_nginx
+        alation_action start_nginx
+
+Use Load Balancer
+-------------------
+
+Terminate SSL at Load Balancer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use Alation behind load balancer:
+
+#. On the Alation host server, enter the Alation shell:
+
+    .. code-block:: Bash
+
+         sudo /etc/init.d/alation shell
+
+2. Disable SSL on the Alation server:
+
+    .. code-block:: Bash
+
+         alation_conf nginx.use_ssl -s False
+
+3. Configure the load balancer to forward the following header to Alation: ``X-Forwarded-Proto: https``
+
+    .. note::
+
+        If ``X-Forwarded-Proto`` header is not set to ``https``, then to avoid the HTTPS redirection loop, set the following flag to ``True``:
+
+        .. code-block:: Bash
+
+             alation_conf nginx.redirect_load_balancer_http_to_https -s True
+
+
+4. Because SSL gets terminated at load balancer, Alation server is not required to redirect the HTTP request. Set:
+
+    .. code-block:: Bash
+
+         alation_conf nginx.redirect_http_to_https -s False
+
+5. Update the base URL to use **https**:
+
+    .. code-block:: Bash
+
+         alation_conf alation.install.base_url -s https://<base_url>
+
+6. To apply the changes, redeploy the configuration:
+
+    .. code-block:: Bash
+
+        alation_action deploy_conf_nginx
+
+7. Restart uWSGI and NGINX:
+
+    .. code-block:: Bash
+
+        # Restart uwsgi
+        alation_supervisor restart web:uwsgi
+        # Restart NGINX
+        alation_action stop_nginx
+        alation_action start_nginx
+
+While terminating SSL at load balancer, forward port 443 to 80 on the Alation server.
+
+.. note::
+
+   When using a load balancer, you may want to use ``<your-alation-instance-URL>/monitor/i_am_alive`` as a health check. This URL doesn't require authentication and it returns an http 200 as long as you can hit it.
+
+Terminate SSL at Alation
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Terminating SSL at Alation while using load balancer is not a recommended practice.
+
+To terminate SSL at Alation,
+
+#. On the Alation host, enter the Alation shell:
+
+    .. code-block:: Bash
+
+         sudo /etc/init.d/alation shell
+
+2. Enable SSL:
+
+    .. code-block:: Bash
+
+         alation_conf nginx.use_ssl -s True
+
+3. To avoid the HTTPS redirection loop, set the following flag to ``True`` if ``X-Forwarded-Proto`` header is not set to ``https``:
+
+    .. code-block:: Bash
+
+         alation_conf nginx.redirect_load_balancer_http_to_https -s True
+
+4. Because SSL is not terminated at load balancer, set the Alation server to redirect the HTTP request:
+
+    .. code-block:: Bash
+
+         alation_conf nginx.redirect_http_to_https -s True
+
+5. Update the base URL to include HTTPS:
+
+    .. code-block:: Bash
+
+         alation_conf alation.install.base_url -s https://<base_url>
+
+6. To apply the changes, redeploy the conf:
+
+    .. code-block:: Bash
+
+         alation_action deploy_conf_nginx
+
+7. Restart uWSGI:
+
+    .. code-block:: Bash
+
+         alation_supervisor restart web:uwsgi
+
+8. Restart NGINX
+
+      .. code-block:: Bash
+
+          alation_action stop_nginx
+          alation_action start_nginx

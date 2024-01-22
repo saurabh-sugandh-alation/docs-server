@@ -1,0 +1,365 @@
+Update Alation Connector Manager
+======================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from release 2021.1*
+
+After updating your Alation instance to a newer release, use these steps to update Alation Connector Manager. This instruction applies when Alation Connector Manager and OCF connectors are installed on the same host with the Alation application.
+
+.. note::
+
+    Alation Connector Manager only needs to be updated when an Alation release or a patch release includes changes that affected it. This is usually called out in the update instructions for a specific release.
+
+
+.. tabs::
+
+    .. tab:: RHEL and RHEL-Based Systems
+
+        To update Alation Connector Manager:
+
+          1. On the Alation host, outside of the Alation shell, stop Alation Connector Manager (ACM).
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo service hydra stop
+
+                - ROOTLESS DOCKER
+
+                      - On any operating system except Oracle Linux 7, use this command:
+
+                          .. code-block:: Bash
+
+                              systemctl stop --user hydra
+
+                      - On Oracle Linux 7 only, use this command:
+
+                          .. code-block:: Bash
+
+                              hydra stop
+
+
+          2. Make sure that the corresponding container is stopped.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo docker ps --filter name=agent
+
+                - ROOTLESS DOCKER
+
+                    .. code-block:: Bash
+
+                        docker ps --filter name=agent
+
+          3. Stop Docker.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo systemctl stop docker
+
+                - ROOTLESS DOCKER
+
+                    - On any operating system except Oracle Linux 7, use this command:
+
+                        .. code-block:: Bash
+
+                            systemctl stop --user hydra
+
+                    - On Oracle Linux 7, skip this step. For Oracle Linux 7, Docker in rootless mode is managed entirely by ACM itself.
+
+
+          4. Determine the new available version of Alation Container Service.
+
+                .. code-block:: Bash
+
+                    ls /opt/alation/alation/opt/addons/alation_container_service
+
+          5. Update the Alation Container Service. In the command below, substitute the placeholder value ``<version_number>`` with the version number you found out.
+
+                .. code-block:: Bash
+
+                    sudo yum upgrade -y /opt/alation/alation/opt/addons/alation_container_service/alation-container-service-<version_number>-1.x86_64.rpm
+
+
+          6. Copy and paste the script below into the console and run it. The script will update the ``alation-hydra`` package on the host. Respond to the prompt in the console to confirm the update.
+
+                .. code-block:: Bash
+
+                    if sudo yum list install hydra &> /dev/null; then
+                    sudo yum install /opt/alation/alation/opt/addons/hydra/hydra.rpm
+                    else
+                    sudo yum update /opt/alation/alation/opt/addons/hydra/hydra.rpm
+                    fi
+
+          7. Start Docker.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo systemctl start docker
+
+                - ROOTLESS DOCKER
+
+                    - On any operating system except Oracle Linux 7, use these command:
+
+                        .. code-block:: Bash
+
+                            systemctl start --user docker
+
+                    - On Oracle Linux 7 only, skip this step.
+
+
+          8. Start ACM.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo service hydra start
+
+                - ROOTLESS DOCKER
+
+                    - On any operating system except Oracle Linux 7, use this command:
+
+                        .. code-block:: Bash
+
+                            systemctl start --user docker
+
+                    - On Oracle Linux 7 only, use this command:
+
+                        .. code-block:: Bash
+
+                            hydra start
+
+
+          9. Confirm that the ``agent`` and connector containers are running by listing the containers.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo docker ps
+
+                - ROOTLESS DOCKER
+
+                    .. code-block:: Bash
+
+                        docker ps
+
+          10. Enter the Alation shell.
+
+                .. code-block:: Bash
+
+                    sudo /etc/init.d/alation shell
+
+          11. Change the user to ``alation``.
+
+                .. code-block:: Bash
+
+                    sudo su alation
+
+          12. Verify that the Django OCF Connector service ``ypireti`` can reach ACM.
+
+                .. code-block:: Bash
+
+                    alation_ypireti list --fields id name hydra
+
+                The output will confirm connection to ACM at the configured port and print the current OCF connector metadata if any OCF connectors are installed.
+
+          13. Exit from the user and the Alation shell by using ``exit`` two times.
+
+
+    .. tab:: Ubuntu and Debian
+
+          To update Alation Connector Manager:
+
+          1. On the Alation host, outside of the Alation shell, stop Alation Connector Manager (ACM):
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo service hydra stop
+
+                - ROOTLESS DOCKER
+
+                    .. code-block:: Bash
+
+                        systemctl stop --user hydra
+
+          2. Make sure that the corresponding container is stopped.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo docker ps --filter name=agent
+
+                - ROOTLESS DOCKER
+
+                    .. code-block:: Bash
+
+                        docker ps --filter name=agent
+
+          3. Stop Docker.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo systemctl stop docker
+
+                - ROOTLESS DOCKER
+
+                    .. code-block:: Bash
+
+                        systemctl stop --user docker
+
+
+          4. Determine the new available version of Alation Container Service.
+
+                .. code-block:: Bash
+
+                    ls /opt/alation/alation/opt/addons/alation_container_service
+
+          5. Update the Alation Container Service. In the command below, substitute the placeholder value ``<version_number>`` with the version number you found out.
+
+                .. code-block:: Bash
+
+                    sudo apt update
+
+                    sudo apt install -y /opt/alation/alation/opt/addons/alation_container_service/alation-container-service_<version_number>_amd64.deb
+
+
+          5. Update ACM. Run the command given below to begin the update.
+
+                .. note::
+
+                    In 2021.1 the ``hydra`` package was renamed from to ``alation-hydra`` to avoid conflicts with third-party software. The ``apt`` package manager automatically resolves the name and selects the correct package to update.
+
+                - **Version 2022.2 and newer**: substitute ``x.x.x-xxx`` in the package name with the actual version you find in **/opt/alation/alation/opt/addons/hydra/**.
+
+                    .. code-block:: Bash
+
+                        sudo apt install /opt/alation/alation/opt/addons/hydra/hydra-x.x.x-xxx.deb
+
+                - **Versions before 2022.2**
+
+                    .. code-block:: Bash
+
+                        sudo apt install /opt/alation/alation/opt/addons/hydra/hydra.deb
+
+          6. You will be prompted on whether or not you want to overwrite your current configuration and freshly install the new package. The answer is ``N`` (No). This is also the default. Keep your current configuration and update the existing package. The prompt will be similar to the following example:
+
+                    .. image:: ../../_static/UpdateOCFHydra_01.png
+
+          7. Start Docker.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo systemctl start docker
+
+                - ROOTLESS DOCKER
+
+                    .. code-block:: Bash
+
+                        systemctl start --user docker
+
+          8. Start Alation Connector Manager.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo service hydra start
+
+                - ROOTLESS DOCKER
+
+                    .. code-block:: Bash
+
+                        systemctl start --user hydra
+
+          9. Confirm that the ``agent`` and connector containers are running by listing the containers with the command below.
+
+                - REGULAR DOCKER
+
+                    .. code-block:: Bash
+
+                        sudo docker ps
+
+                - ROOTLESS DOCKER
+
+                    .. code-block:: Bash
+
+                        docker ps
+
+          10. Enter the Alation shell.
+
+                .. code-block:: Bash
+
+                    sudo /etc/init.d/alation shell
+
+          11. Change user to ``alation``.
+
+                .. code-block:: Bash
+
+                    sudo su alation
+
+          12. Verify that the Django OCF Connector service ``ypireti`` can reach ACM:
+
+                .. code-block:: Bash
+
+                    alation_ypireti list --fields id name hydra
+
+                The command output will confirm connection to ACM at the configured port and print the current OCF connector metadata if any OCF connectors are installed:
+
+                .. image:: ../../_static/UpdateOCFHydra_03.png
+
+          13. Exit from the user and the Alation shell by using ``exit`` two times.
+
+
+Check Version of Alation Connector Manager
+-------------------------------------------------
+
+To find out the version of Alation Connector Manager that is installed on the Alation host:
+
+1. Use SSH to connect to the Alation host.
+2. On the host, outside of the Alation shell, check the version with this command:
+
+    .. code-block:: Bash
+
+        sudo hydra version
+
+The output will look similar to the following:
+
+    .. code-block:: Bash
+
+          [ssh-user@ip-172-31-27-47]$ sudo hydra version
+
+          Hydra version 1.2.0-766, by Alation
+          Built on Fri, 22 Apr 2022 17:56:24 +0000
+          Key Generation and Encryption Provided by OpenSSL 1.1.1n
+          Git Commit                  21b02e4
+          Hydra Agent                 603c031b177d
+          Hydra Remote Proxy          f70f79b10b4c
+
+
+Check Alation Connector Manager Package Version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From **version 2022.2**, you can find the version number in the name of the Alation Connector Manager package in **/opt/alation/alation/opt/addons/hydra** (ouside of the Alation shell), for example: **/opt/alation/alation/opt/addons/hydra/hydra-1.2.0-766.rpm**.
+
+    .. note::
+
+        This directory also contains symlinks ``hydra.deb`` and ``hydra.rpm``, which is expected.
+
+In versions before 2022.2, the package version is not present in the package name.

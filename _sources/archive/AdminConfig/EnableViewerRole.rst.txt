@@ -1,0 +1,70 @@
+Enable the Viewer Role
+========================
+
+*Applies from release V R7 (5.12.x)*
+
+    .. note::
+
+        Starting with release 2022.1, the Viewer role is enabled by default and admins do not need to manually enable it.
+
+
+In releases *V R7 (5.12.x) to 2021.4.x*, the Viewer role can be enabled using the dedicated feature flag in ``alation_conf``:
+
+``alation.feature_flags.enable_permissions_middleware_feature``
+
+Enabling it will add the following functionality to the Catalog:
+
+    - The *Viewer* role will become enforced. Users with the Viewer role can use the Catalog content within a limited set of permissions. This role allows searching and object browsing but does not permit editing fields, creating objects, and query running.
+
+    - The *Data Source Admin* and *File System Admin* functions on data sources and file system sources will only work for admin-level users (Source, Server, or Catalog Admins). Users with the Viewer, Composer, and Steward roles will not be able to access or change settings of data sources or file system sources.
+
+Enabling the Viewer Role Feature Flag
+---------------------------------------
+
+This action requires SSH access to your Alation server.
+
+1. SSH to your Alation host.
+
+2. Enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+3. Set the feature flag ``alation.feature_flags.enable_permissions_middleware_feature`` to ``True``:
+
+    .. code-block:: bash
+
+        alation_conf alation.feature_flags.enable_permissions_middleware_feature -s True
+
+4. Restart the Django component:
+
+    .. code-block:: bash
+
+        alation_supervisor restart web:*
+
+5. Exit the Alation shell:
+
+    .. code-block:: bash
+
+        exit
+
+Disabling the Viewer Role Feature Flag
+------------------------------------------
+
+The Viewer role enforcement can be disabled. This will revert your Alation instance to the state where the Viewer, Composer, and Steward roles have the same scope (**not recommended**).
+
+Turning the flag off will:
+
+- Stop the Viewer permissions enforcement. The Viewer role will have the same level of access as the Steward and Composer roles.
+- Allow users with any role to function as *Data Source Admins* or *File System Admins*.
+
+To turn the Viewer role enforcement off:
+
+1. Set the flag ``alation.feature_flags.enable_permissions_middleware_feature`` to ``False``:
+
+    .. code-block:: bash
+
+          alation_conf alation.feature_flags.enable_permissions_middleware_feature -s False
+
+2. Restart the Django component.

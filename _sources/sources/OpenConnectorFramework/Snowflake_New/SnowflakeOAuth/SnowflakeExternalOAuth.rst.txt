@@ -1,0 +1,221 @@
+Configure Authentication Via Snowflake External OAuth
+=========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+
+Use the steps in this section to configure OAuth for your Snowflake data source via an external OAuth provider. You can find information about the IdPs supported by Snowflake in `External OAuth <https://docs.snowflake.com/user-guide/oauth-ext-overview>`_ in Snowflake documentation.
+
+Alation supports Snowflake external OAuth through identity providers (IdPs) that support the OAuth 2.0 authorization code grant type.
+
+The recommendations below are generic for all IdPs. They assume that the required authorization server and the corresponding security integration have already been created for your instance of Snowflake. To extend this configuration to Alation as the authentication client, you will need to register Alation as a client app with your IdP and then configure an OAuth-enabled connection in the settings of your Snowflake data source in Alation:
+
+    - `Register Alation in the IdP as a Client App`_
+    - `Configure Your Data Source to Use Compose OAuth`_
+
+Register Alation in the IdP as a Client App
+----------------------------------------------
+
+You will need to add and configure a client application for Alation in the same IdP where you have the authorization server configured for Snowflake. The steps will differ for each IdP. However, some configuration requirements are common:
+
+Redirect URL
+~~~~~~~~~~~~~~
+
+When registering Alation in the IdP, use the following format for the redirect URL: ``https://<your_Alation_URL>/api/datasource_auth/oauth/callback``.
+
+    .. note::
+
+        Some IdPs may need a trailing slash at the end of the URL:
+
+        ``https://<your_Alation_URL>/api/datasource_auth/oauth/callback/``
+
+Scope
+~~~~~~~~~~~~~~~
+
+We recommend adding the scope ``SESSION:ROLE-ANY`` on the authorization server in the IdP so that you don’t have to add a scope entry for each role. You can then create a policy to allow all users to use this scope. This allows Alation users to connect to Snowflake using any role to which they have access in Snowflake and to switch roles in Compose using the ``USE ROLE`` statement.
+
+If adding the scope ``SESSION:ROLE-ANY`` is not an option in your specific use case, create scopes linked to specific Snowflake roles and add policies limiting the use of these roles to specific users.
+
+Collect Information for Alation
+-----------------------------------
+
+For configuration in Alation, collect the values listed below from your OAuth provider environment. These values can usually be found in the authorization server settings or the metadata file and in Alation's OAuth client app settings:
+
+    - From the client app that you added for Alation, collect:
+
+        - Client ID
+        - Client secret
+
+    - From the authorization server in the IdP, collect:
+
+        - Authorization endpoint
+        - Token endpoint
+        - Scope
+        - Information if refresh tokens are enabled and the refresh scope
+        - Information if PKCE is enabled
+        - The username claim attribute
+
+Assign Snowflake User Roles
+------------------------------------
+
+For all Alation users who are expected to connect to Snowflake from Alation, the login name specified in the ``EXTERNAL_OAUTH_SNOWFLAKE_USER_MAPPING_ATTRIBUTE`` parameter in the Snowflake security integration must be correctly mapped onto the value specified in the ``EXTERNAL_OAUTH_TOKEN_USER_MAPPING_CLAIM`` parameter.
+
+Ensure that users are explicitly assigned default roles within Snowflake, as the ``PUBLIC`` role is not automatically assigned to users without a default role when making connections with an external OAuth token.
+
+    .. note::
+
+        The default role is not required if a role is specified as **Default Scope** in Alation or on the authorization server, including the case when role switching is authorized (scope ``SESSION:ROLE-ANY``).
+
+Example Configurations
+---------------------------------
+
+The sections listed here provide examples of how to configure OAuth for a Snowflake data source via external OAuth providers:
+
+    - :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOAuth/SnowflakeOAuthViaAAD`
+    - :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOAuth/SnowflakeOAuthViaOkta`
+    - :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOAuth/SnowflakeOAuthViaPingFed`
+
+Configure Your Data Source to Use Compose OAuth
+--------------------------------------------------
+
+Perform this configuration in Alation after performing the required configuration in Snowflake or the external OAuth provider.
+To enable OAuth in Compose for a Snowflake data source:
+
+1. In Alation, open the data source Settings page.
+
+2. Go to the **Compose** tab.
+
+3. Locate the **OAuth Connection** block.
+
+4. Select the checkbox **Enable OAuth for all Compose Connections**. This reveals the parameters for OAuth setup.
+
+    .. image:: /_static/OCF_Snowflake_OAuth_Empty.png
+        :width: 600px
+        :class: with-border
+
+5. Specify the values.
+
+.. table::
+    :widths: auto
+    :class: longtable
+
+    +------------------------+---------------------------------------------------------------------+
+    | Property               | Value                                                               |
+    +========================+=====================================================================+
+    | Client ID              | Use the client ID of the client application you created in the      |
+    |                        | IdP.                                                                |
+    +------------------------+---------------------------------------------------------------------+
+    | Client Secret          | Use the client secret of the client application.                    |
+    +------------------------+---------------------------------------------------------------------+
+    | Request Refresh Tokens | Select the **Request Refresh Tokens** checkbox if refresh tokens    |
+    |                        | were allowed in the configuration of the authorization server.      |
+    |                        | This allows offline access and requests for refresh tokens to       |
+    |                        | acquire new access tokens without re-authorization of the user.     |
+    |                        | Refresh tokens can greatly minimize the frequency with which        |
+    |                        | users must re-authorize and re-authenticate.                        |
+    +------------------------+---------------------------------------------------------------------+
+    | Enable PKCE            | Select the Enable PKCE checkbox if you configured PKCE              |
+    |                        | (Proof Key of Code Exchange) on the authorization server. PKCE      |
+    |                        | is a way to make a token request more secure.                       |
+    |                        | PKCE will not be possible for some setups. For example,             |
+    |                        | with Okta's Web application type, PKCE is not available.            |
+    +------------------------+---------------------------------------------------------------------+
+    | Authorization Endpoint | The authorization endpoint is used to obtain an authorization       |
+    |                        | grant after a user authorizes a client with Snowflake. The value    |
+    |                        | is usually available in the metadata file of the IdP if one is      |
+    |                        | provided or in the settings of an authorization server.             |
+    +------------------------+---------------------------------------------------------------------+
+    | Token Endpoint         | The token endpoint returns access tokens or refresh tokens          |
+    |                        | depending on the request parameters. The value is usually           |
+    |                        | available in the metadata file of the IdP if one is provided or     |
+    |                        | in the settings of an authorization server.                         |
+    +------------------------+---------------------------------------------------------------------+
+    | Default Scope          | The Scope parameter limits the operations and the role permitted    |
+    |                        | by the access token. This field can be used to specify a default    |
+    |                        | Snowflake role for every user.                                      |
+    |                        |                                                                     |
+    |                        | The external OAuth provider may allow for specifying the default    |
+    |                        | scope and for creating policies for assigning such default scope.   |
+    |                        | It is important that scope for at least one Snowflake role be       |
+    |                        | specified if Snowflake users do not have a default role assigned    |
+    |                        | within Snowflake. The authorization server may only issue           |
+    |                        | authorization for the default scope specified in the authorization  |
+    |                        | server configuration if no other scope is specified during          |
+    |                        | authorization. Any scope specified in the **Default Scope**         |
+    |                        | field in the Alation data source settings takes priority over       |
+    |                        | the default scope specified on the authorization server.            |
+    |                        |                                                                     |
+    |                        | If you choose to provide a specific role for                        |
+    |                        | **Default Scope** in Alation, the authorization server may          |
+    |                        | expect the case to match between the scope specified in the         |
+    |                        | authorization request and the scope configured for the              |
+    |                        | authorization server. The authorization server configuration        |
+    |                        | must declare the scope to match the case, for example:              |
+    |                        | ``session:role:ALL_CAPS_ROLE_NAME``. The case of the value          |
+    |                        | specified in Alation must use the matching case:                    |
+    |                        | ``session:role:PUBLIC``.                                            |
+    +------------------------+---------------------------------------------------------------------+
+    | Refresh Scope          | Use the **Refresh Scope** field to specify the scope for Alation    |
+    |                        | to use during authorization to request refresh tokens from the      |
+    |                        | authorization server during token request. This applies only if     |
+    |                        | the **Request for Refresh Token** checkbox is enabled.              |
+    |                        |                                                                     |
+    |                        | Different authorization servers may use a different value or        |
+    |                        | not require refresh scope at all and issue refresh tokens           |
+    |                        | automatically based on the server configuration.                    |
+    |                        |                                                                     |
+    |                        | The authorization server may only issue authorization for the       |
+    |                        | default scope specified in the authorization server configuration   |
+    |                        | if no other scope is specified during authorization. Any scope      |
+    |                        | specified in the **Refresh Scope** or **Default Scope** fields      |
+    |                        | in Alation or in                                                    |
+    |                        | the connection URI can result in none of the default scopes         |
+    |                        | specified on the authorization server configuration to be           |
+    |                        | applied.                                                            |
+    +------------------------+---------------------------------------------------------------------+
+    | Username Field/Claim   | The **Username Field/Claim** is the property of the top-level       |
+    |                        | JSON attribute in the Snowflake authorization server response       |
+    |                        | to a token request that contains the identity of the authorized     |
+    |                        | Snowflake user.                                                     |
+    |                        |                                                                     |
+    |                        | The claim attribute to be used to retrieve the user requesting      |
+    |                        | authorization from the access token. This is the value of the       |
+    |                        | ``EXTERNAL_OAUTH_TOKEN_USER_MAPPING_CLAIM`` field of the Snowflake  |
+    |                        | security integration for the External OAuth provider. The value     |
+    |                        | in Alation must match the value of a Snowflake user's login name    |
+    |                        | as specified by ``EXTERNAL_OAUTH_SNOWFLAKE_USER_MAPPING_ATTRIBUTE`` |
+    |                        | in the security integration. The values of                          |
+    |                        | ``EXTERNAL_OAUTH_TOKEN_USER_MAPPING_CLAIM`` will differ for Okta,   |
+    |                        | Azure AD, PingFederate, or other custom client authorization        |
+    |                        | servers.                                                            |
+    +------------------------+---------------------------------------------------------------------+
+    | JWT                    | This checkbox must be selected for external OAuth providers.        |
+    |                        |                                                                     |
+    |                        | For most authorization servers, access tokens are issued as a       |
+    |                        | JSON Web Token (JWT). The username information is extracted as      |
+    |                        | a specific claim from the token. Alation needs to determine         |
+    |                        | the Snowflake user who has been authorized and is used for          |
+    |                        | the connection for both display purposes and to enable storage      |
+    |                        | and tracking of multiple access tokens per user and per             |
+    |                        | connection URI.                                                     |
+    |                        |                                                                     |
+    |                        | When this checkbox is left clear, Alation attempts to extract       |
+    |                        | the username information as a top-level attribute of the JSON       |
+    |                        | response returned from the authorization server upon token request. |
+    +------------------------+---------------------------------------------------------------------+
+    | Access token parameter | Leave blank or use the value ``token``.                             |
+    | name                   |                                                                     |
+    +------------------------+---------------------------------------------------------------------+
+    | OAuth enablers         | Use the value ``authenticator=oauth``.                              |
+    +------------------------+---------------------------------------------------------------------+
+
+6. Click **Save**.
+
+7. Edit the default Compose connection to use OAuth or add a new OAuth-enabled connection. To make a connection string OAuth-enabled, add the query parameter ``authenticator=oauth`` to the connection URI with the ``&`` symbol as the separator.
+
+    Example:
+
+    ``snowflake://alation_test.us-east-1.snowflakecomputing.com:443/?warehouse=DEMO_WH&authenticator=oauth``
+
+
+8. Test the configuration in Compose by connecting to your Snowflake data source and running a query. For more details, see :doc:`/analyst/UserAuthenticationForDataSources/WorkingWithDataSourceConnections`.

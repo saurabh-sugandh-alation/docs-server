@@ -1,0 +1,138 @@
+Configuring Kerberos for Data Source Authentication
+===================================================
+
+When you connect to a Kerberized data source, Alation takes the credentials you provided as a service account and attempts to authenticate by reaching out to the Key Distribution Center (KDC) you have provided in the Kerberos configuration file for Alation. The KDC verifies the credentials and sends back an encrypted ticket granting ticket (TGT) and a session key. Then Alation forwards the session key to the DB service to prove that the user has access, and the DB service grants access.
+
+Kerberos can be configured on the server before Alation installation if you plan to add Kerberized databases to the catalog.
+It can also be configured after you have already installed Alation, but with a slightly different set of steps. Choose the scenario that applies to your case.
+
+Configure Kerberos Before Installation
+------------------------------------------
+
+1. On the server where you plan to install Alation, configure a valid **/etc/krb5.conf**. The **default_realm** should be set to the realm having the user principal which you are planning to use as the database service account in Alation.
+
+    Example:
+
+    **krb5.conf** content will depend on your database environment. This is a generic example:
+
+    ::
+
+        [libdefaults]
+        default_realm = TEST.ALATIONDATA.COM
+        dns_lookup_realm = false
+        dns_lookup_kdc = false
+        ticket_lifetime = 24h
+        forwardable = true
+
+        [realms]
+        TEST.ALATIONDATA.COM = {
+              kdc = 10.11.21.205
+              admin_server = 10.11.21.205
+              }
+        [domain_realm]
+          .alationdata.com = TEST.ALATIONDATA.COM
+          alationdata.com = TEST.ALATIONDATA.COM
+
+2.  You can test the Kerberos credentials by running KINIT as the service account and, after KINIT then running KVNO for the service principal of the database resource. KINIT establishes that the host reached the KDC and got a valid TGT. KVNO fetches a service ticket for the service principal Both need to be authenticated from Alation:
+
+    .. code-block:: bash
+
+        kinit <USER_PRINCIPAL_NAME>
+        kvno <SERVICE_PRINCIPAL_NAME/HOST@REALM>
+
+    For example:
+
+        .. code-block:: bash
+
+             kinit alation_user
+             kvno hive/HOSTNAME@TEST.ALATIONDATA.COM
+
+    If using **keytabs**, do the following, substituting <path to keytab> with the path to your keytab file:
+
+        .. code-block:: bash
+
+            kinit -k -t <path to keytab> <USER_PRINCIPAL_NAME>
+            kvno <SERVICE_PRINCIPAL_NAME/HOST@REALM>
+
+Alation does not use Kerberos ticket cache. The above tests validate the Kerberos configuration: if KINIT and/or KVNO fail, this would be a Kerberos configuration issue that needs to be resolved in your infrastructure before you try to connect to your Kerberized source from Alation.
+
+Configuring Kerberos After Installing Alation
+-----------------------------------------------
+
+If Kerberos configuration is added after Alation is installed, you will need to create a valid **krb5.conf** file on the host running Alation then copies it to the Alation environment.
+
+To import the **krb5.conf**  into Alation,
+
+1. Copy the valid **krb5.conf** file into the Alation file system:
+
+    .. code-block:: bash
+
+         sudo cp krb5.conf /data/site_data/krb5.conf
+
+2. Enter the Alation shell:
+
+    .. code-block:: bash
+
+         sudo /etc/init.d/alation shell
+
+3. Run the following actions to copy and deploy the configuration:
+
+   .. code-block:: bash
+
+        alation_action copy_krb5_conf
+        alation_action deploy_conf_kerberos
+
+4. Exit the shell:
+
+    .. code-block:: console
+
+         exit
+
+5. Restart Alation:
+
+    .. code-block:: bash
+
+         sudo service alation restart
+
+6. Check that the configuration values are stored in the Alation configuration, from inside the Alation shell:
+
+    .. code-block:: bash
+
+         alation_conf kerberos
+
+Troubleshooting
+----------------
+
+You can turn on Kerberos debugging in Alation logs to help you troubleshoot issues with connection in Alation. Kerberos debugging logs into taskserver_out.log and taskserver.log at /opt/alation/site/logs.
+
+To add debugging,
+
+1. Enter the Alation shell and change user to alation:
+
+    .. code-block:: bash
+
+         sudo service alation shell
+         sudo su alation
+
+2. Make sure you don't already have extra flags set that may be overwritten by any new flags:
+
+    .. code-block:: bash
+
+         alation_conf extra
+
+    If extra flags already exist for Taskserver and Connector, edit the corresponding line to include the new flag: ``-Dsun.security.krb5.debug=true``
+
+    Example:
+
+    .. code-block:: bash
+
+       alation_conf extra
+       alation_conf taskserver.extra_flags -s ' -Dsun.security.krb5.debug=true -Dsun.security.jgss.debug=true'
+
+3. Deploy the changes and restart the java component:
+
+    .. code-block:: bash
+
+          alation_conf extra
+          alation_action deploy_conf_supervisor
+          alation_supervisor restart java:*

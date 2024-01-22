@@ -1,0 +1,74 @@
+Soft Delete & Hard Delete
+==============================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from 2021.2*
+
+BI sources added to the Catalog on the GBM V2 framework or OCF framework use the “Soft Delete” approach to removing curated data from the Catalog.
+
+What is Soft Delete?
+-----------------------
+
+When metadata is extracted from a BI source into the Catalog, Alation creates dedicated pages for the extracted metadata objects. Catalog users curate the pages by adding descriptions and field values.
+
+If for any reason the objects that were previously extracted are removed from the Catalog during the next extraction, they are "soft-deleted": they will not be present in the Catalog, but the Catalog data about these objects will be retained in the internal database. If the same object is extracted again, Alation will restore its Catalog page with all its Catalog data.
+
+.. image:: ../../_static/SoftandHarddelete_01.png
+
+**Example:**
+
+In a BI source, there are three folders (**Folder 1, Folder 2 and Folder 3**) extracted from the BI server. An admin performs selective extraction and excludes **Folder 3** before extracting. As a result, Folder 3 is soft-deleted, but Alation retains its curated data and lineage information in the internal database. After a few days, the admin performs full extraction that extracts all three folders again. . When re-extracted, **Folder 3** will have all previously curated data and Lineage information. The user does not need to do data curation again.
+
+When a BI object is soft deleted:
+
+    - It will not appear in Search results.
+    - if the object contributes to lineage then it will not be available, but the Lineage information will be retained.
+    - it will not appear in the catalog but all the curated data will be retained.
+    - If a user navigates to the catalog page, a banner will be displayed with a message that the BI object was deleted.
+
+      .. image:: ../../_static/SoftandHarddelete_02.png
+
+    - The GBMV2 APIs will not list those objects.
+    - Object ID will be retained.
+
+What is Hard Delete?
+-------------------------
+
+Hard Delete" is an approach to removing Catalog data when data is completely removed from the system without a way to restore the previous state.  For example, if an admin performs a metadata extraction and removes some of the previously extracted projects, all the curated data and lineage information will be removed from the Catalog and the internal database.
+
+If the same project is re-extracted later, its Catalog page will be empty as no data can be restored.
+
+Hard Delete is disabled by default.
+
+.. image:: ../../_static/SoftandHarddelete_01.png
+
+**Example:**
+
+In a BI Connector, there are three folders (**Folder 1, Folder 2 and Folder 3**) extracted from the data source. The user performs the selective extraction and excludes **Folder 3** before extracting.  If it is hard-deleted, Alation does not retain its curated data and lineage information. After a few days, the user performs full extraction that extracts all three folders from the data source. Now, **Folder 3** will not have the previously curated data and Lineage information. Users need to curate the Catalog page again.
+
+When a BI object is hard deleted:
+
+    - it will be removed from the search.
+    - if it contributes to lineage then it will not be available and the Lineage information will not be retained.
+    - it will not show inside List views on catalog pages and the curated data will not be retained.
+    - If a user navigates to the catalog page, a banner will be displayed with a message that the BI object was deleted.
+
+      .. image:: ../../_static/SoftandHarddelete_03.png
+
+    - The GBMV2 APIs will not list those objects.
+    - Object ID will not be retained.
+
+Enable/Disable Soft Delete & Hard Delete
+-------------------------------------------
+
+Soft delete feature is enabled by default in Alation and its flag is set to **true** in alation_conf. If you want to enable the Hard delete feature set the Soft delete feature flag to **false**.
+
++-------------------------------------------------+--------------------------------------+
+| Feature Flag                                    | Connectors                           |
++=================================================+======================================+
+| alation.bi_metadata.enable_soft_delete = True   | GBM V2 BI  Sources (Tableau and      |
+|                                                 | Microstrategy)                       |
++-------------------------------------------------+--------------------------------------+
+| alation.ocf.mde.gbm.soft_delete.enabled = True  | OCF Sources                          |
++-------------------------------------------------+--------------------------------------+

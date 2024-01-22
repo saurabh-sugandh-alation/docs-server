@@ -1,0 +1,225 @@
+SSO Authentication for Amazon Athena Data Source
+===================================================
+
+*Applies from release 2021.1*
+
+Perform this configuration for your Amazon Athena data source after completing the configuration of the IdP and AuthService:
+
+    - :doc:`Compose SSO for Amazon Data Sources: Create an Authentication Application <../../datasources/ComposeSSOAWSDataSources/CreateAuthenticationAppForAlationInIdP>`
+
+    - :doc:`Compose SSO with Amazon Sources: Configure AWS IAM Plug-in <../../datasources/ComposeSSOAWSDataSources/ConfigureAWS_IAM_Plugin>`
+
+.. important::
+
+    SSO authentication should be configured for each specific data source. Multiple data sources can use one and the same AuthService configuration object if authentication goes through the same authentication application in the same IdP.
+
+Step 1: Check JDBC Driver for Amazon Athena Data Source
+---------------------------------------------------------------------
+
+Access to Amazon Athena from Alation using authentication federation requires a JDBC driver that supports AWS STS API. The Athena JDBC driver by Simba recommended by Alation and distributed by Amazon does not support it out of the box. You need to use a modified version of the Simba JDBC driver to connect to your Athena data source in Alation. Please check that your Athena data source is connected using the repackaged version of the driver that includes the required java class **CustomSessionCredentialsProvider**:
+
+    - :doc:`Update the Simba JDBC Driver for Amazon Athena to Support SSO <../../datasources/CustomDB/UpdateSimbaJDBCDriverForAthenaToSupportSSO>`
+
+Step 2: Configure Compose to Use IAM Plug-in
+--------------------------------------------------------------------
+
+This step requires the data source ID. The data source ID can be obtained from the URL of the Data Source Catalog page: :doc:`How to Find Data Source ID <../../admins/How-tos/HowToFindDataSourceID>`
+
+To configure Compose to use the IAM plug-in for authentication to your Amazon Athena data source:
+
+1. Use SSH to connect to the Alation host.
+
+2. Enter the Alation shell, and then enter the Django shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        alation_django_shell
+
+3. From the Django shell, run the code given below, substituting the placeholder values **<ds_id>**  and **<config_name>** with your real values. As the result, the configuration object of the AuthService IAM plug-in with ``config_name = <config_name>`` will apply to a Compose connection to Athena when the connection URI contains the ``AwsCredentialsProviderClass=com.example.CustomSessionCredentialsProvider`` parameter.
+
+    - **<ds_id>** - Data source ID
+    - **<config_name>** - ``config_name`` value of the configuration object in the AWS IAM plug-in of the AuthService that has been created for your IdP.
+
+|
+
+    .. code-block:: Bash
+
+        AuthServiceConfiguration.objects.create(
+            ds_id=<ds_id>,
+            method_name='aws_iam',
+            config_name='<config_name>',
+            jdbc_config={
+                'auth_obj_to_jdbc_param_map':{
+                    'AWSCredentialsProviderArguments': '{AWSAccessKey},{AWSSecretKey},{AWSSessionToken}'
+                },
+                'jdbc_uri_enabler_patterns': [
+                    'AwsCredentialsProviderClass\\=com\\.example\\.CustomSessionCredentialsProvider'
+                ],
+                'jdbc_uri_to_auth_service_args_map': {
+                    'role': [
+                        'preferred_role=(arn:aws:iam::[^:]+:role/[^;]+)'
+                      ]
+                },
+                'require_strict_jdbc_uri_to_auth_service_args_map': False
+            })
+
+
+|
+
+    .. image:: ../../_static/DS_AthenaSSO_02.png
+
+4. (Optional) Run the command below to check that the Compose configuration object has been created for your Athena data source, substituting the placeholder values ``<ds_id>`` and ``<config_name>`` with real values. The command will output the number of Compose configurations that exist for a data source, the ``aws_iam`` AuthService method and the specific AuthService ``config_name``:
+
+    .. code-block:: Bash
+
+        AuthServiceConfiguration.objects.filter(ds_id=<ds_id>, method_name='aws_iam', config_name='<config_name>').count()
+
+|
+
+    .. image:: ../../_static/DS_AthenaSSO_03.png
+
+    .. important::
+
+        We recommend to create one Compose configuration that uses the same ``config_name`` per data source.
+
+5. Exit the Django shell: ``exit``.
+
+6. Exit the Alation shell: ``exit``.
+
+Step 3: Configure Amazon Athena Data Source Settings in Alation
+--------------------------------------------------------------------
+
+Next, configure the SSO login to Amazon Athena from the catalog and Compose:
+
+1. Log in to the Alation user interface as a Server Admin or a Data Source Admin for your Athena data source.
+
+2. Open the **Settings > General Settings** page of the Athena data source.
+
+3. Under **Network Connections**, make sure that the modified JDBC driver is selected from the **Drivers** list.
+
+4. Scroll down to the **Compose Connections** section:
+
+      .. image:: ../../_static/DS_AthenaSSO_04.png
+
+5. Create a new Compose connection or edit the default one. If SSO is the only type of authentication that users are allowed to use in Compose, you can edit the default Compose connection by adding the ``AwsCredentialsProviderClass=com.example.CustomSessionCredentialsProvider`` parameter.
+
+To create a new separate connection, click **+Add** on the right and add a new Compose connection:
+
+      - Give the connection a meaningful name so that it can be recognized by users in the list of connections in Compose.
+      - Add the following parameter to the URI (required to enable authentication redirection from Compose to the IdP):
+
+          **AwsCredentialsProviderClass=com.example.CustomSessionCredentialsProvider**
+
+      **Format**:
+
+      .. code-block:: Bash
+
+          awsathena://<your_AWS_URL>:443;S3OutputLocation=s3://<your S3 location>;AwsCredentialsProviderClass=com.example.CustomSessionCredentialsProvider
+
+      **Example**:
+
+      .. code-block:: Bash
+
+          awsathena://athena.us-east-1.amazonaws.com:443;S3OutputLocation=s3://user-s3-location;AwsCredentialsProviderClass=com.example.CustomSessionCredentialsProvider
+
+|
+
+      .. image:: ../../_static/DS_AthenaSSO_05.png
+
+
+Now, after selecting the SSO-enabled connection in Compose, users will connect with the AWS role returned for them in the SAML assertion response from the IdP. If a user is assigned multiple roles and they would like to connect with a specific role, they can modify the connection URI and specify the role ARN they wish to connect with using the **preferred_role** parameter. See `How to Specify an IAM Role for Connection`_ below.
+
+Step 4: Test Configuration
+----------------------------------
+
+You can test with a user account that exists in the IdP and has access to the AWS resource cataloged in Alation as the data source.
+
+Test Connection in Compose
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Log in to Alation as a user who should be able to access Amazon Athena.
+2. Go to Compose.
+3. Select the SSO-enabled connection URI that was configured in data source **Settings > General Settings > Compose Connections**:
+
+    .. image:: ../../_static/DS_AthenaSSO_06.png
+
+4. Click the Reconnect button. The following connection dialog should pop up:
+
+    .. image:: ../../_static/DS_AthenaSSO_07.png
+
+5. Click the link **Click here to authorize access before connecting...**. A new browser tab should open where you should be redirected to the IdP login page.
+
+6. Enter the IdP credentials to authenticate.
+
+7. Upon confirmation, the tab will close and the user will be authenticated in Compose.
+
+8. If authenticated successfully, run a query. Subsequent queries in this session should not require any authentication activity until the STS token expires.
+
+If the token request fails, the UI will display an error and connection will not be established.
+See :doc:`Troubleshoot SSO Authentication with Amazon Data Sources <../../datasources/ComposeSSOAWSDataSources/TroubleshootSSOAuthWithAWSDataSources>`.
+
+Test Profiling
+~~~~~~~~~~~~~~~~~
+
+This test applies if Dynamic Profiling is enabled for the Amazon Athena data source:
+
+1. Go to the Alation catalog and open the catalog page of a column in the Athena data source.
+
+2. Click **Run Profile**. The Connect dialog should pop up.
+
+3. Select the SSO-enabled connection from the list of saved connections.
+
+4. Click **Test Authorization**:
+
+     .. image:: ../../_static/DS_AthenaSSO_08.png
+
+5. If there is no active STS token, a new browser tab should open where you will be redirected to the IdP login page.
+
+6. Enter the IdP credentials to authenticate.
+
+7. Upon authentication, the tab will close and the user will be able to profile the column.
+
+Test Data Upload
+~~~~~~~~~~~~~~~~~~~
+
+Similarly, you can test the data upload.
+
+1. Go the the Amazon Athena data source page in the catalog.
+2. On the upper right, click **More**, and then click **Upload Data**.
+3. Try to test-upload a table: the authentication flow should be the same as described above in `Test Profiling`_.
+
+
+How to Specify an IAM Role for Connection
+----------------------------------------------
+
+AWS STS allows authenticated users to assume a role and returns temporary credentials that can be used to establish a connection to Amazon Athena.
+
+Release 2021.2 and Newer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the SAML assertion response returns multiple roles for a user, they will be able to select one of their roles from the list roles when they are connecting to the data source:
+
+    .. image:: ../../_static/DS_AthenaSSO_16.png
+
+Note that the role selection can be disabled: :doc:`Disable Role Selection for SSO-Enabled Data Sources <../../admins/AdditionalConfiguration/DisableRoleSelectionForSSOEnabledSources>`. When role selection is disabled, the driver will assume the first role from the list returned in the SAML response from the IdP unless the **preferred_role** parameter is included into the URI. See `Release 2021.1.x`_ below for information about the **preferred_role** parameter.
+
+
+Release 2021.1.x
+~~~~~~~~~~~~~~~~~
+
+The Compose connection URI for Amazon Athena can include a **preferred_role** URI parameter that accepts the value of the AWS role ARN. The **preferred_role** parameter can be specified by a *Server Admin* who creates a Compose Connection in the data source settings or can be specified by a Compose user who creates a new database connection in Compose.
+
+**Format**:
+
+    .. code-block:: Bash
+
+        awsathena://<your_AWS_URL>:443;S3OutputLocation=s3://<your S3 location>;AwsCredentialsProviderClass=com.example.CustomSessionCredentialsProvider;preferred_role=<role_ARN>
+
+.. note::
+
+    The **preferred_role** parameter is an Alation-specific parameter and is not the same as the **preferred_role** property of the Simba JDBC driver for Athena. This parameter is used by Compose to pass the AWS role ARN to Alation AuthService.
+
+If **preferred_role** is not not provided, the driver assumes the first role from the list returned in the SAML response from the IdP.
+
+The role ARN specified in **preferred_role** must be listed in SAML assertion associated with the authorization request handled by AuthService. If not, AuthService will issue an error. The Role a user specifies in the connection URI must match the role received in the SAML response from the IdP.

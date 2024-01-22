@@ -1,0 +1,42 @@
+Tableau Troubleshooting Tips
+=================================
+
+Migrating to Tableau 10.5
+----------------------------
+
+Moving to version 10.5 can cause the following error in older versions of Alation: ``column u_table.admin_level does not exist``
+
+To fix the issue follow these steps:
+
+1. Connect to the Alation shell:
+
+   .. code-block:: Bash
+
+        sudo service alation shell
+
+2. Enter the Django shell:
+
+   .. code-block:: Bash
+
+        alation_django_shell
+
+3. Run the following commands. The ID can be obtained in the Alation UI from the URL of the source:
+
+   .. code-block:: Bash
+
+        ts = TableauServer.objects.get(id=<id_of_server>) 
+        ts.permission_model=2
+        ts.save()
+
+Using an AD Account
+--------------------------
+
+There is a known issue where if an AD is used for the Tableau Server
+account, and that account needs to be entered with the AD Realm
+information (for example: ``XX\acct_name``), then you may see extraction fail.
+
+The workaround for this is to change the following ``alation_conf`` value:
+
+.. code-block:: Bash
+
+   alation_conf tableau.extraction.pg_filter_sites_by_server_account -s False

@@ -1,0 +1,87 @@
+Create Backups Manually
+=============================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+.. note::
+
+    This information applies to both Backup V1 and Backup V2.
+
+Use the steps in this section to create an Alation backup manually on demand. The backup process creates backups based on your current backup configuration.
+
+Depending on your Alation version, Alation will create one or two compressed backup files in the backup storage directory.
+
+    - **Versions prior to 2021.4**—The backup process creates one Alation backup file. The name of the file uses the following format: ``<timestamp_version>_alation_backup.tar.gz``. For example: ``202109232027_10-0-0-147420_alation_backup.tar.gz``.
+
+    - **Starting in version 2021.4**—In addition to the Alation backup file, Alation will create a second backup file of the Event Bus component. The Event Bus backup uses the following file name format: ``<timestamp_version>_alation_eb_backup.tar.gz``. For example: ``202109232027_10-0-0-147420_alation_eb_backup.tar.gz``.
+
+    - **From version 2023.1**—Alation supports more configurability for backups. By default, the backup process will create two backup files—the Alation backup and the Event Bus backup. The backup of the internal Postgres database will be included into the Alation backup. However, you can use the backup configuration capabilities and exclude the Postgres database backup from the Alation backup. In this case Alation will place the Postgres backup in a separate directory. See :doc:`/installconfig/BackupandRestore/ManagePostgresBackupsSeparately` for more information.
+
+The default location for the backup files is the **data2/backup** directory on the Alation server (inside the Alation shell).
+
+    .. note::
+
+        If you have changed the default location, look for the backups in your custom backup directory.
+
+When creating backups, it's important to be aware of whether your backups are incremental—see :doc:`/installconfig/BackupandRestore/ConfigureBackups/ConfigureIncrementalBackups` for more information. Incremental backups are available in Backup V2. Every time you run the backup action, Alation will create a full backup if incremental backups are disabled. If incremental backups are enabled, Alation will create a consecutive incremental backup.
+If you have enabled incremental backups, note that the Event Bus backup will also run every time an incremental Alation backup is created. However, the Event Bus backup itself  is not incremental. The backup process creates a full Event Bus backup every time it runs.
+
+    .. important::
+
+        The Alation server does not need to be stopped to run a backup.
+
+.. _create-manual-backup:
+
+Create a Backup
+---------------------
+
+To create a backup:
+
+1. The backup command may take a few hours depending on the size of the instance, and we recommend running it with ``nohup`` or using a terminal multiplexer, such as Screen. If using Screen, start a Screen session:
+
+    .. code-block:: Bash
+
+        screen -S alation-backup
+
+2. Enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Change user to ``alation``.
+
+    .. code-block:: Bash
+
+        sudo su alation
+
+4. Run the backup command:
+
+    .. code-block:: Bash
+
+        alation_action backup_all
+
+    The compressed backup will be saved in the location configured in the ``alation.backup.data_dump_dir`` parameter of **alation_conf**. The default location is **/data2/backup**.
+
+5. Exit from the user ``alation``.
+
+    .. code-block:: Bash
+
+        exit
+
+6. Exit from the Alation shell.
+
+    .. code-block:: Bash
+
+        exit
+
+If the backup action fails, manually delete the staging directory for the Postgres backups—**/data2/backup/pgbackup** or **/data2/backup/pgbackrest**, depending on your version—before attempting the next backup action.
+
+Validate Success
+-------------------
+
+To check that the backup has been successfully created:
+
+1. Go to **/data2/backup/** or your configured backup storage location and ensure that there are backup files ``<timestamp_version>_alation_backup.tar.gz`` and ``<timestamp_version>_alation_eb_backup.tar.gz`` with the current timestamp.
+
+2. At regular intervals, test restoration on a separate machine.

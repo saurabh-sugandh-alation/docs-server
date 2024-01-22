@@ -1,0 +1,154 @@
+All Stewards
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query produces a list of unique Alation objects that have Stewards assigned to them. The last column, ``is_deleted``, is true when the object is deleted. Select the data you are interested in.  
+
+- The following query produces a list of unique Alation objects that have stewards assigned to them
+- The last column, ``is_deleted``, is ``True`` when the object is deleted. Select the data you are interested in.
+
+Query version for releases V R6 (5.10.x) and newer
+--------------------------------------------------
+
+.. code-block:: sql
+
+    SELECT DISTINCT
+        AO.object_uuid,
+        OT1.object_type_name AS objectType,
+        AO.object_url,
+        FV.object_type_uuid_value AS stewardUUID,
+        AU.user_name AS stewardUsername,
+        AU.email AS stewardEmail,
+        AU.is_active AS stewardActiveFlag,
+        AU.display_name AS stewardDisplayname,
+        AU.is_admin,
+        AU.user_type,
+        fv3.boolean_value as is_deleted
+    FROM
+        public.alation_object AS AO
+    -- Join on object UUID and object type ID to get value_fp associated with the catalog object
+    JOIN
+        public.object_field_value AS OFV
+        ON
+            AO.object_uuid = OFV.object_uuid
+            AND
+            AO.object_type_id = OFV.object_type_id
+    -- Use value_fp to get the attached steward UUID and object type ID
+    JOIN
+        public.field_value AS FV
+        ON
+            OFV.value_fp = FV.value_fp
+    -- Get user information
+    JOIN
+        public.alation_user AS AU
+        ON
+            CAST(LPAD(TO_HEX((AU.user_id)), 32, '0') AS UUID) = FV.object_type_uuid_value
+            AND FV.object_type_id_value = 33
+    -- Get object type information
+    JOIN
+        public.alation_object_type AS OT1
+        ON
+            AO.object_type_id = OT1.object_type_id
+    -- Get deletion information
+    -- First use the object UUID (uuid + type_id) and get the value_fp (value pointer)
+    JOIN
+        public.object_field_value AS OFV3
+        ON
+          AO.object_uuid = OFV3.object_uuid
+          AND
+          AO.object_type_id = OFV3.object_type_id
+    -- Get field value
+    JOIN
+        public.field_value AS FV3
+        ON
+          OFV3.value_fp = FV3.value_fp
+    -- Match on field id to get deletion flag
+    JOIN
+        public.object_field AS OBF
+        ON
+          OFV3.field_id = OBF.field_id
+    -- Requesting field_id for stewards only
+        WHERE
+          OFV.field_id IN (SELECT field_id FROM public.object_field WHERE field_name = 'steward') AND obf.field_name ='deleted';
+
+
+Query version for releases before V R6 (5.10.x)
+--------------------------------------------------
+
+.. code-block:: sql
+
+  SELECT DISTINCT
+        AO.object_uuid,
+        OT1.object_type_name AS objectType,
+        AO.object_url,
+        FV.object_type_uuid_value AS stewardUUID,
+        AU.user_name AS stewardUsername,
+        AU.email AS stewardEmail,
+        AU.is_active AS stewardActiveFlag,
+        AU.display_name AS stewardDisplayname,
+        AU.is_admin,
+        AU.user_type,
+        FV3.boolean_value AS is_deleted
+  FROM
+        public.alation_object AS AO
+  -- Join on object UUID and object type ID to get value_fp associated with the catalog object
+  JOIN
+        public.object_field_value AS OFV
+        ON
+              AO.object_uuid = OFV.object_uuid
+              AND
+              AO.object_type_id = OFV.object_type_id
+  -- Use value_fp to get the attached steward UUID and object type ID
+  JOIN
+        public.field_value AS FV
+        ON
+              OFV.value_fp = FV.value_fp
+  -- Using object UUID and type ID, we get the value_fp associated to the stewards
+  JOIN
+        public.object_field_value as OFV2
+        ON
+              FV.object_type_uuid_value = OFV2.object_uuid
+              AND
+              FV.object_type_id_value = OFV2.object_type_id
+  -- Now we get the value of the steward fields
+  JOIN
+        public.field_value AS FV2
+        ON
+              OFV2.value_fp = FV2.value_fp
+  -- Get user information
+  JOIN
+        public.alation_user AS AU
+        ON
+              AU.email = FV2.text_value
+  -- Get object type information
+  JOIN
+        public.alation_object_type AS OT1
+        ON
+              AO.object_type_id = OT1.object_type_id
+  -- Get deletion information
+  -- First grab the object UUID (uuid + type_id) and get the value_fp (value pointer)
+  JOIN
+        public.object_field_value AS OFV3
+        ON
+              AO.object_uuid = OFV3.object_uuid
+              AND
+              AO.object_type_id = OFV3.object_type_id
+  -- Get field value
+  JOIN
+        public.field_value AS FV3
+        ON
+               OFV3.value_fp = FV3.value_fp
+  -- Match on field id to get deletion flag
+  JOIN
+        public.object_field AS OBF
+        ON
+              OFV3.field_id = OBF.field_id
+        WHERE
+  -- Requesting field_id for stewards only
+        OFV.field_id IN (SELECT field_id FROM public.object_field WHERE field_name = 'steward')
+        AND
+  -- ensure only field_name = 'deleted' field values are extracted
+        OBF.field_name = 'deleted';

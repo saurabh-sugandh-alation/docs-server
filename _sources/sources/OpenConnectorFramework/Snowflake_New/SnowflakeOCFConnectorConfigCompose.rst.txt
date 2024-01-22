@@ -1,0 +1,30 @@
+Configure Compose
+====================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+To configure the use of Compose with your Snowflake OCF data source, go to the **Compose** tab on the Settings page of your Snowflake OCF data source. For more details, see :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+For information on how to configure OAuth authentication for Compose, see :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOAuth/index`.
+
+Incremental Ingestion of Compose Queries
+-------------------------------------------
+
+When you run DDL queries in Compose, Alation incrementally ingests the corresponding metadata into the catalog. There are some requirements for the JDBC URI and the use of object names that ensure that Alation can incrementally ingest queries from Compose:
+
+    1. Both the service account connection JDBC URI and the Compose connection URI must include the database name parameter (``db``).
+
+    2. To ensure that tables and views created via Compose are ingested into the catalog, use fully qualified table names, for example:
+
+        - Creating a table:
+
+          .. code-block:: Bash
+
+              CREATE TABLE <DATABASE>.<SCHEMA>.<TABLE> ({column properties});
+
+        - Creating a view:
+
+          .. code-block:: Bash
+
+              USE <DATABASE>;
+              CREATE VIEW <SCHEMA>.<VIEW> AS {view condition};

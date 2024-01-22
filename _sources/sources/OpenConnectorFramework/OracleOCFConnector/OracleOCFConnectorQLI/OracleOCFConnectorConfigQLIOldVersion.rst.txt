@@ -1,0 +1,237 @@
+Versions Before 1.5.0
+======================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+.. important::
+
+    This section is applicable to all Alation versions and Oracle OCF Connector versions **prior to 1.5.0**.
+
+    
+For Oracle data sources added using the Oracle OCF connector, Alation supports two QLI configuration options: table-based QLI or custom query-based QLI. Depending on the option you choose, you will either need to create a QLI view in your database or write a query using the template expected by Alation.
+
+Before you can configure QLI in Alation, perform the required configuration in your Oracle database.
+
+If your Oracle data source is deployed on AWS RDS, refer to :doc:`/sources/OpenConnectorFramework/OracleOCFConnector/OracleConnectorQLI_RDS` for information on configuring QLI.
+
+For Oracle on AWS EC2 or on-premise, you can either use `audit trail <https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/AUDIT_TRAIL.html#GUID-BD86F593-B606-4367-9FB6-8DAB2E47E7FA>`_ or `Active Session History <https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/V-ACTIVE_SESSION_HISTORY.html#GUID-69CEA3A1-6C5E-43D6-982C-F353CD4B984C>`_ to configure QLI. You can also reuse the QLI view created using recommendations for Oracle data sources on the native (built-in) connector if you already have this view.
+
+    .. note::
+
+        The capability to reuse the native QLI view is available from connector version **1.4.0** and Alation version **2023.1**.
+
+Using Audit Trail
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This configuration assumes your Oracle database has the database audit trail enabled. We recommend including these statements into auditing:
+
+    - CREATE TABLE
+    - CREATE VIEW
+    - SELECT TABLE
+    - UPDATE TABLE
+    - INSERT TABLE
+    - DELETE TABLE
+    - ALTER TABLE
+
+Configure Table-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable QLI in Alation, in a schema of your choice, create a view on top of the ``SYS.AUD$`` table using the template below. Grant the service account you are using in Alation the SELECT permissions for this QLI view.
+
+In the example below, we're creating a view ``ALATION_QLI_VIEW``. The ``<SCHEMA>`` placeholder represents a schema where the view is created.
+
+.. code-block:: SQL
+
+    CREATE OR REPLACE VIEW <SCHEMA>.ALATION_QLI_VIEW AS
+    SELECT
+        q.userid AS userName,
+        q.NTIMESTAMP# AS startTime,
+        q.sqltext AS queryString,
+        q.sessionid AS sessionId,
+        q.NTIMESTAMP# AS sessionStartTime,
+        0 AS milliseconds,
+        'N' AS cancelled,
+        (SELECT * FROM Global_name) AS defaultDatabases
+    FROM sys.aud$ q
+    WHERE q.sqltext IS NOT NULL
+        AND q.OBJ$CREATOR = q.USERID
+    ORDER BY
+        sessionId,
+        startTime;
+
+Configure Query-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you cannot create the view for QLI, for example, due to access restrictions, you can use a custom QLI query to extract query history into Alation. If you opt for query-based QLI, every time you run QLI, Alation will query the ``SYS.AUD$`` table to get query history information. If you choose this option, ensure that the service account you are using in Alation is allowed to query the ``SYS.AUD$`` table.
+
+The template for the QLI query is given below. You can customize it by adding, removing, or changing the filter, but the columns and their aliases must remain as is since Alation expects this query structure.
+
+    .. note::
+
+        When using the QLI query template, do not substitute the ``STARTTIME`` and ``ENDTIME`` parameters in the WHERE filter. These parameters are not actual column names and should stay as is. They are expected by the connector and will be substituted with the start and end date of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+QLI Query Template
+''''''''''''''''''''''''
+
+.. code-block:: SQL
+
+      SELECT q.userid AS userName,
+          q.NTIMESTAMP# AS startTime,
+          q.sqltext AS queryString,
+          q.sessionid AS sessionId,
+          q.NTIMESTAMP# AS sessionStartTime,
+          0 AS milliseconds,
+         'N' AS cancelled,
+          (SELECT * FROM Global_name) AS defaultDatabases
+      FROM sys.aud$ q
+      WHERE q.sqltext IS NOT NULL
+          AND q.OBJ$CREATOR = q.USERID
+          AND q.NTIMESTAMP# BETWEEN TO_DATE(STARTTIME,'YY-MM-DD HH24:MI:SS')
+          AND TO_DATE(ENDTIME,'YY-MM-DD HH24:MI:SS')
+      ORDER BY
+          sessionId,
+          startTime;
+
+Using Active Session History
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Active session history (ASH) is recorded by default. ASH only records some of the queries, as it samples them on an interval (one every ten seconds). This means that the auto-generated Lineage feature will not be fully supported when using ASH. Some lineage links may be missing as they were not captured. Popularity will not be as accurate with ASH compared to audit trail, but over many samples it can still be a good approximation. Oracle Enterprise Edition and the Diagnostics and Tuning option are required for Active Session History.
+
+ASH query ingestion requires access to a view on top of the tables:
+
+    - ``dba_hist_active_sess_history``
+    - ``dba_users``
+    - ``dba_hist_sqltext``
+    - ``dba_hist_snapshot``
+
+In a schema of your choice, create the view using the template below. In the example below, we're creating a view ``ALATION_QLI_VIEW``. The ``<SCHEMA>`` placeholder represents a schema where the view is created. Make sure the service account you are using in Alation is allowed to query this view.
+
+.. code-block:: SQL
+
+      CREATE OR REPLACE VIEW <SCHEMA_NAME>.ALATION_QLI_VIEW AS
+      SELECT
+          b.username AS userName,
+          b.username ||'/'|| r.session_id ||'/'|| r.session_serial# ||'/'|| r.instance_number AS sessionId,
+          s.sql_text AS queryString,
+          r.start_time AS startTime,
+          r.time_ms AS milliseconds,
+          NULL AS sessionStartTime,
+          'N' as cancelled,
+          (SELECT * FROM Global_name) as defaultDatabases
+      FROM
+          (
+            SELECT
+              a.DBID, a.user_id, a.session_id, a.session_serial#,
+              a.sql_id, a.instance_number,
+              MIN(a.sample_time) AS start_time,
+              SUM(a.tm_delta_time) AS time_ms
+            FROM dba_hist_active_sess_history a
+            JOIN dba_hist_snapshot s ON a.dbid = s.dbid
+              AND a.snap_id = s.snap_id
+              AND a.instance_number = s.instance_number
+            GROUP BY
+              a.dbid, a.user_id, a.session_id, a.session_serial#,
+              a.sql_id, s.begin_interval_time, a.instance_number
+              ) r
+          JOIN dba_users b ON r.user_id = b.user_id
+          JOIN dba_hist_sqltext s ON r.dbid = s.dbid
+            AND r.sql_id = s.sql_id
+      WHERE
+        s.command_type NOT IN (6, 7, /* system cmds */ 47, /* declare cmd */ 170, 189)
+          AND b.username NOT IN ('SYSTEM', 'SYS', 'OLAPSYS', 'LBACSYS',
+              'OWBSYS', 'OWBSYS_AUDIT', 'APPQOSSYS', 'SYSMAN', 'WMSYS',
+              'EXFSYS', 'CTXSYS', 'ORDSYS', 'MDSYS');
+
+
+Reusing QLI View for Native Oracle Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you already have an Oracle data source that was cataloged using the native (built-in) connector, you can reuse the QLI view that you created for this data source after you migrate it to OCF Oracle connector. This configuration is done in Alation, on the data source settings page. See `Reuse Native QLI View`_ below.
+
+Alternatively, you can choose the query-based QLI approach to QLI and create a query that retrieves data from the QLI view created for the native connector.
+
+.. code-block:: SQL
+
+      SELECT user_name AS userName,
+          start_time AS startTime,
+          sql_text AS queryString,
+          session_id AS sessionId,
+          session_start_time AS sessionStartTime,
+          time_ms AS milliseconds,
+          'N' AS cancelled,
+          (SELECT * from Global_name) AS defaultDatabases
+      FROM <SCHEMA>.NATIVE_QUERY_LOG_VIEW
+      WHERE sql_text is not NULL
+          AND start_time BETWEEN TO_DATE(STARTTIME,'YY-MM-DD HH24:MI:SS')
+          AND TO_DATE(ENDTIME,'YY-MM-DD HH24:MI:SS')
+      ORDER BY
+          session_id,
+          start_time;
+
+Configuration in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In Alation, you can configure QLI on the **Query Log Ingestion** tab. Before you set up QLI in Alation, perform the configuration on the database as is described in `Using Audit Trail`_ or `Using Active Session History`_. If you go with the query-based QLI option, make sure that the Alation service account has access to the system tables that are queried.
+
+Table-Based QLI
+^^^^^^^^^^^^^^^^^^^^
+
+To configure table-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, in the **Table Name** field, specify the name of the QLI view where the query logs are available. Make sure that the service account has the permissions to access this view. The view name must be provided in the following format: ``database.schema.view_name``.
+
+3. Click **Save**.
+
+Reuse Native QLI View
+''''''''''''''''''''''''''''''
+
+If you migrated your Oracle data source from the native (built-in) connector to the OCF Oracle connector, you can reuse the QLI view created for the native data source when configuring table-based QLI.
+
+    .. note::
+
+        The QLI view is the view specified in the **Query Log Privileges** section on the **General Settings** page of a data source added using the native (built-in) connector. The QLI view for native Oracle data sources can be created following an example in :ref:`QLI view <Appendix_4>`.
+
+        For information about migrating data sources, see :doc:`/sources/OpenConnectorFramework/MigrateNativeSourcestoOCF/MigrateNativeDataSourcestoOCFConnector`.
+
+To reuse the QLI view for the native data source:
+
+1. On the **Query Log Ingestion** tab, under **Connector Settings** > **Query Extraction**, select the checkbox **Use Native QLI Table Name**.
+2. In the **Table Name** field located under this checkbox, specify the name of the native QLI view.
+3. Click **Save**.
+
+Custom Query-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To configure query-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, in the **Custom QLI Query** field, provide the QLI query.
+
+3. Click **Save**.
+
+Perform QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can either perform QLI manually on demand or enable automated QLI:
+
+1. To perform manual QLI, under the **Automated and Manual Query Log Ingestion** section of the **Query Log Ingestion** tab, ensure that the **Enable Automated Query Log Ingestion** toggle is disabled.
+
+    .. note::
+
+        Metadata extraction must be completed first before running QLI.
+
+2. Click **Preview** to get a sample of the query history data to be ingested.
+
+3. Click the **Import** button to perform QLI on demand.
+
+4. To schedule QLI, enable the **Enable Automated Query Log Ingestion** toggle.
+
+5. Set a schedule under **Automated Query Log Ingestion Time** by specifying values in the *week*, *day*, and *time* fields. The next QLI job will run on the schedule you have specified.
+
+    .. note::
+
+        The hourly schedule for automated QLI is not supported.
+

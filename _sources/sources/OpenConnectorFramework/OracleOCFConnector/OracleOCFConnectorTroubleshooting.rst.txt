@@ -1,0 +1,53 @@
+Troubleshooting
+==================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+
+Log Location
+-----------------
+
+Refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.
+
+Connection via Native Network Encryption (NNE) fails
+------------------------------------------------------------------------------------
+
+Make sure that you have the required permissions.
+
+1. Grant permission on tables **v_$session_connect_info** and **v_$mystat** to the user as these are the corresponding synonyms too.
+
+
+    If you can’t grant permissions directly, run the following commands:
+
+    .. code-block:: Bash
+
+                GRANT SELECT ON v_$mystat TO <user>
+                GRANT SELECT ON v_$session_connect_info TO <user>
+
+2. Run the following commands:
+
+    .. code-block:: Bash
+
+        select network_service_banner from v$session_connect_info where sid in (select distinct sid from v$mystat);
+
+
+3. Verify the output for the queries mentioned above.
+
+    If encryption or checksum is enabled:
+
+        .. code-block:: Bash
+
+            TCP/IP NT Protocol Adapter for Linux: Version 19.0.0.0.0 - Production
+            Encryption service for Linux: Version 19.0.0.0.0 - Production
+            AES256 Encryption service adapter for Linux: Version 19.0.0.0.0 - Production
+            Crypto-checksumming service for Linux: Version 19.0.0.0.0 - Production
+            SHA1 Crypto-checksumming service adapter for Linux: Version 19.0.0.0.0 - Production
+
+
+    If encryption or checksum is disabled:
+
+        .. code-block:: Bash
+
+            TCP/IP NT Protocol Adapter for Linux: Version 19.0.0.0.0 - Production
+            Encryption service for Linux: Version 19.0.0.0.0 - Production
+            Crypto-checksumming service for Linux: Version 19.0.0.0.0 - Production

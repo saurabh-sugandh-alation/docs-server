@@ -1,0 +1,124 @@
+DB2 LUW
+======= 
+
+.. important::
+
+      Starting **August 30, 2023**, we will remove the ability to create new data sources using the DB2 Native Connector. Support for the DB2 Native Connector will cease on **December 1, 2023**, as set out in Alation’s `Support Policy <https://www.alation.com/tscs/support/>`_. See the `Transition from Native to OCF Connectors <https://community.alation.com/communityhubmicrosite/blogs/diby-malakar/2023/07/12/transition-from-native-to-ocf-connectors>`_ announcement in Alation Community (requires login to Community).
+
+Required Information
+--------------------------
+
+To configure DB2 in Alation, you will need the following information:
+
+-  Hostname or IP address of your server
+-  Port number
+-  Database Name
+-  Service account with privileges listed below
+-  Query Log Ingestion setup
+
+.. image:: ../../_static/DS_DB2LUW01.png
+    :width: 3.5in
+    :align: center
+
+Preliminaries
+---------------
+
+Firewall Configuration:
+
+-  Open outbound TCP port **50000**
+
+Create Service Account
+----------------------
+
+The DB2 service account is a Linux account. The account is created,
+authorities need to be granted to the new user.
+
+Sample commands to create the account:
+
+.. code-block:: bash
+
+     group -g 999 db2iadm1
+
+     useradd -u 1004 -g db2iadm1 -m -d /home/alation alation
+
+     password alation
+
+Sample SQL to grant authorities to the account:
+
+.. code-block:: sql
+
+    -- SQL: enable new user to connect to database;
+    GRANT CONNECT ON DATABASE TO alation;
+    -- This grants \`alation\` access to all data
+    GRANT DATAACCESS ON DATABASE TO alation;
+
+Metadata Extraction
+-------------------
+
+.. code-block:: sql
+
+    GRANT SELECT ON SYSCAT.ROLEAUTH TO alation;
+    GRANT SELECT ON SYSCAT.TABAUTH TO alation;
+    GRANT SELECT ON SYSCAT.ROLES TO alation;
+    GRANT SELECT ON SYSCAT.DBAUTH TO alation;
+    GRANT SELECT ON SYSCAT.SCHEMAAUTH TO alation;
+    GRANT SELECT ON SYSCAT.COLUMNS TO alation;
+    GRANT SELECT ON SYSCAT.TABLES TO alation;
+    GRANT SELECT ON SYSCAT.REFERENCES TO alation;
+    GRANT SELECT ON SYSCAT.KEYCOLUSE TO alation;
+    GRANT SELECT ON SYSCAT.INDEXES TO alation;
+    GRANT SELECT ON SYSIBM.SYSROUTINEPARMS TO alation;
+    GRANT SELECT ON SYSCAT.ROUTINES TO alation;
+    GRANT SELECT ON SYSIBM.SYSCOLUMNS TO alation;
+    GRANT SELECT ON SYSCAT.VIEWS TO alation;
+    GRANT SELECT ON SYSCAT.SCHEMATA TO alation;
+
+Table Profiling
+---------------
+
+Permissions granted at account creation are sufficient to allow table
+profiling.
+
+Additional Setup:  Enabling Explain in Compose
+----------------------------------------------
+
+To support the Explain feature for DB2 connections, we need to follow
+the steps below on your DB2 system. This a one-time process.
+
+#. Connect to the DB2 instance
+
+    .. code-block:: sql
+
+        CONNECT TO database-name
+
+2. Run the procedure given below
+
+    .. code-block:: sql
+
+        CALL SYSPROC.SYSINSTALLOBJECTS('EXPLAIN', 'C', CAST (NULL AS VARCHAR(128)), CAST (NULL AS VARCHAR(128)))
+
+Reference: `IBM Knowledge Center <https://www.ibm.com/support/knowledgecenter/en/SS6NHC/com.ibm.swg.im.dashdb.sql.ref.doc/doc/r0008441.html>`_
+
+Query History
+-------------
+
+.. code-block:: sql
+
+    CREATE EVENT MONITOR alationQueryLogMonitor FOR STATEMENTS WRITE TO TABLE connheader(
+      TABLE alationDb2QueryLogger.connection_header INCLUDES(sequence_no, auth_id, appl_id, conn_time)
+    ),
+    stmt(
+      TABLE alationDb2QueryLogger.statement INCLUDES(
+        appl_id,
+        stmt_operation,
+        stmt_text,
+        start_time,
+        stop_time,
+        system_cpu_time,
+        user_cpu_time
+      )
+    )
+    MANUALSTART BUFFERSIZE 512 NONBLOCKED;
+    SET EVENT MONITOR alationQueryLogMonitor STATE = 1;
+    GRANT SELECT ON alationDb2QueryLogger.statement TO alation;
+    GRANT SELECT ON alationDb2QueryLogger.connection_header TO alation;

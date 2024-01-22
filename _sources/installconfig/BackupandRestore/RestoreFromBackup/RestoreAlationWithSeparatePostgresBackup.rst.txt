@@ -1,0 +1,149 @@
+Restore Alation With a Separate Postgres Backup
+========================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from version 2022.2*
+
+The Alation backup process creates a separate Postgres backup when you have disabled Postgres backup compression on your Alation instance. See :doc:`/installconfig/BackupandRestore/ManagePostgresBackupsSeparately` for more details.
+
+.. note::
+
+    If you have previously set up Postgres backup storage on Amazon S3, refer to `Restore Alation with Postgres Backup on Amazon S3`_.
+
+Restore Alation with a Separate Postgres Backup
+-----------------------------------------------------
+
+The steps in this section apply:
+
+    - If you are using the pgBackRest tool to take Alation backups.
+    - If Postgres is excluded from the Alation backup file and your Postgres backup is not stored on Amazon S3.
+
+To restore an Alation instance when you have a separate Postgres backup:
+
+1. Copy the Alation and Event Bus backup files to the **/data2/backup** folder on the destination Alation instance.
+
+    .. important::
+
+        Make sure to use two backup files taken by the same backup process. They will have the same timestamp and version, for example:
+
+    - Alation backup file: **202109232027_10-0-0-147420_alation_backup.tar.gz**
+    - Event Bus backup file: **202109232027_10-0-0-147420_alation_eb_backup.tar.gz**
+
+2. Recursive-copy the Postgres backup directory from the source instance to the destination instance. The directory on the source instance with the Postgres backup is stored in the parameter ``pgsql.pgbackrest.repo_dir_name`` in **alation_conf**.
+
+    For example, if you are using secure copying, use the following guidelines:
+
+      2.1. On the destination instance, outside of the Alaton chroot, create a directory:
+
+          .. code-block:: Bash
+
+              sudo mkdir -p /backup/restore
+
+      2.2. Change ownership to the SSH user you are going to use when copying the Postgres backup to the destination instance.
+
+          .. code-block:: Bash
+
+              chown <SSH_user>:<SSH_user> /backup/restore
+
+        2.3. On the source instance, enter the Alation shell.
+
+          .. code-block:: Bash
+
+              sudo etc/init.d/alation shell
+
+        2.4. Secure copy the Postgres backup  to the destination instance.
+
+          .. code-block:: Bash
+
+              pgbackrest_dir=$(alation_conf pgsql.pgbackrest.repo_dir_name --value-only)
+
+              scp -r ${pgbackrest_dir} -i <destination instance private key> <SSH_user>@<destination instance IP>:/backup/restore
+
+          2.5. Check if the **pgbackrest** directory is created.
+
+          .. code-block:: Bash
+
+              ls -al /data2/restore/pgbackrest
+
+3. Using the **alation_conf** command, change the ``alation.backup.restore_file`` parameter value to reflect the path to the Alation backup file. Substitute ``<timestamp_version>_alation_backup.tar.gz`` with your real file name.
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup.restore_file -s /data2/restore/<timestamp_version>_alation_backup.tar.gz
+
+4. Using the **alation_conf** command, change the ``alation.backup.eb_restore_file`` parameter value to reflect the path to the Event Bus backup file. Substitute ``<timestamp_version>_alation_eb_backup.tar.gz`` with your real file name.
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup.eb_restore_file -s /data2/restore/<timestamp_version>_alation_eb_backup.tar.gz
+
+5. Using the **alation_conf** command, change the ``pgsql.pgbackrest.repo_dir_name`` parameter value to reflect the path to the pgbackrest directory, for example:
+
+    .. code-block:: Bash
+
+        alation_conf pgsql.pgbackrest.repo_dir_name -s /data2/restore/pgbackrest
+
+6. Run the restore command to perform the restore. Note that this command overwrites all existing data on the instance if any exists:
+
+    .. code-block:: Bash
+
+        alation_action destructive_restore_all
+
+.. _Restore from S3:
+
+Restore Alation with Postgres Backup on Amazon S3
+----------------------------------------------------
+
+*Available from version 2022.2*
+
+The steps in this section apply if you are using the pgBackRest tool to take Alation backups. They require a separate Postgres backup stored externally on Amazon S3.
+
+On the Alation instance where you are going to restore:
+
+1. Copy the Alation and Event Bus backup files to the **/data2/backup** folder. The backup files must be accessible from inside the Alation chroot. Do not copy the **pgbackrest** directory from the old instance.
+
+    .. important::
+
+        Make sure to use two backup files taken by the same backup process. They will have the same timestamp and version, for example:
+
+          - Alation backup file: **202109232027_10-0-0-147420_alation_backup.tar.gz**
+          - Event Bus backup file: **202109232027_10-0-0-147420_alation_eb_backup.tar.gz**
+
+2. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Using the **alation_conf** command, change the ``alation.backup.restore_file`` parameter value to reflect the path to the Alation backup file. Substitute ``<timestamp_version>_alation_backup.tar.gz`` with your real file name.
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup.restore_file -s /data2/restore/<timestamp_version>_alation_backup.tar.gz
+
+4. Using the **alation_conf** command, change the ``alation.backup.eb_restore_file`` parameter value to reflect the path to the Event Bus backup file. Substitute ``<timestamp_version>_alation_eb_backup.tar.gz`` with your real file name.
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup.eb_restore_file -s /data2/restore/<timestamp_version>_alation_eb_backup.tar.gz
+
+5. Specify the information of the external storage on S3. This information is required to restore Postgres. This configuration should be the same as existed on the old instance that is restored.
+
+      Use these commands to provide the information about the backup storage on S3:
+
+      .. code-block:: Bash
+
+          alation_conf pgsql.pgbackrest.redundancy.enabled -s True
+          alation_conf pgsql.pgbackrest.redundancy.type -s s3
+          alation_conf pgsql.pgbackrest.redundancy.s3.endpoint -s s3.amazonaws.com
+          alation_conf pgsql.pgbackrest.redundancy.s3.bucket -s <your_ AWS_S3_bucket>
+          alation_conf pgsql.pgbackrest.redundancy.s3.region -s <AWS_region_for_S3_bucket>
+          alation_conf pgsql.pgbackrest.redundancy.s3.key -s <AWS_API_key>
+          alation_conf pgsql.pgbackrest.redundancy.s3.secret -s <AWS_API_secret>
+
+6. Run the restore command to perform the restore. Note that this command overwrites all existing data on the instance if any exists. It will download the Postgres data from the S3 bucket you have provided in **alation_conf**.
+
+    .. code-block:: Bash
+
+        alation_action destructive_restore_all

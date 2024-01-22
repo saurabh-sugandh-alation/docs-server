@@ -1,0 +1,801 @@
+MySQL Connector: Install and Configure
+================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Applies from release 2021.4
+
+Prerequisites
+-------------------------
+
+Firewall Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - Open outbound TCP port **3306** to MySQL server
+
+Driver
+~~~~~~~~~~~
+
+The driver for the MySQL Connector is available in Alation by default and does not require installation. Refer to :doc:`Support Matrix <../../../releases/supportmatrices/index>` for your Alation release to find out the version of the available driver for MySQL.
+
+Create Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sample SQL to create an account
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+      CREATE USER alation IDENTIFIED BY 'password';
+      GRANT ALL PRIVILEGES ON *.* TO 'alation';
+
+Permissions for Metadata Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+      GRANT SELECT ON INFORMATION_SCHEMA.SCHEMATA TO 'alation'@'%';
+      GRANT SELECT ON INFORMATION_SCHEMA.TABLES TO 'alation'@'%';
+      GRANT SELECT ON INFORMATION_SCHEMA.COLUMNS TO 'alation'@'%';
+      GRANT SELECT ON INFORMATION_SCHEMA.VIEWS TO 'alation'@'%';
+      GRANT SELECT ON INFORMATION_SCHEMA.STATISTICS TO 'alation'@'%';
+      GRANT SELECT ON INFORMATION_SCHEMA.TABLE_CONSTRAINTS TO 'alation'@'%';
+      GRANT SELECT ON INFORMATION_SCHEMA.KEY_COLUMN_USAGE TO 'alation'@'%';
+      GRANT SELECT ON INFORMATION_SCHEMA.ROUTINES TO 'alation'@'%';
+
+|
+
++-------------------------------------+----------------------------------------+
+| Permission                          | Purpose                                |
++=====================================+========================================+
+| GRANT SELECT ON INFORMATION_SCHEMA. | Required for schema extraction.        |
+| SCHEMATA TO 'alation'@'%';          |                                        |
++-------------------------------------+----------------------------------------+
+| GRANT SELECT ON INFORMATION_SCHEMA. | Required for table extraction.         |
+| TABLES TO 'alation'@'%';            |                                        |
++-------------------------------------+----------------------------------------+
+| GRANT SELECT ON INFORMATION_SCHEMA. | Required for column extraction.        |
+| COLUMNS TO 'alation'@'%';           |                                        |
++-------------------------------------+----------------------------------------+
+| GRANT SELECT ON INFORMATION_SCHEMA. | Required for view extraction.          |
+| VIEWS TO 'alation'@'%';             |                                        |
++-------------------------------------+----------------------------------------+
+| GRANT SELECT ON INFORMATION_SCHEMA. | Required for index extraction.         |
+| STATISTICS TO 'alation'@'%';        |                                        |
++-------------------------------------+----------------------------------------+
+| GRANT SELECT ON INFORMATION_SCHEMA. | Required for primary key and foreign   |
+| TABLE_CONSTRAINTS TO 'alation'@'%'; | key extraction.                        |
++-------------------------------------+----------------------------------------+
+| GRANT SELECT ON INFORMATION_SCHEMA. | Required for primary key and foreign   |
+| KEY_COLUMN_USAGE TO 'alation'@'%';  | key extraction.                        |
++-------------------------------------+----------------------------------------+
+| GRANT SELECT ON INFORMATION_SCHEMA. | Required for function extraction       |
+| ROUTINES TO 'alation'@'%';          |                                        |
++-------------------------------------+----------------------------------------+
+
+Permissions for Table Profiling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+      GRANT SELECT ON [database].* TO 'alation'@'%';
+      GRANT SHOW VIEW ON [database].* TO 'alation'@'%';
+
+Permissions for Query Log Ingestion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+      GRANT SELECT ON <SCHEMA_NAME.QLI_TABLE_NAME> TO 'alation'@'%';
+
+JDBC URI
+~~~~~~~~~~~~~
+
+When building the URI, include the following components:
+
+  -  Hostname or IP of the instance
+  -  Port Number
+
+Basic Authentication
+^^^^^^^^^^^^^^^^^^^^^^^
+
+**Format:**
+
+.. code-block:: Bash
+
+      mysql://<Hostname_or_IP>:<Port_Number>
+
+**Example:**
+
+.. code-block:: Bash
+
+      mysql://mysql-data-source.amazonaws.com:3306
+
+SSL Authentication
+^^^^^^^^^^^^^^^^^^^^^^^
+
+**Format:**
+
+.. code-block:: Bash
+
+      mysql://<Hostname_or_IP>:<Port_Number>/?allowMultiQueries=true&verifyServerCertificate=true&useSSL=true&requireSSL=true
+
+**Example:**
+
+.. code-block:: Bash
+
+      mysql://mysql-data-source.amazonaws.com:3306/?allowMultiQueries=true&verifyServerCertificate=true&useSSL=true&requireSSL=true
+
+Configuration in Alation
+-----------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. Important::
+
+      Installation of a MySQL OCF connector requires Alation Connector Manager to be installed as a prerequisite.
+
+1. If this has not been done on your instance, install the Connector Manager: :doc:`Install Alation Connector Manager <../../../sources/OpenConnectorFramework/OCFInstallAlationConnectorManager>`.
+
+2. Make sure that the connector Zip file which you received from Alation is available on your local machine.
+
+3. Install the connector from the Connectors Dashboard: refer to :doc:`Manage Connector Dashboard <../../../sources/OpenConnectorFramework/ManageConnectors>`.
+
+STEP 2: Create and Configure a New MySQL Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Log in to the Alation instance and add a new MySQL source. Click on **Apps > Sources > Add > Data Source**.
+
+2. Provide the **Title** for data source and click on **Continue Setup**.
+
+3. Select Database Type as **MySQL OCF Connector** from the dropdown menu. You will be navigated to the Settings page of your new MySQL OCF data source.
+
+    .. image:: ../../../_static/MySQLOCF_01.png
+        :width: 400px
+        :class: with-border
+
+Access
+----------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+-----------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Populate the data source connection information and save the values by clicking **Save** in this section.
+
+	  .. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+        +----------------------------+---------------------------------------------------------------+
+        | **Parameter**              | **Description**                                               |
+        +============================+===============================================================+
+        |                     **Data Source Connection**                                             |
+        +----------------------------+---------------------------------------------------------------+
+        | JDBC URI                   | Provide the JDBC URI constructed in `JDBC URI`_.              |
+        +----------------------------+---------------------------------------------------------------+
+        | Username                   | Provide the Service Account username.                         |
+        +----------------------------+---------------------------------------------------------------+
+        | Password                   | Provide the Service Account password.                         |
+        +----------------------------+---------------------------------------------------------------+
+        | Enable Kerberos            | Enable or disable Kerberos authentication by selecting or     |
+        | Authentication             | clearing the **Enable Kerberos Authentication** checkbox.     |
+        |                            |                                                               |
+        |                            | If the Kerberos Authentication checkbox is enabled, upload    |
+        |                            | the krb5.conf file using the upload link below.               |
+        +----------------------------+---------------------------------------------------------------+
+        | Keytab                     | To enable Kerberos with Keytab authentication, select the     |
+        |                            | **Use Keytab** checkbox then click **Upload Keytab** to       |
+        |                            | upload the keytab for the service account you are using.      |
+        +----------------------------+---------------------------------------------------------------+
+        | SSL Certificate            | Select the **Enable SSL** checkbox to enable SSL connection.  |
+        |                            |                                                               |
+        |                            | If the **Enable SSL** checkbox is selected, upload the SSL    |
+        |                            | certificate using the upload link below.                      |
+        +----------------------------+---------------------------------------------------------------+
+        | Truestore Password         | Provide the password for the SSL certificate.                 |
+        +----------------------------+---------------------------------------------------------------+
+        |                     **Logging Information**                                                |
+        +----------------------------+---------------------------------------------------------------+
+        | Log Level                  | Select the Log Level to generate logs. The available log      |
+        |                            | levels are based on the log4j framework.                      |
+        +----------------------------+---------------------------------------------------------------+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+You can view the connector logs in **Admin Settings** > **Manage Connectors** > **Oracle OCF connector**.
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Obfuscate Literals**—Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^^^^
+
+After specifying the connector settings, under **Test Connection**, click **Test** to validate network connectivity.
+
+Deleting the Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can delete your data source from the General Settings tab. Under **Delete Data Source**, click **Delete** to delete the data source connection.
+
+    .. image:: ../../../_static/MySQLOCF_02.png
+        :width: 500px
+        :class: with-border
+
+
+Metadata Extraction
+---------------------------
+
+You can perform a default extraction or configure extraction based on custom queries.
+
+    - Default extraction: This MDE is based on default SQL queries that are built in the connector code.
+    - Query based extraction: This MDE is based on custom SQL queries that can be provided by a Data Source Admin. See :ref:`Query Based Extraction <Metadata_Extraction_From_Custom_DB-Query_Based_MDE>` below.
+
+     .. image:: ../../../_static/MySQLOCF_03.png
+        :width: 500px
+        :class: with-border
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - **Enable Raw Metadata Dump or Replay**: The options in this drop list can be used to dump the extracted metadata into files in order  to debug extraction issues before ingesting the metadata into Alation. This feature can be used during testing in case there are issues with MDE. It breaks extraction into 2 steps: first, the extracted metadata is dumped into files and can be viewed; and second, it can be ingested from the files into Alation.
+
+        -  **Enable Raw Metadata Dump**: Select this option to dump the extracted metadata into a dump folder for debugging purposes. The dumped data will be saved in 4 files: attribute.dump, function.dump, schema.dump, table.dump files in the folder **opt/alation/site/tmp/** inside Alation shell.
+
+        -  **Enable Ingestion Replay**: Select this option to ingest the metadata from the dump files into Alation.
+
+        -  **Off** - Disable the **Raw Metadata Dump** or **Replay** feature. Extracted metadata will be ingested into Alation.
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Query Based Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Query Based Extraction allows users to customize metadata extraction from the source down to the level of specific metadata types, such as tables, columns, views, and some other by using custom queries.
+
+Tables, Columns, Views and Function Defs are enabled by default at the backend and users cannot disable them.
+
+By default, the following additional metadata types are enabled:
+
+    - Primary keys
+    - Foreign Keys
+    - Indexes
+    - Functions
+
+Users can disable the metadata types that are not required by clearing the corresponding checkboxes.
+
+System schemas are disabled by default. Users can enable their extraction if required.
+
+To use this feature, you will need to write custom queries to extract the metadata. Alation expects that these queries conform to a specific structure and use the expected reserved identifiers. The sections below provide the expected query structure for each metadata type:
+
+Schema
+''''''''''
+
+Make sure that  your query has a column labelled as CATALOG in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT SCHEMA_NAME AS CATALOG
+      FROM
+      INFORMATION_SCHEMA.SCHEMATA
+      WHERE
+      SCHEMA_NAME  NOT IN ('''')  AND SCHEMA_NAME NOT IN  ( 'mysql' , 'performance_schema' , 'information_schema' , 'innodb' , 'sys')
+
+Table
+'''''''
+
+Make sure that your query has columns labelled as CATALOG, TABLE_NAME, TABLE_TYPE, and REMARKS in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT DISTINCT TABLE_SCHEMA AS CATALOG,
+      TABLE_NAME AS TABLE_NAME,
+      CASE WHEN TABLE_TYPE = 'BASE TABLE' THEN 'TABLE' ELSE 'VIEW' END AS TABLE_TYPE,
+      TABLE_COMMENT AS REMARKS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND
+      TABLE_SCHEMA  NOT IN ('''') AND TABLE_SCHEMA NOT IN  ( 'mysql' , 'performance_schema' , 'information_schema' , 'innodb' , 'sys')
+
+View
+''''''''''
+
+Make sure that your query has columns labelled as CATALOG, VIEW_NAME, VIEW_CREATE_STATEMENT, 'VIEW' AS VIEW_TYPE, and REMARKS in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT TABLE_SCHEMA AS CATALOG,
+      TABLE_NAME AS 'VIEW_NAME',
+      VIEW_DEFINITION AS 'VIEW_CREATE_STATEMENT',
+      'VIEW' AS 'VIEW_TYPE',
+      '' AS  'REMARKS'
+      FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA NOT IN ('''')  AND TABLE_SCHEMA NOT IN ( 'mysql' , 'performance_schema' , 'information_schema' , 'innodb' , 'sys')
+
+Column
+'''''''''''
+
+Make sure that your query has columns labelled as CATALOG, TABLE_NAME, TYPE_NAME, DATA_TYPE, COLUMN_NAME, ORDINAL_POSITION, IS_NULLABLE, REMARKS, and COLUMN_DEFAULT in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT null AS TABLE_CAT,
+      c.TABLE_SCHEMA AS CATALOG,
+      c.TABLE_NAME, c.COLUMN_NAME,
+      c.DATA_TYPE,
+      c.COLUMN_TYPE AS TYPE_NAME,
+      c.IS_NULLABLE,
+      c.ORDINAL_POSITION,
+      c.COLUMN_DEFAULT ,
+      c.COLUMN_COMMENT AS REMARKS
+      FROM INFORMATION_SCHEMA.COLUMNS AS c,
+      INFORMATION_SCHEMA.TABLES AS t
+      WHERE c.TABLE_SCHEMA = t.TABLE_SCHEMA
+      AND c.TABLE_NAME = t.TABLE_NAME
+      AND  c.TABLE_SCHEMA  NOT IN ('''') AND c.TABLE_SCHEMA NOT IN  ( 'mysql' , 'performance_schema' , 'information_schema' , 'innodb' , 'sys')
+      AND  TABLE_TYPE IN ('BASE TABLE' , 'SYSTEM VIEW' , 'VIEW')  ORDER BY c.TABLE_SCHEMA, c.TABLE_NAME
+
+Primary Key
+''''''''''''''''
+Make sure that your query has columns labelled as  CATALOG, TABLE_NAME, and COLUMN_NAME in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT k.TABLE_SCHEMA AS CATALOG,k.TABLE_NAME AS 'TABLE_NAME',
+      k.COLUMN_NAME as 'COLUMN_NAME',
+      k.TABLE_SCHEMA AS 'SCHEMA'
+      FROM information_schema.table_constraints t
+      JOIN information_schema.key_column_usage k
+      USING(constraint_name,table_schema,table_name)
+      WHERE t.CONSTRAINT_NAME =k.CONSTRAINT_NAME
+      AND t.constraint_type='PRIMARY KEY'
+      AND
+      t.TABLE_SCHEMA  NOT IN ('''')  AND t.TABLE_SCHEMA NOT IN  ( 'mysql' , 'performance_schema' , 'information_schema' , 'innodb' , 'sys')
+
+Foreign Key
+''''''''''''''''
+
+Make sure that your query has columns labelled as PK_CATALOG, PK_SCHEMA, PK_TABLE, PK_COLUMN, FK_CATALOG, FK_SCHEMA, FK_TABLE, and FK_COLUMN  in the select list.
+Example:
+
+.. code-block:: sql
+
+      SELECT null AS PK_CATALOG,
+      t.TABLE_SCHEMA AS 'PK_SCHEMA',
+      k.TABLE_NAME AS 'PK_TABLE',
+      k.COLUMN_NAME as 'PK_COLUMN',
+      null AS FK_CATALOG,
+      t.TABLE_SCHEMA AS 'FK_SCHEMA',
+      t.TABLE_NAME AS 'FK_TABLE',
+      k.COLUMN_NAME AS 'FK_COLUMN'
+      FROM information_schema.table_constraints t
+      JOIN information_schema.key_column_usage k
+      USING(constraint_name,table_schema,table_name)
+      WHERE t.constraint_type='FOREIGN KEY'  AND
+      t.TABLE_SCHEMA  NOT IN ('''')  AND t.TABLE_SCHEMA NOT IN  ( 'mysql' , 'performance_schema' , 'information_schema' , 'innodb' , 'sys')
+
+Index
+''''''''''''
+
+Make sure that your query has columns labelled as CATALOG, TABLE_NAME, COLUMN_NAME, and REMARKS  in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT TABLE_SCHEMA AS CATALOG,
+      TABLE_NAME AS 'TABLE_NAME',
+      COLUMN_NAME AS 'COLUMN_NAME'
+      FROM INFORMATION_SCHEMA.STATISTICS  WHERE TABLE_SCHEMA  NOT IN ('''')  AND TABLE_SCHEMA NOT IN  ( 'mysql' , 'performance_schema' , 'information_schema' , 'innodb' , 'sys')
+
+Function
+''''''''''''''
+
+Make sure that your query has columns labelled as CATALOG, FUNCTION_NAME, and  REMARKS in the select list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT ROUTINE_SCHEMA AS CATALOG,
+      ROUTINE_NAME AS 'FUNCTION_NAME',
+      ROUTINE_COMMENT AS 'REMARKS'
+      FROM INFORMATION_SCHEMA.ROUTINES  WHERE ROUTINE_SCHEMA  NOT IN ('''')  AND ROUTINE_SCHEMA NOT IN ( 'mysql' , 'performance_schema' , 'information_schema' , 'innodb' , 'sys')
+      Function Definition
+      Make sure that your query has columns labelled as CATALOG, FUNCTION_NAME, ARG_NAME, TYPE_NAME, ARG_TYPE, and ARG_DEF in the select list.
+      Example:
+      SELECT  ROUTINE_SCHEMA AS CATALOG,
+      ROUTINE_NAME AS FUNCTION_NAME,
+      SPECIFIC_NAME AS ARG_NAME,
+      DATA_TYPE AS TYPE_NAME,
+      ROUTINE_TYPE AS ARG_TYPE,
+      ROUTINE_DEFINITION AS ARG_DEF
+      FROM INFORMATION_SCHEMA.ROUTINES  WHERE ROUTINE_SCHEMA  NOT IN ('''')  AND ROUTINE_SCHEMA NOT IN  ( 'mysql' , 'performance_schema' , 'information_schema' , 'innodb' , 'sys')
+
+Selective Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+On the **Metadata Extraction** tab, you can select the Schemas to include or exclude from extraction. Selective extraction settings are used to apply a filter to include or exclude a list of schemas.
+
+Enable the **Selective Extraction** toggle if you want only a subset of schemas to be extracted.
+
+
+    1. Click **Get List of Schemas** to first fetch the list of schemas. The status of the Get Schemas action will be logged in the **Extraction Job Status** table at the bottom of the Metadata Extraction page.
+
+    2. When Schema synchronization is complete, a drop-down list of the Schemas will become enabled.
+
+    3. Select one or more schemas as required.
+
+    4. Check if you are using the desired filter option. Available filter options are described below:
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Filter Option**          | **Description**                                               |
+      +============================+===============================================================+
+      | Extract all Schemas except | Extract metadata from all Schemas except from the selected    |
+      |                            | Schemas.                                                      |
+      +----------------------------+---------------------------------------------------------------+
+      | Extract only these Schemas | Extract metadata only from the selected Schemas.              |
+      +----------------------------+---------------------------------------------------------------+
+
+    5. Click **Run Extraction Now** to extract metadata. The status of the extraction action is also logged in the **Job History** table at the bottom of the page.
+
+Automated Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you wish to automatically update the metadata extracted into the Catalog, under **Automated and Manual Extraction**, turn on the **Enable Automated Extraction** switch and select the day and time when metadata must be extracted. The metadata extraction will be automatically scheduled to run on the selected schedule.
+
+Compose
+-----------
+
+On the **Compose** tab, an admin can enable the use of the Compose tool for this data source.
+
+  1. Before you enable Compose, provide the `JDBC URI`_ in the **Default Connection** field which Compose will use as a default connection and **Save**.
+
+     .. image:: ../../../_static/MySQLOCF_04.png
+        :width: 500px
+        :class: with-border
+
+  2. Enable the **Enabled in Compose** toggle to enable Compose for this data source. Select **Compose Connection Sharing** option based on the description in the table:
+
+      +------------------------------+---------------------------------------------------------------+
+      | **Compose Connection Option**| **Description**                                               |
+      +==============================+===============================================================+
+      | Shared connections across    | This option lets users use the same connection across multiple|
+      | tabs                         | Compose tabs.                                                 |
+      +------------------------------+---------------------------------------------------------------+
+      | Separate connection per tab  | Users can use different connections for each Compose tab,     |
+      |                              | which enables them to run multiple queries at the same time.  |
+      +------------------------------+---------------------------------------------------------------+
+
+  3. Select a Data Uploader option based on the description below:
+
+     +------------------------------+---------------------------------------------------------------+
+     | **Data Uploader**            | **Description**                                               |
+     +==============================+===============================================================+
+     | Use Global Setting (True)    | Use the global setting option that is set in **alation_conf** |
+     |                              | using ``alation.data_uploader.enabled`` flag.                 |
+     |       or                     |                                                               |
+     |                              | Users can upload data if the flag is set to **true** or if the|
+     | Use Global Setting (False)   | flag is set to ``false``, users cannot upload the data for any|
+     |                              | data source.                                                  |
+     +------------------------------+---------------------------------------------------------------+
+     | Enable for this data source  | Use this option to enable the data upload for this data source|
+     |                              | and override the global setting if the global setting in      |
+     |                              | **alation_conf** if it is set to **false**.                   |
+     +------------------------------+---------------------------------------------------------------+
+     | Disable for this data source | Use this option to disable the data upload for this data      |
+     |                              | source and override  the global setting in **alation_conf** if|
+     |                              | it is set to ``true``.                                        |
+     +------------------------------+---------------------------------------------------------------+
+
+      .. note::
+
+           OAuth connection is not supported for this data source.
+
+Data Sampling
+-------------------
+
+Automated and Manual Sampling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Users can either perform manual sampling or enable automated sampling:
+
+  1. To perform manual sampling, make sure that the **Enable Automated Sampling** toggle is Off. Click the **Sample** button to do manual sampling.
+
+  2. Set the **Enable Automated Sampling** toggle to On to perform the automated sampling.
+
+      a. Set a schedule in the corresponding fields of the schedule section, specify values for week, day and time.
+      b. Select the number of tables to be sampled by selecting a value in the dropdown list. By default, all tables are sampled. When a specific number of tables is selected, unprofiled and popular tables are prioritized.
+      c. Click **Sample**.
+
+Dynamic Sampling
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Dynamic Sampling allows users to perform user-specific sampling and profiling. They will only be able to see the data they have access to on the database. Sample data will only be visible to the user who initiated sampling or profiling.
+
+Automated sampling must be disabled to perform dynamic sampling.
+
+    .. image:: ../../../_static/MySQLOCF_05.png
+        :width: 500px
+        :class: with-border
+
+Per-Object Parameters
+----------------------------
+
+Refer to :ref:`Per-Object Parameters <Sampling_Profiling-Per_Object_Parameters>`.
+
+Query Log Ingestion
+-------------------------
+
+QLI Setup for MySQL RDS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform the following steps to configure the pre-requisites for MySQL RDS QLI:
+
+1. Create an RDS instance with MySQL version 8.0.
+
+2. In the AWS console, go to **Amazon RDS > Parameter groups > Create parameter group**.
+
+3. Provide the values in the following fields and click **Create**.
+
+      - Parameter group family
+      - Type
+      - Group Name
+      - Descriptions
+
+   .. image:: ../../../_static/MySQLOCF_07.png
+        :width: 500px
+        :class: with-border
+
+4. Go to **Parameter groups** and select the newly created parameter group.
+
+5. Click **Edit parameters** and update the following parameters with the values below:
+
+    +---------------------------------+------------------------------+
+    | **Parameter**                   | **Value**                    |
+    +=================================+==============================+
+    | general_log                     | 1                            |
+    +---------------------------------+------------------------------+
+    | Slow_query_log                  | 1                            |
+    +---------------------------------+------------------------------+
+    | Long_query_time                 | 0                            |
+    +---------------------------------+------------------------------+
+    | log_output                      | TABLE                        |
+    +---------------------------------+------------------------------+
+
+6. Click **Preview changes** to view the modified parameter values. Click **Save changes**.
+
+    .. image:: ../../../_static/MySQLOCF_08.png
+        :width: 500px
+        :class: with-border
+
+7. Go to **Databases > RDS Instance**.
+
+8. Associate the DB parameter group with the RDS instance. Click **Modify > Additional Configuration > DB parameter group** and select the **DB parameter group**.
+
+    .. image:: ../../../_static/MySQLOCF_09.png
+        :width: 500px
+        :class: with-border
+
+    .. note::
+
+          The RDS instance major version and DB parameter group instance selection version must be the same. If the version is not same, then the DB parameter group will not be listed in this dropdown.
+
+9. Restart the database.
+
+    .. note::
+
+        The DB parameter group does not get associated with the RDS instance until the instance is restarted.
+
+Configuration in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can either create a table for Alation to pull the query logs from or use a custom query to query the slow_log table.
+
+.. note::
+
+      Log tables keep growing until the respective logging activities are turned off by resetting the appropriate parameter to 0. A large amount of data often accumulates over time, which can use up a considerable percentage of your allocated storage space. Rotating a table saves its contents to a backup table and then creates a new empty log table. You can manually rotate the log tables with the following commands:
+
+      ``CALL mysql.rds_rotate_slow_log;``
+
+.. note::
+
+      Alation does not support the query logs in the **general_log** table.
+
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Table-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^
+
+Use the below query format to create a new table and flush the query history from the slow_log table.
+
+**MySQL:**
+
+.. code-block:: sql
+
+      CREATE TABLE <Table_Name> AS SELECT * FROM(SELECT user_host as username,start_time as starttime,sql_text as queryString,thread_id as sessionid,session_start_time as sessionstarttime,query_time as seconds,'N' as cancelled,db as defaultDatabasesFROM <slow_log table>);
+
+
+**MySQL RDS:**
+
+.. code-block:: sql
+
+      CREATE view <View_Name> as
+      SELECT
+        start_time AS startTime,
+        CONCAT_WS(
+          '\/',
+          user_host,
+          DATE(start_time)
+        ) AS sessionId,
+        SUBSTR(
+          user_host
+          FROM
+            1 FOR POSITION('[' in user_host) -1
+        ) AS userName,
+        sql_text AS queryString,
+        TIME_TO_SEC(query_time) AS Seconds,
+        db AS defaultDatabases,
+        'N' AS cancelled,
+        start_time AS sessionStartTime
+      FROM
+      mysql.slow_log WHERE
+        (
+          (
+            sql_text NOT LIKE 'SET net_write_timeout%'
+            AND sql_text NOT LIKE 'SET autocommit%'
+            AND sql_text NOT LIKE 'SET character_set_results%'
+            AND sql_text NOT LIKE 'Quit'
+            AND sql_text NOT LIKE 'SET sql_mode%'
+            AND sql_text NOT LIKE '%mysql-connector-java%'
+          )
+          OR TIME_TO_SEC(query_time) > 0
+        )
+        -- AND start_time >= ?
+        -- AND start_time < ?
+      ORDER BY CONCAT_WS('\/', user_host, DATE(start_time)), start_time;
+
+In the **Table Name** field, provide the name of the table in which the query logs are available. The table name must be provided in the following format:
+
+``database.table/viewname``
+
+Custom Query-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When you cannot create a table or viewI, you can use a Custom QLI Query to perform QLI. Provide the expected query structure as shown below and click Save:
+
+**MySQL:**
+
+.. code-block:: sql
+
+      SELECT user_host AS username,
+      start_time AS starttime,
+      sql_text AS queryString,
+      thread_id AS sessionid,
+      start_time AS sessionstarttime,
+      query_time AS seconds,
+      'N' AS cancelled,
+      db AS defaultDatabases
+      FROM <slow_log on MySQL>;
+
+**MySQL RDS:**
+
+.. code-block:: sql
+
+      SELECT
+        start_time AS startTime,
+        CONCAT_WS(
+          '\/',
+          user_host,
+          DATE(start_time)
+        ) AS sessionId,
+        SUBSTR(
+          user_host
+          FROM
+            1 FOR POSITION('[' in user_host) -1
+        ) AS userName,
+        sql_text AS queryString,
+        TIME_TO_SEC(query_time) AS Seconds,
+        db AS defaultDatabases,
+        'N' AS cancelled,
+        start_time AS sessionStartTime
+      FROM
+      mysql.slow_log WHERE
+        (
+          (
+            sql_text NOT LIKE 'SET net_write_timeout%'
+            AND sql_text NOT LIKE 'SET autocommit%'
+            AND sql_text NOT LIKE 'SET character_set_results%'
+            AND sql_text NOT LIKE 'Quit'
+            AND sql_text NOT LIKE 'SET sql_mode%'
+            AND sql_text NOT LIKE '%mysql-connector-java%'
+          )
+          OR TIME_TO_SEC(query_time) > 0
+        )
+        -- AND start_time >= ?
+        -- AND start_time < ?
+      ORDER BY CONCAT_WS('\/', user_host, DATE(start_time)), start_time;
+
+Automated and Manual QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Users can either perform manual Query Log Ingestion or enable automated Query Log Ingestion:
+
+    1. To perform manual Query Log Ingestion, make sure that the **Enable Automated Query Log Ingestion** toggle is Off. Click the **Import** button to do manual Query Log Ingestion.
+
+    2. Set the **Enable Automated Query Log Ingestion** toggle to On to perform the automated Query Log Ingestion.
+
+          a. Set a schedule in the corresponding fields of the schedule section, specify values for week, day and time.
+          b. Click **Import**.
+
+Custom Settings
+---------------------
+
+This configuration option is available if **Profiling V2** is enabled.
+
+To profile a column, Alation runs a default query if no custom query is specified for this column. Default queries for column profiling differ depending on the data type: numeric or non-numeric.
+
+
+The default query supplied by Alation can be modified based on the user requirements and datasource type. The following default query template can be used to revert back  to the default query from custom query:
+
+**Numeric columns:**
+
+.. code-block:: Bash
+
+      SELECT
+            MIN({column_name}) AS MIN,
+            MAX({column_name}) AS MAX,
+            AVG({column_name}) AS MEAN,
+            (COUNT(*) - COUNT({column_name})) AS "#NULL",
+            (CASE WHEN COUNT(*) > 0 THEN ((COUNT(*) -  COUNT({column_name})) * 100.0 / COUNT(*)) ELSE 0.0 END) AS "%NULL"
+            FROM {schema_name}.{table_name};
+
+**Non numeric columns:**
+
+.. code-block:: Bash
+
+      SELECT
+            ((SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END))) AS "#NULL",
+            (CASE WHEN COUNT(*) > 0 THEN ((((SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END))) * 100.0 / count(*)) ) ELSE 0.0 END ) AS "%NULL"
+
+      FROM {schema_name}.{table_name};
+
+.. Important::
+
+      The profiling queries MUST contain the ``{column_name}``, ``{schema_name}``, and ``{table_name}``. Users must check the compatibility of the default query based on the datasource type and modify it if required.
+
+The default Profiling query calculates the Profiling stats that are displayed on the **Overview** tab of the Column catalog page. When you customize the query, you can also customize the statistics that should be calculated and displayed:
+
+ .. image:: ../../../_static/MySQLOCF_06.png
+    :width: 500px
+    :class: with-border
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.

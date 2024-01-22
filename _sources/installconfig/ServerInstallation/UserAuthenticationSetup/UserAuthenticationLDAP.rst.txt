@@ -1,0 +1,250 @@
+User Authentication with LDAP
+=============================
+
+LDAP/AD integration can be performed using the Alation UI after the installation. You need the Server Admin role to set up LDAP/AD authentication.
+
+Authentication with LDAP/AD allows users to log in to Alation with their existing corporate credentials. Note that for users logging with their LDAP accounts, Alation does not store the passwords.
+
+If LDAP/AD group sync is enabled, changes to the corporate directory are automatically reflected in Alation 15 minutes after the change (default time). This time is needed for the Alation server to synchronize with the LDAP server.
+
+Prerequisites
+--------------
+
+#. Confirm that the necessary ports are open in your network:
+
+    =================== ======================== =============== ==================
+    Service             Direction                Port            Destination
+    =================== ======================== =============== ==================
+    LDAP                Outbound (from Alation)  TCP 389         AD/LDAP server
+    LDAPS               Outbound (from Alation)  TCP 636         AD/LDAP server
+    =================== ======================== =============== ==================
+
+2. Confirm that Alation has a service account to connect to the LDAP/AD server.
+3. If your corporate network uses LDAPS, confirm that the required manual pre-configuration is performed on the Alation server. For details, see `LDAPS Configuration`_.
+4. Prepare the following information:
+
+    -  LDAP Hostname
+    -  Protocol (LDAP or LDAPS)
+    -  Base Distinguished Name (Base DN)
+    -  Bind Distinguished Name (Bind DN) and password if your AD does not support anonymous bind. The bind account should have privileges to list and read attributes for First Name, Last Name, user ID, Email, Title, and Thumbnail Photo.
+    -  User ID attribute name (for AD it is sAMAccountName)
+    -  Email address attribute name (required)
+    -  Title (optional)
+    -  Thumbnail Photo (optional)
+
+5. Optionally, you can use LDAP search filters to restrict access to a subset of users. Below are a few examples of filter expressions:
+
+    -  Custom LDAP Search filter to restrict access to a subset of users. Below are some sample filter expressions:
+    -  Check for membership in an AD group - *Finance*:
+
+      ``(memberOf=cn=Finance,cn=Groups,dc=alation,dc=com)``
+
+    -  Check for membership in AD groups *Finance* or *Sales*:
+
+      ``((memberOf=cn=Finance,cn=Groups,dc=alation,dc=com)(memberOf=cn=Sales,cn=Groups,dc=alation,dc=com))``
+
+    -  Check for nested membership in an AD ancestor group - *Europe*:
+
+      ``(memberOf:1.2.840.113556.1.4.1941:=cn=Finance,cn=Groups,dc=alation,dc=com)``
+
+.. note::
+
+    You can use the following symbols:
+
+        - the pipe **|** for **OR**
+        - the ampersand **&** for **AND**
+        - the asterisk **\*** for a wildcard
+        - the exclamation mark **!** for **NOT**
+
+
+LDAPS Configuration
+----------------------
+
+This configuration must be performed before setting up LDAP authentication in Alation UI, if your company’s corporate network uses LDAP over SSL (LDAPS).
+To authenticate with LDAPS when certificate validation is not ignored, you need to add your LDAPS CA certificate information to the file **/data1/site_data/ldap.conf**  (accessed from in Alation shell).
+
+To configure LDAPS,
+
+#. Access the file using the Alation shell:
+
+    .. code-block:: bash
+
+        sudo service alation shell
+        cd /data1/site_data
+        sudo vi ldap.conf
+
+2. Enter the following certificate information into the file and save:
+
+    -  To ignore certificate validation, provide the following values:
+
+          .. code-block:: bash
+
+              HOST <LDAP_HOSTNAME>
+              PORT <LDAP_PORT>
+              TLS_REQCERT allow
+
+    -  To validate the SSL certificate, import your LDAPS CA certificate into ``/etc/ssl/certs/ca-bundle.crt`` and in the ldap.conf file provide the following configuration values:
+
+          .. code-block:: bash
+
+              HOST <LDAP_HOSTNAME>
+              PORT <LDAP_PORT>
+              TLS_CACERT /etc/ssl/certs/ca-bundle.crt
+              TLS_REQCERT demand
+
+    .. note::
+
+        Client side certificate validation is not supported yet.
+
+3. Deploy the configuration as follows:
+
+    .. code-block:: bash
+
+        alation_action copy_ldap_conf
+        alation_action deploy_conf_ldap
+        alation_action stop_uwsgi
+        alation_action start_uwsgi
+
+Configure LDAP/LDAPS in Admin Settings
+---------------------------------------
+To configure LDAP/LDAPS,
+
+#. Sign in to Alation as a **Server Admin** and in the upper-right corner, click the **Settings**  icon to open the **Admin Settings** page.
+
+#. In the Server Admin section, click **Authentication** to open the Authentication tab:
+
+  .. image:: /_static/install_image2.png
+    :width: 5.5in
+    :align: center
+
+3. In the LDAP Settings section, provide the following values:
+
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Parameter                         |  Description                                                                                              |
+  +===================================+===========================================================================================================+
+  | LDAP Server Host                  | LDAP Server Hostname                                                                                      |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | LDAP Server Port                  | LDAP Server Host port                                                                                     |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Protocol                          | LDAP or LDAPS                                                                                             |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Base DN                           | Base DN                                                                                                   |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | UID                               | Common UID (user ID) values are `uid` and `cn`. For MS Active Directory, please use `sAMAccountName`.     |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Bind DN                           | Bind DN of the user authenticated to do Bind.                                                             |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Bind Password                     | The password required for the                                                                             |
+  |                                   | Bind operation.                                                                                           |
+  |                                   |                                                                                                           |
+  |                                   | If password has already been set                                                                          |
+  |                                   | for the server, select                                                                                    |
+  |                                   | **Use Saved Bind Password** checkbox                                                                      |
+  |                                   | to use the saved password.                                                                                |
+  |                                   |                                                                                                           |
+  |                                   | For details on changing the Bind password, refer to                                                       |
+  |                                   | :doc:`Reset LDAP Bind Password Using CLI </admins/AdditionalConfiguration/ResetLDAPBindPassword>`.        |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Mail                              | Provide the name of the attribute                                                                         |
+  |                                   | for Email Address. Note that it                                                                           |
+  |                                   | is a required attribute.                                                                                  |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Optional Attributes               | If desired, provide the names of                                                                          |
+  |                                   | the following attributes for                                                                              |
+  |                                   | Alation to retrieve these user                                                                            |
+  |                                   | Details into the Alation account:                                                                         |
+  |                                   |                                                                                                           |
+  |                                   | -  Title                                                                                                  |
+  |                                   | -  Department                                                                                             |
+  |                                   | -  Thumbnail Photo                                                                                        |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Filter                            | Provide a LDAP filter to only                                                                             |
+  |                                   | allow access for users in                                                                                 |
+  |                                   | specific LDAP subdirectories. It                                                                          |
+  |                                   | will be joined with the User ID                                                                           |
+  |                                   | with AND logic.                                                                                           |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Group member search method        | This setting only applies to                                                                              |
+  |                                   | Alation Groups defined through                                                                            |
+  |                                   | LDAP and will be used to pull                                                                             |
+  |                                   | LDAP Group members into the                                                                               |
+  |                                   | corresponding Group in Alation.                                                                           |
+  |                                   |                                                                                                           |
+  |                                   | -  **Search group for all members**                                                                       |
+  |                                   |    - When                                                                                                 |
+  |                                   |    synchronizing with the LDAP                                                                            |
+  |                                   |    server, Alation will retrieve                                                                          |
+  |                                   |    the Group with the specified                                                                           |
+  |                                   |    Group DN and all its members.                                                                          |
+  |                                   | -  **Search members for group**                                                                           |
+  |                                   |    - when users sign in                                                                                   |
+  |                                   |    to Alation with their LDAP                                                                             |
+  |                                   |    credentials, Alation will                                                                              |
+  |                                   |    check for their Group and                                                                              |
+  |                                   |    place them in the respective                                                                           |
+  |                                   |    LDAP-based Group in Alation,                                                                           |
+  |                                   |    if that Group is added.                                                                                |
+  |                                   |                                                                                                           |
+  |                                   | For details about creating LDAP Groups,                                                                   |
+  |                                   | see :doc:`Configure LDAP Groups </admins/AdminSettings/ConfigureLDAPGroups>`.                             |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+  | Membership Attribute              | Specify the attribute that holds                                                                          |
+  |                                   | the user’s Group.                                                                                         |
+  |                                   |                                                                                                           |
+  |                                   | Example: "memberOf" attribute for                                                                         |
+  |                                   | AD                                                                                                        |
+  +-----------------------------------+-----------------------------------------------------------------------------------------------------------+
+
+4. Click Save to save the LDAP properties you have entered.
+5. Under **Test Login and Save**, enter a user’s LDAP/AD credentials and click **Test** to test-search and validate the correctness of your LDAP settings. Note that the credentials you use for testing are not saved in Alation. For possible errors, check and update the parameters you have entered and test again. For troubleshooting tips, refer to `Debugging LDAP configuration issues with ldapsearch command`_.
+6. If your test is successful, in the **Authentication Method** list on top of the Authentication tab (above the LDAP Settings section where you entered the LDAP parameters) select **LDAP** and click **Save** to switch to LDAP authentication in your Alation instance.
+
+Users will now be able to log in to Alation with their corporate LDAP/AD credentials. Their Alation accounts will be created at the time of their first login with the with the default role set in Alation. These accounts will not store corporate passwords.
+
+.. note::
+
+   Alation recommends keeping one or more built-in accounts available for troubleshooting purposes.
+
+
+Debugging LDAP configuration issues with ldapsearch command
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``ldapsearch`` command is available in the Alation shell.  If desired,
+this command line tool can be used for debugging.
+
+Replace all the highlighted elements in the command below with
+the appropriate values. Enter the password for Bind DN when prompted. If
+this command does not work, Alation LDAP integration will not work
+either.
+
+   ::
+
+      ldapsearch -x -W -H "PROTOCOL://HOSTNAME" -D "BIND DN" -b "BASE DN" "(cn=username)"
+
+Potential issues
+^^^^^^^^^^^^^^^^^^^^
+
+  -  If you get the invalid credentials error, check your Bind DN and Bind account password.
+  -  If you do not get any results, double-check the User ID, Base DN, or Group Filter.
+
+Example 1
+^^^^^^^^^^^^^^^
+
+   Search for a user ID "sparker" on the Active Directory using a Bind
+   account **calledcn=alation-svc,cn=Users,dc=mycompany,dc=com**
+
+   ::
+
+      ldapsearch -x -W -H "ldap://myad.mycompany.com" -D "cn=alation-svc,cn=Users,dc=mycompany,dc=com" -b "dc=mycompany,dc=com" "(sAMAccountName=sparker)"
+
+Example 2
+^^^^^^^^^^^^^^^
+
+   Search for a user ID "sparker" in a group
+   **calledcn=alation-users,cn=Groups,dc=mycompany,dc=com** on the Active
+   Directory using a Bind account
+   **calledcn=alation-svc,cn=Users,dc=mycompany,dc=com**
+
+   ::
+
+      ldapsearch -x -W -H "ldap://myad.mycompany.com" -D "cn=alation-svc,cn=Users,dc=mycompany,dc=com" -b "dc=mycompany,dc=com" "(&(sAMAccountName=sparker)(cn=alation-users,cn=Groups,dc=mycompany,dc=com))"

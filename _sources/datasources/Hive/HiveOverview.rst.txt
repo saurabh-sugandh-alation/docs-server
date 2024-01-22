@@ -1,0 +1,128 @@
+Hive Overview
+=================
+
+Hive databases can be deployed on different platforms with various
+execution engines in the middle layer, and as a result, there can exist
+numerous Hive configurations. Alation is working toward supporting any
+Hive setup with as little configuration effort on the user’s part as
+possible.
+
+How you can connect to a Hive data source in Alation, depends on which
+Alation release you are using.
+
+In releases before *V R5 (5.9.x)*, you can configure your Hive data
+sources by providing connection parameters manually in Alation UI.
+
+Starting with release *V R5 (5.9.x)*, you can connect to a
+Hive database by uploading its client configuration files. Configuration
+upload-based Hive connection is a **Labs/Feature Configuration** feature and must be enabled
+through the dedicated feature switch in **Admin Settings** > **Labs/Feature Configuration**. Configuration upload-based Hive framework
+specifically focuses on Query Log Ingestion (QLI) for Hive, allowing
+Alation to support QLI for a bigger number of various Hive setups.
+
+.. note::
+
+    The Hive documentation refers to the configuration-based Hive framework, available from release
+    V R5, as "Hive by configurations upload" or "configuration-based Hive". The Hive framework that is available by default and existed before V R5 is referred to as the "default Hive framework" or "default Hive".
+
+If you enable Hive by configuration upload (V R5+), all existing Hive
+sources  previously added using the default framework will
+remain fully functional. Only the new Hive sources you add will require
+the configurations to be uploaded. You can choose to migrate your existing default Hive sources to the new Hive
+framework after you have enabled this feature.
+
+Default Vs. Configuration-Based Hive Frameworks
+-----------------------------------------------
+
+The default Hive support covers:
+
+============================= ================ =============== ================ ===============
+Component                     CDH Support      HDP Support     EMR Support      MapR Support
+============================= ================ =============== ================ ===============
+Simple Authentication         Y                Y               Y                Y
+
+Kerberos                      Y                Y               Y                N
+
+Azure Encryption              Not applicable   N (Azure HDP)   Not applicable   Not applicable
+
+Kerberos Knox                 Not applicable   MDE but no QLI  Not applicable   Not applicable
+
+LDAP Knox                     Not applicable   MDE but no QLI  Not applicable   Not applicable
+
+SSL                           Y                Y               Y                N
+
+WebHDFS SSL                   Y                Y               Y                Not applicable
+
+HttpFS Kerberos               Not applicable   Not applicable  Not applicable   N
+
+Wire-level Security           Not applicable   Not applicable  Not applicable   N
+
+MapR SASL                     Not applicable   Not applicable  Not applicable   N
+============================= ================ =============== ================ ===============
+
+
+With the configuration-based Hive, the level of support increases to:
+
+============================= ================ ================ ================ ===============
+Component                     CDH Support      HDP Support      EMR Support      MapR Support
+============================= ================ ================ ================ ===============
+Simple Authentication         Y                Y                Y                Y
+
+Kerberos                      Y                Y                Y                Y
+
+Azure Encryption              Not applicable   Y (Azure HDP)    Not applicable   Not applicable
+
+Kerberos Knox                 Not Knox         Y (MDE and QLI)  Not applicable   Not applicable
+
+LDAP Knox                     Not applicable   Y (MDE and QLI)  Not applicable   Not applicable
+
+SSL                           Y                Y                Y                Y
+
+WebHDFS SSL                   Y                Y                Y                Not applicable
+
+HttpFS Kerberos               Not applicable   Not applicable   Not applicable   Y
+
+Wire-level Security           Not applicable   Not applicable   Not applicable   Y
+
+MapR SASL                     Not applicable   Not applicable   Not applicable   Y
+============================= ================ ================ ================ ===============
+
+Limitations
+-----------
+
+The Compose tool does not support Keytab or pre-cached Kerberos ticket-based authentication.
+
+Which Hive Framework Should you Use?
+------------------------------------
+
+Analyze your Hive setup. If your Hive database setup is supported with
+the configuration-based Hive framework only (for example,HDP 3 + Hive 3
++ Tez) but cannot be supported by the default Hive, the Hive by
+configuration upload is the only path to choose.
+
+If your Hive setup can be supported by both, default and
+configuration-based frameworks, note that the configuration-based
+Hive has several advantages configuration-wise:
+
+-  It requires fewer parameters to be provided in Alation UI. For
+   example, you will not need to find out from your Hadoop admin and
+   manually type such information as the Metastore URI, log storage
+   paths, and WebHDFS credentials and endpoints for QLI. This
+   information will be obtained by Alation automatically when parsing
+   the uploaded Hive configuration files.
+-  The configuration-based framework is designed to fix any Hive
+   cataloging problems that the old framework did not anticipate, so it
+   significantly increases the chances of your Hive source working on
+   the first try.
+
+
+.. important::
+
+    Several  Hive setups only use the default Hive framework for
+    QLI. These are:
+
+          -  SparkSql over Hive Metastore (on both CDH and HDP)
+          -  Hive on EMR with QLI over Amazon S3
+          -  Hive with AWS Glue as Metastore
+
+    If you have such sources, do NOT enable configuration-based Hive.

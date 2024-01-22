@@ -1,0 +1,54 @@
+Connect with OAuth from Compose
+===================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Compose users can connect to an OAuth-enabled Snowflake data source using the Connection Settings dialog. Refer to :doc:`/analyst/UserAuthenticationForDataSources/WorkingWithDataSourceConnections` for information on how to establish Compose connections.
+
+OAuth-Enabled Connection URI
+--------------------------------
+
+In order to create a connection that uses OAuth, the URI must include the ``authenticator=oauth`` query parameter. For example:
+
+``snowflake://account.snowflakecomputing.com:443/?warehouse=WH1&authenticator=oauth``
+
+Specify a Role for Connection
+--------------------------------
+
+Compose users can specify a role in the Connection URI:
+
+``snowflake://alation_partner.us-east-1.snowflakecomputing.com:443/?warehouse=DEMO_WH&authenticator=oauth&role=<role_name>``
+
+When a role is specified, the connection allows querying Snowflake within the scope of this role.
+
+If role-switching is configured, then users can switch to a different role available to them in Snowflake with the ``USE ROLE`` statement.
+
+OAuth Authorization Flow in Compose
+-------------------------------------
+
+The following query execution features are supported in Compose using OAuth connections:
+
+    - Run Full Query
+    - Run Current Statement
+    - Run Full Query as Script
+    - Run Full Query & Ignore Errors
+    - Run & Export Full Query
+    - Run & Export Current Statement
+    - Run & Export as Script
+
+Each query execution operation is performed in the context of a connection URI and may require authorization before the connection can be established. Authorization is required when the connection is established for the first time. Re-authorization is required when both the access and refresh tokens have expired. Separate authorization is required for each Snowflake account used to authorize connections with the same URI.
+
+When a user connects from Compose, a new browser tab will open with the authorization server login screen. For example, in the case of the Snowflake built-in OAuth service, Snowflake will be the authorization server. In the case of external OAuth, it will be the login screen of the external identity provider.
+
+Example of authentication with the Snowflake built-in OAuth service is given below.
+
+1. User logs in via Snowflake.
+
+    .. image:: /_static/DS_SnowflakeOAuth09.png
+
+
+2. User is presented with a consent screen if this is the first time they are connecting using this Snowflake role:
+
+    .. image:: /_static/DS_SnowflakeOAuth10.png
+
+3. After authorization and consent have been completed, this browser tab closes, and the user is returned to Compose where they will see confirmation of successful connection.

@@ -1,0 +1,62 @@
+How to Convert Usernames
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+.. warning::
+
+      This instruction does not work for *V R7 (5.12.x)*, *2020.3*, and *2020.4* (a known issue). If you need to update usernames in these releases, please create a ticket for Alation Support.
+
+      From version *2021.1*, the script works as expected.
+
+Sometimes there is a need to update usernames of particular users after you switch from built-in authentication to LDAP or SAML. This article explains how to do this using a script. 
+
+Prerequisites
+----------------------------
+
+Create a CSV file with two columns having no headers. List old usernames in the first column and new ones in the second one.
+
+Converting usernames
+--------------------
+
+To convert usernames,
+
+1. Sign into the Alation shell as the administrator.
+
+    .. code-block:: bash
+
+       sudo service alation shell
+
+2. Change the user to ``alation``.
+
+    .. code-block:: bash
+
+       sudo su alation
+
+3. Change to the **/opt/alation/bin/** directory.
+
+4. Run the following script:
+
+    .. code-block:: bash
+
+       alation_convert_local_account --file=PATH_TO_CSV_FILE  
+
+Successful Completion
+---------------------
+
+The script will print updated usernames and errors if any occurred.
+Admin user can review all the usernames by logging into the Alation
+instance and navigating to the **Users** section of **Admin Settings**.
+
+New usernames should not exist in the system. If a username
+needs to be updated to an already existing one, do this using a
+temporary username that does not exist in the system. If, for example, there is
+a need to rename ``User@company.com`` to ``user@company.com`` and the latter
+already exists, add the following two lines to the CSV file:
+
+==================== ========================
+``user@company.com`` ``tmp_user@company.com``
+``User@company.com`` ``user@company.com``
+==================== ========================
+
+Admin user can suspend ``tmp_user@company.com`` after the script has been run.

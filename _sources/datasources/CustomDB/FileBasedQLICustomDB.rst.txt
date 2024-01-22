@@ -1,0 +1,317 @@
+File-Based Query Log Ingestion
+==================================
+
+From *V R5 (5.9.x)*, Alation supports file-based QLI for Custom DB data sources for query logs in log4j format.
+
+.. note::
+
+    Log4j is the only currently supported log format.
+
+Logs can be ingested from the following systems:
+
+    - Amazon S3
+    - MS Azure Blob
+    - MS Azure Data Lake Store (ADLS)
+
+Preparation
+----------------
+
+File-based QLI configuration requires you to create a JSON object that describes the configuration of your query logs and that will be used by Alation to parse the logs. For JSON examples, see <Reference>.
+
+To create the JSON, get an example of your query log file and find the rows which log queries.
+
+*Example for Hive on CDH with Spark: a logged query*
+
+``2019-04-15 06:24:15,783 INFO  [main]: ql.Driver (Driver.java:execute(1658)) - ``
+``Executing command(queryId=ec2-user_20190415062424_c79c1dd8-cae4-49a3-80ae-878338daa534):``
+``select * from hivedata_setup_1555309436.hivedata_table1_1555309436 order by id limit 1``
+``2019-04-15 06:24:15,784 INFO  [main]: ql.Driver (SessionState.java:printInfo(1087)) - ``
+``Query ID = ec2-user_20190415062424_c79c1dd8-cae4-49a3-80ae-878338daa534``
+
+The query logs are formed in accordance with the configuration in the log4j properties file. Check the log4j.properties file for your database to find out the conversion pattern used for the logs. In the QLI configuration JSON, Alation will expect the conversion pattern to be added as one of the values.
+
+Creating the QLI configuration JSON, add all the required parameters and the optional parameters if necessary, - see descriptions below.
+
+File-Based QLI Required Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{7cm}|
+
++-----------------------------+------------------+----------------------------------------------+
+| Key                         | If Required      | Description                                  |
++=============================+==================+==============================================+
+| ``folderPath``              | yes              | The top-level path in storage system under   |
+|                             |                  | which user has the log files                 |
++-----------------------------+------------------+----------------------------------------------+
+| ``parserType``              | yes              | LOG4J is the only accepted value             |
++-----------------------------+------------------+----------------------------------------------+
+| ``log4jConversionPattern``  | yes              | Conversion pattern in Alation-accepted       |
+|                             |                  | format. See `log4jConversionPattern`_        |
++-----------------------------+------------------+----------------------------------------------+
+| ``log4jTimeFormat``         | yes              | Time format in the logs for example:         |
+|                             |                  | yy/MM/dd HH:mm:ss. See `log4jTimeFormat`_    |
++-----------------------------+------------------+----------------------------------------------+
+| ``requiredExtraction``      | yes              | An array. Each sub-object in this array      |
+|                             |                  | maps an Alation-expected field onto a logger |
+|                             |                  | and a regex for a part of the message        |
+|                             |                  | that has information for the field           |
+|                             |                  | See `requiredExtraction`_                    |
++-----------------------------+------------------+----------------------------------------------+
+
+You can also add several optional performance-tuning parameters to improve the performance for File-Based QLI.
+
+File-Based QLI Performance Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++----------------------------+-------------------------------------------------------------------+
+| Status                     | Description                                                       |
++============================+===================================================================+
+| nThread                    | Sets the number of threads which will process the files from the  |
+|                            | storage system. By default, this number can be set to the number  |
+|                            | of logical cores in the system. If ``nThread`` value is provided  |
+|                            | using this JSON config file, this value will take precedence      |
+|                            | over the default setting.                                         |
++----------------------------+-------------------------------------------------------------------+
+| threadTimeOut              | Sets the time after which all the processing threads will stop    |
+|                            | the processing of log files. Value is in seconds. Default is      |
+|                            | 3600 seconds.  If ``threadTimeOut`` value is provided in the JSON |
+|                            | file, this value will take precedence over the default            |
+|                            | setting.                                                          |
++----------------------------+-------------------------------------------------------------------+
+| isModificationTimeInclude  | Defines if the process must apply a change time filter            |
+|                            | while considering the file for extraction.                        |
+|                            | Boolean value. Default is ``false``.                              |
+|                            | If you experience performance issues during QLI (there is a       |
+|                            | large number of logs to ingest and the Date Range is wide,        |
+|                            | you can set this parameter to ``true``.                           |
++----------------------------+-------------------------------------------------------------------+
+| fileSizeLimit              | Sets the limit to the number of files that should be              |
+|                            | considered for extraction. This will include all the files on     |
+|                            | which other filters apply.                                        |
+|                            | If this field is not set, the default value of zero will be       |
+|                            | applied.                                                          |
++----------------------------+-------------------------------------------------------------------+
+| dateFormatRegexInFileName  | The value of this field should be set if the file name has        |
+|                            | the date in some date format.                                     |
++----------------------------+-------------------------------------------------------------------+
+| fileNamePrefix             | This is a file inclusion filter. If the log file name starts with |
+|                            | a prefix, only that file will be considered. All files are        |
+|                            | considered by default.                                            |
++----------------------------+-------------------------------------------------------------------+
+| fileNameNegativeRegex      | This is a file input regex. If this regex matches the file        |
+|                            | name, those files will be filtered out and will not be            |
+|                            | considered.                                                       |
++----------------------------+-------------------------------------------------------------------+
+
+JSON Skeleton Structure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+      {
+        "folderPath":"value",
+            "nThread":"value",
+            "threadTimeOut":"value",
+            "isModificationTimeInclude":"value",
+            "fileNameNegativeRegex":"value",
+            "parserType":"LOG4J",
+            "log4jConversionPattern":"value",
+            "log4jTimeFormat":"value",
+            "requiredExtraction": [...]
+        }
+
+log4jConversionPattern
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The value of the *log4jConversionPattern* parameter expected by Alation must be built with any of the following five words, in the order this is configured in the log4j.properties file:
+
+``"log4jConversionPattern":"TIMESTAMP LEVEL THREAD LOGGER MESSAGE"``
+
+- TIMESTAMP - corresponds to the date (%d)
+- LEVEL - corresponds to log priority (%p)
+- THREAD - corresponds to thread (%t)
+- LOGGER - corresponds to logger name (%c)
+- MESSAGE - corresponds to message (%m)
+
+For example, if the conversion pattern in your log4j.properties file is:
+
+``log4j.appender.ConsoleAppender.layout.ConversionPattern=[%-5p] %d %c - %m%n``
+
+This translates into the following key-value pair for the ``log4jConversionPattern`` parameter in the JSON for QLI:
+
+``"log4jConversionPattern":"LEVEL TIMESTAMP LOGGER MESSAGE"``
+
+Order of the parts in the value is important. It needs to be exactly like the order of the conversion characters in the log4j conversion pattern.
+
+log4jTimeFormat
+~~~~~~~~~~~~~~~~~~~~~
+
+The ``log4jTimeFormat`` key reflects the format of the timestamp in the log and can be inferred from the logs.
+
+Example: If your log4j file has an entry like:
+
+``"18/08/26 07:59:39 DEBUG WRAPPER-ReplId-ff848-c275a-92f99 SparkSqlParser: Parsing command: CREATE VIEW default.employee_view AS SELECT id, name FROM default.employee"``
+
+ The ``log4jTimeFormat`` will be ``yy/MM/dd HH:mm:ss``.
+
+requiredExtraction
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This property is an array. It maps field names expected by Alation’s query log parser onto the MESSAGE in your log. Each sub-object is defined by 2 keys: ``fieldName`` and ``keyValuePair``. ``keyValuePair`` is defined by 2 keys: ``loggerName`` and ``regex``. You will need to include a specific ``fieldName`` if this type of information is present in your log.
+
+``fieldName`` values expected by Alation are:
+
+- ``extractUserInfo`` - should be mapped onto the user information if it is present in the log
+- ``extractSqlQuery`` - should be mapped to SQL query statement
+- ``extractTimeTaken`` - should be mapped to  query execution time
+- ``extractSessionID`` - should be mapped to the session ID.
+- ``extractDefaultDatabase`` - should be mapped to default database used in the query
+
+Include the fields that your log has information for.
+
++-----------------------+--------------+--------------------------------------------------------+
+| Status                | If Required  | Description                                            |
++=======================+==============+========================================================+
+| fieldName             | yes          | Name of the field                                      |
++-----------------------+--------------+--------------------------------------------------------+
+| keyValuePair          | yes          | Sub-object holding the loggerName and regex properties |
++-----------------------+--------------+--------------------------------------------------------+
+| loggerName            | yes          | Name of the logger that logs the message with          |
+|                       |              | the information that can be mapped on a field          |
++-----------------------+--------------+--------------------------------------------------------+
+| regex                 | yes          | Regex to find information for a specific field         |
++-----------------------+--------------+--------------------------------------------------------+
+
+Example
+^^^^^^^^^
+
+.. code-block:: bash
+
+    "requiredExtraction": [
+        {
+          "fieldName": "extractSqlQuery",
+          "keyValuePair":
+            {
+              "loggerName": "",
+              "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) [\\w\\W].*\\):(?<queryString>[\\w\\W]*)"
+            }
+          }
+        ]
+
+The order of ``fieldName`` keys inside the ``requiredExtraction`` property is important. Provide the same order of information as it appears in the log message.
+
+For each ``fieldName``, provide the logger name as the ``loggerName`` value and write a regex to capture the information from the log message to map on the field.
+
+Complete JSON example for Hive on CDH with Spark
+--------------------------------------------------
+
+.. code-block:: json
+
+    {
+      "folderPath":"/tf-test-al-33492/",
+      "nThread":"10",
+      "threadTimeOut":"2000",
+      "isModificationTimeInclude":"false",
+      "parserType":"LOG4J",
+      "log4jConversionPattern":"TIMESTAMP LEVEL LOGGER MESSAGE",
+      "log4jTimeFormat":"yyyy-MM-dd HH:mm:ss,SSS",
+      "requiredExtraction": [
+          {
+            "fieldName": "extractSqlQuery",
+            "keyValuePair":
+              {
+                "loggerName": "",
+                "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) [\\w\\W].*\\):(?<queryString>[\\w\\W]*)"
+                }
+            },
+          {
+            "fieldName": "extractUserInfo",
+            "keyValuePair":
+              {
+                "loggerName": "",
+                "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) - Executing command\\(queryId=(?<userName>(\\S[^_]+))"
+                }
+            },
+
+          {
+            "fieldName": "extractTimeTaken",
+            "keyValuePair":
+              {
+                "loggerName": "",
+                "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) [\\w\\W]+\\); Time taken: (?<milliSeconds>[\\d]*.[\\d]*)"
+                }
+              }
+            ]
+          }
+
+Steps in Alation
+---------------------
+
+To configure file-based QLI in Alation,
+
+#. Perform metadata extraction. This must be done before proceeding to QLI. See :doc:`Metadata Extraction From Custom DB <../../datasources/CustomDB/MDEFromCustomDB>`.
+
+#. Navigate to the **Query Log Ingestion** tab. Clear the checkbox **Enable table based query log ingestion**:
+
+    .. image:: ../../_static/DS_CustomDB18.png
+        :width: 5.5in
+        :align: center
+
+3. Paste the QLI configuration JSON you have created into the **Log Extraction Configuration JSON** text area. Alation uses the information provided in this JSON to extract data from the query logs.
+
+4. Click **Save** to save the JSON file.
+
+      .. note::
+
+          If the JSON file in the **Log Extraction Configuration JSON** text box is an improper JSON, the user will not be able to save it.
+
+5. Under **Configure Connection Type**, select the **Connection Type**. The available connection types include **Amazon S3**, **Azure Blob Storage**, and **Azure Data Lake Store (ADLS) Gen 1**.
+
+  Required Connection Parameters:
+
+  .. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
+  +-------------------+---------------------------+------------------------------------------------+
+  | Connection Type   | Field                     | Description                                    |
+  +===================+===========================+================================================+
+  | Amazon S3         | AWS Access Key ID         | Access Key ID of S3 account                    |
+  |                   +---------------------------+------------------------------------------------+
+  |                   | AWS Access Key Secret     | Access Key Secret of S3 account                |
+  |                   +---------------------------+------------------------------------------------+
+  |                   | AWS Region                | Region of S3 account. This is an               |
+  |                   |                           | an optional field. If no value is entered,     |
+  |                   |                           | the default value of US-East1 will be applied. |
+  +-------------------+---------------------------+------------------------------------------------+
+  | ADLS              | ADLS URI                  | URI of ADLS                                    |
+  |                   +---------------------------+------------------------------------------------+
+  |                   | Tenant ID                 | Tenant ID                                      |
+  |                   +---------------------------+------------------------------------------------+
+  |                   | Client ID                 | Client ID                                      |
+  |                   +---------------------------+------------------------------------------------+
+  |                   | Client Secret             | Client Secret                                  |
+  +-------------------+---------------------------+------------------------------------------------+
+  | Azure Blob        | Storage Account Name      | Storage Account Name of Azure Blob             |
+  | Storage           +---------------------------+------------------------------------------------+
+  |                   | Access Key                | Access Key will be considered when the         |
+  |                   | Shared Access Signature   | checkbox for Shared Access Signature is        |
+  |                   |                           | not selected.                                  |
+  |                   |                           | Select the **Use Shared Access Signature**     |
+  |                   |                           | checkbox to enter the information for          |
+  |                   |                           | shared access signature                        |
+  |                   +---------------------------+------------------------------------------------+
+  |                   | Blob Container            | Name of the blob container.                    |
+  +-------------------+---------------------------+------------------------------------------------+
+
+6. After entering the information for **Connection Type**, click **Save Configuration**.
+
+7. Under **Run Manual Query Ingestion**, select the **Date Range** for QLI.
+
+8. Click **Preview** to fetch a log information preview.
+
+9. Click **Import** to start QLI. You can monitor the job status in the **Job History** table at the bottom:
+
+    .. image:: ../../_static/DS_CustomDB19.png
+        :width: 5.5in
+        :align: center

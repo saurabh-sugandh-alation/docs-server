@@ -1,0 +1,380 @@
+Update Alation to 2021.3
+================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+2021.3 Update Version Dependencies
+---------------------------------------
+
+Alation supports a direct update to version 2021.3 from the following previous versions:
+
+    - 2021.2.x
+    - 2021.1.x
+
+
+Version 2020.4.x and Older Versions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Direct update to 2021.3 is not supported from versions 2020.4, 2020.3, or older.
+
+First, update Alation to a version that supports the update to 2021.3, for example, 2021.1 or 2021.2, - and then perform a second update to 2021.3. Use the update instructions specific to your release to update.
+
+.. _20213-Release-Specific-Information:
+
+2021.3 Release-Specific Information
+--------------------------------------
+
+Postgres Upgrade to 13.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+During the update to 2021.3, the internal Postgres database is going to be automatically upgraded to version 13.1. Postgres upgrade to 13.1 is mandatory and cannot be skipped or postponed.
+
+.. warning::
+
+    Postgres upgrade dictates a disk space check before the update to 2021.3. You will need to make sure that at least 10% disk space is free in both **/data1** and **/data2** directories. With free disk space less than 10%, Postgres upgrade will be skipped by the update installer. Postgres will need to be updated manually after updating Alation.
+
+Built-In Driver Upgrades
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Existing connections to the data sources listed below will automatically switch to using new driver versions after the update to 2021.3:
+
++---------------------------+---------------------------------------------------+
+| Data Source Type          | Native Driver Updated to Version                  |
++===========================+===================================================+
+| Oracle                    | 19.10                                             |
++---------------------------+---------------------------------------------------+
+| Teradata                  | 17.00.00.03                                       |
++---------------------------+---------------------------------------------------+
+| Google BigQuery           | 1.2.16.1020                                       |
++---------------------------+---------------------------------------------------+
+
+Lineage V2 is Default in 2021.3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In 2021.3, Lineage V2 is the default framework for Lineage.
+
+If the Alation instance you are updating is already using Lineage V2, skip this section.
+
+If you are updating from a release that uses Lineage V1, review the information below.
+
+If your instance is using Lineage V1, during the update to 2021.3, the Lineage feature flag is going to be switched to V2. However, the complete migration to Lineage V2 on an Alation instance consists in 2 steps:
+
+    - Enabling the Lineage V2 feature flag on the instance
+    - Migrating the existing Lineage data to the Lineage V2 framework
+
+The update to 2021.3 only enables the corresponding feature flag but does not perform the Lineage data migration.
+
+It is recommended to fully switch to using Lineage V2 as support for Lineage V1 is going to be ended in one of the coming releases:
+
+    - How to check your current Lineage framework: `Check Lineage Version`_
+    - How to enable Lineage V2 and migrate your existing lineage to the V2 Lineage framework: :doc:`Enabling Lineage V2 <../../installconfig/LineageV2/EnableLineageV2>`
+    - How to stay on Lineage V1 (not recommended): `How to stay on Lineage V1 after the update to 2021.3`_
+
+Check Lineage Version
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To check which Lineage framework is currently in use on your Alation server:
+
+1. SSH to your Alation host and enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+2. Check the Lineage V2 feature flag. If it is set to ``False``, you are on Lineage V1. If it is set to ``True``, you are on Lineage V2:
+
+    .. code-block:: Bash
+
+      alation_conf alation.feature_flags.enable_lineage_v2
+
+
+How to stay on Lineage V1 after the update to 2021.3
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+    **This is not recommended** by Alation. Lineage V1 has reached end of support. No new features or improvements are going to be added to Lineage V1 in the coming releases.
+
+If your Alation instance is on Lineage V1, before the update to 2021.3 and you wish to still stay on Lineage V1 after the update to 2021.3, explicitly set the Lineage V2 flag to ``False`` before the update. This will create an override value in **alation_conf** that will not be changed during the update to 2021.3. This action must be done explicitly even though you find that the value is already set to ``False`` on your instance.
+
+To set the value:
+
+1. SSH to your Alation host and enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+2. Explicitly set the Lineage V2 feature flag to ``False``:
+
+    .. code-block:: Bash
+
+        alation_conf alation.feature_flags.enable_lineage_v2 -s False
+
+3. Restart web:
+
+    .. code-block:: Bash
+
+        alation_supervisor restart web:*
+
+Backup V2 is Default in 2021.3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Backup V2 is the default backup tool in release 2021.3.
+
+If the Alation instance you are updating already uses Backup V2, skip this section.
+
+If the Alation instance you are updating uses Backup V1, review the information below.
+
+What Does This Mean to Me as Alation Admin?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If your Alation instance is still on Backup V1 before the update to 2021.3 LA, during the update it will be switched to using Backup V2 automatically. For more information about Backup V2, see :doc:`/installconfig/BackupandRestore/BackupV1AndV2/index`.
+
+Please take note of the following:
+
+- You will be able to go back to Backup V1 after the update to 2021.3 if that is your preference. The next backup that runs on your system after the update to 2021.3 can be performed using either the Backup V1 or Backup V2 tool.
+
+- If your Alation server is on Backup V1 and using HA Pair configuration, then after the update, you will need to validate that both Primary and Secondary instances have the desired backup configuration. This is covered in the instructions for updating HA Pairs.
+
+How to Stay on Backup V1 After Update to 2021.2
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can return to Backup V1 by disabling Backup V2 after the update to 2021.2.
+
+Check Current Backup Tool Version
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can check the **alation_conf** parameter ``alation.backup_v2.enabled``. If it is in ``False``, you are on Backup V1:
+
+1. SSH to your Alation instance.
+2. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Check the value:
+
+    .. code-block:: Bash
+
+	     alation_conf alation.backup_v2.enabled
+
+.. note::
+
+    Do not change this parameter manually as this will result in an incomplete transition between backup tools and an inconsistent state of the system. Instead, use the ``alation_action`` command described in the Backup V2 documentation.
+
+2021.3 Update Known Issue
+------------------------------
+
+If you have a password set on the internal PostgreSQL database (Rosemeta), the update to 2021.3 will result in an error:
+
+.. code-block:: console
+
+    Password for user alation: psql: fe_sendauth: no password supplied ERROR: Cannot upgrade alation
+
+Update to 2021.3 requires that the password on the internal PostgreSQL database should be cleared for the time of the update. The password needs to be set again after the update is completed. On how to set or clear the Postgres password, see :doc:`Set Password for Internal PostgreSQL Instances <../../admins/AdditionalConfiguration/SetPasswordforPostgreSQLInstance>`.
+
+
+Update 2021.1 or 2021.2 to 2021.3
+---------------------------------------
+
+    .. note:: If you are updating to 2021.3 from 2021.1 and skipping the 2021.2 release, please also review :ref:`2021.2 Release-Specific Information <20212-Release-Specific-Information>`.
+
+STEP 1: Feature Flags Check
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The update to 2021.3 will change the default Lineage framework to Lineage V2 and the default backup tool to Backup V2. If your instance already uses Lineage V2 and Backup V2, skip to the next step.
+
+If your instance is on Lineage V1 and/or Backup V1, please make sure to review the following information:
+
+  - `Backup V2 is Default in 2021.3`_
+  - `Lineage V2 is Default in 2021.3`_
+
+.. _Update_20213-Step2:
+
+STEP 2: Prepare for Postgres Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step is mandatory. Perform the preparatory actions described in this section before running the update action. After you have prepared for Postgres upgrade, update Alation.
+
+The Postgres update will happen automatically during the update to release 2021.3.
+
+1. Postgres 9.3 Clean-Up
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation recommends to check if PostgreSQL 9.3 files still exist in the instance and clean them up if found. Follow the steps given in :doc:`How to Clean up Postgres 9.3 Data <../../admins/How-tos/HowtoCleanUpPostgres9_3Data>`. This can help free disk space required for the next Postgres upgrade.
+
+2. Validate Postgres State And Take a Backup
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation recommends to perform a full Postgres scan and an additional database validation for Postgres:
+
+1. From the Alation shell, check if full Postgres scan is enabled, and if not, enable it:
+
+    .. code-block:: Bash
+
+      sudo /etc/init.d/alation shell
+      # to check the current state:
+      alation_conf alation.postgresql.full_scan
+      # to enable full scan:
+      alation_conf alation.postgresql.full_scan -s True
+
+2. Still in the shell, change user to ``alation`` and run the full scan:
+
+    .. code-block:: Bash
+
+        sudo su alation
+        alation_action scan_postgres
+
+If the scan returns corruption errors, contact Alation Support to troubleshoot the database. If the scan is successful, perform the next steps.
+
+3. Still in the Alation shell, retrieve the current values of the two **alation_conf** parameters given below. The output will include values for both Rosemeta and Alation Analytics. Note down the values for Rosemeta only: ``pgsql.config.host`` and ``pgsql.data_path``. Disregard the values for Alation Analytics.
+
+    .. code-block:: Bash
+
+        alation_conf pgsql.config.host
+        alation_conf pgsql.data_path
+
+4. Run an additional database check using the values of ``pgsql.data_path`` for <data_path> and ``pgsql.config.host`` for <host>. This check should not return any errors:
+
+    .. code-block:: Bash
+
+        sudo -u postgres pg_probackup-9.6 checkdb -D <data_path> -h <host>
+
+5. After the database is validated successfully, take a full backup. The backup action should be performed as user ``alation``:
+
+    .. code-block:: Bash
+
+        sudo su alation
+        alation_action backup_all
+
+3.Disk Space Check
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ensure there is enough disk space for the automatic Postgres upgrade: there should be at least 10% free disk space in both **/data1** (**/data**) and **/data2** (**/backup**) folders. To check the currently available disk space, outside of the Alation shell, run:
+
+    .. code-block:: Bash
+
+        df -h
+
+After making sure you have fulfilled the disk space requirements, proceed to updating Alation.
+
+.. important::
+
+    Auto-upgrade of Postgres requires that at least 10% of the disk space is free in both **/data1** and **/data2** directories. When the disk is filled up above 90%, Postgres auto-upgrade will be skipped.
+
+    In this case the update action will only update the Alation application. You will have to update Postgres manually using the command ``alation_action upgrade_postgres``. Postgres upgrade is a mandatory change in 2021.3. The Alation application will not be fully functional until Postgres is upgraded.
+
+STEP 3: Update Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. important::
+
+      Always have the latest valid full backup before attempting to update Alation.
+
+Proceed to update Alation using the update instructions appropriate for your instance type. During the update, the internal Postgres database will be auto-upgraded to version 13.1.
+
+Update instructions:
+
+- :doc:`Manual Software Update for Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+- Update on the HA Pair:
+
+      - with splitting the HA cluster: :doc:`Update HA Pair with Cluster Splitting <../../installconfig/Update/UpdateHAPairwithClusterSplitting>`
+
+      - without splitting the cluster: :doc:`Update HA Pair Configuration (4.7 and above) <../../installconfig/Update/updateHAPair>`
+
+            .. note::
+
+                PostgreSQL upgrade will not happen on Secondary if you are updating without splitting the cluster. It will be  necessary to run the "replicate Postgres" script to sync with the Primary. This is included into the update instructions for HA Pair as a conditional step for 2021.3.
+
+STEP 4: Verify the Postgres Version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. After the Alation update is completed, ensure that PostgreSQL has been successfully upgraded by running the command given below from the Alation shell. This command should return the updated version of PostgreSQL: 13.1.
+
+    .. code-block:: Bash
+
+        alation_psql
+
+    If the command returns 2 versions:
+
+    .. code-block:: Bash
+
+        psql (13.1, server 9.6.13)
+
+    - this means Postgres upgrade did not happen on your instance. Run the Postgres upgrade command manually by running the following command from the Alation shell:
+
+    .. code-block:: Bash
+
+        alation_action upgrade_postgres
+
+
+2. Ensure there are no errors in Alation UI after the upgrade by performing some basic post-upgrade testing.
+
+STEP 5: Update Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step only if Alation Analytics V2 is in use on your instance.
+
+Release 2021.3 includes an updated version of Alation Analytics V2. Use the steps in :doc:`Update Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2>` to update Alation Analytics V2.
+
+    .. note::
+
+        Starting from 2021.3, Alation Analytics V2 installer supports assigning a user who owns the Alation Analytics V2 directories, config file, and logs. In earlier versions, the ownership was assigned to the root user by default. Now, it can be assigned to any user on the Alation Analytics V2 host.
+
+        If you wish to change the ownership of the Alation Analytics V2 directories from root to another user, run the update command with the additional flag ``-w``.
+
+STEP 6: Update Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step only if OCF is installed on your instance.
+
+Use the steps in :doc:`Update Alation Connector Manager <../../installconfig/Update/OCFUpdateAlationConnectorManager>` to update it.
+
+    .. note::
+
+        Alation Container Service does not require to be updated in 2021.3.
+
+STEP 7: (Optional): Backup Tool Check
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step only if you wish to go back to Backup V1 after the update.
+In order to go back to Backup V1, disable Backup V2 using the instructions in :doc:`/installconfig/BackupandRestore/BackupV1AndV2/EnableOrDisableBackupV2`.
+
+.. _Update_20213-Step8:
+
+STEP 8: Create a Backup of the Updated Instance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Backups created on Postgres 9.6 are not compatible with 2021.3 after Postgres upgrade to 13.1. Take a new full backup of your system after updating all components to 2021.3.
+
+Backup V1
+^^^^^^^^^^^^^^^
+
+Create a full Alation backup of the updated instance: :doc:`/installconfig/BackupandRestore/CreateBackupsManually`.
+
+Do not delete the backup taken before the update until you have performed post-update testing, have taken a new backup and made sure the new backup is valid. If there are no issues with creating the backup, you can delete the backup taken before the update.
+
+Backup V2
+^^^^^^^^^^^^^^^^^
+
+Perform steps 1 and 2 if incremental backups are enabled on your instance. If not, start with step 3.
+
+1. If incremental backups are enabled, disable them by running the following command from the Alation shell:
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup_v2.incr_backup -s False
+
+2. Re-enable Backup V2 to completely reset the incremental backup configuration after the Postgres upgrade:
+
+    .. code-block:: Bash
+
+        alation_action enable_backupv2
+
+3. Create a full Alation backup of the updated instance: :doc:`/installconfig/BackupandRestore/CreateBackupsManually`.
+
+  Do not delete the backup taken before the update until you have performed post-update testing, have taken a new backup and made sure the new backup is valid. If there are no issues with creating the backup, you can delete the backup taken before the update.
+
+4. Incremental backups can be reenabled after taking one full backup after the upgrade if you prefer backups to be taken incrementally.

@@ -1,0 +1,254 @@
+How to Exclude Postgres Backup from Alation Backup
+=======================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+.. note::
+
+    This feature is available from release 2020.4.5 (build *6.2.7.132077*)
+
+
+The configuration described below requires **Backup V2** to be enabled.
+
+Alation Backup V2 includes a tarball operation that combines all backup artifacts into a single **tar.gz** file. Backup tarball creation is a time-consuming operation, especially when the internal PostgreSQL database (Rosemeta) is large in size (> 1 TB). By default, Postgres backup is included into the Alation backup tar.gz file.
+
+It is possible to exclude the Postgres backup from the Alation backup tarball in order to decrease the backup time on large instances. This is controlled by the alation_conf parameter **alation.backup_v2.pgbackup_compression**.
+
+When Postgres backup is excluded from the backup compression process, the backup process will produce two outputs:
+
+    - An Alation backup tarball file with **site_data**, **kvstore**, and other backed up instance data but excluding the Postgres data;
+
+    - A Postgres backup in a separate directory **pgbackup** that gets created in the Alation backup directory during the backup process.
+
+The restore process will also involve 2 separate restore procedures:
+
+    - restoring the Alation backup
+    - restoring the corresponding Postgres backup.
+
+Configuration to Exclude Postgres Backup From Alation Backup Compression
+----------------------------------------------------------------------------
+
+This configuration requires server-side access to the Alation host.
+
+To exclude Postgres backup from the Alation backup tarball:
+
+1. SSH to the Alation host and enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+2. Make sure Backup V2 is enabled on your instance:
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup_v2.enabled
+
+    This command should return: ``alation.backup_v2.enabled = True``.
+
+    .. note::
+
+        On how to enable Backup V2, see :doc:`/installconfig/BackupandRestore/BackupV1AndV2/EnableOrDisableBackupV2`.
+
+3. Check the parameter **pgsql.config.backup_enabled**. It should be set to True (default):
+
+    .. code-block:: Bash
+
+	       alation_conf pgsql.config.backup_enabled
+
+    This command should return: ``pgsql.config.backup_enabled = True``
+
+    .. note::
+
+        Alation does not recommend to change the parameter **pgsql.config.backup_enabled**.  However, if as a result of this precheck you find it set to ``False``, change the value to ``True`` and do ``alation_action deploy_conf_all`` before continuing.
+
+4. Set the parameter **alation.backup_v2.pgbackup_compression** to ``False`` to exclude Postgres backup files during compression:
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup_v2.pgbackup_compression -s False
+
+
+.. image:: ../../_static/ExcludePostgresFromBackup_01.png
+
+Now, when you run the backup manually or when it is created automatically, the Postgres backup will be excluded from the backup tarball file. Postgres will be backed up into the **pgbackup**
+folder of the backup directory on the Alation host:
+
+.. image:: ../../_static/ExcludePostgresFromBackup_02.png
+
+
+During restore, you will need to separately restore the Postgres data from the Postgres backup.
+
+View Postgres Backups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The commands described below should be run from the Alation shell.
+
+To view existing Postgres backups in **pgbackup**:
+
+1. You can find the path to the backup directory configured on your instance using the alation_conf parameter **alation.backup.data_dump_dir**:
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup.data_dump_dir
+
+2. Run the following command to list the Postgres backups in the **pgbackup** directory:
+
+      - **2021.3.x and newer**
+
+            .. code-block:: Bash
+
+                sudo pg_probackup-13 show -B /data2/backup/pgbackup
+
+      - **V R6 to 2021.2.x**
+
+            .. code-block:: Bash
+
+                sudo pg_probackup-9.6 show -B /data2/backup/pgbackup
+
+
+      Where **</data2/backup/pgbackup>** should be the path to the backup directory configured on your instance.
+
+
+    *Full Postgres backup* (Mode = Full):
+
+        .. image:: ../../_static/ExcludePostgresFromBackup_03.png
+
+    *Incremental Postgres backups* (Mode = PAGE):
+
+        .. image:: ../../_static/ExcludePostgresFromBackup_04.png
+
+
+Restore From a Backup That Excludes Postgres Backup
+----------------------------------------------------
+
+Use these steps to restore an Alation backup taken when the parameter  **alation.backup_v2.pgbackup_compression** is set to ``False`` and Postgres backup is stored separately from the Alation application data.
+
+1. On the Alation instance where you are restoring Alation, stop the Postgres service:
+
+      - **2021.3.x and newer**
+
+            .. code-block:: Bash
+
+                sudo service postgresql-13 stop
+
+      - **V R6 - 2021.2.x**
+
+            .. code-block:: Bash
+
+                sudo service postgresql-9.6 stop
+
+2. Clear the Postgres data folder:
+
+      - **2021.3.x and newer**
+
+            .. code-block:: Bash
+
+                sudo rm -rf /data1/pgsql/13/data/
+
+      - **V R6 - 2021.2.x**
+
+            .. code-block:: Bash
+
+                sudo rm -rf /data1/pgsql/9.6/data/
+
+3. Copy the Alation backup tarball file and the Postgres backup folder to the backup directory on the instance where you are going to restore.
+
+    .. important::
+
+        Make sure the Postgres backup you use corresponds to the Alation backup. The timestamp of the Alation Catalog backup and the timestamp of the Postgres backup that you restore must be the same:
+
+        .. image:: ../../_static/ExcludePostgresFromBackup_05.png
+
+        .. image:: ../../_static/ExcludePostgresFromBackup_06.png
+
+
+4. You need to know the Postgres backup **ID** to restore the Postgres data. To find out the Postgres backup ID:
+
+
+      - **2021.3.x and newer**
+
+            .. code-block:: Bash
+
+                sudo pg_probackup-13 show -B /data2/backup/pgbackup
+
+      - **V R6 - 2021.2.x**
+
+            .. code-block:: Bash
+
+                sudo pg_probackup-9.6 show -B /data2/backup/pgbackup
+
+    where **</data2/backup/pgbackup>** should be your path to the **pgbackup** directory. The **ID** column will display Postgres backup IDs:
+
+    .. image:: ../../_static/ExcludePostgresFromBackup_03.png
+
+
+5. Change user to ``alation`` and then change ownership of the Alation backup tarball file to the ``alation`` user:
+
+    .. code-block:: Bash
+
+        sudo su alation
+        sudo chown alation:alation </data2/restore/backup_file.tar.gz>
+
+6. Restore Alation data from the backup tarball:
+
+    .. code-block:: Bash
+
+        alation_action destructive_restore_all
+
+7. Restore Postgres data:
+
+    - **2021.3.x and newer**
+
+          .. code-block:: Bash
+
+              sudo -u postgres pg_probackup-13 restore -B /data2/backup/pgbackup/ --instance alation -i <backup_ID>
+
+    - **V R6 - 2021.2.x**
+
+          .. code-block:: Bash
+
+              sudo -u postgres pg_probackup-9.6 restore -B /data2/backup/pgbackup/ --instance alation -i <backup_ID>
+
+    Where **</data2/backup/pgbackup>** should be the path to the **pgbackup** directory and **<backup_ID>** is the backup ID.
+
+    *Example*:
+
+    .. code-block:: Bash
+
+        sudo -u postgres pg_probackup-9.6 restore -B /data2/backup/pgbackup/ --instance alation -i QO9GRM
+
+
+8. Wait for a **recovery.done** file to be generated after Postgres restore. Ensure the **recovery.done** file is present. This may take a few minutes (3-5 mins). Example:
+
+    .. code-block:: Bash
+
+        (env) PROD [root@ip-10-13-90-158 /]$ ls /data1/pgsql/9.6/data/recovery.done
+
+9. Start Postgres after **recovery.done** file has been generated:
+
+      - **2021.3.x and newer**
+
+          .. code-block:: Bash
+
+              sudo service postgresql-13 start
+
+      - **V R6 - 2021.2.x**
+
+          .. code-block:: Bash
+
+              sudo service postgresql-9.6 start
+
+
+Restore From Incremental Backups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If incremental backups are enabled, Alation will take incremental backups of Postgres data too:
+
+    .. image:: ../../_static/ExcludePostgresFromBackup_07.png
+
+When restoring from an incremental Postgres backup to the latest backed up state, make sure the initial full backup and the complete cycle of incremental backups are present in the **pgbackup** folder.
+
+To restore Alation, use the latest incremental **tar.gz** of the Alation backup and the ID of the latest incremental Postgres backup that have the same timestamp:
+
+    .. image:: ../../_static/ExcludePostgresFromBackup_08.png

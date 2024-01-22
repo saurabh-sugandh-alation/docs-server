@@ -1,0 +1,100 @@
+BI Connection Info
+======================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Use the information below to correctly fill out the **BI Connection Info** field on the **General Settings** tab of an OCF data source. This field is used to generate lineage between the current data source and another source in the catalog, enabling users to view lineage data across sources.
+
+Fill Out the BI Connection Info Field
+----------------------------------------
+
+Alation can build and display lineage between sources in the catalog. For example, if you have cataloged both a data source (an RDBMS database) and a BI source that retrieves data from this database, you can configure Lineage diagrams to show lineage links across both sources. You will be able to trace which BI objects use which tables and columns of the data source. The **BI Connection Info** field serves exactly this purpose. The field stores the connection information for the data source as it was configured in the BI tool. From the BI source perspective, this is the BI data source connection information. From the current RDBMS data source perspective, this is a "self-reference".
+
+To fill out this field correctly, find the BI datasource connection string for the current data source as it appears in the BI source metadata:
+
+1. Check that you have the specific BI source in the catalog and have extracted the BI metadata. This should be the BI source that uses the data from the current data source.
+
+2. There are two ways to find a BI data source connection information. Both ways will lead you to the BI data source connection catalog object that stores the database connection string:
+
+    - `Start on the BI Source Catalog Page`_
+    - `Start on the BI Object Page`_
+
+3. Copy the database connection information from the  BI data source connection page and paste into the **BI Connection Info** field under the **General Settings** > **Application Settings** section.
+
+    .. important::
+
+        In certain situations, the BI data source connection value may only contain the host information but no port value. However, a port is required as part of the **BI Connection Info** value.
+
+        If this is your case, add a random integer as a port number for the value to be valid. The value ``-1`` is also acceptable. For example:
+
+            - ``toro-demo.ceadil4offf2.us-west-2.rds.amazonaws.com:123``
+            - ``toro-demo.ceadil4offf2.us-west-2.rds.amazonaws.com:-1``
+
+
+The screenshot below shows an example of the connection string you need.
+
+    .. image:: ../../_static/OCF_BIConnectionInfo_Example.png
+        :class: with-border
+        :width: 800px
+
+Start on the BI Source Catalog Page
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Open the catalog page of the BI source.
+
+2. On the BI source page, click the **DataSources** tab or the **DataSet** tab, depending on which tab name you find under your BI source. This tab lists all BI data source connections from all BI objects under this BI source. Depending on how much BI metadata you have in the catalog, the list can be quite long. If you know the name of the connection you are looking for, use the **Filter** on top right of the data sources or datasets list to find the object.
+
+      .. image:: ../../_static/OCF_BIConnectionInfo_UseFilter.png
+            :class: with-border
+            :width: 800px
+
+3. After locating the BI data source or dataset, in the **Name** column, click its name. The corresponding catalog page will open.
+
+4. Click the **Connections** tab. This tab lists all data source connections under a BI data source object.
+
+5. On the right, under the **Properties** section, locate the field **Database Connection**. This field will contain the connection string that you need.
+
+Start on the BI Object Page
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Open the catalog page of the BI source.
+
+2. Drill down to the BI object that uses the connection you're looking for. For each BI source type, the hierarchy of BI objects will differ. Start with a site or folder, and click through down to the level that stores BI data source connections (such as project, workbook, report, or dashboard).
+
+3. On the BI object page, click the **DataSources** or **DataSet** tab.
+
+      .. image:: ../../_static/OCF_BIConnectionInfo_Object_Page.png
+          :class: with-border
+          :width: 800px
+
+4. The **DataSources** or **DataSet** tab will display the list of BI data sources used to create the BI report(s).
+
+      .. image:: ../../_static/OCF_BIConnectionInfo_DataSourcesList.png
+          :class: with-border
+          :width: 800px
+
+5. Click the name of the data source you need. The corresponding catalog page will open.
+
+6. Click the **Connections** tab. This tab lists all connections under a BI data source.
+
+7. On the right, under the **Properties** section, locate the field **Database Connection**. This field will contain the connection string that you need.
+
+
+View Lineage Across Sources
+-------------------------------
+
+As a result of configuring the **BI Connection Info** field and after running metadata extraction and query log ingestion, you will see lineage links between the current data source and the BI source that uses it as a source of data.
+
+    .. note::
+
+        The schema which was used in the BI data source or dataset must be cataloged in Alation. Excluding the required schema from extraction will create a lineage object with the TMP tag ("temporary object") on the Lineage diagram.
+
+The screenshot below shows lineage for a BI report that includes the upstream lineage links to the corresponding data source, where:
+
+    - **1**—The BI object catalog page
+    - **2**—This BI object represented on the Lineage diagram under the Lineage tab
+    - **3**—The upstream lineage that shows the source of data and comes from the data source in the catalog where the **BI Connection Info** field stores the corresponding BI dataset connection information
+
+        .. image:: ../../_static/OCF_BIConnectionInfo_Chart.png
+            :class: with-border
+            :width: 800px

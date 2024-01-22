@@ -1,0 +1,341 @@
+Extraction Queries for SAP ASE
+=========================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The default extraction queries for the SAP ASE data source are provided below. You can customize them to better suit your catalog needs. Custom queries can be specified on the **Metadata Extraction** tab of the data source Settings page under **Metadata Extraction Queries**.
+
+You can customize all or some of the queries.
+
+Catalog
+--------------
+
+Ensure your query has a column labeled as ``CATALOG`` in the ``SELECT`` list.
+
+  .. code-block:: SQL
+
+        SELECT
+          name AS 'CATALOG'
+        FROM
+          master.dbo.sysdatabases
+        WHERE
+          name  NOT IN ('''')
+            AND name NOT IN  ( 'model' , 'tempdb' , 'sybsystemdb' , 'sybsystemprocs' , 'pubs2' , 'pubs3' , 'sybmgmtdb')
+        ORDER BY 'CATALOG'
+
+Schema
+---------
+
+Ensure your query has columns labeled as ``CATALOG`` and ``SCHEMA`` in the ``SELECT`` list.
+
+  .. code-block:: SQL
+
+        SELECT *
+        FROM
+        (
+        SELECT db_name() as 'CATALOG',
+              name as 'SCHEMA'
+        FROM
+              dbo.sysusers
+        WHERE
+              suid>0 ) a
+        WHERE
+              (a.[CATALOG] +'.' + a.[SCHEMA])
+              NOT IN ('''')
+                AND a.[SCHEMA] NOT IN  ( 'public' , 'guest')
+        ORDER BY a.[CATALOG],
+                 a.[SCHEMA]
+
+TABLE
+-----------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TABLE_OWNER``, ``TABLE_TYPE``, and ``REMARKS`` in the ``SELECT`` list.
+
+  .. code-block:: SQL
+
+        SELECT *
+        FROM
+        (
+        SELECT
+                Db_name() AS 'CATALOG',
+                User_name(s.uid) AS 'SCHEMA',
+                s.NAME AS TABLE_NAME,
+                User_name(s.uid) AS TABLE_OWNER,
+                s.type AS TABLE_TYPE,
+                NULL AS REMARKS
+        FROM
+                sysobjects s) AS x
+        WHERE
+               table_type IN ( 'U' )
+                 AND ( x.[catalog] + '.' + x.[schema] ) NOT IN ( '''' )
+                 AND x.[schema] NOT IN ( 'public', 'guest' )
+        ORDER BY x.[catalog],
+                  x.[schema],
+                  x.table_name
+
+VIEW
+---------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``VIEW_NAME``, ``VIEW_CREATE_STATEMENT``, ``TABLE_OWNER``, VIEW AS ``VIEW_TYPE`` (This is hard coded column), and REMARKS in the ``SELECT`` list.
+
+  .. code-block:: SQL
+
+        SELECT *
+        FROM (SELECT
+             Db_name() AS 'CATALOG',
+             User_name(O.uid) AS 'SCHEMA',
+             O.NAME AS VIEW_NAME,
+             C.text AS VIEW_CREATE_STATEMENT,
+             C.colid AS SEQID,
+             User_name(O.uid) AS TABLE_OWNER,
+             'VIEW' AS 'VIEW_TYPE',
+             NULL AS REMARKS
+        FROM
+            sysobjects O
+        INNER JOIN
+            syscomments C
+            ON O.id = C.id
+        WHERE type IN ( 'V', 'RS' )
+            AND C.text IS NOT NULL) AS z
+        WHERE z.[schema] NOT IN ( 'public', 'guest' )
+
+
+
+PRIMARY KEY
+----------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``PK_NAME``, ``COLUMN_NAME``, and ``INDEXTYPE`` in the select list.
+
+  .. code-block:: SQL
+
+        SELECT
+             null AS CATALOG,
+             trim(i.icreator) AS SCHEMA,
+             trim(i.tname) AS TABLE_NAME,
+             trim(i.iname) AS pk_name,
+             i.indextype,
+             trim(c.cname) AS COLUMN_NAME
+        FROM
+             sys.sysindexes i
+        INNER JOIN sysuserperms u
+             ON i.icreator = u.user_name
+             AND i.indextype = 'Primary Key'
+        INNER JOIN sys.syscolumns c
+             ON c.tname = i.tname
+             AND c.in_primary_key = 'Y'
+        WHERE u.user_id IN (
+             SELECT creator FROM sys.systable WHERE table_type IN ('BASE', 'VIEW')
+            )
+              AND i.icreator IN (<schema1_name>, <schema2_name>)
+
+FOREIGN KEY
+---------------
+
+Ensure your query has columns labelled as ``FK_CATALOG``, ``FK_SCHEMA``, ``FK_TABLE``, ``FK_NAME``, ``FK_COLUMN``, ``PK_CATALOG``, ``PK_SCHEMA``, ``PK_TABLE``, ``PK_NAME``, and ``PK_COLUMN`` in the ``SELECT`` list.
+
+  .. code-block:: SQL
+
+        SELECT *
+        FROM
+        (
+        SELECT
+              Db_name() FK_CATALOG,
+              User_name(so.uid) AS FK_SCHEMA,
+              Object_name(ref.tableid) AS FK_TABLE,
+              fko.NAME AS FK_NAME,
+        CASE
+          WHEN fokey1 != 0 THEN fk1.NAME
+          ELSE ''
+             END AS FK_COLUMN,
+             Db_name() AS PK_CATALOG,
+             User_name(par.uid) AS PK_SCHEMA,
+             Object_name(par.id) AS PK_TABLE,
+             si.NAME AS PK_NAME,
+        CASE
+             WHEN refkey1 != 0 THEN pk1.NAME
+             ELSE ''
+             END AS PK_COLUMN
+        FROM
+             sysobjects so
+        JOIN sysconstraints con
+             ON so.id = con.tableid
+        JOIN sysobjects fko
+             ON con.constrid = fko.id
+        JOIN sysreferences ref
+             ON con.constrid = ref.constrid
+        JOIN sysobjects par
+             ON par.id = ref.reftabid
+        JOIN sysindexes si
+             ON si.id = par.id
+        LEFT JOIN syscolumns fk1
+             ON ref.fokey1 = fk1.colid
+             AND ref.tableid = fk1.id
+        LEFT JOIN syscolumns pk1
+             ON ref.refkey1 = pk1.colid
+             AND ref.reftabid = pk1.id
+        WHERE
+            fko.type = 'RI'
+              AND so.type = 'U') AS Z
+        WHERE
+        (
+           Z.[fk_catalog] + '.' + Z.[fk_schema] ) NOT IN ( '''' )
+              AND Z.fk_schema NOT IN ( 'public', 'guest' )
+        ORDER  BY Z.fk_schema,
+                Z.fk_table,
+                Z.fk_name
+                x.TABLE_NAME
+
+INDEXES
+-----------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``COLUMN_NAME``, ``INDEX_NAME``, and ``TYPE`` in the ``SELECT`` list.
+
+  .. code-block:: SQL
+
+        SELECT *
+        FROM
+        (
+        SELECT
+              Db_name() AS 'CATALOG',
+              User_name(uid) AS 'SCHEMA',
+              o.NAME AS TABLE_NAME,
+              i.NAME AS INDEX_NAME,
+              Index_col(o.NAME, i.indid, c.colid, uid) AS COLUMN_NAME,
+        (
+        CASE
+              WHEN indid = 1 THEN 'clustered index'
+              ELSE 'Non-clustered indexes'
+              END ) AS TYPE
+        FROM
+            sysobjects o
+        INNER JOIN sysindexes i
+            ON i.id = o.id
+        INNER JOIN syscolumns c
+            ON c.id = o.id
+        WHERE o.type IN ( 'U', 'V' )
+               AND i.indid > 0
+               AND i.status & 2048 != 2048
+               AND Index_col(o.NAME, i.indid, c.colid, uid) IS NOT NULL) AS Z
+        WHERE  ( Z.[catalog] + '.' + Z.[schema] ) NOT IN ( '''' )
+               AND Z.[schema] NOT IN ( 'public', 'guest' )
+        ORDER  BY Z.[type],
+                  Z.index_name
+
+COLUMNS
+------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, ``COLUMN_DEFAULT``, ``LENGTH``, and ``SCALE`` in the ``SELECT`` list.
+
+  .. code-block:: SQL
+
+        SELECT *
+        FROM
+        (
+        SELECT
+               Db_name() AS 'CATALOG',
+               User_name(T.uid) AS 'SCHEMA',
+               T.NAME AS TABLE_NAME,
+               C.NAME AS COLUMN_NAME,
+        (
+        CASE
+               WHEN ST.NAME = 'decimal' THEN ST.NAME || ( '(' || CONVERT(VARCHAR,
+               C.prec) || ',' || CONVERT(VARCHAR,
+               C.scale) || ')' )
+               WHEN ST.NAME = 'numeric' THEN ST.NAME || ( '(' || CONVERT(VARCHAR,
+               C.prec) || ',' || CONVERT(VARCHAR,
+               C.scale) || ')' )
+               ELSE ST.NAME || ( '(' || CONVERT(VARCHAR, C.length) || ')' )
+               END ) AS TYPE_NAME,
+               ST.NAME AS DATA_TYPE,
+               C.colid AS ORDINAL_POSITION,
+               CASE
+                 WHEN C.status = 8 THEN 'true'
+                 ELSE 'false'
+               END AS IS_NULLABLE,
+               sc.text AS COLUMN_DEFAULT,
+               C.length AS LENGTH,
+               C.scale AS SCALE,
+               NULL AS REMARKS
+        FROM
+               syscolumns C
+        INNER JOIN sysobjects T
+               ON T.id = C.id
+        INNER JOIN systypes ST
+               ON C.usertype = ST.usertype
+        LEFT JOIN syscomments sc
+              ON C.cdefault = sc.id
+        WHERE  T.type IN ( 'U', 'V', 'RS' )) K
+        WHERE  ( K.[catalog] + '.' + K.[schema] ) NOT IN ( '''' )
+               AND K.[schema] NOT IN ( 'public', 'guest' )
+        ORDER  BY K.[schema],
+                  K.table_name,
+                  K.ORDINAL_POSITION
+
+FUNCTION DEFINITION
+----------------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``FUNCTION_NAME``, ``COLUMN_NAME``, ``ARG_NAME``, ``ARG_TYPE``, ``TYPE_NAME``, ``ARG_DEF``, and ``COLUMN_TYPE`` in the ``SELECT`` list.
+
+  .. code-block:: SQL
+
+        SELECT *
+        FROM
+        (
+        SELECT
+               Db_name() AS 'CATALOG',
+               User_name(P.uid) AS 'SCHEMA',
+               Object_name(P.id) AS FUNCTION_NAME,
+               T.text AS ARG_DEF,
+               C.NAME AS COLUMN_NAME,
+        (
+         CASE
+               WHEN ST.NAME = 'decimal' THEN ST.NAME || ( '(' || CONVERT(VARCHAR,
+               C.prec) || ',' || CONVERT(VARCHAR,
+               C.scale) || ')' ) WHEN ST.NAME = 'numeric' THEN ST.NAME || ( '(' || CONVERT(VARCHAR,
+               C.prec) || ',' || CONVERT(VARCHAR,
+               C.scale) || ')' )
+               ELSE ST.NAME || ( '(' || CONVERT(VARCHAR, C.length) || ')' )
+               END ) AS TYPE_NAME,
+               C.NAME AS ARG_NAME,
+               ST.NAME AS ARG_TYPE,
+               0 AS COLUMN_TYPE
+        FROM
+               dbo.sysobjects P
+        INNER JOIN syscomments T
+               ON T.id = P.id
+        INNER JOIN syscolumns C
+               ON C.id = P.id
+        INNER JOIN systypes ST
+               ON C.usertype = ST.usertype
+        WHERE  P.type IN ( 'SF', 'F' )) Z
+        WHERE  ( Z.[catalog] + '.' + Z.[schema] ) NOT IN ( '''' )
+               AND Z.[schema] NOT IN ( 'public', 'guest' )
+        ORDER  BY Z.[schema],
+                  Z.function_name
+
+FUNCTIONS
+--------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``SCHEMA``, ``FUNCTION_NAME``, and ``REMARKS`` in the ``SELECT`` list.
+
+  .. code-block:: SQL
+
+        SELECT *
+        FROM
+        (
+        SELECT DISTINCT
+                      Db_name() AS 'CATALOG',
+                      User_name(o.uid) AS 'SCHEMA',
+                      Object_name(p.id) AS function_name,
+                      NULL AS remarks
+        FROM
+            sysprocedures P
+        INNER JOIN sysobjects O
+            ON o.id = p.id
+        WHERE o.type IN ('SF','F')) Z
+        WHERE
+        (
+            z.[CATALOG] +'.' + z.[SCHEMA]) NOT IN ('''')
+              AND z.[SCHEMA] NOT IN ( 'public' , 'guest')
+        ORDER BY z.[SCHEMA],
+              function_name

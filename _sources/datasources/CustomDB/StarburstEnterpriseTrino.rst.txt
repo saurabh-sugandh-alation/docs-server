@@ -1,0 +1,279 @@
+Starburst Enterprise (Trino)
+==================================
+
+*Applies from version 2022.2*
+
+A Starburst Enterprise data source can be added to Alation as Custom DB using the Trino JDBC driver.
+
+Scope of Support
+-------------------
+
+    - Kerberos authentication
+        - Keytab
+    - Metadata extraction (MDE)
+    - Data sampling and profiling
+    - Query log ingestion (QLI)
+    - Compose
+
+Prerequisites
+---------------------
+
+Before you add a Starburst Enterprise data source to Alation, make sure the required ports are open, create a service account for Alation, add the required driver to the Alation server, and configure Kerberos on the Alation server if your data source is kerberized.
+
+Open Ports
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following ports must be open:
+    - **8080**
+    - **7778**—This port must be open if using Kerberos authentication.
+
+Create Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create a service account for Alation to use for MDE, sampling, profiling, and QLI.
+
+For QLI, the service account must have the admin rights for the ``system.runtime.queries`` table.
+
+Add the Trino JDBC Driver to Alation Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To add the Trino JDBC driver to the Alation server:
+
+1. Place the Trino JDBC driver to a directory on the Alation host, for example, **/tmp**.
+
+    .. note::
+
+        You can request the driver for version 380-e LTS (``trino-jdbc-380.jar``) from Starburst Support or request a download from the Starburst archive. See `JDBC driver <https://docs.starburst.io/data-consumer/clients/jdbc.html>`_ in Starburst documentation for more details.
+
+2. Move the driver to the **custom_drivers** directory on the Alation server at **/opt/alation/alation-<version>/data1/site_data/custom_drivers/** (the path is given outside of the Alation chroot). Substitute ``<version>`` with the Alation version you find in this path. This will make the driver accessible in the Alation chroot.
+
+Alation restart is not required after adding the driver.
+
+Configure Kerberos Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are using Kerberos authentication with your Starburst Enterprise data source, configure Kerberos on the Alation server. You will need to add the files **krb5.conf**, **trino-keystore.jks**, and **<service_account_user>.keytab** to the Alation server.
+
+To configure Kerberos for your Starburst Enterprise data source:
+
+1. Copy the files **krb5.conf**, **trino-keystore.jks**, and **<service_account_user>.keytab** onto the Alation host, for example, to the **/tmp** directory.
+
+2. Move the files inside the Alation chroot:
+
+    - Move **trino-keystore.jks** and **<service_account_user>.keytab** to **/opt/alation/alation-<version>/data1/tmp** (path is given outside of the Alation shell). Substitute ``<version>`` with the Alation version you find in this path.
+    - Move the **krb5.conf** file to **/opt/alation/alation-<version>/data1/site_data/** (path is given outside of the Alation shell). Substitute ``<version>`` with the Alation version you find in this path.
+
+3. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+4. Run the following actions to copy and deploy the configuration:
+
+    .. code-block:: Bash
+
+        alation_action copy_krb5_conf
+        alation_action deploy_conf_kerberos
+
+5. Restart Alation:
+
+    .. code-block:: Bash
+
+        alation_action restart_alation
+
+6. Check that the configuration values are now stored in **altion_conf**.
+
+    .. code-block:: Bash
+
+        alation_conf kerberos
+
+You can leave the shell session open for now as there will be one more configuration step on the server backend after you add your data source to Alation. If you prefer to close the session for now, exit the shell.
+
+    .. code-block:: Bash
+
+        exit
+
+
+Step 1: Add a New Data Source
+-----------------------------------
+
+In Alation, add a new data source:
+
+1. Log in to Alation as a Server Admin.
+
+2. Expand the **Apps** menu on the right of the main toolbar and select **Sources**.
+
+3. On the **Sources** page, click **+Add** on the top right of the page and in the list that opens, click **Data Source**. This will open the **Add a Data Source** wizard.
+
+4. On the first screen of the wizard, specify a name for your data source, assign more Data Source Admins, if necessary, and click the **Continue Setup** button on the bottom of the screen.
+
+Step 2: Set up the Connection
+-----------------------------------
+
+Fill in the information on the **Add a Data Source** screen of the wizard:
+
+    - **Database Type**—``Custom DB``
+    - **JDBC URI**—URI in the required format. See `Build the JDBC URI`_ below.
+    - **Select Driver**—Select the Trino JDBC driver for Starburst Enterprise from the drop-down list: ``io.trino.jdbc.TrinoDriver.trino.jdbc.380``
+    - **Use Kerberos**—If using Kerberos authentication, select the **Use Kerberos** checkbox.
+
+Click **Save and Continue**. The next wizard screen—**Set Up a Service Account**—will open.
+
+Build the JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Basic authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Format
+'''''''''''
+
+.. code-block:: Bash
+
+    trino://<host_name>:<port>/<database_name>
+
+Example
+'''''''''''
+
+.. code-block:: Bash
+
+	   trino://ip-10-13-86-244.alation-test.com:8080/hive
+
+Kerberos authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Include the following parameters:
+
+  - ``KerberosRemoteServiceName``—The Kerberos service name you are using for this connection.
+  - ``KerberosKeytabPath``—Path to the service account keytab file on the Alation server: ``/data1/tmp/<service_account_user>.keytab``.
+  - ``KerberosUseCanonicalHostname=false``
+  - ``KerberosPrincipal``—The Kerberos principal name you are using for this connection.
+  - ``SSLTrustStorePath``—Path to the truststore file on the Alation server: ``/data1/tmp/trino-keystore.jks``.
+  - ``SSLTrustStorePassword``—Truststore password.
+
+Format
+''''''''''''
+
+.. code-block:: Bash
+
+    trino://<host_name>:<port>/<database_name>/default?SSL=true&&KerberosRemoteServiceName=<value>&KerberosKeytabPath=/data1/tmp/<service_account_user>.keytab&&KerberosUseCanonicalHostname=false&&KerberosPrincipal=<value>&&SSLTrustStorePath=/data1/tmp/trino-keystore.jks&&SSLTrustStorePassword=<value>
+
+Example
+''''''''''''''
+
+.. code-block:: Bash
+
+	  trino://ip-10-12-92-256.alation-test.com:7778/hive/default?SSL=true&&KerberosRemoteServiceName=trino&KerberosKeytabPath=/data1/tmp/mduser.keytab&&KerberosUseCanonicalHostname=false&&KerberosPrincipal=mduser@ALATION-TEST.COM&&SSLTrustStorePath=/data1/tmp/trino-keystore.jks&&SSLTrustStorePassword=my_password
+
+Step 3: Enter the Service Account Credentials
+--------------------------------------------------
+
+1. On the **Set Up a Service Account** screen of the wizard, select **Yes** under **Have you already created a Service Account with all required permissions?**
+
+2. Under **Provide your Service Account** credentials, specify the username and the password of the service account.
+
+3. Click **Save and Continue**. The next wizard screen—**Configure Your Data Source**—will open.
+
+Step 4: Go to Settings
+-----------------------------------
+
+On the **Configure Your Data Source** screen, click **Skip this Step**. You will be navigated to the Settings page of your new data source.
+
+Step 5: Populate the Access Tab
+-----------------------------------
+
+On the **Access** tab, specify the privacy settings for the data source and give access to users.
+
+Step 6: Verify General Settings
+-----------------------------------
+
+On the **General Settings** tab of the Settings page, verify your connection information and upload the keytab file:
+
+1. If using Kerberos authentication, under **Network Connection > Kerberos Settings**, check that the **Enable Kerberos Authentication** checkbox is selected.
+2. If using Kerberos authentication, under **Network Connection > Service Account**, select the **Use Keytab** checkbox and upload the **<service_account_user>.keytab** file.
+
+    .. note::
+
+        The configuration for this data source requires uploading the keytab file in the user interface again even though it was already added on the backend of the Alation server.
+
+3. Under **Network Connection**, click **Test** to test connectivity to the database.
+4. Under **Network Connection > Service Account**, click **Test** to test the connection with the service account.
+
+After you have verified the connection, you can perform metadata extraction, sampling and profiling, and QLI.
+
+Metadata Extraction
+-----------------------------------
+
+Enable Presto Parser
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/CustomDBEnablePrestoParser.rst
+
+Perform Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To perform metadata extraction:
+
+1. Go to the **Custom Settings** tab of the Settings page and set the **Catalog Object Definition** to ``Catalog.Schema.Table``.
+
+2. Go to the **Metadata Extraction** tab and configure and perform metadata extraction. Refer to :doc:`/datasources/CustomDB/MDEFromCustomDB` for details.
+
+Sampling and Profiling
+--------------------------------
+
+You can configure sampling and profiling on the Per-Object Parameters and Data Sampling tabs of the data source settings page:
+
+    - **Per-Object Parameters**—Configure settings for sampling and profiling: :ref:`Per-Object Parameters <Sampling_Profiling-Per_Object_Parameters>`.
+
+    - **Data Sampling**—Configure and perform :doc:`/datasources/CustomDB/ProfilingForCustomDB`.
+
+Query Log Ingestion
+---------------------------------
+
+Refer to :doc:`/datasources/CustomDB/SQLQueryBasedQLICustomDB`.
+
+Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If using query-based QLI, specify the following query on the **Query Log Ingestion** tab:
+
+.. code-block:: SQL
+
+    SELECT
+        user AS userName,
+        query AS queryString,
+        source AS defaultDatabases,
+        False AS sessionId,
+        created AS sessionStartTime,
+        started AS startTime,
+        False AS cancelled,
+        date_diff('second',"started", "end") AS secondsTaken,
+        query_id AS sequence
+    FROM system.runtime.queries
+        WHERE state ='FINISHED'
+        AND started between timestamp 'STARTTIME1' and timestamp 'STARTTIME2'
+    ORDER BY sessionId, startTime
+
+Compose
+--------------------------
+
+To query your Starburst Enterprise data source in Compose:
+
+    - Authenticate in Compose with your Starburst Enterprise credentials.
+    - Use the ``Catalog.Schema.Table`` format for writing queries.
+
+CREATE SCHEMA Queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When writing the CREATE SCHEMA queries, include the data source location. The location can either be on Amazon S3 or HDFS, for example:
+
+.. code-block:: SQL
+
+    CREATE SCHEMA IF NOT EXISTS test_presto_profiling
+      WITH (location = 's3://tf-altion-test-starburst-bucket/al/profiling');
+
+Troubleshooting
+--------------------------
+
+.. include:: ../../shared/CustomDBLogs.rst

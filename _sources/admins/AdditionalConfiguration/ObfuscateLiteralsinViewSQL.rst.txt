@@ -1,0 +1,58 @@
+Obfuscate Literals in View SQL
+=====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from version 2023.1.2*
+
+A *view* is a table object sub-type in Alation. Views are extracted during metadata extraction and represented with catalog pages under a data source. The type of an Alation object is documented in the **Type** field under the **Properties** group of fields.
+
+During metadata extraction from a data source, Alation also extracts the SQL query that was used to create the view. The view query is displayed on the catalog page of a view object, on the **Overview** tab > section **View SQL** (bottom of page).
+
+If necessary, you can apply obfuscation of SQL literals to view queries. This setting can be applied to data sources cataloged using native (built-in) connectors, Custom DB, and OCF connectors. By default, SQL literals in view queries under **View SQL** are displayed.
+
+The **Obfuscate Literals** setting is available on the **General Settings** tab of a data source settings page. However, when enabled on the **General Settings** tab only, it will apply to queries available for this data source but not to view SQL. To also apply it to view SQL, you need to additionally modify an **alation_conf** parameter on your Alation instance.
+
+The complete configuration requires *Server Admin* with access to the backend of the Alation server.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+.. important::
+
+    The steps below must be performed in the given order. First, enable the setting on the data source, and next, enable the parameter.
+
+To apply literals obfuscation to view SQL:
+
+1. In Alation, open the settings page of your data source.
+
+2. Go to the **General Settings** tab.
+
+3. Turn on the **Obfuscate Literals** toggle.
+
+4. Use SSH to connect to your Alation server.
+
+5. Enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+6. Use the **alation_conf** parameter ``alation.feature_flags.enable_obfuscating_view_sql`` to apply obfuscation to view SQL. The default value of this parameter is ``False``, which means the literals are displayed. To hide them, set the parameter to ``True``.
+
+    .. code-block:: Bash
+
+        alation_conf alation.feature_flags.enable_obfuscating_view_sql -s True
+
+No restart is required.
+
+In the Alation user interface, the SQL literals will now be obfuscated in the **View SQL** section of the view catalog page.
+
+    .. image:: ../../_static/Admin_ObfuscateViewSQL_02.png
+        :width: 500px
+        :class: with-border
+
+If you want SQL literals in the **View SQL** section to be available in the user interface, set the **alation_conf** parameter ``alation.feature_flags.enable_obfuscating_view_sql`` to ``False``.
+
+    .. image:: ../../_static/Admin_ObfuscateViewSQL_01.png
+        :width: 500px
+        :class: with-border

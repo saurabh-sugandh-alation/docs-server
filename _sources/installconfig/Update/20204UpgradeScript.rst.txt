@@ -1,0 +1,145 @@
+Pre-Update Reindexing Script for 2020.4
+==============================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Only applies to 2020.4 update process*
+
+Use this script only as part of the 2020.4 update steps as instructed. To use, copy and save it as **preupgrade_reindexing.py**.
+
+.. note::
+
+    This script can also be downloaded as a file from the Alation Community at `2020.4 Pre-Upgrade Script <https://community.alation.com/viewdocument/20204-pre-upgrade-script>`_ (requires Community login).
+
+.. code-block:: Bash
+
+    #!/opt/alation/env/bin/python
+    from __future__ import print_function
+
+    import sys
+
+    import os
+    import subprocess
+    import time
+    from datetime import timedelta
+
+    import alation_conf
+    from alation_devops import syscmd
+    from alation_util import pgsql_util
+
+
+    def _print_message(*args, **kwargs):
+        is_error = kwargs.pop('is_error', False)
+        if is_error:
+            print("[%s] " % time.ctime(time.time()), file=sys.stderr, *args, **kwargs)
+        else:
+            print("[%s] " % time.ctime(time.time()), *args, **kwargs)
+
+
+    def _write_to_file(output_file_name, content):
+        with open(output_file_name, 'w') as outfile:
+            outfile.write(content)
+
+
+    def _wait_until_postgres_is_ready(max_attempts=60):
+        attempts = 0
+        while attempts < max_attempts:
+            attempts += 1
+            query = "SELECT 1"
+            command = '/opt/alation/bin/alation_pgsql_util run_single_value_psql "%s"' % query
+            result = subprocess.check_output("sudo su - alation -c '%s'" % command, shell=True)
+            if result.strip() == '1':
+                return
+            _print_message("Waiting for postgres to be ready...")
+            time.sleep(1)
+        _print_message(
+            "[WARNING] Postgres wasn't ready after %d attempts... continuing anyway" % max_attempts
+        )
+
+
+    def reindex_database():
+        """
+        Reindex all indexes in postgres.
+        """
+        output_file_name = '/opt/alation/site/site_data/pre_upgrade_reindex_rosemeta_db.log'
+
+        # Postgres might not be started at this point
+        _print_message('Starting postgres before re-indexing...')
+        postgres_version = alation_conf.conf['pgsql.version']
+        start_postgres_cmd = 'sudo service postgresql-%s restart' % postgres_version
+        syscmd.shell_or_die(start_postgres_cmd)
+        _wait_until_postgres_is_ready()
+
+        # This query returns the list of all the tables excluding temp tables.
+        query = """
+            SELECT ns.nspname::text || '.' || c.relname::text
+            FROM pg_catalog.pg_class c
+                    JOIN pg_catalog.pg_namespace ns ON c.relnamespace = ns.oid
+            WHERE c.relkind IN ('r', 'm')
+              AND ns.nspname not like 'pg_temp%' -- temp tables start with the prefix pg_temp
+            ORDER BY c.relpages DESC
+        """
+        start_time = time.time()
+        results = pgsql_util.run_psql_and_fetch_results(query)
+        num_total_tables = len(results)
+        num_successfully_indexed = 0
+        failed_to_index_tables = []
+        _print_message(
+            "Re-indexing all the %s tables in postgres, this could take a while..." % num_total_tables
+        )
+
+        for table_name, in results:
+            try:
+                pgsql_util.run_psql('REINDEX TABLE {table_name}'.format(table_name=table_name))
+                num_successfully_indexed += 1
+                if (num_successfully_indexed % 10) == 0:
+                    _print_message(
+                        "Completed reindexing %s of %s tables" %
+                        (num_successfully_indexed, num_total_tables)
+                    )
+            except Exception as e:
+                _print_message("Table '%s' reindex failed. Reason: %s" % (table_name, e), is_error=True)
+                failed_to_index_tables.append(table_name)
+        end_time = time.time()
+
+        if not failed_to_index_tables:
+            _print_message(
+                "Pre-upgrade reindex of Rosemeta DB finished successfully. More details can be found "
+                "here (path inside chroot): %s" % output_file_name
+            )
+            _write_to_file(
+                output_file_name, '\n'.join([
+                    '[%s] Completed the Pre-upgrade REINDEX of Rosemeta DB successfully. start: "%s",'
+                    ' end: "%s", duration: "%s"' % (
+                        time.ctime(time.time()), time.ctime(start_time), time.ctime(end_time),
+                        timedelta(seconds=end_time - start_time)
+                    ),
+                    'Total number of tables reindexed: %s\n' % num_total_tables
+                ])
+            )
+        else:
+            failed_tables_str = '\n'.join(failed_to_index_tables)
+            _write_to_file(
+                output_file_name, '\n'.join([
+                    '[%s] Completed the attempt to REINDEX Rosemeta DB. start: "%s", end: "%s", '
+                    'duration: "%s"' % (
+                        time.ctime(time.time()), time.ctime(start_time), time.ctime(end_time),
+                        timedelta(seconds=end_time - start_time)
+                    ), 'Failed to REINDEX the following tables:', failed_tables_str
+                ])
+            )
+            raise Exception(
+                'Failed to REINDEX the following %s tables:\n %s' %
+                (len(failed_to_index_tables), failed_tables_str)
+            )
+
+
+    def main():
+        _print_message("Stopping all the Alation services...")
+        # Use the bin/alation_action so our environment will be setup correctly
+        os.system('/opt/alation/bin/alation_action runlevel_0')
+        reindex_database()
+
+
+    if __name__ == '__main__':
+        main()

@@ -1,0 +1,1592 @@
+Release Notes 2023.1 (General Availability)
+=============================================
+
+RELEASE 2023.1.7.6
+---------------------
+
+*build 16.7.6.52631*
+
+*Released October 11, 2023*
+
+.. note::
+
+    This patch release is available for customer-managed (on-premise) instances.
+
+- Users will now be able to upload a data dictionary file containing rich text fields without experiencing the *Unexpected Error* caused by the presence of rich text fields in the data dictionary file while generating a preview. Additionally, we introduced the **alation_conf** parameter ``hydrate_rich_text_field_values_on_data_dictionary_preview_ui`` (disabled by default).  It controls whether the existing values of rich text fields should be hydrated by showing the corresponding display text for each of the mentions on the preview screen. (AL-129392)
+
+- Added a scheduled job that runs daily and deletes the data dictionary input files and generated report files that are expired. The expiration period is set to five days with a feature flag which can be adjusted dynamically. (AL-124514)
+
+
+RELEASE 2023.1.7.5
+---------------------
+
+*build 16.7.5.49213*
+
+*Released August 30, 2023*
+
+.. note::
+
+    This patch release is available for customer-managed (on-premise) instances.
+
+- Fixed an issue with the **Health Check** not showing any data. (AL-129229)
+
+- Fixed an issue with the **Health Check** page not loading the status of services. (AL-118674)
+
+
+RELEASE 2023.1.7.4
+---------------------
+
+*build 16.7.4-49180*
+
+*Released August 30, 2023*
+
+.. note::
+
+    This patch release is available for Alation Cloud Service instances on the cloud native architecture.
+
+- When deployed on the same node, the ``alationfc`` pods were sharing the process ID. This resulted in a number of issues, such as the ``supervisord`` crashing and containers having access to processes in other containers. The issue has been fixed. (AL-131522)
+
+
+RELEASE 2023.1.7.3
+---------------------
+
+*build 16.7.3.48794*
+
+*Released August 25, 2023*
+
+    .. note::
+
+        This patch release is available for Alation Cloud Service instances on the cloud native architecture.
+
+- This patch disables the synonym search feature on cloud native architecture, as we have identified an issue with it and are actively working on a fix. We've made a decision to disable synonym search for now to ensure your catalog experience is not affected. (AL-130610)
+
+
+RELEASE 2023.1.7.2
+---------------------
+
+*build 16.7.2.48581*
+
+*Released August 24, 2023*
+
+    .. note::
+
+        This patch release is for all Alation instance types.
+
+This patch release delivers important security fixes, addressing potential security risks in a number of components of the Alation application. Your security tools may report vulnerabilities in Alation if this patch is not applied.
+
+The patch includes these fixes:
+
+    - Upgraded the package ``golang.org/x/crypto`` in the Alation Connector Manager code to a newer and more secure version. (AL-127369)
+
+    - Native connector dependencies were upgraded to address potential security issues. (AL-127903, AL-127194)
+
+    - Addressed potential security risks in AuthServer. (AL-128630, AL-127600, AL-129757)
+
+    - Fixed a potential security risk in Compose by upgrading to Log4j 1.2 bridge. (AL-127586)
+
+    - Upgraded the General SQL Parser to a newer version to take advantage of the most recent bug fixes and improvements. (AL-124451)
+
+Additionally:
+
+  - Made changes to enable the transition to a new KVStore binary, providing the dynamic configuration on ``cache_index_and_filter_blocks`` and partitioned index and filter. (AL-124995)
+
+
+RELEASE 2023.1.7.1
+---------------------
+
+*build 16.7.1.47079*
+
+*Released August 16, 2023*
+
+All instance types
+~~~~~~~~~~~~~~~~~~~
+
+*On-premise, cloud native, and instances that haven’t been migrated to cloud native architecture*
+
+- Fixed the error ``KeyError`` that occurred during tag ingestion from a Snowflake data source when a schema, table, or column associated with a Snowflake tag was not found in Alation. (AL-128018)
+
+- Fixed an issue where views ingested through incremental metadata extraction were incorrectly renamed and as a result, incorrect lineages were created and displayed on Lineage diagrams. Solved by enhancing the view parsing logic during the calculation of lineage. (AL-127249)
+
+Instances on cloud native architecture
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Cloud native only*
+
+- Previously, enabling the MT QLI flag on a cloud native architecture instance would result in enabling the QLI 2.0 flow for all tenants. This flow should be restricted to the Enterprise cluster only. This fix ensures that enabling the MT QLI flag only applies to tenants in the Enterprise cluster. (AL-128327)
+
+
+RELEASE 2023.1.7
+-----------------
+
+*build 16.7.0.44693*
+
+*Released August 1, 2023*
+
+    .. note::
+
+        Features or updates that are "on-premise only" or "cloud native architecture only" are identified with a label in these release notes. If there is no label, it means the feature or update applies to both architectures with the exception of items listed in the Cloud section.
+
+Alation Agent
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- You can now subscribe to email notifications that alert you when any of your Alation Agents have become disconnected from your Alation Cloud Service instance for an extended period of time.
+
+Alation Analytics
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Data for policies and policy groups are now included in Alation Analytics.
+
+Alation Anywhere
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- The OpenWith API now provides additional fields: stewards, userName, and userEmail.
+
+Cloud Platform - *Cloud native architecture only*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added a new cluster in Tokyo to better support customers in that region. (Cloud native architecture only)
+
+- Align token_buffer_time in OAuth and AWS IAM Authentication configuration: The “token_buffer_time" parameter in OAuth Authentication configuration is now allowed to have a value between 1 to 10 minutes, unlike previously which allowed a value between 1 to 60 minutes, For all existing OAuth Authentication configuration whose "token_buffer_time" is greater than 10 minutes, it must be updated to comply with the new allowed range. This change makes the allowed range of values for "token_buffer_time" consistent across OAuth and AWS IAM Authentication configurations. (Cloud native architecture only)
+
+Compose
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Compose now provides code folding, which enables a user to selectively hide or display subsections of long SQL queries, improving readability and making it easier to focus on specific sections of code.
+
+- When viewing the results of a SQL query in Compose, you can now click on a row number in the results pane to highlight that entire row. You can toggle highlighting off and on for multiple rows by clicking their row numbers. This makes it easier to keep track of your place when scrolling horizontally.
+
+Connected Sheets - *Cloud native architecture only*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Sharing Connected Sheets: Users can now share Excel spreadsheets stored in OneDrive or SharePoint, or Google Sheets, with their colleagues. This feature is not available in Excel files stored in the local file system. See the Alation Connected Sheets documentation for more information. (Cloud native architecture only)
+
+Search
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Users can now export selected columns in the Search table view. Previously, users were only able to export four default columns.
+
+Workflows
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Creator Optional in Change Request Workflow: While configuring a change request workflow, the user can decide whether the creator of the object for object types like Policy, Policy Group, Term, and Glossary should go under review or if they are allowed to bypass workflow.
+
+Connectors
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Snowflake OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Added Fields on MDE settings page to support custom tag and tag link feature. You can now curate queries to extract tags and tag links to personalize which tags have to extract.
+
+- Updated Default Snowflake QLI query to extract only successful statements.
+
+- Changed session column of default query in the query to take up only the session ID.
+
+Starburst Trino OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Support added for SSL connection with .jks files in addition to .cer files.
+
+- Updated current single catalog extraction logic for a generic jdbc URI.
+
+Open Connector Framework
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Added new endpoints to the Data Sources API (OCF) to get and patch general configuration settings for data sources. The new endpoints allow all settings to be modified except certain authentication profiles like OAuth.
+
+Alation APIs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The Public Custom Field API now has access to Catalog Admins, in addition to Server Admins.
+
+- New Workflow API endpoints to list active reviews, approve an active review, or reject an active review.
+
+- New Policy API endpoint to delete policies in bulk.
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~
+
+Alation Analytics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Fixed an issue where users receive an email indicating Alation Analytics setup failed when first installing it, followed by a duplicate email. (AL-121948)
+
+- Fixed an issue where the Alation Analytics groups table was not getting updated when a name change was made to a custom group. (AL-122632)
+
+Compose
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Fixed an issue where the Scheduled Query Sharing Settings dialog would allow users to share query results, even when the public sharing of query results were disabled in Admin Settings. (AL-124132)
+
+- Fixed an issue that was causing Server Admins and Catalog Admins to be unable to edit trust check flags from within Compose. (AL-123960)
+
+- Fixed an issue where query forms would still allow you to click the Run Form button even if the query was empty. (AL-82406)
+
+Glossaries, Terms, and Articles
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Fixed glossary pagination issues. (AL-103526)
+
+- Fixed an issue where custom fields were missing from articles after the upgrade to 2023.1.5. (AL-126298, AL-126255)
+
+- Fixed an issue that prevented members from being added to private data sources. (AL-123954)
+
+Governance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Fixed an issue in Stewardship dashboard causing duplicate and incorrect schemas when using the dropdown filter. (AL-121211)
+
+Native to OCF Connector Migration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Fixed issue causing View Query to be missing from View Catalog page after migrating from a Native to OCF connector. This fix is for both single data source and bulk migrations of RDBMS sources. (AL-116534)
+
+Connectors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Denodo OCF Connector**: Fixed an issue for column extraction for null datatype returning from driver (v1.2.1, AL-121751)
+- **Oracle OCF Connector**: Fixed an issue where MDE failed as the Default Column Extract query was adding (, ).  (v1.4.6, AL-177498)
+- **Snowflake OCF Connector**: Fixed table-based QLI query (v1.2.2, AL-124415)
+- **SQL Server OCF Connector**: Fixed an issue causing last run usernames to display incorrectly. (v1.3.1, AL-121091)
+- **Teradata OCF Connector**: Fixed issue with Compose query execution in script mode (v1.0.8, AL-122878)
+
+
+PATCH RELEASE 2023.1.6.1
+--------------------------
+
+*16.6.1.45432*
+
+*Released August 3, 2023*
+
+    .. note::
+
+        This patch release is for Alation Cloud Service instances that have not yet been migrated to cloud native architecture.
+
+- Fixed an issue where views ingested through incremental metadata extraction were incorrectly renamed and as a result, incorrect lineages were created and displayed on Lineage diagrams. Solved by enhancing the view parsing logic during the calculation of lineage. (AL-127249)
+
+RELEASE 2023.1.6
+-----------------
+
+*build 16.6.0.43241*
+
+*Released July 10, 2023*
+
+    .. note::
+
+        Features or updates that are "on-premise only" or "cloud native architecture only" are identified with a label throughout these 2023.1.6 release notes. If there is no label, it means the feature or update applies to both architectures with the exception of items listed in the Cloud section.
+
+Alation Analytics
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation Analytics Backup and Restore Support - *On-premise only*
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Alation Analytics (AA) now supports backup and restore for AA data. Using this feature, users can restore to the latest available backup instead of rehydrating ETL from start (which could take more time depending on the data size). This feature is *not* applicable to Docker rootless on-premise installations or Alation Cloud Service (ACS) installations, and there is no support for scheduled backups.
+
+ETL Status Dashboard and Failure Notification feature
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- ETL status dashboard and failure notification feature (delivered in the 2023.1.4 release) can be controlled by the feature flag. The default status is disabled/ OFF.
+
+Alation Anywhere
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation Anywhere for Tableau - Private SSL Support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Implemented self-signed SSL certificates and Personal Access Token (PAT) support for Tableau Metadata Upload. This feature is behind a feature flag and provides improved handling of connection encryption during metadata upload from Alation to Tableau (use of custom self-signed SSL certificates or disabling SSL certification).
+
+Alation Anywhere OpenWith Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Improved support for OCF data sources in OpenWith functionality.
+- OpenWith is available for datasources for which it was not configured. Added change to ensure that requests filter datasource types properly.
+
+Cloud Platform
+~~~~~~~~~~~~~~~~~~
+
+Alation Cloud Service URLs now have subdomains
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Alation is introducing subdomains to the URL for Alation Cloud Service. This will make it more clear that your data is hosted in your geography, provide isolation between regions, and improve compliance with local regulations. It also allows Alation to better optimize the performance of each region.
+
+AWS IAM Authentication has new ``aws-global`` option in the region field
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- The Admin feature ``aws-global`` is now an option in the region field for AWS IAM Authentication configuration. This provides the ability to select global STS endpoints instead of region specific endpoints, as global endpoints might be preferred because of high availability.
+
+PrivateLink Support for Alation on Cloud Native Architecture
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Alation Cloud Service customers using PrivateLink can connect to data sources after migrating to Alation cloud native architecture. Alation cloud native architecture provides PrivateLink connectivity to data sources in all supported regions.
+
+New Status Page for Alation Cloud Service
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Users can directly subscribe to updates or view anytime the status of Alation Cloud Service at status.alationcloud.com. The status page displays the status by region for all  tier one shared services. The status page also displays any major incidents affecting all customers in a given region.
+
+Compose
+~~~~~~~~~~~~~~~~~~
+
+Compose Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Compose users can select an object (schema, table, column) in the left side bar and drag it to the Edit pane. The full object name is inserted into the current cursor location in the Edit pane, by default, instead of previous hyperlink functionality.
+
+- Added the ability to support PKCE for Snowflake integration with External Oauth with Azure AD by removing an extra ``=`` character.
+
+- Decreased the default polling time for compose query completion to increase responsiveness. It is still configurable by the alation_conf ``alation.query_exec.polling.min_interval``.
+
+- Added support to Compose SSO to work with Databricks URI, as per naming conventions specified for Databricks Driver 2.6.29.
+
+- When using an Advanced schedule, users now have the option to chose a timezone whenever they are in a different timezone. Previously, the Advanced schedule could not be converted from one timezone to another.
+
+- Users can now go directly from Compose to the Query Catalog page by selecting the “View Query Page” dropdown button.
+
+Connected Sheets - *Cloud native architecture only*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Support Azure SQL from Connected Sheets from both Microsoft Excel and Google Sheets.
+
+Governance App
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Policy Center
+^^^^^^^^^^^^^^^^^^^^
+- Made minor improvements to how policies are fetched, sorted, and paginated. (AL-118350)
+
+Workflows
+^^^^^^^^^^^^^^^^^^^^
+- Users can configure that reviewers of a step will bypass the entire workflow while adding or updating step configuration. This feature is under a dev flag.
+
+Lineage
+~~~~~~~~~~~~~~~~~~
+
+Cross System Lineage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Added support in the MDE/QLI lineage flow for cross-system lineage across data sources with the same host and port configuration.
+
+Lineage Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Dataflow Public API will now return HTML content instead of plain text for the description field. (AL-122740)
+- Updated the migration script ``deferred_lineage_group_sync`` to ensure temp objects appear in default groups to make it easier to differentiate them from other catalog objects. (AL-118343)
+- Made changes to ensure that the expand and collapse operation of asset groups will focus the groups and the root node will be centered initially. (AL-122595)
+- Support added for temp node creation in MDE lineage flow and cross-system lineage across data sources with the same host configuration. (AL-114337)
+
+Connectors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Improvements and Updates to OCF Connectors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Fixed issue on the Datasource page, causing the page to not render properly when using the browser back button to move from one tab to other. (AL-121951)
+
+Amazon S3 OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Added Proxy support for OCF S3 connector (Basic Proxy and Auth Proxy). Upgraded to the latest cData csvdriver to resolve a sampling issue.
+- Provided a fix for failing MDE for referential directories for OCF Connector v3.5. Also added exception handling while decoding path string to prevent MDE failure. (AL-119420)
+- Fixed issue causing extraction to fail due to connection timeout. (AL-117232)
+
+Azure Blob OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Upgraded the JRE version to Temurin JRE 11.0.18, and ensured that the timestamp field in the parquet file will have the correct value.
+- With connector version 2.3.1 onwards timestamp field in parquet file will have correct value.
+
+Azure Synapse OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Ensured Azure Synapse OCF Connector server-less extracts views and columns for schemas as expected. (AL-121471)
+
+Impala OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Compose works with SSL enabled CDH. (AL-120004)
+
+Looker OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Significant improvements related to MDE performance and logging.
+
+Postgres OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Fixed an issue in which Postgres OCF MDE was failing to extract the definition of aggregate functions using ``QUERY_FUNCTION``. (AL-120774)
+
+PowerBI Scanner OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Added the PowerBI field level descriptions as source descriptions in Alation. These source comments will appear on the overview page in the Catalog.
+- Added source description for datasource fields.
+
+Redshift OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Upgraded the SDK 4.1.31. This SDK ensures complex column datatype, null and empty object ingestion failures no longer occur.
+
+Snowflake OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Policy extraction is available for ``TABLE``, ``VIEW``, ``COLUMN``. Policy linked with a tag is not supported and removed from extraction (1.1.5).
+- Improved MDE Column Query performance for selective extraction. (1.1.3) (AL-119284)
+- Updated query column to exclude ``METADATA$ROW_VERSION`` system generated column. (1.1.4) (AL-122046)
+
+SQL Server OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Fixed an issue in which usernames appeared incorrect in query history. (AL-121091)
+
+Starburst Trino OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Starburst Trino OCF Connector now picks up only schemas of the catalog specified in JDBC URI.
+
+Tableau OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Migration Script fix for Tableau Native to OCF migration of ``bi_folder`` and ``bi_folder_filter`` data which has ``composite_key= "postgres_id"``
+
+Query Service Support for More OCF Connectors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Implemented Query Service in Impala OCF connector (1.1.0), Impala CDP OCF Connector (1.1.0), and Databricks Unity OCF Connector (1.2.1), Fixed bug for Query fails for certain field types in SQL server (1.3.2) and MySql (1.3.8) with Query Service enabled.
+
+OCF SDK Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Modified the Maven dependencies to remove log4j 1.2.17 and replace it with the log4j1.2 API bridge library. This ensures no log4j 1.x is used in the SDK.
+
+Alation APIs
+~~~~~~~~~~~~~~~~~~
+
+Dataflow Public API Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- The Dataflow public API will return HTML content instead of plain text for description field.
+
+Policies API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Added an API to update business policies.
+
+Public Bulk Create Custom Field API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Added support for bulk creation of Custom Fields in the Public Custom Field API. Update and Delete behavior are not supported.
+
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~
+
+Alation Analytics
+^^^^^^^^^^^^^^^^^^^^
+- Fixed issue causing tenant to fail to provision due to null credentials from vault for Snowflake. (AL-124078)
+- Fixed observing error in the backup command in Docker Rootless Ubuntu16 instance. (AL-123612) - *Cloud native architecture only*
+- Postgres is stopped before cleaning archive directory, allowing proper cleanup of old files. (AL-123253, AL-122786)
+- Fixed issue causing an invalid failure notification email to be sent when setting up Alation Analytics in cloud native infrastructure. (AL-123094) - *Cloud native architecture only*
+
+Glossary Page
+^^^^^^^^^^^^^^^^^^^^
+- Fixed issue causing alert text to not display when removing term from Glossary Page. Alert text now displays properly. (AL-120139)
+
+Compose
+^^^^^^^^^^^^^^^^^^^^
+- Fixed an issue where Query Form Authors, Description, and Run information were not updating when modified. (AL-67395)
+- Fixed issue so that OCF Teradata respects the data upload chunksize for number of rows, same as Native Teradata data source. (AL-120471)
+- Fixed issue causing “Compose new Query” link from Query execution to not work properly. (AL-118756)
+- Fixed issue in data upload when data source is configured to use query service. (AL-118675)
+- Query permission modal was not showing the update fields without page refresh. Fixed the issue so that re-opening the modal will show the updated fields. (AL-111298)
+- Fixed issue in Compose Preview, where the description of schema, table, and attribute were only showing the icon for the mentions and the name was missing. (AL-49226)
+
+Cloud Platform
+^^^^^^^^^^^^^^^^^^^^
+- Fixed issue causing /dev/shm mount missing inside chroot after upgrade. (AL-116942)
+
+Search
+^^^^^^^^^^^^^^^^^^^^
+- Fixed an issue to ensure Viewers are able to access and navigate to functions as expected. (AL-123062)
+
+Workflows
+^^^^^^^^^^^^^^^^^^^^
+- Fixed a blocking behavior for reviewers. Previously if a user took action on a suggestion (for example, approved a change) and the user was part of the approval workflow downstream as part of a group, the user could no longer take action on the suggestion. Now the same reviewer in multiple steps can act on all steps. (AL-121448)
+
+
+
+PATCH RELEASE 2023.1.5.1
+--------------------------
+
+*build 16.5.1.40261*
+
+*Released June 16, 2023*
+
+Support for AWS PrivateLink on Cloud Native Architecture
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+AWS PrivateLink is now supported for Alation Cloud Service instances on cloud native architecture. Alation supports AWS PrivateLink between a customer's Alation instance VPC and a customer's VPC in the same AWS region. You can use AWS PrivateLink to connect to your regionally local data sources over a non-public internet connection. See :doc:`/cloud/CloudConfiguration/AWSPrivateLinkWithAlationCloudService` for more details.
+
+Bug Fixes
+~~~~~~~~~~~~~~~~
+
+- For Alation Cloud Service deployments that haven't been migrated to the cloud native architecture, we upgraded the RDS component to version 13.8. The previous version 13.6 is at end of life, which caused the need for this upgrade. (AL-123330)
+
+- Fixed an issue with Lineage diagrams where cataloged objects appeared as temporary nodes that disappeared when the temporary object filter was applied. This fix ensures that cataloged objects will not disappear from the graph when the temp filter is applied. (AL-122844)
+
+- Fixed an issue with the lineage service consuming a large amount of memory because of unbounded queries. (AL-122667)
+
+- Enabled ``cache_index_and_filter_blocks`` to use the block cache for indexing and filtering. (AL-120852)
+
+- The *connection reset by peer* error was often observed when Alation was reading configurations from CMS on Alation Cloud Service deployments that haven't been migrated to the cloud native architecture. This blocked some jobs from moving through processing. Now, the ``cmsclient retry`` has been added to reduce the possibility of failure when the *connection reset by peer* error occurs. (AL-120592)
+
+
+RELEASE 2023.1.5
+-----------------
+
+*build 16.5.0.39106*
+
+*Released June 1, 2023*
+
+Alation Analytics
+~~~~~~~~~~~~~~~~~~
+
+- Glossary Terms and Glossary Data are now available in Alation Analytics (AAv2). Visualizations in Alation Analytics will not explicitly call out Glossary Terms and Glossaries, but the data is available for querying.
+
+- Added Workflows data to Alation Analytics: Workflows data is now available in Alation Analytics, enabling customers to query Alation Analytics for Workflows usage data.
+
+Alation Anywhere
+~~~~~~~~~~~~~~~~~~~~
+
+Alation Anywhere for Microsoft Teams integration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Alation App is now available on the Microsoft teams app store and provides customers with the following capabilities:
+    - Search and filter objects within Alation
+    - Preview objects
+    - Star and watch objects
+    - Support for the following object types: Tables, Queries, Data Source, Domains, Glossary, Terms, Articles, and Conversations.
+
+Alation Anywhere Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Resolved some notification related issues.
+
+Cloud Platform
+~~~~~~~~~~~~~~~~~
+
+AWS Secrets Manager and Azure Key Vault
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Connection settings for OCF Connectors can now be pulled from user-maintained vaults, either AWS Secrets Manager or Azure Key Vault. This allows users to consolidate secrets previously stored directly in the Alation database, preventing “credential sprawl” and allowing organizations to comply with their IT security policies.
+- Credentials stored in AWS Secrets Manager may be stored as plain text, JSON Key/Value pairs, or as binary certificates.
+- Credentials stored in Azure Key Vault must be plain text only. In particular, it is not possible to obtain binary certificates from Azure Key Vault.
+
+Support Migration of Alation Analytics Database from On-prem to ACS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Users have full access to Alation Analytics data after the migration from on premise to Cloud Native Architecture without having to rebuild the Alation Analytics database.
+
+OCF Connector Updates
+~~~~~~~~~~~~~~~~~~~~~~
+
+Google BigQuery OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Support Auto Lineage for Non-data Manipulation Queries: Added auto-lineage for SELECT queries coming with the destination table for Google BigQuery. The destination table is considered the target table for the particular SELECT query and lineage is built accordingly.
+
+Impala CDH OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+HTTPS, HttpFS, and keytab are all supported. Tables with space in the HDFS location are extracted without errors.
+
+Power BI Scanner OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Support for Dataset Parameters: Power BI uses parameters to make reports dynamic. The connector now supports these values within Datasets making it easy to use dynamic PowerBI reports and view them within Alation.
+- Enhanced MDE import: Only active workspaces are retrieved now within MDE and exclude deleted workspaces. This improves MDE performance while also making it more robust.
+- Updated JRE image: JDK version updated to 11.0.18 from previous version 11.0.16.
+
+File System Connectors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Verified folder navigation working properly for files/folders with special characters in their name.
+
+File System Native Connectors to OCF Connector Migration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added support for a Migrate button in UI for Amazon S3 and Azure Blob Storage native file system connectors.
+
+Query Service Support for OCF Connectors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Google BigQuery
+- Databricks on Google Cloud
+- Azure Synapse Analytics
+- SAP ASE (Sybase ASE)
+- SingleStore (MemSQL)
+- Amazon Athena
+- Denodo
+
+RDBMS Connector SDK Metadata Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The OCF Connector SDK now skips streaming and logging the objects received during RDBMS MDE that violate the following constraints for text fields within them: fields exceeding the maximum character limit, fields having a non-zero length and also a null character in payload, and fields representing the original name for objects as empty.
+
+Compose
+~~~~~~~~~~~~~~~~~
+
+Compose Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Added the ability to switch to advanced scheduling for schedules created before the 2022.3 release and ensured query schedules appear correctly regardless of query owner timezone. Also resolved various timezone related issues within query scheduling.
+
+- A Compose user can now select max number of columns to display per page for query results, making it easier to link columns far apart on the same row.
+
+- Ensured that the time appears as expected for simple and advanced schedules in query search.
+
+
+Governance App
+~~~~~~~~~~~~~~~~~
+
+- Support of Policy as permitted otype in Object set custom field. With this, you can now link policies to objects using object set custom fields.
+
+- When rejecting a change request, users will be asked to provide a rejection reason.
+
+Workflows
+^^^^^^^^^^^^^^^^
+
+- In My Tasks and Workflow Configuration table, user title was taking priority over username. Fixed this to take username as higher priority while displaying.
+
+- Added Workflows data to Alation Analytics: Workflows data is now available in Alation Analytics, enabling customers to query Alation Analytics for Workflows usage data.
+
+- Field Level Workflows: Alation now allows creating change requests on specific fields. Change request workflow can be configured on the field level by selecting specific fields while in the change request workflow configuration. Users can still configure change request workflow on an object by selecting all fields.
+
+Connected Sheets
+~~~~~~~~~~~~~~~~~
+
+- Auto refresh capability is now available in Excel add-in. This allows users to schedule automated data refresh on hourly, daily, weekly and monthly cadence and users can also opt into email notifications for successful and/or failed scheduled jobs.
+
+- Connected Sheets now supports Databricks on AWS and Azure Databricks via Alation Agent.
+
+Lineage
+~~~~~~~~~~~~~~~~~
+
+Lineage Impact Analysis Improvements 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Changes made to the Impact Analysis feature allow lineage users to first select the filters and then 'Apply Filter' to load relevant data based on user selection instead of loading all data by default. 
+
+- Added support for pagination on the lineage service for Impact Analysis requests to improve performance.
+
+- Added the ability to cancel an impact analysis request that is being processed.
+
+- Added support for more fine-grained incremental control on the 'Max Distance' filter option instead of the preset dropdown values.
+
+Search
+~~~~~~~~~~~~~~~~~
+
+- Custom Field Search: Enable text search on ``custom_field`` values so that searching a value in custom fields will return the relevant search results (objects). To enable this setting, set the flag ``alation.search.enable_custom_field_search=True``.
+
+Alation API
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Conversation API improvement
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The full path of an element was not being returned by the GET request, with the same issue visible in the user interface. Improved so that GET values return full path.
+
+Public API Pagination Support for OCF datasources
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The BIServer APIs to get folders, reports etc., supports limit and offset API parameters for pagination.
+
+- The API to sync the schemas from datasource to Alation has been split into two APIs to improve performance. There is a new API to sync the schemas from data source to Alation. This will allow users to trigger sync job and check job status. Once the job is done, the available_schemas endpoint can be used to fetch a list of schemas in a paginated way.
+
+Public API Support for Policies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Added the ability to create Policies in bulk through public API.
+
+- Added support to list policies through API. API also supports pagination, sorting, filtering and searching based on some parameters.
+
+Alation Developer Portal
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For a full list of Alation API updates, see the `2023.1.5 API Release Notes <https://developer.alation.com/dev/docs#202315-api-release-notes>`_ on the `Alation Developer Portal <https://developer.alation.com/dev>`_.
+
+
+Bug Fixes
+~~~~~~~~~~~
+
+- Alation Analytics: Fixed an issue in ETL Jobs which caused extended running and resulted in stalling the ETL pipeline. This was due to sub-optimal extraction of filesystems, files and directories. This task is now optimized to work in smaller batches so that the ETL pipeline does not stall and AAv2 data refresh stays on cadence. (AL-116308)
+- Alation Analytics: Fixed an issue for a AAv2 where users could see the AAv2 settings page without enabling it by going to the URL directly. After the fix, the page is only visible if the admin enables the feature flag for AAv2 in Admin settings > Feature configuration page. (AL-73040)
+- Alation Analytics: Fixed an issue affecting Custom Group names that were added and removed frequently in the Alation catalog were not reflecting correctly in AAv2 due to unique constraints implemented in the associated table. This constraint is removed and users can view how custom group names have been added and removed via AAv2. (AL-113239)
+- Compose: Fixed issue causing schedule time to display incorrectly. Fix ensures the time appears as expected for simple and advanced schedules in query search. (AL-120473)
+- Compose: Previously disabling/enabling a schedule from query search/scheduled query dashboard/compose scheduling modal was modifying the timezone of schedule, causing the user interface to display incorrect time and also triggering schedule runs at incorrect time. Now disabling/enabling schedule will not alter the timezone of schedule. (AL-112937)
+- Compose: Fixed issue causing variables in commented lines of query display when not supposed to display. (AL-107727)
+- QLI Pipeline: The task name for QLI Event Archiving was ``rosemeta.tools.event_archiver_with_partitioning.archive_execution_events_and_mentions``. The fix is to update the entry for the QLI Event Archiving task field in the PeriodicTable entry. (AL-118821)
+- Looker OCF Connector: Fixed issue for selective MDE option to handle extraction of excluded/deleted folders and associated objects appropriately. (AL-119475)
+- SSRS OCF Connector: Fixed issue with MDE for ensuring consistency of folders and objects from SSRS that are extracted into Alation. (AL-118662)
+- Power BI Scanner OCF Connector: Added buffer time to the retry mechanism for API retries when rate limit is reached. (AL-114578)
+- Power BI Scanner OCF Connector: Fixed issue to redirect to correct URL within customer Power BI instance using the connector option within Alation’s catalog page for paginated reports. (AL-107494)
+- dbt OCF Connector: Fixed issue causing metadata to not ingest from tables with an alias. (AL-117369)
+- EMR Presto OCF Connector: Fixed issue causing columns to be missed in Alation for delta tables after successful metadata extraction. (AL-119574)
+- Amazon Redshift OCF Connector: Fixed issue to add support for complex data types having nested fields with more than 100 characters. (AL-118629)
+- Amazon Redshift OCF Connector: Fixed issue causing dynamic sampling to not work with the URL provided in Compose section. (AL-117835)
+
+Known Issues
+~~~~~~~~~~~~~
+
+BI Datasource catalog pages are not rendering correctly when dataflows are extracted
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- When the user is navigating between tabs (Connections, Fields, Overview, etc.) in the BI Datasource catalog pages, and if they click on the browser's back button to navigate between these tabs, there is HTTP 500 error thrown. This issue is because of the async operation to pass the properties within the feature flag, but ideally, it should have been initialized before the feature flag. The user will see sporadic errors when they click the browser's navigation buttons instead of clicking the tabs to navigate from one page to another.
+
+- **Workaround**: Use the tabs in the application to navigate between pages (BI Datasource catalog page), or reload the page when encountering this page rendering issue.
+
+
+PATCH RELEASE 2023.1.4.2
+------------------------
+
+*build 16.4.2.37601*
+
+.. note::
+
+    This patch is for Alation Cloud Service customers who haven't moved to our cloud native architecture. It is not available for customer-managed (on-premise) instances or Alation Cloud Service instances on the cloud native architecture.
+
+- The BI (GBMv2) public API now includes support for pagination with ``limit`` and ``offset`` parameters.
+
+PATCH RELEASE 2023.1.4.1
+--------------------------
+
+*build 16.4.1.36590*
+
+.. note::
+
+    This patch is only released for Alation Cloud Service instances on the cloud native architecture and is not available for customer-managed (on-premise) instances.
+
+- Previously, when restoration of a backup of an Alation version with Postgres version 13.6 was attempted on the 13.8 instance image, updating Postgres version configuration failed, as it is not allowed on the cloud native architecture. Now, Alation will skip updating Postgres version if RDS is enabled, ensuring that the backup restoration can move forward.
+
+- Fixed an issue with Hive Connector 1.0.0 where query log ingestion (QLI) returned the error *File /user/history/done does not exist*. The Hive connector expects query log files to use a certain format, and Hive QLI job failed when processing malformed files. After this fix, instead of failing the job, Alation will skip such files in processing.
+
+
+RELEASE 2023.1.4
+-----------------
+
+*build 16.4.0.35588*
+
+Alation Analytics
+~~~~~~~~~~~~~~~~~~
+
+- Health Check Notifications to Server Admins
+    - Server Admins can turn off Alation Analytics ETL status alert email notifications.
+    - Server Admins can see the latest ETL failure status alerts on the Homepage. Detailed ETL failure statuses along with the history will also be available on the ETL status page.
+    - Created monitors on Datadog for ETL failures for the SRE team for environments on Cloud Native Architecture.
+
+Alation Anywhere
+~~~~~~~~~~~~~~~~~
+
+- Alation Anywhere for Tableau
+    - Metadata upload to Tableau feature works with OCF Connectors.
+        - Previously, metadata upload worked only if extraction was done using native connectors.   After this change metadata upload to Tableau works if extraction was done using OCF Connector for: Snowflake, MSSQL Server, Oracle, Postgres, MySQL, Azure Databricks, AWS Databricks, Redshift and BigQuery.
+    - New Tableau enhancements, such as sending the endorsement flag to Tableau objects, sending catalog set definitions and inherited tags, adding common branding for endorsement and quality flag consistency.
+
+Connect Platform
+~~~~~~~~~~~~~~~~~
+
+- OCF Connector Migration Improvements
+    - Added support for bulk migration using command and Public API which can allow users to bulk migrate their sources of the same database type from Native to OCF connectors.
+    - Enhanced Native to OCF migration command and UI option to migrate all the connection configurations, MDE configuration, Compose configuration, sampling configuration and QLI configuration except SSL certificate migration for all the connectors which supports SSL auth and User Auth certificate.
+
+- Column Level Lineage for Sybase is now GA.
+
+- Column Level Lineage for Hive is now GA.
+
+- Incremental metadata extraction support for RDBMS data sources.
+
+    - Alation RDBMS connectors now support incremental direct lineage extraction by default. This is useful for data sources such as Databricks Unity Catalog that have metadata that can be used to leverage incremental lineage data extraction.
+
+- OCF Alation Connector Manager in Rootless mode
+
+    - Alation Connector Manager and Docker can now be run in rootless mode. Deploying the services requires root or sudo privileges.
+
+- Query Service Support
+
+    - Added QueryService Support for a variety of OCF connectors including AWS Databricks OCF, Azure Databricks, Google BigQuery, Starburst, and Oracle.
+
+- Email notifications for file system sources
+
+    - Alation now sends email notifications to Server Admins and File System Admins about extraction failures on *file system sources*. Admins will be notified if the following jobs fail: metadata extraction, schema extraction, Get List Of Schemas, or scheduled extraction. Notifications are sent for both OCF and native file system sources. Previously, email notifications were only sent for RDBMS sources (*data sources*). Admins can opt out of these notifications by disabling the toggle **a scheduled metadata extraction/query log ingestion/profiling job fails on a data source** or by opting out of all email notifications on the **Notifications** tab of their user account page. For more on email notifications from Alation, refer to :doc:`/welcome/UserProfileandPreferences/EditProfile`.
+
+Connected Sheets
+~~~~~~~~~~~~~~~~~
+
+- Enhanced search with ability to search on Title and Description, or use catalog object URL in search bar of Add-in.
+- Improved performance on catalog load and search experience with caching. Users can also refresh the cache at any given time.
+- View trust flags in Add-in for objects downloaded.
+- Easily access catalog page for downloaded objects.
+- Connected sheets now support Postgres, SQL server, Oracle and MySQL via Agent.
+
+Lineage
+~~~~~~~~
+
+- Added an Apply Filter button to load data relevant to the user selection.
+- Instead of using a dropdown there is now a number input with increment / decrement buttons for max depth.
+- Added pagination for Impact Analysis to improve performance.
+
+Governance App
+~~~~~~~~~~~~~~~
+
+- A public API has been added to list workflows.
+- Add support to provide reason for rejection during workflow add term / associate term request process.
+- Data Dictionary Improvements. Improvements to the data dictionary upload API and pagination of the preview list in order to prevent failure during file upload.
+- Fixed issued causing properties section was showing as duplicated in the business policy catalog page.
+- Fixed issue causing Policy Center page to fail to load due to null values being present in the API response.
+- Untag values for Snowflake only for the data source currently being ingested instead of all sources.
+
+Installation and Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Some existing jobs (Metadata Extraction / QLI / Profiling) which were in LocalTimeZone are still time-shifted 8 hours earlier after a previous Alation upgrade. A new script is available to update time zones to UTC.
+
+Cloud Platform
+~~~~~~~~~~~~~~~
+
+- OCF Agent Rootless mode
+    - Alation Connector Manager and Docker can now be run in rootless mode. Deploying the services requires root or sudo privileges.
+- LMS History Service: Data Archival
+    - Support archiving history data in the new, performant LMS History Service which is used on Cloud Native Architecture platform.
+
+Alation API
+~~~~~~~~~~~~
+
+- Public APIs for Alation Agent
+    - APIs allow admins to configure the Agent certificate and resync operations programmatically. These APIs allow admin users to automate the lifecycle operations in an unattended fashion.
+- Article API
+    - Article Swagger UI is always available, as Articles API is GA.
+- Conversations API
+    - Users can now like a post in a resolved conversation.
+    - Mentioned link text (URL and name) is now returned by GET request.
+
+Bug Fixes
+~~~~~~~~~~~
+
+- Fixed formatting issue when uploading business metadata containing special characters. The solution modifies the existing process to treat all data passed as part of description as text.
+- Ensured Data source, Schema, Table or Attribute name loads when reviewing suggestions on workflows opened from Task Inbox.
+- Fixed issued causing properties section showing as duplicated in the business policy catalog page.
+- Fixed issue causing Policy Center page to fail to load due to null values being present in the API response.
+- Untag values for Snowflake only for the data source currently being ingested instead of all sources.
+- Fixed issue causing search with lineage to not return the most relevant attribute on the top of search results.
+- Fixed issue causing attribute objects to not be indexed after upgrading Alation to version 2023.1.
+- Fixed data format issue when uploading a data dictionary. The upload process was treating numerical data without any text incorrectly, rather than considering it as text. This issue was fixed by modifying the existing process to treat all data passed as part of description as text.
+- Fixed issue causing glossary pages and glossary hub not to open and showing an error message.
+- Fixed issue when searching for a node outside of the returned paginated data to return no values. The search functionality on the asset grouping modal for collection nodes when searching for an object now returns search results from the entire collection for the currently opened lineage graph.
+- Fixed issue to increase the limit of object set individual records from a limit of 50 characters to 256 characters.
+- Fixed an issue causing Policy custom templates to create a new visual_config clone on every edit and save action.
+- Fixed an issue causing ampersands (&) to show as '&amp;' in the left hand navigation. Ampersands now display correctly in the left hand navigation.
+- Fixed issue causing the arrow icon in the right navigation pane to not work for the data source.
+- Fixed issue where OCF Connector status is showing as unknown after server restart when using the Alation OCF Agent.
+- Fixed issue causing QLI 2.0 to display an incorrect timestamp in a job status message.
+- Fixed issue causing QLI 2.0 to trigger airflow when there are no queries to ingest and status message displays "Query Ingestion Started".
+- Fixed issue causing Fivetran to display the dataflow object incorrectly. The dataflow object now displays correctly between the source and the destination.
+- Added a script in the diagnose tool to solve a QLI archival issue, where event_id is null for some partitions.
+- Fixed issues to support cross-system lineage.
+- Fixed issue causing search with lineage to not return the most relevant attribute on the top.
+- Added more object types being tracked to the script that checks the indexing status of different object types. No changes for how to use or new flows.
+- Fixed issue causing an incorrect Healthcheck error message in the native cloud environment.
+- Performance improvements for Upload Data Dictionary flow.
+- Fixed the logic for how/when to show the "Restore draft" on Article Body and rich text fields.
+- Fixed formatting issue when uploading business metadata containing special characters. The solution modifies the existing process to treat all data passed as part of description as text.
+
+
+RELEASE 2023.1.3
+----------------------------
+
+*build 15.3.3.33838*
+
+.. note::
+
+    This build is available for Alation Cloud Service customers on the cloud-native architecture.
+
+- Fixed an issue related to the background task scheduler. Previously, background jobs running for over an hour could cause subsequent jobs to crash. In the user interface, the issue manifested itself through an error message in the **Job History** table for the jobs that had crashed: *Job is not running. It might have been killed or crashed...* With this fix, long-running Celery jobs will not impact subsequent jobs.
+
+RELEASE 2023.1.2
+----------------------------
+
+*build 15.3.2.32690*
+
+Alation Catalog and Compose Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- SQL literals can now be obfuscated for all view objects in the catalog. To enable this feature, set the **alation_conf** flag ``alation.feature_flags.enable_obfuscating_view_sql`` to ``True``. This will mask the view SQL query on the catalog pages where it is displayed for all views. See :doc:`/admins/AdditionalConfiguration/ObfuscateLiteralsinViewSQL` for more details.
+
+- Added a new Compose setting **Always show column names** which is turned on by default. With **Always show column names** enabled, the column headers of query results tables will show physical column names even when columns also have curated titles in Alation. With **Always show column names** disabled, the column headers of query results tables will show titles or physical column names depending on whether a column has a title. Titles will be shown for columns that have them and physical column names will be shown for columns without titles.
+
+Alation API
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added support for Catalog Set (``dynamic_set_property``) and Catalog Set Shared Fields (``propagated_catalog_set``) in Supported Object Types in the `Public Custom Field Values API <https://developer.alation.com/dev/reference/custom-field-values-overview>`_.
+
+OCF Connector Updates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- `Azure Blob Storage OCF Connector`_
+- `Azure Synapse OCF Connector`_
+- `Databricks Unity Catalog OCF Connector`_
+- `dbt OCF Connector`_
+- `EMR Presto OCF Connector`_
+- `Impala on CDP OCF Connector`_
+- `Power BI OCF Connector (Non-Scanner)`_
+- `Amazon Redshift OCF Connector`_
+- `Amazon S3 OCF Connector`_
+- `SAP BW OCF Connector`_
+- :ref:`Snowflake-OCF-Connector`
+- `Tableau OCF Connector`_
+
+Azure Blob Storage OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **2.2.0.4373**
+
+- Fixed an issue where extraction failed with an “unexpected error” when information for some fields that were optional for extraction was missing in the extracted files. Now, if object properties that are optional for extraction, for example, size or modified time, are missing, MDE will successfully complete without ingesting these object properties.
+
+- The rule name parameter is now a mandatory field for extraction. Extraction will fail in case of an empty rule name or empty destination container, or both, with the corresponding message in the connector log.
+
+- Added an option to exclude individual files during schema extraction (applicable if **Schema Path Pattern** is enabled).
+
+Azure Synapse OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **1.1.0.4029**
+
+- Added ability to extract metadata from serverless SQL pools.
+
+
+Databricks Unity Catalog OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **1.0.3.4144**
+
+- Added support for lineage generation.
+
+dbt OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **2.1.0.4367**
+
+- Added support for the Google BigQuery data source.
+- Added support for the Databricks on AWS, Databricks on GCP, and Azure Databricks data sources.
+
+EMR Presto OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **1.0.4.4060**
+
+- Added support for extracting Hive Delta tables.
+
+Impala on CDP OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **1.0.3.4132**
+
+- Fixed an issue with Kerberos with a keytab connection.
+- Fixed an issue with SSL-enabled connection.
+- Fixed an issue with extraction where it failed if external tables pointed to the HDFS file path with spaces in the file name.
+- Added support for extracting Kudu tables.
+
+Power BI OCF Connector (Non-Scanner)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **3.0.0.4371**
+
+- Fixed a number of metadata extraction issues.
+
+Amazon Redshift OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **1.2.0.4216**
+
+- Added support for EC2 instance profile-based authentication.
+
+Amazon S3 OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* 3.5.0.4216
+
+- Added support for extraction from the PSV and TSV files.
+- Fixed an issue where extraction failed with an *unexpected error* when information for some fields that were optional to extraction was missing in the extracted files. Now, if object properties that are optional to extraction, for example, size or modified time, are missing, metadata extraction will successfully complete without ingesting these object properties.
+
+- Added an option to exclude individual files during schema extraction (applicable if **Schema Path Pattern** is enabled).
+
+SAP BW OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **1.0.9.4297**
+
+- Fixed a number of extraction issues.
+- Added support for schema prefix extraction. When we extract from JSON files with a schema prefix, metadata extraction now completes successfully and all columns are extracted. Previously, column names were not extracted from JSON files with a schema prefix.
+
+.. _Snowflake-OCF-Connector:
+
+Snowflake OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **1.1.1.4303**
+
+- Added ability to reuse the QLI view created for the native Snowflake data source.
+- Added support for Snowflake key pair authentication with the public and private key generated using the ``aes-256-cbc`` encryption.
+
+Tableau OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*New connector version available:* **1.5.0.4134**
+
+- Fixed a number of metadata extraction issues, including extraction failing due to an out of memory exception  and other errors.
+- Added ability to successfully extract metadata from a Tableau BI source when embedded data sources have a very large number of upstream columns.
+- Updated the connector's JRE image.
+- Fixed issues with metadata upload when the data sources are Google BigQuery and MySQL.
+- Fixed an exception-handling bug where the connector froze without erroring out when an API request failed. The connector will now log a clear error message and skip the object that caused the error.
+- Updated the Tableau BI source settings user interface. The fields required for Personal Access Token authentication now appear on top of the settings page under **Connector Settings** > **Server Connection**.
+- Added ability to extract the owner information for workbooks, dashboards, reports, embedded data sources, and published data sources.
+
+
+Connected Sheets
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added ability to edit the dataset configuration including columns and filter criteria at any time. Available in both Google and Excel add-ins.
+
+- Added the trust flags information to data objects downloaded from an add-in. You will see the relevant trust flag descriptions in the add-in with a link to view more details on the catalog page.
+
+- Connected Sheets can now work with an on-premise PostgreSQL data source connected with Alation Agent.
+
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Resolved an issue where the HA pair rebuilding failed after the upgrade to version 2023.1 with cluster splitting due to a bug in the replication service. Now, the admin performing the upgrade of an HA pair with cluster splitting should be able to successfully complete it.
+
+- Fixed a bug in Compose where large query executions on an Amazon Redshift data source were getting stuck. The issue was due to a race condition on the server created by one of the internal API calls. Now, users should be able to successfully execute large queries on Redshift.
+
+- Fixed a bug that caused an error when accessing the Policy Center page on some Alation instances. The issue was due to the API response for the "/all_policies" GET request containing unexpected null values for the Stewards field on some of the policy objects. Fixed by adding logic to the frontend to properly handle unexpected values.
+
+- Fixed a bug where the QLI archiving job was set to run once a year in the internal database even though users had previously added a different schedule in the settings of a data source. The QLI archiving job will now respect schedules set by users.
+
+- Fixed an issue with the Compound Layout lineage view where the More nodes indicator disappeared from the graph after adding a node from the Search for more objects dialog. Now, when there are collection nodes present for the graph, the down arrow indicator will also be present.
+
+- Fixed an issue where the Show Parent and Show Children actions did not have an effect after a user attempted to expand a lineage node on a large Lineage diagram.
+
+- Fixed an issue where the Show Parent and Show Children actions only displayed a part of the available lineage nodes on large Lineage diagrams.
+
+- Fixed a number of user interface issues to stabilize and improve the Lineage Asset Grouping feature.
+
+- Added a warning to the Delete BI server confirmation dialog that deleting large BI sources may cause issues in the Alation user interface. Deleting a large BI source may cause a 500 error on the Alation server. We recommend contacting Alation Support for help with deleting such BI sources until this issue is resolved. Note that BI sources with a small number of objects or with no objects can be safely deleted from the user interface.
+
+- Fixed an issue where the lineage generation job was stuck in the ``Running`` status even though the corresponding metadata extraction job was completed and assigned the status ``Succeeded``. The job history will now reflect the correct status of all jobs subordinate to metadata extraction.
+
+- Fixed the time zone discrepancy in the **Next Run** column in **Admin Settings** > **Monitor** > **Scheduled Query Dashboard**. Now the **Next Run** time will be shown in an admin's local time zone.
+
+- Fixed an issue where Alation failed to start after remounting the data volumes from the old to the new Alation instance. The problem was due to a permission issue when trying to restart a process. Fixed by updating the directory permission.
+
+Known Issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The Alation update of an HA pair **without splitting the cluster** will fail. We recommend upgrading HA instances using the cluster splitting upgrade method until this issue is resolved.
+
+- Deleting a large BI source may cause a 500 error on the Alation server. We recommend contacting Alation Support for help with deleting such BI sources until this issue is resolved. Note that BI sources with a small number of objects or with no objects can be safely deleted from the user interface.
+
+RELEASE 2023.1.1
+----------------------------
+
+*build 15.3.1.30768*
+
+- Fixed an issue where tag values on multiple Snowflake data sources cataloged using the Snowflake OCF connector were reset to ``Not set`` after metadata extraction on one of them. The fix ensures that after metadata extraction on one of the existing Snowflake OCF data sources, the tag field values will not change on other Snowflake OCF  data sources.
+
+- Fixed an issue for an Oracle data source where the Compose connection kept timing out with the error *Could not start query. Check your connection and try again* in the UI and the *Connection closed* error in the log. Added a configuration option to enable a check that the Oracle database connection is open before running a query. To enable, append ``-DcheckOracleConnIsOpen=true`` to the **alation_conf** parameter ``connector.extra_flags``.
+
+        .. note::
+
+            Do not override existing values. If the parameter ``connector.extra_flags`` already has some values set, add your new value:
+
+            .. code-block:: Bash
+
+                alation_conf connector.extra_flags -s ' -Darg1=value1 -Darg2=value2 -DcheckOracleConnIsOpen=true'
+
+        On how to use **alation_conf**, see :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.
+
+
+- Fixed an issue where users were unable to see the table and column object lists on the **Curate** > **Assign Stewards** page. The issue was due to the internal APIs used for curation dashboards performing multiple queries to the database in an inefficient manner, which resulted in the 504 error. Added a fix where for every given batch of 1000 curation object records, all related records will get pre-fetched using a single bulk query.
+
+- Queries ingested with QLI with the only change in the comments will no longer create duplicate dataflow objects.
+
+- Fixed a performance issue with Multi-Select Picker custom fields. With multiple populated Multi-Select Picker custom fields on a catalog page, multiple duplicate calls to the internal API were happening to refresh the Multi-Select Picker field data. These extra calls were redundant and caused performance slowness. Fixed by updating the conditional check on Multi-Select Pickers to only fetch data when the selected values have changed.
+
+- The health check API ``http(s)://<your_alation.com>/monitor/i_am_alive`` now has a configurable timeout threshold. The the health status check of the lineage service will be terminated if the threshold is reached. The threshold is controlled by the **alation_conf** parameter ``lineage-service.health_check.timeout``, set in seconds. Previously, this threshold could not be configured. When it was reached, the ``i_am_alive`` API response or the corresponding email alert indicated that the lineage service health check failed but did not contain any specific exception. Now, the API response and the email alert will include a message that the request timed out based on the health check timeout threshold.
+
+- Previously, Alation users could run into a bug where the column profile histogram on the **Sample** tab of the column catalog page only added new counts and values but never removed values that had been removed from the underlying database. This issue has now been addressed and column samples should correctly reflect the removal of a value during any corresponding profiling request (scheduled table profiling or manual column profiling).
+
+- Fixed a SAML authentication issue on Alation Cloud Service instances where the login failed for new users with the error *RelatedObjectDoesNotExist: User has no profile*. After the fix, Alation will process SAML responses with empty attributes lists correctly. For example, if an empty list is received from the IdP for an attribute like ``Title``, then an empty string will be saved instead of breaking the login flow.
+
+- Fixed a SAML authentication issue on Alation Cloud Service instances where active users were unable to log in or suspended users could not be activated if the case in their username had changed in the IdP. Now, a username can be patched in IAM using the PATCH endpoints. If there is any change in the username in the IdP, the username will be sync'ed to IAM as well.
+
+
+RELEASE 2023.1.0 - General Availability
+-------------------------------------------
+
+*build 15.3.0.29706*
+
+*Released February 21, 2023*
+
+Governance App
+~~~~~~~~~~~~~~~~~~~~~~
+
+Add Object Request Workflow for Glossary Terms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This new workflow aims at governing the creation of terms in Alation. It allows you to set up a review process for any newly created glossary term before it is added to a glossary. For any new term under a workflow, there are two modes:
+
+    - DRAFT—A private mode for terms in a workflow. It allows the creator to work on the term in a private space and invite other users to collaborate. The term is not accessible to users unless they are granted access by the creator or are Catalog or Server Admins.
+
+    - UNDER REVIEW—Review mode. Once the creator has finished drafting the term, they can submit it for review. This initiates the review process, and the term enters the Under Review mode. The term is available for review by a defined set of reviewers, which includes the creator and collaborators. The term remains in the Under Review mode until it is reviewed and approved. Once it is approved, the term goes live and can be viewed by all users.
+
+All workflow participants get real-time email notifications about the changes and reviewers get a rich experience enabling them to act on terms pending review.
+
+Compose
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Granular Access Permissions for Queries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Previously, Alation didn't have the capability to set granular access permissions for query objects that would allow only certain users to view, edit, or run them. Starting with this release, you can use the new **Sharing & Access** feature to configure access to queries in Compose and the catalog, thus controlling who can view, edit, and run them. Levels of access supported for queries are:
+
+    - *No access*
+    - *View Access*
+    - *View & Run Access*
+    - *View, Run, & Edit Access*
+    - *Owner*.
+
+The access rules are set on individual query objects and apply to both unpublished and published queries. For new queries, the default is *View & Run Access* for everybody.
+
+If you are using the **alation_conf** parameter ``alation.catalog.unpublished_query_visibility_level`` to control visibility of unpublished queries, note that this setting will take precedence over individual access permissions on unpublished query objects. If the parameter ``alation.catalog.unpublished_query_visibility_level`` is currently set to ``not_visible`` (unpublished queries can only be accessed by Owners and users with whom they were explicitly shared), then after enabling the **Sharing & Access** feature, unpublished queries will remain invisible to users even if they are given *View Access* in the user interface. We do not recommend changing the parameter ``alation.catalog.unpublished_query_visibility_level`` to ``visible`` before all protected unpublished queries have been assigned the correct access privileges.
+
+Scheduled Query Dashboard for Admins
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The **Scheduled Query Dashboard** in **Admin Settings > Monitor** empowers Server Admins to manage scheduled queries across all users and data sources in an Alation instance:
+
+    - All scheduled queries at-a-glance
+
+        - Tabular view of all scheduled queries with the following details: Query Title, Data Source, Query Owner, Owner Status, Schedule, Next Run Time, Status, and Actions.
+
+    - Actions on specific scheduled queries
+
+        - Change Schedule Settings
+
+            - Modify schedule settings to spread query loads over time, improving overall system performance.
+
+        - Change Permission
+
+            - Grant or revoke View, Run, and Edit permissions to or from individuals or groups in case the query owner is not available.
+
+            - Change the owner of a query to avoid "ghost" scheduled queries.
+
+        - Cancel Next Run
+
+            - Cancel the current execution or the next pending execution of a scheduled query to save resources.
+
+        - Disable Schedule
+
+             - Disable a query from running on a schedule, so that scheduled queries with owners who are no longer employed at the company or queries that are no longer needed don’t keep running forever.
+
+Ability to Use Hive Variables in Compose
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Previously, since Hive variables were in conflict with Query Form variables due to their syntax, they could not be used in Compose. With this enhancement, Compose users can use an escape character (``${\hivevar:tablename}``) to resolve syntax conflicts between Query Form variables and Hive variables, enabling the use of Hive variables in Compose queries.
+
+Lineage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Compound Layout View
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation now provides the ability to represent lineage objects based on their logical alignment with the data source and dataflow objects: the **Compound Layout View** of the lineage data. The view supports the **Show Parent/Show Children** functionality which will display additional upstream and downstream lineage nodes that are not directly linked to the main object.
+
+This feature is not enabled by default. To make it available on your Alation instance, set the following **alation_conf** flags to ``True``:
+
+    - ``alation.feature_flags.DEV_enable_lineage_asset_grouping``—Enables the **Compound Layout View** toggle on the **Lineage** tab.
+    - ``alation.feature_flags.DEV_enable_lineage_asset_grouping``—Enables the three-dot menu on lineage nodes on the Compound Layout View.
+    - ``alation.feature_flags.DEV_enable_lineage_collection_nodes_modal``—Adds the Show Parent/Show Children functionality.
+
+If a data source supports DBT connections, users will see the DBT dataflow objects grouped together.
+
+Compound Layout View currently doesn't support column-level lineage.
+
+Lineage Default View Configuration—No Restart Required
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Previously, after the lineage settings were modified in **Admin Settings > Customize Catalog > Lineage**, the lineage service had to be restarted. Starting in 2023.1, the restart is no longer required.
+
+Impact Analysis Performance Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We implemented a number of changes to improve the general performance of the Impact Analysis reports:
+
+    - Reports now use lazy loading to load faster.
+    - Temp objects are excluded by default. Previously, the configuration parameter ``lineage-service.filters.exclude_temp`` was applied only to the graph view. Now, it's applied to both the graph and the Impact Analysis reports.
+
+Catalog
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Domain and Term Objects Now Respect Object-Level Permissions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- On the catalog page for a domain, if a user doesn't have View permission for a specific object, they will not see this object in the **Browse this Domain** list.
+
+- Users can no longer apply changes to objects they don't have Edit permission for when adding an object to a domain.
+
+- The **Domains** field on the catalog pages of objects will now respect object-level permissions. Only users with permissions to edit an object will be able to modify its domain membership.
+
+- If a user does not have Edit permission for a parent glossary, they will not be able to apply membership changes to child terms. A user will need View or Edit access to a term object and Edit access to a glossary to add or remove a term to or from a glossary.
+
+- If a term object is added to more than one glossary and is configured to inherit permissions from all of them, a user will need access to all glossaries to have access to this term.
+
+- A user will be able to see and/or update the template of a term object based on their object-level permissions for this term.
+
+Term and Glossary Navigation and Search Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- We added the **Glossaries** column to the Terms table to indicate which glossaries the terms belong to. This applies to the **Glossaries** landing page and each individual glossary pages.
+
+- We added the Glossaries facet to full-page Search for term objects. When searching for terms with the full-page search, you can now filter by glossary.
+
+Data Quality Indicators Added in Search Results
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation Search users will be shown an icon indicating a Data Quality warning that affects objects in the search results. This icon represents quality issues affecting the object or upstream objects.
+
+Quality Propagation of Downstream Data Objects—General Availability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation's Data Quality service now includes quality values generated from ingestion from OCF data sources. On detection of deleted data objects, Data Quality creates a deleted quality value on that object which then propagates to the downstream nodes on the lineage graph. This information will be displayed for downstream tables, BI reports, and BI datasources and is surfaced on the new **Data Health > Upstream Issues** tab for each respective catalog page.
+
+This functionality, introduced in the previous release as Beta, is now General Availability.
+
+Search Results Span Title and Rich Text Fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Search function now enables search results that span the title as well as rich text fields. For example, an article with "new york city" in the title and "local park" in the body can be found by searching for "new york park".
+
+    .. note::
+
+        There is a small accompanying change in the search spell checker behavior. When a search query consists of one word, it will be checked for spelling. When a search query consists of several words, the spell checker will be invoked less often. It will only check and suggest a correction if there are no results for the word(s) that are spelled correctly.
+
+        For example, in the query "healthcare revnue", "revnue" is misspelled. However, if the search finds results matching "healthcare", the spell checker will not correct the second word, returning results that match "healthcare". If both words are misspelled, the spell checker will correct the first word. For example, if you typed "halthcare revnue", the search would still return matching results for "healthcare".
+
+Search Indexing Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Implemented the force merge API for Elasticsearch for better search index storage management. Force merge executes every Sunday.
+
+- Completed a number of modifications to reduce the search index size, including setting the current default stored values for fields to False so that Elasticsearch saves source data only.
+
+Alation Analytics App
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Supportability Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  - Added functionality to improve the ETL process and failure tracing for Alation Analytics. Implemented an error notification framework in order to communicate ETL errors. Server Admins will now receive email notifications if the ETL process ends in an error, reducing the time required for them to become aware of an issue.
+
+  - The health status of Alation Analytics Postgres and RabbitMQ containers can now be monitored from the user interface in **Admin Settings > Monitor > Health Check**. Note that on the instances on Cloud Native Architecture, only the RabbitMQ health is displayed, as Postgres is a managed RDS service. Failure notifications are sent as an email to Server Admins.
+
+Data Model Additions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  - Added fields ``file_url``, ``directory _url``, and ``filesystem_url`` to tables ``files``, ``directories``, and ``filesystems`` respectively in Alation Analytics to improve consistency with columns available for other data objects like datasources, schemas, tables, and columns.
+
+  - Added a new boolean column ``private`` to the ``rdbms_tables`` table in Alation Analytics to indicate whether the table is private or public.
+
+Alation APIs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+New Conversations API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added a new API for working with Conversations, introducing endpoints for getting, creating, updating, and deleting Conversations and Conversation replies (posts).
+
+Updates to OCF Data Sources API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added new endpoints to the OCF Data Sources API:
+
+  - API now allows users to update OCF data source information using the PUT endpoint ``/integration/v2/datasource/{datasource_id}/``.
+
+  - Added **datasource config checks** group of endpoints that allow performing connection tests that are equivalent to the Test Connection functionality in data source settings in the user interface:
+
+      - ``/integration/v2/datasource/{datasource_id}/configuration_check/``—Check all configurations of the data source.
+      - ``/integration/v2/datasource/{datasource_id}/configuration_check/service_account_authentication/``—Check the service account authentication status of the data source.
+      - ``/integration/v2/datasource/{datasource_id}/configuration_check/service_account_privileges/``—Check the service account privileges of the data source.
+      - ``/integration/v2/datasource/{id}/configuration_check/network_connection/``—Check if the OCF connector is responsive. Returns response 200 if responsive and response 400 when a gRPC timeout occurs.
+
+Updates to User V2 API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Enhanced the GET methods to return the date the user was created and their last login date. We also added new query parameters to enable filtering on the user's creation date and last login date. This will enable Alation program owners to drive adoption of the catalog by programmatically identifying users who haven't logged in for a given time. You can then send users a message encouraging them to take advantage of Alation.
+
+Updates to Virtual File Systems API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed a bug where POST calls were failing if the ``ts_last_accessed`` parameter was missing from the request. This has been fixed so that ``ts_last_accessed`` is no longer required for uploading virtual file systems.
+
+Alation Integrations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Connected Sheets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Connected Sheets for Microsoft Excel
+''''''''''''''''''''''''''''''''''''''''''''
+
+The Connected Sheets for Microsoft Excel is a new add-on that helps users discover data sources in the Alation catalog, download data using filter & sort criteria, and refresh on demand. The Connected Sheets page, accessible from the **Apps** menu in Alation, will have the MS Excel add-on installation link.
+
+This feature is available on the Alation Cloud Service with cloud-native architecture. Users must have an Explorer or Creator license to use the add-on.
+
+Connected Sheets for Google Sheets
+'''''''''''''''''''''''''''''''''''''''''''
+
+Users can now edit the configuration of the downloaded sheet.
+
+Alation Anywhere for Tableau
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- To provide more visibility into automated data upload jobs for Server Admins, we added the **Upload Job Status** table to the **Metadata Upload From Alation to BI Server** section of the Tableau BI source settings showing the status of automated data uploads. The details for each upload job are available on clicking the **View Details** link in the **Details** column of the table. The table will be available if Alation Anywhere for Tableau is enabled on the Alation instance and if automated uploads are enabled for the Tableau data source.
+
+- The @-mentions used in the **Description** field and in the trust flag comments of data source and table objects are now transferred to Tableau as part of metadata upload.
+
+Alation Anywhere for Slack
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+User Experience Improvements
+''''''''''''''''''''''''''''''''''''''
+
+- Added a success indicator that an item was sent to a chat to the Alation Search dialog in Slack.
+- Undefined items have been removed from preview.
+
+Cloud Platform
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+New Explorer Role
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation Cloud Native architecture customers will now be able to use a new user role Explorer with the corresponding new license type. This role offers all the capabilities of a viewer and also provides access to Connected Sheets, query forms, and the Queries API, except the CREATE endpoint.
+
+Bring Your Own Key (BYOK)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Bring Your Own Key (BYOK) is an encryption key management system that allows customers to encrypt their data and retain control and management of their encryption keys. Available for Alation Cloud Native architecture customers.
+
+
+Connect Platform
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Column Level Lineage Add-Ons
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Column-level lineage for PostgreSQL will be shown on the Lineage tab along with table-level lineage after running MDE or QLI jobs.
+- Column-level lineage (CLL) for Presto is GA (previously Beta).
+- Column-level lineage (CLL) for Databricks is GA (previously Beta).
+- Column-level lineage (CLL) for Hive is Beta.
+- Column-level lineage (CLL) for Sybase is Beta.
+
+User Interface for Migrating Native BI Sources to OCF
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Admins can now migrate native BI sources to OCF in the Alation user interface. Previously, this action required access to the backend of the Alation server.
+
+View Jinja Code on Dataflow Catalog Pages for dbt Dataflows
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added ability to view Jinja code on the dataflow catalog pages for DBT dataflows.
+
+New OCF Connectors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Amazon Athena OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The OCF connector for Amazon Athena is available in this release.
+
+Databricks GCP OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Databricks GCP OCF connector is available in this release.
+
+dbt Add-on OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The dbt add-on OCF connector is available in this release. The connector supports dbt Core and Cloud, and extracts dbt descriptions for tables and columns in the catalog and dbt lineage for supported databases and data warehouses (Snowflake, Amazon Redshift, and PostgreSQL). The configuration settings for add-on connectors are available on the **General Settings** tab of OCF RDBMS connectors when the add-on is enabled on the Alation instance.
+
+Also see `View Jinja Code on Dataflow Catalog Pages for dbt Dataflows`_.
+
+If the Compound Layout View is enabled on Lineage diagrams, the dataflow objects from dbt will be grouped together.
+
+SSRS OCF Connector GA
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The SQL Server Reporting Services (SSRS) OCF BI connector is now General Availability.
+
+Improvements and Updates to OCF Connectors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Power BI OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Added support for commas in queries available in dataset expressions returned in Power BI REST API responses for the SQL Server data source.
+- The connector can now parse queries with multiple quotes and spaces to get the connection information for the SQL Server data source.
+- The connector now validates port numbers in dataset expressions returned by Power BI REST API responses for all data sources.
+- The connector now gets connection information from a non-quoted connection string in the dataset expression returned by Power BI REST API responses for the Snowflake datasource.
+- Enhanced the connector to work with HTTP proxies (for example, Squid).
+- Added the ability to restrict access to only those workspaces to which the service principal has access.
+- Enhanced the connector to support Google BigQuery data source for table-level lineage.
+
+Tableau OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Added support for column-level lineage.
+- Added an error log summary report at the end of metadata extraction.
+- Added extract or live indicators and extract date for Tableau datasources (both published and unpublished).
+- Removed pagination fields from the Tableau OCF settings page as pagination is now handled within the system.
+- Implemented a fix to remove un-extracted sites and (or) projects when selective MDE is run.
+- Enhanced the connector to support BigQuery data source for table-level lineage.
+
+Looker OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- From version 1.4.1, the Looker OCF connector has support for Looker 4.0 API.
+- Fixed an issue where the curation data for BI reports and BI datasources was lost after extraction if a column had been added or removed to a report in Looker. Alation provides a migration script to update Looker BI objects in Alation to restore missing curation data. The script should be run before the connector upgrade.
+- Enhanced the connector to support BigQuery data sources for table-level lineage.
+
+Azure Blob Storage OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Added support for schema extraction for CSV, TSV, PSV, and Parquet files.
+- Added support for on-demand end-user driven Sampling for a CSV, TSV, PSV, and Parquet file. Access keys and Shared Access Signatures are supported authentication mechanisms. Azure Active Directory authentication is also supported via AuthService. Available with Azure Blob Storage OCF Connector version 2.0.0 and Alation version 2023.1.
+
+AWS Databricks OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- AWS Databricks OCF connector version 2.0.0 now uses Databricks driver version 2.6.29.
+- AWS Databricks OCF connector version 2.0.0 is certified to be used with Databricks runtime 11.x.
+
+Databricks Unity Catalog OCF Connector Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Databricks Unity Catalog OCF connector version 1.0.2 supports Sampling, profiling and Compose. Azure Active Directory auth is supported for Compose and Dynamic Sampling for Databricks on Azure.
+
+Query Service Support for More OCF Connectors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Query Service enables the use of Compose for OCF data sources that are added through Alation Agent. In this release, Query Service support was added for DB2, Teradata, Greenplum, SAS Base, SAP HANA, Vertica, SAP IQ, and EMR Presto.
+
+QLI Support for RDS-Based Data Sources
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added QLI support for MySQL, Oracle, and SQL Server on RDS. Previously, Alation did not support QLI for these RDS-based data sources.
+
+Direct Lineage Extraction Is General Availability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The direct lineage extraction feature is now available to all users as the feature flag ``alation.ocf.mde.direct_lineage.enable_extraction`` has been removed. OCF connectors that support direct lineage will extract direct lineage metadata from data sources as part of metadata extraction.
+
+Alation Agent
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For Alation Cloud Service instances, we've certified the Amazon S3 OCF file system source with Alation Agent running in the customer VPC.
+
+Enterprise Readiness
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Postgres Upgrade to 13.8
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Alation internal PostgreSQL database is upgraded to version 13.8 for customer-managed (on-premise) Alation instances. PostgreSQL version 13.8 includes a security vulnerability fix and provides performance gains over previous versions.
+
+Default Backup Tool Is pgBackRest
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The default backup tool is now **pgBackRest**, which has improved backup reliability and performance capabilities over the previous tool, **pg_probackup**. The pg_probackup tool remains as an option to restore older backups.
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed an issue where if term objects were added as Object Set field values, their descriptions did not appear on the table view of the Object Set field in the main panel of the catalog template. Terms will now have their descriptions displayed in the Object Set field tabular view, as expected.
+
+- Fixed a bug where the **Details** column of the **Job History** table on the **Query Log Ingestion** tab of data source settings did not display the success message for the Succeeded status. Now, the Details information will be available for every QLI status.
+
+- Fixed an issue where back references from term objects did not appear in the **See more** dialog. The **See more** link is displayed when there are more than five back references in the **Related Articles** field. Now, the dialog will show all available back references.
+
+- Fixed an issue where permission to share a query from a catalog page was not available to users with the Viewer role. Now, Viewers can share queries they have access to. The **Share** button will be available to them under the **More** menu on catalog pages of queries and query forms.
+
+- Fixed an issue where Server Admins could not see the Access dialog for queries if they were not the owner or editor. Now, Server Admins can change query permissions on the query catalog page or in Compose, if necessary.
+
+- Fixed an issue where the workflow lookup did not include the workflow after removing an excluded object from the workflow configuration. Former known issue in LA.
+
+- For Alation Anywhere for Slack, fixed an issue where the search results were incorrect when the search string contained spaces. Users can now use search strings with spaces.
+
+- Fixed an issue where the **Impact Analysis** or **Upstream Audit** reports were sending duplicate API requests to the database. For large lineage graphs, this could noticeably affect the lineage data loading time. After the fix, the loading time for large graphs has been significantly improved.
+
+- Optimized the migrations of the database which were slowing down the upgrade of the Alation Analytics app. After the installation or upgrade of 23.1, the flags will need to be reconciled between Alation Analytics and the internal database. To do that, execute the one-off script ``reconcile_flag`` that is located in the one-off-script folder under Alation Analytics after updating Alation to 23.1. (Included into the 23.1 upgrade steps).
+
+- Fixed an issue with tags, which were not updated in Alation Analytics after being removed from the catalog. After the installation or upgrade, the tags will need to be reconciled between Alation Analytics and the internal database. To do that, execute the ``reconcile_tags`` script that is located in the one-off script folder of Alation Analytics. (Included into the 23.1 upgrade steps).
+
+- Alation Cloud Service instances will no longer send a redundant email notification that was sent to Server Admins after the Alation update that extraction from Alation Analytics failed due to the outdated Alation Analytics version.
+
+- Alation now respects custom field permissions during field editing set through People Sets when users use Bulk Actions. Previously, bulk updates of custom fields of picker type by users given edit permissions through a People Set did not work from Stewardship Workbench.
+
+- Fixed an issue where users observed a discrepancy between lineage graphs on Lineage V2 and V3 when temp tables were excluded and when the main node was connected to all temp nodes on the first lineage level. Lineage V3 rendered an empty graph, while Lineage V2 displayed the main node. Now, the main node will be displayed even if temp tables are excluded.
+
+- Fixed a bug where the column width of the results table in Compose did not scale correctly and clipped the last column, adding horizontal scrolling. The fix also addresses other display issues where content was not visible when the browser window (Chrome) was set to 90% Zoom.
+
+- Fixed an issue where a user with the Catalog Admin role, assigned as a Data Source Admin to a data source, could not use the Test Connection feature on the data source settings page. The connection test resulted in an *unexpected error*. The fix allows Catalog Admins to use the test connection feature.
+
+- Fixed a bug where for an Amazon Redshift data source, query snippets for queries containing a regex expression produced result sets different to query results for a query without the snippet. The issue occurred due to a discrepancy in the expansion of the regex in the snippet and the query. The issue has been resolved.
+
+- Fixed an issue in the **Account Settings** section where users were unable to navigate to other tabs from the **DB Connections** tab. The fix ensures that users can click between tabs of the Account Settings page.
+
+- Fixed an issue where the Compose auto-complete feature suggested column name in lowercase for columns where the column name had uppercase letters. The attribute model has two fields for storing the table column name. The ``name`` field is case-insensitive, while the ``original_name`` field maintains the case of the original column name. In order to maintain the case of the column during auto-suggestion, Alation now returns the value of the ``original_name`` field.
+
+- Fixed an issue where the GBM V2 GET folders bulk API threw an internal server error for a non-existing parent folder. Now, if the parent folder does not exist, the API will return null for the ``parent_folder`` parameter.
+
+Known Issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+2023.1 Update Known Issue
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../shared/UpdateKnownIssue.rst
+
+Lineage Compound Layout View Known Issues
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Searching for a node that is not part of the currently opened pagination page does not return it. Searching for any available node in the cluster should return it even if it's not part of the current page.
+
+- The **Show Parent** and **Show Children** actions do not have an effect after a user attempts to expand a lineage node on a large Lineage diagram. (**FIXED IN 2023.1.2**)
+
+- The **Show Parent** and **Show Children** actions only display a part of the available lineage nodes on large Lineage diagrams. (**FIXED IN 2023.1.2**)
+
+- After a manual update, the Lineage graph displays the incomplete lineage data with some disconnected lineage nodes.
+
+- After a manual update to the Lineage graph and adding new nodes to existing nodes, the updated part of the graph is not displayed and the node that was updated is removed.
+
+- Cyclic Lineage graph between multiple nodes results in duplicated nodes and incorrect lineage links.
+
+- On the Compound Layout view, the **More nodes** indicator disappears from the graph after adding a node from the search for more objects dialog, although the nodes are listed in the dialog itself and can be added to the graph. (**FIXED IN 2023.1.2**)
+
+Scheduled Query Dashboard Known Issue
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On the Scheduled Query Dashboard, the Next Run column is displayed in UTC while the Schedule column is displayed in the user's time zone.
+
+Term and Glossary Known Issues
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Sometimes a term in Draft or Under Review mode shows up in search. Terms should show up in search only after they were reviewed and approved.
+
+- Selection of reviewers from People Sets is not available for the Add Object Workflow, as glossaries do not support People Sets yet.
+
+- The first click within the **Add / Remove Glossaries** dialog seems to get "swallowed" and has no effect, but further clicks succeed. The same behavior exists on the **Add / Remove Policy Group** dialog.
+
+Workflows Known Issue
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Accessing the Workflows page for the first time after enabling it in **Admin Settings > Feature Configurations** shows the *permission denied* error.
+
+Catalog Known Issue
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After switching a data source from Public to Private, all data source objects are still showing in catalog searches.
+
+Known Issues in 2023.1 Limited Availability Release (*build 15.2.0.27498*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Server Admin cannot see the permission dialog if they are not the owner/collaborator: In 2023.1 LA, a Server Admin who is neither the owner nor the author cannot see the permission dialog for a query and make permission changes to it. This is a capability that used to be available in 2022.4 and earlier releases. **FIXED IN GA**
+
+- Viewers do not have permission to share a query: In 2023.1 LA build, Viewers do not have the permission to share a query with another Alation user. This is a capability that used to be available in 2022.4 and earlier releases. **FIXED IN GA**
+
+- Workflow lookup not including workflow after removing excluded object in workflow configuration: In certain scenarios, workflow running on a glossary does not show up on the respective Glossary page. **FIXED IN GA**

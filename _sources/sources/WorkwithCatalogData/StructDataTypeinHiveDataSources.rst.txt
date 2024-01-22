@@ -1,0 +1,138 @@
+Struct Data Type in Hive Data Sources
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from release V R5 (5.9.x)*
+
+Wide-column databases, such as Hive, can store composite data using
+the *struct* data type. The catalog page of a struct column will fully
+reveal the struct composition.
+
+.. note::
+
+    *Union* and *map* data types are not supported yet. If the map or
+    union data types are used inside the struct, that struct field will
+    not be displayed on the catalog page.
+
+    Hive struct representation is only supported for the actual
+    connection and not supported on Virtual Data Sources.
+
+
+*Struct Column in a Hive Source*:
+
+.. image:: ../../_static/Struct1.png
+    :width: 5.5in
+    :align: center
+
+By default, the struct column catalog page will use the *Column* object
+template. However, if you set the
+flag ``alation.feature_flags.enable_generic_nosql_support`` in ``alation_conf``, then the
+struct column catalog page will be using an additional second template:
+the *NoSQL Attribute* object template that allows Alation to represent
+the full structure of this column as a tree table.
+
+Although the main purpose of this feature flag is to enable the support
+for NoSQL databases in Alation, in addition, it will also enable the new
+struct view.
+
+Setting the Flag
+----------------
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+To set feature flags, you need SUDO access to the Alation host.
+
+1. On the host, enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+2. Enable the Generic NoSQL feature by setting the feature flag ``alation.feature_flags.enable_generic_nosql_support`` to ``True``:
+
+    .. code-block:: bash
+
+        alation_conf alation.feature_flags.enable_generic_nosql_support -s True
+
+3. Restart uWSGI and Celery:
+
+    .. code-block:: bash
+
+       alation_supervisor restart web:uwsgi celery:*
+
+
+    .. note::
+
+        After enabling the flag, perform metadata extraction on your
+        Hive data source with struct data types to see the changes to the struct
+        representation in the existing metadata.
+
+
+Viewing Struct Composition
+--------------------------
+
+Columns of type *struct* will be represented as a *schema object* in
+Alation when the NoSQL Attribute template is applied. To reveal the whole
+nested structure, you can expand each struct component down to the last
+nested element. A struct column can include complex data types, such as
+other structs and arrays, creating a complex structure. With the
+expandable tree table representation, you can view all of them on one
+catalog page.
+
+.. image:: ../../_static/Screen_Shot_2019-05-02_at_10.27.05_AM.png
+    :width: 5.5in
+    :align: center
+
+You can drill down to the level of each individual data definition included in this struct.
+
+.. note::
+
+    NoSQL Schema objects are indicated with the icon:
+             
+    .. image:: ../../_static/API_Resources05.png
+        :width: 50px
+        :align: center
+
+    These objects can have an internal structure that includes both simple and complex data types.
+
+*A Struct Column Catalog Page*:
+
+.. image:: ../../_static/Struct2.png
+
+Use of Object Templates for Struct Columns
+------------------------------------------
+
+Let us look at an example of a Hive data source that includes columns of the struct type.
+
+When you open the catalog page of the source and drill down to the
+struct column, it will be using the Column template. Custom fields
+currently associated with this template will be on this page.
+
+.. image:: ../../_static/Screenshot4.png
+    :width: 5.5in
+    :align: center
+
+From the struct column page, you can drill down into any of the struct
+components. They will use the NoSQL Attribute template.
+
+.. image:: ../../_static/Screen_Shot_2019-05-09_at_9.21.45_PM.png
+    :width: 5.5in
+    :align: center
+
+When a data object in Alation uses the NoSQL Attribute template, the top
+breadcrumbs use the noSQL data source icon set:
+
+============ ==================================================================
+
+Data source  .. image:: ../../_static/Screen_Shot_2019-05-10_at_10.18.36_AM.png 
+
+Folder       .. image:: ../../_static/Screen_Shot_2019-05-10_at_10.18.41_AM.png 
+
+Collection   .. image:: ../../_static/Screen_Shot_2019-05-10_at_10.18.51_AM.png 
+
+Schema       .. image:: ../../_static/Screen_Shot_2019-05-10_at_10.19.05_AM.png 
+
+============ ==================================================================
+
+.. image:: ../../_static/Screenshot2.png

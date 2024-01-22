@@ -1,0 +1,418 @@
+Starburst Trino OCF Connector: Install and Configure
+====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Network Configuration
+-----------------------------
+
+- Open the inbound TCP port that corresponds with the port you have configured in Starburst Trino. 
+
+    For example, **8080** for an HTTP connection, **443** for TLS-enabled clusters, or **7778** if the database uses Kerberos authentication.
+
+SSL Certificate
+-----------------------------
+
+To configure the connection over SSL, obtain the SSL certificate file for your Starburst Trino server. You will need to upload the SSL certificate when configuring your data source in Alation.
+
+Service Account
+------------------------------
+
+Create a user with Starburst Trino:
+
+    - Create a user for the Alation service account.
+
+    - Create a role for the Alation service account:
+
+      .. code-block:: SQL
+
+          CREATE ROLE <alation_role>;
+
+    - Grant the role to the user:
+
+      .. code-block:: SQL
+
+          GRANT <alation_role> TO USER <alation>;
+
+Permissions for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Grant the role ``<alation_role>`` permissions for these system schemas:
+
+    - system.jdbc.schemas
+    - system.jdbc.catalogs
+    - system.jdbc.table_types
+    - system.jdbc.tables
+    - system.jdbc.columns
+
+SQL examples
+^^^^^^^^^^^^^^^^^^
+
+.. code-block:: SQL
+
+    GRANT SELECT TO <alation_role>;
+    GRANT USAGE ON SCHEMA system.jdbc.schemas TO <alation_role>;
+    GRANT USAGE ON SCHEMA system.jdbc.catalogs TO <alation_role>;
+    GRANT USAGE ON SCHEMA system.jdbc.table_types TO <alation_role>;
+    GRANT USAGE ON SCHEMA system.jdbc.tables TO <alation_role>;
+    GRANT USAGE ON SCHEMA system.jdbc.columns TO <alation_role>;
+
+Permissions for Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To perform table and column sampling and column profiling, the service account needs the SELECT permissions on the tables that need to be profiled, for example:
+
+    .. code-block:: SQL
+
+        GRANT SELECT ON <database>.<schema_name>.<table_name> TO ROLE <alation_role>;
+
+Permissions for Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Permissions for Query Log Ingestion (QLI) depend on the type of QLI you will be configuring:
+
+    - For table-based QLI, the service account must have the SELECT permission for the QLI view.
+
+    - For custom query-based QLI, the service account must have the SELECT permission for the ``system.runtime.queries`` table, with GRANT OPTION:
+
+        .. code-block:: SQL
+
+            GRANT SELECT ON  system. runtime.queries TO ROLE <alation_role> WITH GRANT OPTION;
+
+Find more information about QLI, see `Query Log Ingestion`_.
+
+JDBC URI
+--------------------
+
+The JDBC URI can include a specific catalog name. If it’s included, then Alation will only extract schemas from that specific catalog. If the URI does not include a catalog name, Alation will extract schemas from all catalogs.
+
+    .. note::
+
+        The ability to extract schemas from a specific catalog is available from connector version 1.2.6.
+
+Format
+~~~~~~~~~~~~~
+
+Extract Schemas from All Catalogs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``jdbc:trino://host:port``
+
+**Example**
+
+``trino://ip-10-13-82-39.alation-test.com:8080``
+
+Extract Schemas from One Catalog
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``jdbc:trino://host:port/catalog_name``
+
+**Example**
+
+``trino://ip-10-13-82-39.alation-test.com:7778/hive``
+
+Authentication
+-------------------------
+
+The OCF connector for Starburst Trino supports basic authentication and authentication via Kerberos.
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Basic authentication requires the username and password of the `Service Account`_ you created for Alation.
+
+Kerberos Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If your database is kerberized, prepare the following information and files:
+
+    - Username and password of the service account
+    - Kerberos configuration file (**krb5.conf**)
+    - The keytab file if keytabs are used
+    - Trino coordinator Kerberos service name
+    - Kerberos Principal
+
+Connection Over SSL
+---------------------
+
+The OCF connector for Starburst Trino supports SSL connections. You will need to obtain the SSL certificate for your database and upload it in the settings of the data source you create in Alation (see `Application Settings`_ below).
+
+Connector versions older than **1.2.4** only support the **.cer** certificate format. Convert the **.jks** file into **.cer** before uploading in Alation.
+
+Connector versions 1.2.4 and newer, support the **.jks** format, but not **.cer**.
+
+Configuration in Alation
+------------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **Starburst Trino OCF connector**.
+
+Access
+--------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+--------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Populate the data source connection information and save the values by clicking **Save** in this section.
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Populate the data source connection information and save the values by clicking **Save** in this section.
+
++---------------------------------+---------------------------------------------------+
+| Parameter                       | Description                                       |
++=================================+===================================================+
+| JDBC URI                        | Specify the JDBC URI in the required format.      |
++---------------------------------+---------------------------------------------------+
+| Username                        | Specify the service account username.             |
++---------------------------------+---------------------------------------------------+
+| Password                        | Specify the service account password.             |
++---------------------------------+---------------------------------------------------+
+| Enable Kerberos authentication  | Select this checkbox if using Kerberos            |
+|                                 | authentication and upload the **krb5.conf** file  |
+|                                 | using the **upload** link under the checkbox.     |
++---------------------------------+---------------------------------------------------+
+| Use keytab                      | Select this checkbox if using keytabs and upload  |
+|                                 | the keytab file for the service account using     |
+|                                 | the **upload** link under the checkbox.           |
++---------------------------------+---------------------------------------------------+
+| Trino coordinator Kerberos      | If using Kerberos authentication, provide         |
+| service name                    | the name of your Trino coordinator service.       |
++---------------------------------+---------------------------------------------------+
+| Enable SSL                      | Enable or disable SSL authentication              |
+|                                 | by selecting or clearing the **Enable SSL**       |
+|                                 | checkbox.                                         |
+|                                 |                                                   |
+|                                 | If the **Enable SSL** checkbox is enabled,        |
+|                                 | upload the SSL certificate using the upload       |
+|                                 | link below.                                       |
++---------------------------------+---------------------------------------------------+
+| Truststore password             | Specify the password for the SSL certificate.     |
+|                                 |                                                   |
+|                                 | The password will be deleted if the data source   |
+|                                 | connection is deleted.                            |
++---------------------------------+---------------------------------------------------+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+You can view the connector logs in **Admin Settings** > **Manage Connectors** > **Starburst Trino OCF connector**.
+
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Obfuscate Literals**—Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^^^^
+
+After specifying the connector settings, under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+----------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+Compose
+-------------------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+Sampling and Profiling
+-------------------------------
+
+Alation supports a number of ways to retrieve data samples and column profiles. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Column Profiling Queries for Starburst
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation uses these default queries for deep column profiling of the Starburst data source. You can customize them to better suit your needs.
+If using these examples, provide a value instead of the placeholder ``<limit>``.
+
+Numeric Data Types
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      SELECT
+        MIN({column_name}) AS Minimum,
+        MAX({column_name}) AS Maximum,
+        AVG({column_name}) AS Average,
+        APPROX_PERCENTILE(CAST({column_name} AS double),0.5) AS Median,
+        SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END) AS "#NULL",
+        (100.0 * (COUNT(*) - COUNT({column_name})) / NULLIF (COUNT(*),0)) AS "%NULL"
+      FROM {table_name} LIMIT <limit>
+
+Non-Numeric Data Types
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      SELECT
+        SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END) AS "#NULL",
+        (SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS "%NULL"
+      FROM {table_name} LIMIT <limit>
+
+
+Query Log Ingestion
+-------------------------------
+
+A Starburst Trino OCF data source supports table-based or query-based QLI:
+
+    - `Table-Based QLI`_—You will need to create a view on top of the system table that stores query history. Alation will query the view to retrieve query information into the catalog.
+
+    - `Custom query-based QLI`_—If you cannot create the QLI view due to access restrictions or other reasons, you can bring in query history by querying the system table directly.
+
+Table-Based QLI
+~~~~~~~~~~~~~~~~~~~~
+
+Create the QLI View
+^^^^^^^^^^^^^^^^^^^^^^
+
+On Starburst Trino, create a view on top of the system table ``system.runtime.queries`` to store query history. Grant the Alation service account the SELECT permissions for this view.
+
+    .. note::
+
+        If the JDBC URI you provided in Alation includes a catalog name, then the connector will apply the catalog filter when querying the view and only retrieve query history for the source that equals the catalog name in the URI.
+
+    .. code-block:: SQL
+
+        CREATE OR REPLACE VIEW <view_name> AS
+        SELECT
+          user,
+          query,
+          source,
+          created,
+          started,
+          "end",
+          query_id,
+          state
+        FROM system.runtime.queries
+        WHERE state = 'FINISHED';
+
+Configure Table-Based QLI in Alation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To configure table-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF Starburst Trino data source.
+2. Under **Connector Settings > Query Extraction**, specify the name of the QLI view in the **Table Name** field.
+
+    .. important::
+
+        Use the format ``schema_name.view_name``.
+
+3. Click **Save**.
+
+Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you cannot create the view for QLI due to access restrictions, you can use a custom QLI query to extract query history into Alation. The template for the QLI query is given below. You can customize the template by adding, removing, or changing the filter, but the columns and their aliases must remain as is since Alation expects this query structure.
+
+To use query-based QLI, ensure that the service account has the SELECT permission with GRANT OPTION for the system table ``system.runtime.queries``. See an example in `Permissions for Query Log Ingestion`_.
+
+QLI Query Template
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+When using the QLI query template, do not substitute the ``STARTTIME`` and ``ENDTIME`` parameters in the WHERE filter. These parameters are not actual column names and should stay as is. They are expected by the connector and will be substituted with the start and end date of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+    .. code-block:: SQL
+
+        SELECT
+          user AS userName,
+          query AS queryString,
+          source AS defaultDatabases,
+          False AS sessionId,
+          created AS sessionStartTime,
+          started AS startTime,
+          False AS cancelled,
+          date_diff('second',"started", "end") AS seconds,
+          query_id AS sequence
+        FROM system.runtime.queries
+        WHERE state ='FINISHED'
+          AND started BETWEEN timestamp STARTTIME AND timestamp ENDTIME;
+
+Configure Query-Based QLI in Alation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To configure query-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF Starburst Trino data source.
+
+2. Under **Connector Settings > Query Extraction**, specify the QLI query in the **Custom QLI Query** field.
+
+3. Click **Save**.
+
+Run QLI Manually
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To perform QLI manually on demand:
+
+1. On the **Query Log Ingestion** tab of the Settings page of your OCF data source, under **Automated and Manual Query Log Ingestion**, ensure that the **Enable Automated Query Log Ingestion** toggle is disabled.
+
+2. Specify the desired date range using the **Date Range** calendar widgets. The start and end dates are specified separately.
+
+3. Click the **Preview** button to preview the queries that will be ingested. This will run a preview job that will fetch a subset of the queries based on your QLI configuration. The result will be displayed as a table.
+
+4. Click the **Import** button to run QLI manually. This will run a query log ingestion job.
+
+View Job Status
+~~~~~~~~~~~~~~~~~~~~
+
+The status of preview or QLI jobs will be logged in the **Query Log Ingestion Job Status** table at the bottom of the page. In this table, click the status link or the **View Details** link for a job to view the details on the progress of this job.
+
+Schedule QLI
+~~~~~~~~~~~~~~~~~~~~~~
+
+To schedule QLI :
+
+1. On the **Query Log Ingestion** tab, under **Automated and Manual Query Log Ingestion**, enable the **Enable Automated Query Log Ingestion** toggle.
+
+2. In the **Automated Query Log Ingestion Time** panel that will appear, specify values for the job recurrence and time. The values are set in your local time.
+
+    .. note::
+
+        The hourly schedule for automated QLI is not supported.
+
+The next QLI will run on the schedule you set.
+
+Lineage
+---------------------
+
+Lineage information will be generated automatically during query log ingestion (QLI) and when users run Data Definition Language queries in Compose, such as CREATE VIEW or CREATE OR REPLACE VIEW.
+
+    .. note::
+
+	       View SQL is currently not extracted during metadata extraction.
+
+Troubleshooting
+----------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting`.

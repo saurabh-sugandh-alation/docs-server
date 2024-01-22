@@ -1,0 +1,335 @@
+Oracle OCF Connector Extraction Queries
+===============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The default extraction queries for Oracle OCF data sources are listed below. You can customize them to better suit your extraction requirements. Provide the custom queries on the **Metadata Extraction** tab of the Settings page of your data source.
+
+Before using the SQL custom queries, perform the following:
+
+    1. Identify the prefix. 
+
+    2. Execute the below queries using compose or any database tool to find which prefix is applicable for a given database
+ 
+        1. ``CDB_*`` : Select 1 from CDB_OBJECTS;
+
+        2. ``DBA_*`` : Select 1 from DBA_OBJECTS;
+
+        3. ``ALL_*`` : Select 1 from ALL_OBJECTS;
+
+        4. ``USER_*``: Select 1 from USER_OBJECTS;
+
+    Execute the queries in the same order as specified above. Whichever query is successfully executed first indicates the given database's prefix. For example, if your first query fails but the second one executes successfully, then the prefix for the database is ``DBA_*``. 
+
+    Once you know the prefix, you don't have to execute the remaining queries.
+
+
+SCHEMA
+--------
+
+Make sure that  your query has a column labelled as ``SCHEMA`` in the SELECT list.
+
+.. code-block:: sql
+
+    SELECT 
+        username AS SCHEMA 
+    FROM 
+        sys.CDB_users 
+    WHERE 
+        username  NOT IN ('''')  AND username NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN');
+
+TABLE
+------
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``TABLE_NAME``, ``TABLE_TYPE``, ``REMARKS`` in the SELECT list.
+
+.. code-block:: sql
+
+    SELECT 
+        SCHEMA, 
+        TABLE_NAME, 
+        TABLE_TYPE, 
+        REMARKS 
+    FROM 
+    (
+        SELECT 
+            O.OWNER AS SCHEMA, 
+            O.OBJECT_NAME AS TABLE_NAME, 
+            (
+                CASE WHEN MIN(O.OBJECT_TYPE) = 'MATERIALIZED VIEW' THEN AMC.COMMENTS ELSE ATC.COMMENTS END
+            ) AS REMARKS, 
+            MIN(O.OBJECT_TYPE) AS TABLE_TYPE 
+        FROM 
+            CDB_OBJECTS O 
+            LEFT OUTER JOIN CDB_TAB_COMMENTS ATC ON O.OBJECT_NAME = ATC.TABLE_NAME 
+            AND O.OBJECT_TYPE = ATC.TABLE_TYPE 
+            AND O.OWNER = ATC.OWNER 
+            LEFT OUTER JOIN CDB_MVIEW_COMMENTS AMC ON O.OBJECT_NAME = AMC.MVIEW_NAME 
+            AND O.OWNER = AMC.OWNER 
+        WHERE 
+            O.OBJECT_TYPE IN ('TABLE', 'MATERIALIZED VIEW') 
+            AND  
+            O.OWNER  NOT IN ('''')  AND O.OWNER NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN')
+            AND O.GENERATED = 'N' 
+        GROUP BY 
+            O.OWNER, 
+            O.OBJECT_NAME, 
+            ATC.COMMENTS, 
+            AMC.COMMENTS 
+            ) WHERE TABLE_TYPE = 'TABLE';
+    
+VIEW
+------
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``VIEW_NAME``, ``VIEW_CREATE_STATEMENT``, ``'VIEW' AS VIEW_TYPE``, ``REMARKS`` in the SELECT list.
+
+.. code-block:: sql
+
+    SELECT 
+        V.OWNER AS SCHEMA, 
+        V.VIEW_NAME AS VIEW_NAME, 
+        V.TEXT AS VIEW_CREATE_STATEMENT,  'VIEW' AS VIEW_TYPE, 
+        TC.COMMENTS AS REMARKS 
+    FROM 
+        DBA_VIEWS V 
+        LEFT JOIN DBA_TAB_COMMENTS TC ON V.VIEW_NAME = TC.TABLE_NAME 
+        AND V.OWNER = TC.OWNER 
+    WHERE 
+        V.OWNER  NOT IN ('''')  AND V.OWNER NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN')
+    UNION ALL SELECT 
+        MV.OWNER AS SCHEMA, 
+        MV.MVIEW_NAME AS VIEW_NAME, 
+        NULL AS VIEW_CREATE_STATEMENT, 
+        'MATERIALIZED VIEW' AS VIEW_TYPE, 
+        TC.COMMENTS AS REMARKS 
+    FROM 
+        DBA_mviews MV 
+        LEFT JOIN DBA_TAB_COMMENTS TC ON MV.MVIEW_NAME = TC.TABLE_NAME 
+        AND MV.OWNER = TC.OWNER WHERE 
+        MV.OWNER  NOT IN ('''')  AND MV.OWNER NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN');
+
+COLUMN
+--------
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, ``COLUMN_DEFAULT`` in the SELECT list.
+
+.. code-block:: sql
+
+    SELECT 
+        DISTINCT C.OWNER AS SCHEMA, 
+        C.TABLE_NAME AS TABLE_NAME, 
+        DECODE(C.DATA_TYPE,'VARCHAR2',LOWER(C.DATA_TYPE) || '(' || C.CHAR_LENGTH || ')',
+        'CHAR',LOWER(C.DATA_TYPE) || '(' || C.CHAR_LENGTH || ')',
+        'NCHAR',LOWER(C.DATA_TYPE) || '(' || C.CHAR_LENGTH || ')',
+        'NVARCHAR2',LOWER(C.DATA_TYPE) || '(' || C.CHAR_LENGTH || ')',
+        'RAW',LOWER(C.DATA_TYPE) || '(' || C.DATA_LENGTH || ')',
+        'UROWID',LOWER(C.DATA_TYPE) || '(' || C.DATA_LENGTH || ')',
+        'NUMBER',DECODE(C.data_precision, NULL, LOWER(C.DATA_TYPE), 0, C.DATA_TYPE, 
+        LOWER(C.DATA_TYPE) || '(' || C.data_precision || DECODE(C.data_scale, NULL, ')', 0, ')' , ', ' || C.data_scale || ')')),LOWER(C.DATA_TYPE)) AS TYPE_NAME, 
+        C.DATA_TYPE, 
+        C.COLUMN_NAME, 
+        C.COLUMN_ID AS ORDINAL_POSITION, 
+        C.NULLABLE AS IS_NULLABLE, 
+        CC.COMMENTS AS REMARKS, 
+        '' AS COLUMN_DEFAULT 
+    FROM 
+        CDB_TAB_COLUMNS C 
+        INNER JOIN CDB_OBJECTS O ON O.OBJECT_NAME = C.TABLE_NAME 
+        AND O.OWNER = C.OWNER 
+        LEFT JOIN CDB_COL_COMMENTS CC ON C.TABLE_NAME = CC.TABLE_NAME 
+        AND C.COLUMN_NAME = CC.COLUMN_NAME 
+        AND C.OWNER = CC.OWNER 
+    WHERE 
+        O.OBJECT_TYPE IN ('TABLE', 'MATERIALIZED VIEW', 'VIEW') 
+        AND 
+        C.OWNER  NOT IN ('''')  AND C.OWNER NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN')
+    UNION ALL SELECT 
+        DISTINCT S.OWNER AS SCHEMA, 
+        S.synonym_name AS TABLE_NAME, 
+        DECODE(C.DATA_TYPE,'VARCHAR2',LOWER(C.DATA_TYPE) || '(' || C.CHAR_LENGTH || ')',
+        'CHAR',LOWER(C.DATA_TYPE) || '(' || C.CHAR_LENGTH || ')',
+        'NCHAR',LOWER(C.DATA_TYPE) || '(' || C.CHAR_LENGTH || ')',
+        'NVARCHAR2',LOWER(C.DATA_TYPE) || '(' || C.CHAR_LENGTH || ')',
+        'RAW',LOWER(C.DATA_TYPE) || '(' || C.DATA_LENGTH || ')',
+        'UROWID',LOWER(C.DATA_TYPE) || '(' || C.DATA_LENGTH || ')',
+        'NUMBER',DECODE(C.data_precision, NULL, LOWER(C.DATA_TYPE), 0, C.DATA_TYPE, 
+        LOWER(C.DATA_TYPE) || '(' || C.data_precision || DECODE(C.data_scale, NULL, ')', 0, ')' , ', ' || C.data_scale || ')')),LOWER(C.DATA_TYPE)) AS TYPE_NAME, 
+        C.DATA_TYPE, 
+        C.COLUMN_NAME, 
+        C.COLUMN_ID AS ORDINAL_POSITION, 
+        C.NULLABLE AS IS_NULLABLE, 
+        CC.COMMENTS AS REMARKS, 
+        '' AS COLUMN_DEFAULT 
+    FROM 
+        CDB_TAB_COLUMNS C 
+        INNER JOIN CDB_SYNONYMS S ON S.TABLE_OWNER = C.OWNER AND c.table_name=s.table_name  LEFT JOIN CDB_COL_COMMENTS CC ON C.TABLE_NAME = CC.TABLE_NAME 
+        AND C.COLUMN_NAME = CC.COLUMN_NAME 
+        AND C.OWNER = CC.OWNER 
+    WHERE 
+        C.OWNER  NOT IN ('''')  AND C.OWNER NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN');
+
+PRIMARY KEY 
+-------------
+
+Make sure that your query has columns labelled as ``TABLE_NAME``, ``COLUMN_NAME``, ``OWNER`` in the SELECT list.
+
+.. code-block:: sql
+
+    SELECT 
+        A.TABLE_NAME, 
+        A.COLUMN_NAME, 
+        C.OWNER AS SCHEMA 
+    FROM 
+        CDB_CONS_COLUMNS A 
+        JOIN CDB_CONSTRAINTS C ON A.OWNER = C.OWNER 
+        AND A.CONSTRAINT_NAME = C.CONSTRAINT_NAME 
+        JOIN CDB_OBJECTS O ON A.TABLE_NAME = O.OBJECT_NAME 
+        AND C.OWNER = O.OWNER 
+    WHERE 
+        C.CONSTRAINT_TYPE = 'P' 
+        AND OBJECT_TYPE IN ('TABLE', 'MATERIALIZED VIEW') 
+        AND C.OWNER  NOT IN ('''')  AND C.OWNER NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN');
+
+
+FOREIGN KEY 
+-------------
+
+Make sure that your query has columns labelled as ``PK_CATALOG``, ``PK_SCHEMA``, ``PK_TABLE``, ``PK_COLUMN``, ``FK_CATALOG``, ``FK_SCHEMA``, ``FK_TABLE``, ``FK_COLUMN`` in the SELECT list.
+
+
+.. code-block:: sql
+
+    SELECT 
+        NULL AS PK_CATALOG, 
+        p.owner AS PK_SCHEMA, 
+        p.table_name AS PK_TABLE, 
+        pc.column_name AS PK_COLUMN, 
+        NULL AS FK_CATALOG, 
+        f.owner AS FK_SCHEMA, 
+        f.table_name AS FK_TABLE, 
+        fc.column_name AS FK_COLUMN 
+    FROM 
+        CDB_cons_columns pc, 
+        CDB_constraints p, 
+        CDB_cons_columns fc, 
+        CDB_constraints f 
+    WHERE 
+        f.constraint_type = 'R' 
+        AND p.owner = f.r_owner 
+        AND p.constraint_name = f.r_constraint_name 
+        AND p.constraint_type = 'P' 
+        AND pc.owner = p.owner 
+        AND pc.constraint_name = p.constraint_name 
+        AND pc.table_name = p.table_name 
+        AND fc.owner = f.owner 
+        AND fc.constraint_name = f.constraint_name 
+        AND fc.table_name = f.table_name 
+        AND fc.position = pc.position 
+        AND fc.owner  NOT IN ('''')  AND fc.owner NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN');
+
+INDEX 
+-------
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``TABLE_NAME``, ``COLUMN_NAME``, ``REMARKS`` in the SELECT list.
+
+.. code-block:: sql
+
+    SELECT 
+        I.OWNER AS SCHEMA, 
+        I.TABLE_NAME AS TABLE_NAME, 
+        C.COLUMN_NAME AS COLUMN_NAME 
+    FROM 
+        CDB_INDEXES I 
+        INNER JOIN CDB_OBJECTS O ON I.OWNER = O.OWNER 
+        AND I.TABLE_NAME = O.OBJECT_NAME 
+        INNER JOIN CDB_IND_COLUMNS C ON I.INDEX_NAME = C.INDEX_NAME 
+        AND I.OWNER = C.INDEX_OWNER 
+    WHERE 
+        OBJECT_TYPE IN ('TABLE', 'MATERIALIZED VIEW', 'VIEW') 
+        AND I.OWNER  NOT IN ('''')  AND I.owner NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN');
+
+FUNCTION
+----------------
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``FUNCTION_NAME``, ``REMARKS`` in the SELECT list.
+
+.. code-block:: sql
+
+    SELECT 
+        A.OWNER AS SCHEMA, 
+        A.OBJECT_NAME AS FUNCTION_NAME, 
+        NULL AS REMARKS, 
+        NULL AS FUNCTION_DEFINITION 
+    FROM 
+        CDB_ARGUMENTS A 
+            INNER JOIN CDB_OBJECTS O ON A.OBJECT_ID = O.OBJECT_ID 
+    WHERE 
+        A.OWNER  NOT IN ('''')  AND A.owner NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN')
+
+        AND TRIM(
+            UPPER(O.OBJECT_TYPE)
+        ) IN ('FUNCTION', 'PROCEDURE') 
+    GROUP BY 
+        A.OWNER, 
+        A.OBJECT_NAME;
+
+
+FUNCTION DEFINITION
+------------------------
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``FUNCTION_NAME``, ``ARG_NAME``, ``TYPE_NAME``, ``ARG_TYPE``, ``ARG_DEF`` in the SELECT list.
+
+.. code-block:: sql
+
+    SELECT 
+        A.OWNER AS SCHEMA, 
+        A.OBJECT_NAME AS FUNCTION_NAME, 
+        A.ARGUMENT_NAME AS ARG_NAME, 
+        A.DATA_TYPE AS TYPE_NAME, 
+        TRIM(A.IN_OUT) AS ARG_TYPE, 
+        A.POSITION AS POSITION,
+        NULL AS ARG_DEF 
+    FROM 
+        CDB_ARGUMENTS A 
+            INNER JOIN CDB_OBJECTS O ON A.OBJECT_ID = O.OBJECT_ID 
+    WHERE 
+        A.OWNER  NOT IN ('''')  AND A.owner NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN')
+
+        AND TRIM(
+            UPPER(O.OBJECT_TYPE)
+        ) IN ('FUNCTION', 'PROCEDURE');
+
+SYNONYM 
+---------
+
+Make sure that your query has columns labelled as ``SYNONYM_CATALOG``, ``SYNONYM_SCHEMA``, ``SYNONYM_NAME``, ``TABLE_CATALOG``, ``TABLE_SCHEMA``, ``TABLE_NAME``, ``REMARKS`` in the SELECT list.
+
+.. code-block:: sql
+
+    SELECT 
+        NULL AS SYNONYM_CATALOG, 
+        S.OWNER AS SYNONYM_SCHEMA, 
+        S.SYNONYM_NAME AS SYNONYM_NAME, 
+        NULL AS TABLE_CATALOG, 
+        NVL(S.TABLE_OWNER, S.OWNER) AS TABLE_SCHEMA, 
+        S.TABLE_NAME AS TABLE_NAME, 
+        NULL AS REMARKS 
+    FROM 
+        CDB_OBJECTS O 
+            INNER JOIN CDB_SYNONYMS S ON S.OWNER = O.OWNER 
+            AND S.SYNONYM_NAME = O.OBJECT_NAME 
+    WHERE 
+        S.OWNER  NOT IN ('''')  AND S.OWNER NOT IN  ( 'APEX_030200' , 'AUDSYS' , 'APPQOSSYS' , 'CTXSYS' , 'DVSYS' , 'LBACSYS' , 'MDSYS' , 'OJVMSYS' , 'EXFSYS' , 'OLAPSYS' , 'ORDSYS' , 'ORDPLUGINS' , 'SYS' , 'SYSBACKUP' , 'SYSDG' , 'SYSKM' , 'SYSTEM' , 'WMSYS' , 'XDB' , 'GSMADMIN_INTERNAL' , 'ORDDATA' , 'FLOWS_FILES' , 'DVF' , 'ORACLE_OCM' , 'OUTLN' , 'DBSNMP' , 'EXFSYS' , 'OE' , 'IX' , 'PM' , 'OWBSYS' , 'HR' , 'SH' , 'SYSMAN' , 'APEX_040200' , 'SYSTEM' , 'SYS' , 'OUTLN' , 'DIP' , 'ORACLE_OCM' , 'DBSNMP' , 'APPQOSSYS' , 'EXFSYS' , 'ANONYMOUS' , 'XDB' , 'XS$NULL' , 'ORDSYS' , 'ORDDATA' , 'ORDPLUGINS' , 'SI_INFORMTN_SCHEMA' , 'MDSYS' , 'MDDATA' , 'OLAPSYS' , 'CTXSYS' , 'INV' , 'CTXTEST' , 'APPS' , 'JG' , 'EC' , 'CE' , 'CS' , 'CRP' , 'ENG' , 'WIP' , 'MRP' , 'BOM' , 'MFG' , 'CN' , 'PA' , 'OSM' , 'OE' , 'AR' , 'AP' , 'PO' , 'QA' , 'OTA' , 'HR' , 'FA' , 'TRACESVR' , 'APPLSYS' , 'APPLSYSPUB' , 'AX' , 'AK' , 'GL' , 'RG' , 'BEN' , 'JL' , 'BIS' , 'CCT' , 'REPADMIN' , 'MSC' , 'FLM' , 'CZ' , 'AZ' , 'PJM' , 'HXT' , 'ICX' , 'XLA' , 'SSP' , 'WH' , 'JA' , 'XTR' , 'POM' , 'VEA' , 'RLM' , 'HXC' , 'PN' , 'CSDUMMY' , 'IEO' , 'OKC' , 'OKS' , 'CSC' , 'BIC' , 'CSD' , 'ASF' , 'CSF' , 'AMS' , 'AMV' , 'BIM' , 'XNP' , 'XDP' , 'GMA' , 'GMD' , 'GME' , 'GMF' , 'GMI' , 'GML' , 'GMP' , 'GR' , 'PMI' , 'JTF' , 'IES' , 'WMS' , 'AST' , 'IBY' , 'IBE' , 'IBU' , 'ENI' , 'HRI' , 'OPI' , 'MSO' , 'ONT' , 'QP' , 'WSH' , 'MSD' , 'WPS' , 'CUA' , 'IPA' , 'ASG' , 'JTR' , 'JTI' , 'IEX' , 'OKX' , 'ASO' , 'FRM' , 'MSR' , 'IEB' , 'CSR' , 'PSP' , 'GMS' , 'ECX' , 'OKE' , 'IEM' , 'IEU' , 'OZF' , 'CSP' , 'MWA' , 'FV' , 'IGC' , 'PSA' , 'PV' , 'ASL' , 'WSM' , 'IEC' , 'CUG' , 'CSL' , 'CSI' , 'ASP' , 'BNE' , 'POS' , 'ITG' , 'IGI' , 'FTE' , 'EAM' , 'CSE' , 'JTM' , 'IBC' , 'OKL' , 'PON' , 'QRM' , 'IMC' , 'AHL' , 'QOT' , 'CSM' , 'IA' , 'LNS' , 'FUN' , 'ASN' , 'XLE' , 'DOM' , 'EGO' , 'PJI' , 'ODM' , 'ZX' , 'XNB' , 'CLN' , 'EDR' , 'PRP' , 'DMS' , 'XDO' , 'AD_MONITOR' , 'EDGE' , 'MTR' , 'DNA' , 'DCM' , 'FPA' , 'IP' , 'JMF' , 'IPM' , 'IBW' , 'EM_MONITOR' , 'IZU' , 'RRS' , 'DPP' , 'MTH' , 'QPR' , 'DDR' , 'INL' , 'GMO' , 'RECON' , 'OWBSYS' , 'CSMIG' , 'APPS_NE' , 'GHG' , 'EUL_US' , 'SPATIAL_WFS_ADMIN_USR' , 'SPATIAL_CSW_ADMIN_USR' , 'MGDSYS' , 'YMS' , 'CMI' , 'RDSADMIN')
+
+        AND TRIM(ORACLE_MAINTAINED) <> 'Y' 
+        AND TRIM(GENERATED) = 'N' 
+        AND TRIM(SECONDARY) = 'N' 
+        AND TRIM(TEMPORARY) = 'N' 
+    GROUP BY 
+        S.SYNONYM_NAME, 
+        S.OWNER, 
+        S.TABLE_OWNER, 
+        S.TABLE_NAME;
+
+
+

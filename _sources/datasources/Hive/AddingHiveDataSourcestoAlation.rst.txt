@@ -1,0 +1,180 @@
+Add Hive Data Sources to Alation
+===================================
+
+Follow this checklist:
+
+#. Open the ports that apply: `Ports for Hive`_.
+#. Make sure you have done the preliminary configurations that apply to your Hive instance: `Pre-configurations`_.
+#. Make sure you have set up the Hive service account and granted the required permissions to this account: `Database Service Account`_.
+#. If using configuration-based Hive, make sure it is enabled on your instance: :doc:`Enabling Configuration-Based Hive </datasources/Hive/ConfigurationBasedHive>`.
+#. If using configuration-based Hive framework, follow the steps in: :doc:`Configuration-Based Hive <../../datasources/Hive/ConfigurationBasedHive>`.
+#. For default Hive, see :doc:`Default Hive <../../datasources/Hive/DefaultHive>`.
+
+Hive Built-In Driver Known Issue
+-----------------------------------
+
+.. important::
+
+    If you connect to Cloudera, the default JDBC driver for Hive will fail during configuration. The
+    JDBC driver cannot be changed until after the connection is established. To resolve this
+    issue, you will have to change the default driver to the following driver in the list of
+    drivers on the **Settings** page:
+
+    ``com.alation.drivers.hive.Hive2Driver.com.alation.drivers.hive.one.kerb_ssl_patched.1.1.1-kerberos-ssl-patched-1.1.1``
+
+.. _Adding_Hive_Data_Source-Ports_for_Hive:
+
+Ports for Hive
+--------------
+
+Section applies to both configuration-based and default Hive.
+
+#. Required Ports
+
+   Make sure you have opened the firewall ports that apply to your Hive configuration for Alation:
+
+   -  Port 10000 to Hive Server
+   -  Port 9083 to Hive Metastore server
+   -  Port 50070 or 9870 to WebHDFS server
+
+        - The default WebHDFS port depends on the Hadoop version and distribution. For Hadoop 2.x, the default WebHDFS port is **50070**. For Hadoop 3.x, in some of the distributions, the default WebHDFS port may be **9870**. For example, in the latest CDH distribution, the default WebHDFS port is **9870**.
+
+   -  Port 14000 to HttpFS server, if using HttpFS
+   -  Port 1006 on datanodes. WebHDFS requests are redirected to it.
+
+2. Ports for Kerberos
+
+   If using Kerberos authentication, open:
+
+   -  TCP/UDP port 88 to all Kerberos servers involved in the authentication chain.
+
+      .. important::
+
+         Using Kerberos authentication requires pre-configuration. If you have not done Kerberos preconfiguration yet, refer to the section :doc:`Configuring Kerberos for Data Source Authentication <../../datasources/DSConfiguration/ConfiguringKerberosforDataSourceAuthentication>`. Hive setup will fail if you select Kerberos in Hive settings, without completing this preconfiguration first.
+
+3. Ports for Apache Knox
+
+   If using Apache Knox, open:
+
+   -  Port 8443 for Knox connections.
+
+Pre-configurations
+------------------
+
+Section applies to both Configuration-Based and Default Hive.
+
+User Impersonation
+~~~~~~~~~~~~~~~~~~
+
+Before enabling user impersonation, have your Hadoop admin add
+the following properties to the Hadoop Cluster's core-site.xml file:
+
+-  ``hadoop.proxyuser.<service account username>.hosts=*``
+-  ``hadoop.proxyuser.<service account username>.groups=*``
+
+After this is done, if User Impersonation is required, it can be enabled
+for this data source on the **Settings** page.
+
+Kerberos
+~~~~~~~~
+
+Connection to Kerberized data sources in Alation requires
+pre-configuration. Make sure you have performed Kerberos
+configuration for your Alation instance before you add any Kerberized
+data sources to the catalog.
+
+Proxies
+~~~~~~~
+
+For Hive data sources, Alation supports authentication using several
+security applications. Some of them have configuration specifics, others
+do not.
+
+Knox
+^^^^^^^^^^^^^
+
+Knox is supported for Metadata Extraction (MDE) and Query Log Ingestion
+(QLI), replacing the Hive server URI with the Knox Server URI in the
+data source configuration.
+
+For the configuration-based Hive, MDE will not be proxied by Knox and
+will go through the Metastore.
+
+Apache Ranger
+^^^^^^^^^^^^^
+
+If using Ranger, make sure you fulfill the requirement for the
+service account. See `Using Apache Ranger`_.
+
+Apache Zookeeper
+^^^^^^^^^^^^^^^^
+(No specific requirements)
+
+Blue Talon
+^^^^^^^^^^^^^
+(No specific requirements)
+
+.. _Adding_Hive_Data_Source-Database-Service-Account:
+
+Database Service Account
+------------------------
+
+We recommend that you create a Hive service account for Alation before
+adding the Hive data source to the catalog. The Hive service account
+that Alation will use to connect requires several permissions for
+the automated Metadata Extraction (MDE), Data Profiling, and Query Log
+Ingestion (QLI) jobs to run successfully. See the tables below for
+specific grants required for each data job.
+
+Using Apache Ranger
+~~~~~~~~~~~~~~~~~~~
+
+If using Apache Ranger, ensure that the service account
+has SELECT permissions on all schemas and access to the Metastore.
+
+MDE
+~~~
+
++-----------------------------------------+----------------------------------+
+| Plain vanilla Hive environment          | No requirements                  |
+| without authentication                  |                                  |
++-----------------------------------------+----------------------------------+
+| Kerberized Hive instance                | -  SELECT privileges             |
+|                                         |                                  |
+|                                         | -  We recommend creating the     |
+|                                         |    service account in the same   |
+|                                         |    realm as the one used by Hive |
+|                                         |    users.                        |
++-----------------------------------------+----------------------------------+
+
+Data Profiling
+~~~~~~~~~~~~~~
+
++-----------------------------------------+-------------------------------------+
+| Plain vanilla Hive environment          | No requirements                     |
+| without authentication                  |                                     |
++-----------------------------------------+-------------------------------------+
+| Kerberized Hive instance                | -  SELECT privileges                |
+|                                         |                                     |
+|                                         | Depending on your Hive              |
+|                                         | authorization configuration         |
+|                                         | use one of the methods:             |
+|                                         |                                     |
+|                                         | -  Storage Based ACLs Service       |
+|                                         |    account needs READ access to     |
+|                                         |    all DB folders/files that need   |
+|                                         |    to be sampled.                   |
+|                                         |                                     |
+|                                         | -  SQL Based ACLs Grant SELECT      |
+|                                         |    on DBs and tables that need to   |
+|                                         |    be sampled to service account.   |
++-----------------------------------------+-------------------------------------+
+
+Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~
+
+We need the following for automated Hive QLI:
+
+-  Service account needs READ permission to Job History Logs directory on HDFS.
+-  If your configuration is Hive on HDP + Tez, give the service
+   account READ_EXECUTE permission for directory ``/ats/done`` on your HDP cluster.

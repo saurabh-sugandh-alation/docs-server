@@ -1,0 +1,220 @@
+Set Up SAML and SCIM Integration in PingFederate
+===================================================
+
+*Available from version 2021.3*
+
+Create a SAML Application Integration
+------------------------------------------
+
+Use this section to create and configure a SAML application integration in PingFederate for user authentication with SAML on the Alation server.
+
+To perform this configuration, you may need the assistance of your PingFederate admin.
+
+1. Log in to PingFederate as an admin and in the administrative console, go to **Applications > Integration > SP Connections**.
+
+2. Click **Create Connection**:
+
+    .. image:: ../../_static/PingFederate_01.png
+        :width: 600px
+
+3. On the **Connection Template** tab, click **Do not use a template for this connection**. Click on **Next**.
+
+4. On the **Connection Type** tab, select the **Browser SSO Profiles** check box.
+
+5. From the **Protocol** list, select **SAML 2.0**. Click on **Next**.
+
+6. On the **Connection Options** tab, leave the **Browser SSO** checkbox selected, and then click **Next**.
+
+7. On the **Import Metadata** tab, select **None**. Click **Next**.
+
+8. On the **General Info** tab, provide the information below and click **Next**:
+
+    - PARTNER'S ENTITY ID = ``http://alation.com/``
+    - CONNECTION NAME = ``name_of_the_sp_connection_app``
+
+9. On the **Browser SSO** tab, click **Configure Browser SSO**.
+
+10. On the **SAML Profiles** tab, select the **IdP-Initiated SSO** and **SP-Initiated SSO** checkboxes. Click **Next**.
+
+11. On the **Assertion Lifetime** tab, leave the default entries, and then click **Next**.
+
+12. On the **Assertion Creation** tab, click **Configure Assertion Creation**.
+
+13. On the **Identity Mapping** tab, click **Standard**. Click **Next**.
+
+14. On the **Attribute Contract** tab, add the following attributes in the following format:
+
+    .. image:: ../../_static/PingFederate_02.png
+        :width: 600px
+
+15. Click **Next**.
+
+16. On the **Authentication Source Mapping** tab, click **Map New Adapter Instance**.
+
+17. On the **Adapter Instance** tab, from the Adapter Instance list, select your previously configured HTML form adapter. Click **Next**.
+
+18. On the **Mapping Method** tab, leave the default selection and then click **Next**.
+
+19. On the **Attribute Contract Fulfillment** tab, configure the required SAML attributes. Use the table below as an example. Your configuration may be different depending on the Source.
+
+    +----------------------------------------+-------------------------+------------------------+
+    | Attribute Contract                     | Source                  | Value                  |
+    +========================================+=========================+========================+
+    | SAML_Subject                           | Adapter                 | uid                    |
+    +----------------------------------------+-------------------------+------------------------+
+    | ``urn:oid:0.9.2342.19200300.100.1.1``  | Adapter                 | uid                    |
+    +----------------------------------------+-------------------------+------------------------+
+    | ``urn:oid:0.9.2342.19200300.100.1.3``  | Adapter                 | mail                   |
+    +----------------------------------------+-------------------------+------------------------+
+    | ``urn:oid:2.5.4.4``                    | Adapter                 | sn                     |
+    +----------------------------------------+-------------------------+------------------------+
+    | ``urn:oid:2.5.4.42``                   | Adapter                 | cn                     |
+    +----------------------------------------+-------------------------+------------------------+
+
+
+    .. image:: ../../_static/PingFederate_03.png
+        :width: 600px
+
+20. On the **Issuance Criteria** tab, click **Next**.
+
+21. On the **Summary** tab, review your information, and then click **Done**.
+
+22. On the **Authentication Source Mapping** tab, click **Next**.
+
+23. On the **Summary** tab, review your information, and then click **Done**.
+
+24. On the **Assertion Creation** tab, click **Next**.
+
+25. On the **Protocol Settings** tab, click **Configure Protocol Settings**.
+
+26. On the **Assertion Consumer Service URL** tab, add the ACS URL: ``https://<BASE_URL>/saml2/acs/``:
+
+    .. image:: ../../_static/PingFederate_04.png
+        :width: 600px
+
+27. On the **Allowable SAML Bindings** tab, make sure that **POST** is selected. Click **Next**.
+
+28. On the **Signature Policy** tab, leave the defaults. Click **Next**.
+
+    .. image:: ../../_static/PingFederate_05.png
+        :width: 600px
+
+29. On the **Encryption Policy** tab, click **None**. Click **Next**.
+
+30. On the **Summary** tab, review your entries, and then click **Done**.
+
+31. On the **Protocol Settings** tab, click **Next**.
+
+32. On the **Summary** tab, review your information, and then click **Done**.
+
+33. On the **Browser SSO** tab, click **Next**.
+
+34. On the **Credentials** tab, click **Configure Credentials**.
+
+35. On the **Digital Signature Settings** tab, from the **Signing Certificate** list, select ``20:AD:3C:43 (C=AU, O=My Company Name LTD., CN=sa...)``
+
+    .. image:: ../../_static/PingFederate_06.png
+        :width: 600px
+
+36. On the **Summary** tab, review your entries, and then click **Done**.
+
+37. On the **Credentials** tab, click **Next**.
+
+38. On the **Activation & Summary** tab, click the toggle to enable the connection, and then scroll to the bottom and click **Save**.
+
+39. You will be redirected to the **Applications** home page with the newly created SP connection.
+
+40. For the SP connection created, click on the **Action** tab, select **Export Metadata**.
+
+41. On the **Metadata Signing** tab, select the signing certificate same as above and click **Next**.
+
+42. On the **Export and Summary** tab, click on the **Export** button on the bottom left side. You will get an XML file which is the required idp_metadata file for the Alation instance.
+
+    .. image:: ../../_static/PingFederate_07.png
+        :width: 600px
+
+
+
+Create a SCIM Integration
+--------------------------------
+
+Deploy SCIM Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before creating a SCIM Integration in PingFederate, add the SCIM connector to the server using the information in `Deploying the integration files <https://docs.pingidentity.com/bundle/integrations/page/dcn1563995073633-7.html>`_.
+
+Create a SCIM application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prerequisites
+^^^^^^^^^^^^^^^^^
+
+    - An AD server with groups and users
+    - A data store has been set up in PingFederate
+
+      - `Data stores <https://docs.pingidentity.com/bundle/pingfederate-92/page/adminGuide/dataStores.html>`_
+
+Creating the App
+^^^^^^^^^^^^^^^^^^^
+
+1. In the PingFederate administrative console, go to **Applications > Integration > SP Connections**.
+
+2. Click **Create Connection**.
+
+3. On the **Connection Template** tab, select **USE A TEMPLATE FOR THIS CONNECTION** and select **SCIM** from the dropdown. Click **Next**.
+
+    .. image:: ../../_static/PingFederate_08.png
+        :width: 600px
+
+4. On the **Connection Type** tab, do not change the default selection of **OUTBOUND PROVISIONING**. Click **Next**.
+
+5. On the **General Info** tab, enter the values for:
+
+    - PARTNER'S ENTITY ID (a text value)
+    - CONNECTION NAME (a text value)
+
+6. Click **Next**.
+
+7. On the **Outbound Provisioning** tab, click on **Configure Provisioning**.
+
+    .. image:: ../../_static/PingFederate_09.png
+        :width: 600px
+
+8. On the Target tab, enter the following details:
+
+      - **SCIM URL** = http://hostname/scim/v2
+      - **AUTHENTICATION METHOD** = Basic Authentication
+      - **USERNAME** = alation username
+      - **PASSWORD** = alation password
+      - **UNIQUE USER IDENTIFIER** = userName
+
+    .. image:: ../../_static/PingFederate_10.png
+        :width: 600px
+
+9. Click **Next**.
+10. On the **Manage Channels** tab, click on **Create Channel**.
+11. On the **Channel Info** tab, provide the channel name. Click **Next**.
+12. On the **Source** tab, select the **Active Data Store** as per your data source configuration.
+13. On the **Source Settings** tab, leave the default values. Refer to the screenshot below.
+
+    .. image:: ../../_static/PingFederate_11.png
+        :width: 600px
+
+14. On the **Source Location** tab, enter the value for:
+
+    - BASE DN
+    - GROUP DN
+
+    .. image:: ../../_static/PingFederate_12.png
+        :width: 600px
+
+15. On the **Attribute Mapping** tab, map the necessary AD attributes to field names.
+
+    .. image:: ../../_static/PingFederate_13.png
+        :width: 600px
+
+16. On the **Activation & Summary** tab, select **Channel Status** to be ACTIVE.
+17. Click on Done and **Next**.
+18. On the **Activation & Summary** tab, click on **Save**.
+19. Go to the directory server and create a user inside the group the DN of which is specified on the SCIM application.
+20. The added user should be created in Alation and visible in the **Licensed Users** list in **Admin Settings > Users**.

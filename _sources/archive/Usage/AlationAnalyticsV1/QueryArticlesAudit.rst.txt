@@ -1,0 +1,131 @@
+Articles Audit
+==============
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query provides a detailed report on every article and some of their operational properties.
+
+.. code-block:: sql
+
+      WITH article_info AS (
+        SELECT
+          AO.*,
+          FV_title.text_value AS title,
+          FV_agile_approval_enabled.boolean_value AS agile_approval_enabled,
+          FV_ts_created.datetime_value AS ts_created,
+          FV_post_id.integer_value AS post_id,
+          FV_private.boolean_value AS private,
+          FV_deleted.boolean_value AS deleted
+        FROM
+          public.alation_object AS AO -- Get title for the article
+          JOIN public.object_field_value AS OFV_title ON AO.object_uuid = OFV_title.object_uuid
+          AND AO.object_type_id = OFV_title.object_type_id -- Get field value
+          JOIN public.field_value AS FV_title ON OFV_title.value_fp = FV_title.value_fp
+          -- Match on field id
+          JOIN public.object_field AS OBF_title ON OFV_title.field_id = OBF_title.field_id
+          -- Get agile_approval_enabled for the article
+          JOIN public.object_field_value AS OFV_agile_approval_enabled ON AO.object_uuid = OFV_agile_approval_enabled.object_uuid
+          AND AO.object_type_id = OFV_agile_approval_enabled.object_type_id -- Get field value
+          JOIN public.field_value AS FV_agile_approval_enabled ON OFV_agile_approval_enabled.value_fp = FV_agile_approval_enabled.value_fp -- Match on field id
+          JOIN public.object_field AS OBF_agile_approval_enabled ON OFV_agile_approval_enabled.field_id = OBF_agile_approval_enabled.field_id -- Get ts_created for the article
+          JOIN public.object_field_value AS OFV_ts_created ON AO.object_uuid = OFV_ts_created.object_uuid
+          AND AO.object_type_id = OFV_ts_created.object_type_id -- Get field value
+          JOIN public.field_value AS FV_ts_created ON OFV_ts_created.value_fp = FV_ts_created.value_fp
+          -- Match on field id
+          JOIN public.object_field AS OBF_ts_created ON OFV_ts_created.field_id = OBF_ts_created.field_id
+          -- Get post_id for the article
+          JOIN public.object_field_value AS OFV_post_id ON AO.object_uuid = OFV_post_id.object_uuid
+          AND AO.object_type_id = OFV_post_id.object_type_id -- Get field value
+          JOIN public.field_value AS FV_post_id ON OFV_post_id.value_fp = FV_post_id.value_fp
+          - Match on field id
+          JOIN public.object_field AS OBF_post_id ON OFV_post_id.field_id = OBF_post_id.field_id
+          -- Get private for the article
+          JOIN public.object_field_value AS OFV_private ON AO.object_uuid = OFV_private.object_uuid
+          AND AO.object_type_id = OFV_private.object_type_id -- Get field value
+          JOIN public.field_value AS FV_private ON OFV_private.value_fp = FV_private.value_fp
+          -- Match on field id
+          JOIN public.object_field AS OBF_private ON OFV_private.field_id = OBF_private.field_id
+          -- Get deleted for the article
+          JOIN public.object_field_value AS OFV_deleted ON AO.object_uuid = OFV_deleted.object_uuid
+          AND AO.object_type_id = OFV_deleted.object_type_id -- Get field value
+          JOIN public.field_value AS FV_deleted ON OFV_deleted.value_fp = FV_deleted.value_fp
+          -- Match on field id
+          JOIN public.object_field AS OBF_deleted ON OFV_deleted.field_id = OBF_deleted.field_id
+        WHERE
+          AO.object_type_id = 0
+          AND -- get only field_id = 3, title
+          OBF_title.field_id = 3
+          AND -- get only field_id = 3380, agile_approval_enabled
+          OBF_agile_approval_enabled.field_id = 3380
+          AND -- get only field_id = 3355, ts_created
+          OBF_ts_created.field_id = 3355
+          AND -- get only field_id = 3249, post_id
+          OBF_post_id.field_id = 3249
+          AND -- get only field_id = 3255, private
+          OBF_private.field_id = 3255
+          AND -- get only field_id = 3083, deleted
+          OBF_deleted.field_id = 3083
+      ),
+      post_info AS (
+        SELECT
+          AO.object_uuid AS post_uuid,
+          FV_author_id.integer_value AS author_id,
+          AU.display_name AS author_display_name,
+          AU.email AS author_email,
+          FV_id.integer_value AS post_id,
+          FV_ts_created.datetime_value AS ts_created
+        FROM
+          public.alation_object AS AO -- Get author_id for the post
+          JOIN public.object_field_value AS OFV_author_id ON AO.object_uuid = OFV_author_id.object_uuid
+          AND AO.object_type_id = OFV_author_id.object_type_id -- Get field value
+          JOIN public.field_value AS FV_author_id ON OFV_author_id.value_fp = FV_author_id.value_fp
+          -- Match on field id
+          JOIN public.object_field AS OBF_author_id ON OFV_author_id.field_id = OBF_author_id.field_id
+          -- Get id for the post
+          JOIN public.object_field_value AS OFV_id ON AO.object_uuid = OFV_id.object_uuid
+          AND AO.object_type_id = OFV_id.object_type_id -- Get field value
+          JOIN public.field_value AS FV_id ON OFV_id.value_fp = FV_id.value_fp
+          -- Match on field id
+          JOIN public.object_field AS OBF_id ON OFV_id.field_id = OBF_id.field_id
+          -- Get ts_created for the post
+          JOIN public.object_field_value AS OFV_ts_created ON AO.object_uuid = OFV_ts_created.object_uuid
+          AND AO.object_type_id = OFV_ts_created.object_type_id
+          -- Get field value
+          JOIN public.field_value AS FV_ts_created ON OFV_ts_created.value_fp = FV_ts_created.value_fp
+          -- Match on field id
+          JOIN public.object_field AS OBF_ts_created ON OFV_ts_created.field_id = OBF_ts_created.field_id
+          -- Get post_type for the post
+          JOIN public.object_field_value AS OFV_post_type ON AO.object_uuid = OFV_post_type.object_uuid
+          AND AO.object_type_id = OFV_post_type.object_type_id
+          -- Get field value
+          JOIN public.field_value AS FV_post_type ON OFV_post_type.value_fp = FV_post_type.value_fp
+          -- Match on field id
+          JOIN public.object_field AS OBF_post_type ON OFV_post_type.field_id = OBF_post_type.field_id
+          JOIN public.alation_user AS AU ON FV_author_id.integer_value = AU.user_id
+        WHERE
+          AO.object_type_id = 15
+          AND -- get only field_id = 3014, author_id
+          OBF_author_id.field_id = 3014
+          AND -- get only field_id = 3147, id
+          OBF_id.field_id = 3147
+          AND -- get only field_id = 3355, ts_created
+          OBF_ts_created.field_id = 3355
+          AND -- get only field_id = 3250, post_type
+          OBF_post_type.field_id = 3250
+          AND -- get only the posts of type article
+          FV_post_type.value_fp = 2703180129937755557
+      )
+      SELECT
+        AI.object_url AS article_url,
+        AI.title,
+        AI.agile_approval_enabled,
+        AI.private,
+        AI.deleted,
+        PI.author_display_name,
+        PI.author_email,
+        PI.ts_created
+      FROM
+        article_info AS AI
+        JOIN post_info AS PI ON AI.post_id = PI.post_id;

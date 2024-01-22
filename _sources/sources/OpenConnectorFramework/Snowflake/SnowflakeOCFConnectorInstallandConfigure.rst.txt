@@ -1,0 +1,996 @@
+Snowflake OCF Connector: Install and Configure
+=====================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Firewall Configuration
+----------------------------
+
+Open the inbound TCP port **443** to the Snowflake server.
+
+Driver
+-----------------------------
+
+The driver is included in the connector package and does not need to be installed separately from the connector. The driver information is available at the top of the **Compose** tab in your data source settings. You can view it after :ref:`creating the data source <Create-source>` when settings become available.
+
+Authentication
+-----------------------------
+
+For metadata extraction (MDE), profiling and sampling, and query log ingestion (QLI), the connector supports:
+
+    - Basic authentication (username and password)
+    - Key pair authentication
+
+Both types of authentication require a :ref:`service account <Create-account>`.
+
+In Compose, users can authenticate with:
+
+    - Basic authentication (username and password)
+
+    - OAuth 2.0 authentication flow.
+
+You can find more information about Compose authentication in :doc:`/analyst/UserAuthenticationForDataSources/index`.
+
+Workflow
+-----------------------------
+
+To install and configure the Snowflake OCF connector, use this workflow:
+
+    - `Create a Service Account`_
+    - If you chose to authenticate with a key pair, `Configure Key Pair Authentication`_
+    - Collect the information for the `JDBC URI`_
+    - `STEP 1: Install the Connector`_
+    - `STEP 2: Create and Configure a New Snowflake Data Source`_
+    - `Access`_
+    - `General Settings`_
+    - `Metadata Extraction`_
+    - `Data Sampling`_
+    - `Query Log Ingestion`_
+    - `Lineage`_
+
+
+.. _Create-account:
+
+Create a Service Account
+-----------------------------
+
+Under your Snowflake account, set up a user account for Alation.  Alation uses the service account for metadata extraction (MDE), profiling and sampling, and query log ingestion (QLI). It must be assigned a role that has enough privileges for these extraction jobs.
+
+Security and account administrators for Snowflake (users with the SECURITYADMIN or ACCOUNTADMIN roles) can create users.
+
+    .. note::
+
+        It is also possible to use an existing account.
+
+Snowflake connection information requires a warehouse and a role. Snowflake users may have multiple roles which give them different access rights. As a best practice, we recommend setting a default role and a default warehouse for the service account user. The information on creating an account and required permissions is given below:
+
+    - `Create Role for Alation Service Account`_
+    - `Create Alation Service Account User`_
+    - `Set Default Warehouse`_
+    - `Grant Permissions for Metadata Extraction`_
+    - `Grant Permissions for Profiling`_
+    - `Grant Permissions for Query Log Ingestion`_
+
+Create Role for Alation Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    USE ROLE ACCOUNTADMIN;
+    CREATE ROLE <alation_role>;
+
+
+Create Alation Service Account User
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    USE ROLE ACCOUNTADMIN;
+    CREATE USER <alation_user> PASSWORD='*****' DEFAULT_ROLE = <alation_role> MUST_CHANGE_PASSWORD = TRUE;
+    GRANT ROLE <alation_role> TO USER <alation_user>;
+    ALTER USER <alation_user> SET ROWS_PER_RESULTSET=0
+
+.. note::
+
+    We recommend setting the ``ROWS_PER_RESULTSET`` parameter to ``0`` on the service account level to allow the connector to fetch all accessible metadata. This setting is relevant if a strict limit is set on the account level or if you're not sure if such a limit exists on the account. With a strict limit applied via the ``ROWS_PER_RESULTSET`` parameter, the connector may skip metadata during extraction, resulting in an incomplete extraction result.
+
+Set Default Warehouse
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    USE ROLE ACCOUNTADMIN;
+    ALTER USER <alation_user> SET DEFAULT_WAREHOUSE=<warehouse_name>;
+
+Grant Permissions for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Grant Access to Warehouse
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Grant access to the warehouse from which you want to extract. Access to the warehouse is required even if it is the default warehouse of the service account.
+
+    .. code-block:: sql
+
+        USE ROLE ACCOUNTADMIN;
+        GRANT USAGE ON WAREHOUSE <warehouse_name> TO ROLE <alation_role>;
+
+.. _Access-account-usage:
+
+2. Grant Access to ACCOUNT_USAGE
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can either grant access to all views in the ACCOUNT_USAGE schema or, if full access is not allowed, grant limited access using Snowflake database roles. Access to the ACCOUNT_USAGE schema enables metadata extraction (MDE) and query log ingestion (QLI).
+
+Full Access to ACCOUNT_USAGE
+''''''''''''''''''''''''''''''''
+
+Grant access to all views in the  ACCOUNT_USAGE schema:
+
+    .. code-block:: sql
+
+        USE ROLE ACCOUNTADMIN;
+        GRANT IMPORTED PRIVILEGES ON DATABASE "SNOWFLAKE" to <alation_role>;
+
+Limited Access to ACCOUNT_USAGE
+'''''''''''''''''''''''''''''''''''
+
+If you can only provide limited access to the ACCOUNT_USAGE schema, then grant the service account the `SNOWFLAKE database roles <https://docs.snowflake.com/en/sql-reference/snowflake-db-roles#account-usage-views-by-database-role>`_ of OBJECT_VIEWER and GOVERNANCE_VIEWER:
+
+    .. code-block:: sql
+
+        USE ROLE ACCOUNTADMIN;
+        USE SNOWFLAKE;
+        GRANT DATABASE ROLE OBJECT_VIEWER TO ROLE <alation_role>;
+        GRANT DATABASE ROLE GOVERNANCE_VIEWER TO ROLE <alation_role>;
+
+    .. note::
+
+        The database roles of OBJECT_VIEWER and GOVERNANCE_VIEWER grant access to these ACCOUNT_USAGE views:
+
+          MDE:
+            - **OBJECT_VIEWER**
+
+              - SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+              - SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+              - SNOWFLAKE.ACCOUNT_USAGE.TABLES
+              - SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
+              - SNOWFLAKE.ACCOUNT_USAGE.VIEWS
+              - SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+
+            - **GOVERNANCE_VIEWER**
+
+              - SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES
+              - SNOWFLAKE.ACCOUNT_USAGE.ROW_ACCESS_POLICIES
+              - SNOWFLAKE.ACCOUNT_USAGE.MASKING_POLICIES
+              - SNOWFLAKE.ACCOUNT_USAGE.TAGS
+              - SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+
+          QLI:
+            - **GOVERNANCE_VIEWER**
+
+              - SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+
+
+3. Grant Access to Databases, Schemas, and Tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Grant the service account access to the database(s), schema(s), and table(s) that you want to be cataloged in Alation after metadata extraction:
+
+Grant USAGE on Specific Database(s)
+''''''''''''''''''''''''''''''''''''''
+
+.. code-block:: sql
+
+    GRANT USAGE ON DATABASE <database> TO <alation_role>;
+
+Grant USAGE on Specific Schema(s)
+''''''''''''''''''''''''''''''''''''''
+
+    - Grants limited by database
+
+        .. code-block:: sql
+
+            GRANT USAGE ON ALL SCHEMAS IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Grants limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT USAGE ON SCHEMA <database.schema> TO ROLE <alation_role>;
+
+    - Optional: grant access to future schemas in database
+
+        .. code-block:: sql
+
+            GRANT USAGE ON FUTURE SCHEMAS IN DATABASE <database> TO ROLE <alation_role>;
+
+Grant REFERENCES on Specific Table(s)
+''''''''''''''''''''''''''''''''''''''
+
+    - Grants limited by database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL TABLES IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Grants limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL TABLES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+    - Optional: grant access to future tables in database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON FUTURE TABLES IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Optional: grant access to future tables in a specific schema
+
+        .. code-block:: sql
+
+            GRANT SELECT ON FUTURE TABLES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+Grant REFERENCES on Specific View(s)
+''''''''''''''''''''''''''''''''''''''
+
+    - Grants limited by database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL VIEWS IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Grants limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL VIEWS IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+    - Optional: grant access to future views in database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON FUTURE VIEWS IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Optional: grant access to future views in a specific schema
+
+        .. code-block:: sql
+
+            GRANT SELECT ON FUTURE VIEWS IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+Grant Access to External Tables
+''''''''''''''''''''''''''''''''''''''
+
+Alation supports extraction of external tables on Amazon S3 and Azure Storage.
+
+    .. note::
+
+        Granting USAGE on databases and schemas is a prerequisite to extracting external tables.
+
+    - Grant access to external tables, limited by database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL EXTERNAL TABLES in DATABASE <database> TO ROLE <alation_role>;
+
+    - Grant access to external tables, limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON ALL EXTERNAL TABLES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+    - Grant USAGE on stages used in external tables, limited by database
+
+        .. code-block:: sql
+
+            GRANT USAGE ON ALL STAGES IN DATABASE <database> TO ROLE <alation_role>;
+
+    - Grant USAGE on stages used in external tables, limited by a named schema
+
+        .. code-block:: sql
+
+            GRANT USAGE ON ALL STAGES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+        .. note::
+
+            An external table can be created from a stage belonging to a different database. Make sure you provide access to all required stages of all required databases.
+
+    - *Optional*: grant access to future external tables in a database
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON FUTURE EXTERNAL TABLES in DATABASE <database> TO ROLE <alation_role>;
+
+    - *Optional*: grants access to future external tables in a schema
+
+        .. code-block:: sql
+
+            GRANT REFERENCES ON FUTURE EXTERNAL TABLES IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+4. Policy and Tag Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Permissions for Policy and Tag Extraction
+''''''''''''''''''''''''''''''''''''''''''''
+
+Permissions :ref:`you have granted on the ACCOUNT_USAGE views <Access-account-usage>` are enough for policy and tag extraction.
+
+Permissions for Policy and Tag Synchronization
+'''''''''''''''''''''''''''''''''''''''''''''''''
+
+  - Grant access for policy synchronization
+
+      .. code-block:: sql
+
+          GRANT APPLY MASKING POLICY ON ACCOUNT TO <alation_role>;
+
+
+  - Grant access for tag synchronization
+
+      .. code-block:: sql
+
+          GRANT APPLY TAG ON ACCOUNT TO <alation_role>;
+
+Enable Policy Extraction
+''''''''''''''''''''''''''''''''''''''''''''
+
+Policy extraction requires additional configuration on the Alation server. You can enable it using **alation_conf**.
+
+.. tabs::
+
+    .. tab:: Customer-Managed Instances
+
+        On customer-managed (on-premise) Alation instances, enable data policy extraction by setting these **alation_conf** flags to ``True``:
+
+            - ``alation.ocf.mde.policy.enable_extraction``
+            - ``alation.ocf.mde.policy.enable_ingestion``
+            - ``alation.ocf.mde.policy.enable_search``
+
+        After changing the parameters, restart Alation Supervisor with the command ``alation_supervisor restart all``.
+
+        On how to use **alation_conf**, see :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.
+
+    .. tab:: Alation Cloud Service
+
+        On Alation Cloud Service instances, Alation Support will adjust the **alation_conf** flag values to activate specific features. Submit a Support ticket to Alation to make these changes to your instance.
+
+For more on working with policies extracted into the catalog, see :doc:`/steward/PolicyCenter/index`.
+
+.. note::
+
+    Only policies attached to tables, columns, and views are extracted and shown in Alation. Policies linked to tags are not extracted. On connector versions before 1.1.5, metadata extraction exits with an error when it encounters a policy linked to a tag during ingestion. Connector versions 1.1.5 or newer will skip policies linked to tags and successfully extract policies attached to tables, columns, and views.
+
+Enable Tag Extraction
+''''''''''''''''''''''''''''''
+
+Tag extraction requires additional configuration on the Alation server. You can enable it using **alation_conf**.
+
+.. tabs::
+
+    .. tab:: Customer-Managed Instances
+
+        On customer-managed (on-premise) Alation instances, enable Snowflake tag extraction by setting these **alation_conf** flags to ``True``:
+
+            - ``alation.feature_flags.enable_snowflake_tags``
+            - ``alation.ocf.mde.custom_field.enable_extraction``
+            - ``alation.ocf.mde.custom_field.enable_ingestion``
+
+        After changing the parameters, restart Alation Supervisor with the command ``alation_supervisor restart all``.
+
+        On how to use **alation_conf**, see :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.
+
+    .. tab:: Alation Cloud Service
+
+        On Alation Cloud Service instances, Alation Support will adjust the **alation_conf** flag values to activate specific features. Submit a Support ticket to Alation to make these changes to your instance.
+
+By default, Alation will extract:
+
+    - All tags if the database name is not specified in the JDBC URI.
+
+    - All the tags which have references in the database if the database name is specified in the JDBC URI.
+
+For more on the format of the Snowflake JDBC URI, refer to `JDBC URI`_.
+
+If you want to extract more specific tags, use a custom query for tag extraction. See `Customizing MDE`_ below.
+
+For information about working with Snowflake tags in Alation, refer to :doc:`/steward/SnowflakeTags/index`.
+
+5. Function Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  - Grants limited by database
+
+      .. code-block:: sql
+
+          GRANT USAGE ON ALL FUNCTIONS IN DATABASE <database> TO ROLE <alation_role>;
+
+  - Grants limited by a schema
+
+      .. code-block:: sql
+
+          GRANT USAGE ON ALL FUNCTIONS IN SCHEMA <database.schema> TO ROLE <alation_role>;
+
+
+Grant Permissions for Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Profiling requires SELECT permissions for the tables you are going to profile:
+
+    .. code-block:: sql
+
+        GRANT SELECT ON schema_name.table_name TO <alation_role>;
+
+Grant Permissions for Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation supports query log ingestion (QLI) based on the ACCOUNT_USAGE.QUERY_HISTORY view of the SNOWFLAKE database.
+
+QLI can either use a dedicated view (table-based QLI) or a query (default or query-based QLI).
+
+    - For **table-based QLI**, you'll need to create a view on top of the SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY view and grant the Alation service account these permissions:
+
+          - USAGE on the database and schema where the view is created.
+          - SELECT on the created view.
+
+    - For **default** and **query-based QLI**, the permissions on the ACCOUNT_USAGE.QUERY_HISTORY view that you've granted the service account are enough.
+
+See `Query Log Ingestion`_ for more information on the types of QLI, including the information on how to create a QLI view for table-based QLI.
+
+Configure Key Pair Authentication
+--------------------------------------
+
+Alation supports the key pair authentication method for metadata extraction, profiling and sampling, and query log ingestion.
+
+.. note::
+
+    - Key pair authentication for individual user account connections from Compose is currently not supported.
+    - Key pair authentication for Snowflake OAuth in Compose is currently not supported. Snowflake OAuth uses authentication based on a client ID and secret.
+
+Prerequisite
+~~~~~~~~~~~~~~~
+
+You have created a service account and granted it the required permissions.
+
+Configuration in Snowflake
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To provide a key pair:
+
+1. Generate a private key and a public key. Refer to `Key Pair Authentication & Key Pair Rotation <https://docs.snowflake.com/en/user-guide/key-pair-auth>`_ in Snowflake documentation for details. Optionally, you can generate a private key with a passphrase.
+
+2. Assign the public key to the service account you created for Alation.
+
+3. Store the private key and its passphrase securely on your local machine. They will need to be entered  in Alation when configuring key pair authentication in the settings of your Snowflake data source.
+
+JDBC URI
+-------------------
+
+URI Format
+~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    snowflake://<hostname>:<port>/?warehouse=<warehouse_name>&db=<db_name>&role=<role_name>
+
+Example
+~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    snowflake://my_account.us-east-1.snowflakecomputing.com:443/?warehouse=TEST&db=TEST_DB&role=alation-role
+
+URI Parameters
+~~~~~~~~~~~~~~~~~
+
+When building the URI, include the following components:
+
+Hostname
+^^^^^^^^^^^^
+
+Mandatory.
+
+    - For instances on AWS: ``<account_name>.<region_id>.snowflakecomputing.com``
+
+      **Example:**
+
+      ``my_account.us-east-1.snowflakecomputing.com``
+
+    - For instances on Azure: ``<account_name>.<region_id>.azure.snowflakecomputing.com``
+
+      **Example:**
+
+      ``lj17605.east-us-2.azure.snowflakecomputing.com``
+
+    - For instances on Google Cloud: ``<account_name>.<region_id>.gcp.snowflakecomputing.com``
+
+      **Example:**
+
+      ``mj27441.europe-west2.gcp.snowflakecomputing.com``
+
+Port
+^^^^^^^^^^^^
+
+Mandatory.
+
+Specify port number **443**.
+
+Warehouse Name
+^^^^^^^^^^^^^^^^^^^^
+
+``warehouse``
+
+The currently active warehouse in your account for which the service account has access privileges.
+
+Optional if a default warehouse has been assigned to the role of the service account. If not, mandatory.
+
+Role
+^^^^^^^^^^^^^^^^^^^^^
+
+``role``
+
+Optional.
+
+Provide the role of the service account user.
+
+Database Name
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+``db``
+
+Optional but recommended.
+
+If you don't include this parameter, Alation will extract metadata from all databases that the service account can access. The same applies to policies. If you are going to extract policies, this parameter is recommended as it limits policy extraction to a specific database.
+
+When users run DDL queries in Compose, Alation can incrementally ingest the corresponding metadata into the catalog. Both the service account connection JDBC URI and the Compose connection URI must include the database name (``db``) parameter to enable Alation to ingest metadata from objects created through Compose.
+
+  .. important::
+
+      The value of the parameter ``db`` is case sensitive, as Snowflake supports case sensitive database names. Ensure that you use the right case when adding this parameter.
+
+      For example, you can have a database with the name test and a database with the name TEST in Snowflake.
+
+        - For the database with the name in the lower case, the URI will look like this: ``snowflake://alation_partner.us-east-1.snowflakecomputing.com:443/?warehouse=compute_wh&db=test``.
+
+        - For the database with the name in the upper case, the URI will look like this: ``snowflake://alation_partner.us-east-1.snowflakecomputing.com:443/?warehouse=compute_wh&db=TEST``.
+
+      To determine the correct casing of the database name, you can use this query:
+
+      .. code-block:: sql
+
+          SELECT DATABASE_NAME AS CATALOG
+          FROM SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+          WHERE DELETED IS NULL
+          ORDER BY DATABASE_NAME;
+
+
+Installation and Configuration
+-----------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+.. _Create-source:
+
+STEP 2: Create and Configure a New Snowflake Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **Snowflake OCF connector**.
+
+Access
+----------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+-----------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Populate the data source connection information and save the values by clicking **Save** in each section you fill out.
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+      .. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Description**                                               |
+      +============================+===============================================================+
+      | JDBC URI                   | Specify the `JDBC URI`_.                                      |
+      +----------------------------+---------------------------------------------------------------+
+      | Username                   | Provide the service account username.                         |
+      +----------------------------+---------------------------------------------------------------+
+      | Password                   | Provide the service account password.                         |
+      +----------------------------+---------------------------------------------------------------+
+
+Snowflake Key Pair Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+      .. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Description**                                               |
+      +============================+===============================================================+
+      | Enable Snowflake Key Pair  | Select this checkbox to enable the key pair authentication.   |
+      | Auth                       |                                                               |
+      +----------------------------+---------------------------------------------------------------+
+      | Username                   | Provide the username of the service account that has the      |
+      |                            | public key assigned to it.                                    |
+      |                            |                                                               |
+      +----------------------------+---------------------------------------------------------------+
+      | Upload Private Key File    | Click the **Upload** button to upload the private key file.   |
+      +----------------------------+---------------------------------------------------------------+
+      | Private Key Passphrase     | Provide the passphrase of the private key if you created it.  |
+      +----------------------------+---------------------------------------------------------------+
+
+Logging Information
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Select a logging level for the connector logs and save the values by clicking **Save** in this section. The available log levels are based on the Log4j framework.
+
+You can view the connector logs in **Admin Settings** > **Server Admin** > **Manage Connectors** > **Snowflake OCF connector**.
+
+Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~
+
+Enable this toggle to hide the literal values from queries on the **Queries** tab on schema and table catalog pages. Disabled by default.
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+After specifying the connector settings, under **Test Connection**, click **Test** to validate network connectivity.
+
+Troubleshoot Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You may see the errors below while connecting to Snowflake using key pair authentication. The errors are specific to OpenSSL version 1.1.1g on Windows or Ubuntu.
+
+Error messages:
+
+    - *Private key provided is invalid or not supported: rsa_key.p8: ObjectIdentifier() -- data isn't an object ID (tag = 48) null*
+
+    - *Exception in thread "main" java.security.NoSuchAlgorithmException: 1.2.840.113549.1.5.13 SecretKeyFactory not availableWhen run from JDBC application.*
+
+To resolve this issue, use the following command to generate the private key:
+
+    .. code-block:: bash
+
+        openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -v1 PBE-SHA1-RC4-128 -out rsa_key.p8
+
+
+Add-On OCF Connector for dbt
+------------------------------------
+
+.. include:: ../../../shared/OCF/OCF_AddonDBTConnector.rst
+
+.. _ocf-snow-mde:
+
+Metadata Extraction
+---------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+If the database name is included into the `JDBC URI`_, then metadata will be extracted only from that database. If the database name is not included in the JDBC URI, then all metadata that the service account has access to will be extracted, which may increase extraction time.
+
+There is 45 minutes to 3 hour latency time to update tables, columns, views, primary keys, foreign keys, functions, and procedures in ACCOUNT_USAGE views. The new items created in databases can be extracted into the catalog after this latency time. Refer to `Account Usage — Snowflake Documentation <https://docs.snowflake.com/en/sql-reference/account-usage.html#account-usage-views>`_ for information about the latency time for each item.
+
+Customizing MDE
+~~~~~~~~~~~~~~~~~~~~~~
+
+You can perform metadata extraction (MDE) based on default queries or configure it to use custom queries.
+
+    .. note::
+
+        From Snowflake OCF connector version **1.2.0.5882**, you can customize tag extraction:
+
+            - :ref:`Query examples for tag extraction <tags-and-links-new>`—Connector versions 2.0.0 or newer.
+
+            - :ref:`Query examples for tag extraction <snow-tag-queries>`—Connector versions before 2.0.0.
+
+Compose
+-----------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+On how to configure OAuth authentication for Compose, refer to :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOAuth/index`.
+
+Incremental Ingestion of Compose Queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When users run DDL queries in Compose, Alation incrementally ingests the corresponding metadata into the catalog. There are some requirements for the JDBC URI and the use of object names that ensure that Alation can incrementally ingest queries from Compose:
+
+    1. Both the service account connection JDBC URI and the Compose connection URI must include the database name parameter (``db``).
+
+    2. To ensure that tables and views created via Compose are ingested into the catalog, use fully qualified table names, for example:
+
+        - Creating a table:
+
+          .. code-block:: Bash
+
+              CREATE TABLE <DATABASE>.<SCHEMA>.<TABLE> ({column properties});
+
+        - Creating a view:
+
+          .. code-block:: Bash
+
+              USE <DATABASE>;
+              CREATE VIEW <SCHEMA>.<VIEW> AS {view condition};
+
+
+Data Sampling
+-------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+.. note::
+
+      From Snowflake OCF connector version 1.0.1, dynamic sampling and profiling uses the Compose URI. This applies for both basic and OAuth authentication methods.
+
+Query Log Ingestion
+-------------------------
+
+You configure query log ingestion (QLI) on the **Query Log Ingestion** tab of the Settings page.
+The OCF Snowflake connector supports three configurations for QLI:
+
+    - `Default QLI`_
+    - `Table-Based QLI`_
+    - `Custom Query-Based QLI`_
+
+Default QLI
+~~~~~~~~~~~~~~~
+
+The default QLI feature is available from Snowflake OCF connector **version 1.2.1**. Default QLI does not require specifying a QLI view name or a QLI query. Just specify a date range for QLI and run or schedule the QLI job. Alation will run a default QLI query to retrieve query history.
+
+For default QLI to succeed, ensure that the service account has enough permissions to select from the system view. See `Grant Permissions for Query Log Ingestion`_ for details.
+
+On how to run or schedule QLI, see `Perform QLI`_.
+
+Default QLI Query
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. note::
+
+        In the query below, the placeholder parameters ``STARTTIME`` and ``ENDTIME`` will be substituted by Alation with the start and end dates of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+
+
+.. code-block:: SQL
+
+    SELECT
+        user_name AS "userName",
+        CASE
+          WHEN SCHEMA_NAME IS NULL
+            THEN DATABASE_NAME || '.' || ''
+          ELSE DATABASE_NAME || '.' || SCHEMA_NAME
+        END AS "defaultDatabases",
+        TRIM(QUERY_TEXT) AS "queryString",
+        TRIM(SESSION_ID) AS "sessionID",
+        ROUND(TOTAL_ELAPSED_TIME / 1000, 0) AS "seconds",
+        FALSE AS "cancelled",
+        TO_CHAR(start_time, 'YYYY-MM-DD HH:MI:SS.US') AS "startTime",
+        TO_CHAR(start_time, 'YYYY-MM-DD HH:MI:SS.US') AS "sessionStartTime"
+    FROM
+      SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+    WHERE
+      START_TIME BETWEEN STARTTIME AND ENDTIME
+        AND execution_status = 'SUCCESS' ;
+
+
+Table-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~
+
+Prerequisite
+^^^^^^^^^^^^^^^^^^
+
+In Snowflake, create a view on top of the SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY view. Create it in any suitable schema. You can give the view any name of your choice. After creating the view, grant the Alation service account the SELECT access to this view (see `Grant Permissions for Query Log Ingestion`_).
+
+.. code-block:: SQL
+
+      CREATE VIEW alation_QLI_view AS
+      SELECT
+           user_name as "userName",
+           CASE
+              WHEN SCHEMA_NAME IS NULL
+                THEN DATABASE_NAME ||'.'|| ''
+           ELSE DATABASE_NAME ||'.'|| SCHEMA_NAME
+           END AS "defaultDatabases",
+           TRIM(QUERY_TEXT) AS "queryString",
+           TRIM(SESSION_ID) AS "sessionID",
+           ROUND(TOTAL_ELAPSED_TIME/1000,0) AS "seconds",
+           false AS "cancelled",
+           TO_CHAR(start_time,'YYYY-MM-DD HH:MI:SS.US') AS "startTime",
+           TO_CHAR(start_time,'YYYY-MM-DD HH:MI:SS.US') AS "sessionStartTime"
+      FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+      WHERE execution_status = 'SUCCESS';
+
+
+Configure Table-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To configure table-based QLI:
+
+1. Open the **Query Log Ingestion** tab of the Settings page of your OCF Snowflake data source.
+
+2. Under **Connector Settings > Query Extraction**, in the **Table Name** field, specify the name of the QLI view.
+
+    .. important::
+
+        Use the format ``schema_name.view_name``.
+
+3. Click **Save**.
+
+Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you cannot create the view for QLI, for example, due to access restrictions, you can use a custom QLI query to extract query history into Alation. If you opt for custom query-based QLI, Alation will query the system view storing query history directly every time you manually run QLI or when the QLI job runs on schedule.
+
+For custom query-based QLI to succeed, ensure that the service account has enough permissions to select from the system view. See `Grant Permissions for Query Log Ingestion`_ for details.
+
+Find an example of a custom query for QLI below. You can customize it by adding, removing, or changing the filter, but the columns and their aliases must remain as is since the connector expects this query structure.
+
+    .. note::
+
+        - When using the QLI query example, do not substitute the ``STARTTIME`` and ``ENDTIME`` parameters in the WHERE filter. These parameters are not actual column names and should stay as is. They are expected by the connector and will be substituted with the start and end date of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+        - Substitute the placeholder ``<database_name>`` with a database name.
+
+    .. code-block:: sql
+
+          SELECT
+            user_name AS "userName",
+            CASE WHEN SCHEMA_NAME IS NULL
+                THEN DATABASE_NAME || '.' || ''
+            ELSE DATABASE_NAME || '.' || SCHEMA_NAME END AS "defaultDatabases",
+            TRIM(QUERY_TEXT) AS "queryString",
+            TRIM(SESSION_ID || '/' || USER_NAME) AS "sessionID",
+            ROUND(TOTAL_ELAPSED_TIME / 1000, 0) AS "seconds",
+            FALSE AS "cancelled",
+            to_char(
+                start_time, 'YYYY-MM-DD HH:MI:SS.US'
+                ) AS "startTime",
+            to_char(
+                start_time, 'YYYY-MM-DD HH:MI:SS.US'
+            ) AS "sessionStartTime"
+            FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+            WHERE START_TIME BETWEEN STARTTIME AND ENDTIME
+                AND EXECUTION_STATUS = 'SUCCESS'
+                AND NOT (
+                    QUERY_TEXT ILIKE 'SHOW%'
+                    OR QUERY_TEXT ILIKE 'CREATE%SCHEMA%'
+                    OR QUERY_TEXT ILIKE 'CREATE%DATABASE%'
+                    OR QUERY_TEXT ILIKE 'GRANT%'
+                    OR QUERY_TEXT ILIKE 'GET%'
+                    OR QUERY_TEXT ILIKE 'DROP%DATABASE%'
+                    OR QUERY_TEXT ILIKE 'REVOKE%'
+                    OR QUERY_TEXT ILIKE 'DESC%'
+                    OR QUERY_TEXT ILIKE 'CREATE%PROCEDURE%'
+                    OR QUERY_TEXT ILIKE 'LIST%'
+                    OR QUERY_TEXT ILIKE 'CALL%'
+                    OR QUERY_TEXT ILIKE 'PUT_FILES%'
+                    OR QUERY_TEXT ILIKE 'REMOVE_FILES%'
+                    OR QUERY_TEXT ILIKE 'EXPLAIN%'
+                    OR QUERY_TEXT ILIKE 'TRUNCATE%'
+                    OR QUERY_TEXT ILIKE 'COMMIT%'
+                    )
+                AND DATABASE_NAME not in ('SNOWFLAKE')
+                AND DATABASE_NAME = '<database_name>';
+
+Configure Custom Query-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To configure query-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, in the **Custom QLI Query** field, provide the QLI query.
+
+3. Click **Save**.
+
+
+Perform QLI
+~~~~~~~~~~~~~~~~~~~~
+
+You can either run QLI manually on demand or configure it to run automatically on a schedule.
+
+Run QLI Manually
+^^^^^^^^^^^^^^^^^^^^^^^
+
+To perform QLI manually on demand:
+
+1. On the **Query Log Ingestion** tab of the Settings page of your OCF Snowflake data source, under **Automated and Manual Query Log Ingestion** ensure that the **Enable Automated Query Log Ingestion** toggle is disabled.
+
+2. Specify the desired date range using the Date Range calendar widgets. You will need to specify the start date and the end date separately.
+
+3. Click the **Preview** button to preview the queries that will be ingested. This will run a preview job that will fetch a subset of the queries based on your QLI configuration. The result will be displayed in a table.
+
+4. Click the **Import** button to run QLI manually. This will run a query log ingestion job.
+
+View Job Status
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The status of preview or QLI jobs is logged in the **Query Log Ingestion Job Status** table at the bottom of the page. In this table, click the status link or the **View Details** link for a job to view the details on the progress of this job.
+
+Schedule QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To schedule QLI :
+
+1. On the **Query Log Ingestion** tab, under **Automated and Manual Query Log Ingestion**, enable the **Enable Automated Query Log Ingestion** toggle.
+
+2. In the **Automated Query Log Ingestion Time** panel that will appear, specify values for the job recurrence and time. The values are set in your local time.
+
+The next QLI will run on the schedule you set.
+
+Troubleshooting Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Problem
+^^^^^^^^^^^
+
+During custom query-based QLI, the preview data does not display any results and the log message displays error *Missing result set column: Username*.
+
+ .. image:: ../../../_static/SnowflakeOCF_05.png
+    :width: 600px
+
+Solution
+^^^^^^^^^^^^^
+
+Use the following steps:
+
+1. Sign in to Snowflake with an admin account.
+
+2. If ``ALTER USER SET QUOTED_IDENTIFIERS_IGNORE_CASE is ``true``, set it to ``false``.
+
+    .. image:: ../../../_static/SnowflakeOCF_06.png
+        :width: 600px
+
+3. In Alation, click **Preview** for QLI one more time and see if it runs successfully. If the issue persists, contact Alation support.
+
+Lineage
+--------------
+
+The Snowflake data source supports table-level and column-level lineage. Table-level lineage is available by default. Column-level lineage is an additional paid feature that requires the Snowflake column-level lineage parser add-on. Contact Alation about purchasing this add-on.
+
+Enable Column-Level Lineage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To enable column-level lineage:
+
+1. Go to **Settings > Feature Configuration**.
+
+2. Activate the toggle **Automatically extracts Column Level Lineage for Snowflake data sources**.
+
+3. Click the **Save changes** button to save the changes.
+
+    .. image:: ../../../_static/DS_Snowflake08.png
+        :width: 600px
+        :class: with-border
+
+4. In the **Verify Feature Configuration Change** dialog, click the **Save Configuration** button.
+
+    .. image:: ../../../_static/DS_Snowflake09.png
+        :width: 300px
+        :class: with-border
+
+View Column-Level Lineage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /shared/ColumnLevelLineage.rst
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.

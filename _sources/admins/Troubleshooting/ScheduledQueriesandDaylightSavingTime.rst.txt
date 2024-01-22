@@ -1,0 +1,23 @@
+Scheduled Queries and Daylight Saving Time
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Before the Alation 4.18 release, scheduled queries suffered the
+following bugs related to daylight saving time (DST):
+
+#. Following the end of US DST (during autumn in the northern hemisphere), a scheduled query would run twice -- an hour early and also at the correct, anticipated time -- the first time it ran on standard time in a given year.
+#. Following the start of US DST, a scheduled query would execute an hour late the first time it ran on daylight time in a given year.
+
+Though these bugs are fixed as of 4.18, the behavior for hourly queries
+going forward is noteworthy: these queries will be skipped during the
+last hour of DST depending on the configured delay tolerance for
+scheduled queries (``alation.query_exec.scheduling.delay_tolerance``);
+queries during this hour will appear to Alation to be delayed at least
+an hour and the delay tolerance must be greater than an hour to allow
+them to run. For example, on the morning that DST ends in the U.S., a
+query that is scheduled to execute on the half hour will not run at 1:30
+a.m. daylight time -- if the configured delay tolerance is less than 1
+hour -- but will run at 1:30 a.m. standard time, an hour later.
+Effectively, the query will appear to run once an hour nominally,
+instead of every 60 minutes, on that particular day.

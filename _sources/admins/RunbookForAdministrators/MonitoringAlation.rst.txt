@@ -1,0 +1,96 @@
+Monitoring Alation
+==================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Alation provides several ways for Server Admins to monitor the status and health of the application. You’ll be able to:
+
+* Find out whether components are functioning correctly
+* Detect configuration or connectivity issues
+* View application logs to help diagnose issues
+
+Monitoring the Alation Server with Alerts
+-----------------------------------------
+
+Starting with 2021.4.5, Alation will automatically alert Server Admins if any of the root or data volumes are filled over a certain threshold. You can adjust the threshold for the default alert, along with how often the check is performed. You can also configure your Alation instance to run additional server health checks.
+
+See :doc:`Default Server Health Alerts <../../admins/Troubleshooting/DefaultServerHealthAlerts>` and :doc:`Configuring Server Health Alerts for Administrators <../../admins/Troubleshooting/ConfigureServerHealthAlertsforAdmins>` for more details.
+
+Monitoring Component Health
+---------------------------
+
+The Alation application includes several individual :doc:`components <../../admins/RunbookForAdministrators/AlationArchitecture>`. Each component must be working correctly for Alation to function. You can see the status of each component in a few different ways.
+
+Monitoring the Health Checks Page
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The easiest way to monitor the health of each component is the **Health Checks** page in Alation. You can find this page in the **Monitor** section of the **Admin Settings**. You can enable the **Health Checks** page using the command line on your Alation server.
+
+See the :doc:`Monitor Component Health <../../admins/AdminSettings/MonitorComponentHealth>` topic for details.
+
+Monitoring the i_am_alive URL
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can see the current status of each component by visiting ``<your-alation-instance-URL>/monitor/i_am_alive/``. You must type this URL manually into the address bar of your browser. Here’s an example of what you’ll see:
+
+.. code-block:: JSON
+
+   {"django": "ok", "postgres": "ok", "elastic_search": "ok", "redis": "ok", "task_server": "ok", "connector": "ok", "celery": "ok", "kvstore": "ok"}
+
+.. note::
+
+   In versions before 2022.1, Alation component health could be monitored at the ``/manager/healthcheck/`` URL. This page was deprecated in version 2022.1. From 2022.1, use ``/monitor/i_am_alive/`` to view the component status. Note that both these URLs contained the same information except the status of Nginx and uWSGI, which are not available at the current ``/monitor/i_am_alive/`` URL.
+
+
+
+Monitoring with Actions on the Alation Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can check the status of individual components via the command line on the Alation server. Go to :doc:`Alation Actions <../../admins/RunbookForAdministrators/AlationActions>` and look for the word "status" for details.
+
+Monitoring Background Tasks
+---------------------------
+
+Alation provides the ability for Server Admins to monitor background tasks directly in the Alation UI. See :doc:`Monitor Tasks <../../admins/AdminSettings/MonitorTasks>` for more information.
+
+Monitoring Postgres Table Size
+------------------------------
+
+Alation can monitor the size of the internal Postgres tables relative to the available disk space. See :doc:`Managing Space: Monitoring Postgres Table Size <../../admins/AdditionalConfiguration/MonitoringPostgresTableSize>` for more information.
+
+Checking the Replication Status
+-------------------------------
+
+If you have a High Availability (HA) setup of Alation, you can view the status of replication between the Primary and Secondary nodes by visiting:
+
+``<your_alation_URL>/monitor/replication``
+
+See :ref:`Checking Replication Status <Overview_Of_High_Availability-Alation_Replication_Status>` for more detail.
+
+If you haven’t set up High Availability, the ``/monitor/replication`` page will show that you're in standalone mode.
+
+.. code-block:: JSON
+
+   {"replication_mode": "standalone"}
+
+Getting the Server Hostname
+---------------------------
+
+If your Alation instance is behind a virtual IP, you can get the physical hostname by visiting:
+
+``<your_alation_URL>/monitor/hostname``
+
+Example output:
+
+.. code-block:: JSON
+
+   {"hostname": "ip-10-11-2-184", "site_id": "ALATION_INTERNAL_0", "base_url": "http://10.11.2.184", "mode": "standalone"}
+
+Finding and Viewing Logs
+------------------------
+
+Each component of the Alation application writes the details of its operation, warnings, and errors into a dedicated log file. If users experience an issue with Alation, logs may have information about it.
+
+See :doc:`Logs Overview <../../admins/Troubleshooting/LogsOverview>` for more information about the location and purpose of each log file.
+
+Alation provides a way to bundle and encrypt the application logs. See :doc:`Logging Tab: Sending Encrypted Logs <../../admins/AdminSettings/SendEncryptedLogs>` for more information.

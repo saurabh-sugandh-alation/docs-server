@@ -1,0 +1,139 @@
+Qlik Sense Enterprise Connector: Install and Configure
+================================================================
+
+Follow the steps in this topic to perform the required configuration for the Qlik Sense Enterprise connector on the Qlik Sense Enterprise side and in Alation.
+
+Firewall Configuration
+---------------------------
+
+Open the outbound TCP port 4747 to the Qlik Sense Engine Service (QES).
+
+Authentication Requirements
+---------------------------------
+
+The following certificates are required in Alation to configure the Qlik Sense Enterprise as a BI data source.
+
+    - client.pfx
+    - root.cer
+
+Refer to `Export Certificates through the QMC <https://help.qlik.com/en-US/sense-admin/November2021/Subsystems/DeployAdministerQSE/Content/Sense_DeployAdminister/QSEoW/Administer_QSEoW/Managing_QSEoW/export-certificates.htm>`_ to export the certificates to your local machine.
+
+Configuration in Alation
+-----------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. Important::
+
+      Installation of a Qlik Sense OCF connector requires Alation Connector Manager to be installed as a prerequisite.
+
+1. If this has not been done on your instance, install the Connector Manager: :doc:`Install Alation Connector Manager <../../../sources/OpenConnectorFramework/OCFInstallAlationConnectorManager>`.
+
+2. Make sure that the connector Zip file which you received from Alation is available on your local machine.
+
+3. Install the connector from the Connectors Dashboard: refer to :doc:`Manage Connector Dashboard <../../../sources/OpenConnectorFramework/ManageConnectors>`.
+
+STEP 2: Create and Configure a New BI Server Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This configuration requires the role of the *Server Admin*.
+
+Add a New BI Server Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Log in to the Alation instance and add a new BI Server source: **Apps > Sources > Add > BI Server**. The **Register a Business Intelligence Server** screen will open.
+
+2. From the **Select a Business Intelligence Server type** list, select **Qlik Sense BI Data source** connector name.
+
+   .. note::
+
+        The connector name appears in this list only after it is installed.
+
+    .. image:: ../../../_static/Qliksense_02.png
+        :width: 400px
+
+3. Provide the **Title** and a **Description** (optional) for your Qlik Sense Enterprise BI data source.
+
+    .. image:: ../../../_static/Qliksense_03.png
+        :width: 400px
+
+4. Click **Add**. You will be navigated to your new BI Server source Settings page.
+
+Configure the Qlik Sense Enterprise BI Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the Settings page.
+
+1. Application Settings:
+
+    .. image:: ../../../_static/Qliksense_04.png
+        :width: 300px
+
+  Leave the fields under the Application Settings section as is. None of these fields applies to the Qlik Sense connector.
+
+2. Specify Connector Settings:
+
+    .. image:: ../../../_static/Qliksense_05.png
+        :width: 300px
+
+    +----------------------------+---------------------------------------------------------------+
+    | **Parameter**              | **Description**                                               |
+    +============================+===============================================================+
+    | Host                       | Enter the URL to access Qlik Sense Enterprise.                |
+    +----------------------------+---------------------------------------------------------------+
+    | Certificate                | Click **Upload** to upload the **client.pfx** certificate     |
+    |                            | from your local machine.                                      |
+    +----------------------------+---------------------------------------------------------------+
+    | Root Certificate           | Click **Upload** to upload the **root.cer** certificate       |
+    |                            | from your local machine.                                      |
+    +----------------------------+---------------------------------------------------------------+
+    | Certificate Password       | Provide the password of the certificates that is used during  |
+    |                            | exporting the certificates.                                   |
+    +----------------------------+---------------------------------------------------------------+
+    | Validate DNS Server Name   | Deselect the checkbox to skip the DNS server name validation. |
+    |                            | The checkbox will be selected by default.                     |
+    +----------------------------+---------------------------------------------------------------+
+    | Log Level                  | Select the Log Level to generate logs. The available log      |
+    |                            | levels are based on the log4j framework.                      |
+    +----------------------------+---------------------------------------------------------------+
+
+3. Click **Save**.
+
+4. Under **Test Connection**, click **Test** to validate network connectivity. An error message will appear.
+
+    .. image:: ../../../_static/Qliksense_06.png
+        :width: 300px
+
+5. Under **Extraction Settings**, turn on **Selective Extraction**, if required. Selective extraction settings are used to apply a filter to include or exclude a list of projects.
+
+    .. image:: ../../../_static/Qliksense_07.png
+        :width: 500px
+
+    a. Click **Get List of Projects** to first fetch the list of projects (Folders in Qlik Sense)  from Qlik Sense Enterprise.
+
+    b. The status of the Get Projects action is logged in the **Job History** table at the bottom of the Settings page.
+
+    c. Once the folder synchronization is successful, a drop-down list of projects will become enabled. Select one or more projects to apply the filter.
+
+    d. Check if you are using the desired filter option. Available filter options are described below:
+
+      +-----------------------------+-----------------------------------------------------------------+
+      | Filter Option               | Description                                                     |
+      +=============================+=================================================================+
+      | Extract all Folders except  | Extract metadata from all Folders except from the workspaces    |
+      |                             | selected.                                                       |
+      +-----------------------------+-----------------------------------------------------------------+
+      | Extract only these Folders  | Extract metadata only from the selected Folders.                |
+      +-----------------------------+-----------------------------------------------------------------+
+
+    e. Click **Run Extraction Now** to extract metadata. The status of the extraction action is also logged in the **Job History** table at the bottom of the page.
+
+6. If you wish to automatically update the metadata in the Catalog, under **Automated and Manual Extraction**, turn on **Enable Automated Extraction** and select the day and time when metadata must be extracted. The metadata extraction will be automatically scheduled to run at the selected day and time.
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.

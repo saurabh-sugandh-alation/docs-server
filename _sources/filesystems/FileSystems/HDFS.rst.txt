@@ -1,0 +1,86 @@
+HDFS
+====
+
+Alation can sync metadata about the files in your Hadoop Filesystem into
+the Alation catalog. Follow this guide to set up automatic syncing.
+First, you will have to determine the user account that Alation can use
+to access the data in your HDFS instance. Then, you will configure
+Alation to use that account and tell it what files to sync.
+
+Configuration in HDFS
+---------------------
+
+#. Ensure WebHDFS is enabled on one or more NameNode machines in your HDFS cluster.  
+#. Determine how your HDFS instance authenticates users. Kerberos is a typical authentication mechanism. At the WebHDFS layer, three authentication mechanisms are supported:
+
+   a. When security is off, the authenticated user is the username specified in the ``user.name`` query parameter. If the ``user.name`` parameter is not set, the server may either set the authenticated user to a default web user, if there is any, or return an error response.
+   b. When security is on, authentication is performed by either Hadoop delegation token or Kerberos SPNEGO. If a token is set in the delegation query parameter, the authenticated user is the user encoded in the token.
+   c. If the delegation parameter is not set, the user is authenticated by Kerberos SPNEGO.
+
+Alation supports options a. and c. as listed in step 2 of configuration
+in HDFS. Kerberos keytab and Hadoop delegation are not supported.
+
+Work with your HDFS admin or consult the Hadoop documentation for details:
+
+- `Enabling WebHDFS <https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#HDFS_Configuration_Options>`_
+
+- `WebHDFS Kerberos SPNEGO <https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Authentication>`_  
+
+- `HDFS Security Configuration <https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SecureMode.html>`_
+
+Configuration In Alation
+------------------------
+
+Do this only after the `Configuration in HDFS`_ is done.
+
+#. Ensure that **etc/krb5.conf** on the machine running Alation authenticates you to the Kerberos KDC. Verify by running ``kinit <kerberos_user>`` on the command line, enter the password and check that there are no errors.
+#. If you’d like to use SSL, ensure that your HDFS installation supports SSL and that the CA’s certificate is installed on the Alation machine. Follow the steps in :doc:`Installing Certificates for Secure Data Source Connections <../../datasources/DSConfiguration/InstallingCertificatesforSecureDataSourceCon>` to install one manually if required.
+#. Add a new file system through the **Sources** > **Add a File System** page.
+#. Choose the type as **HDFS**.
+#. It will take you to the settings page for your new file system when you click **Add File System**.
+
+    - Enter the **Hostname** and **Port** of the machine running WebHDFS. Usually, the host name is an HDFS NameNode machine name or IP and the Port is the default WebHDFS port.
+
+          - The default WebHDFS port depends on the Hadoop version and distribution. For Hadoop 2.x, the default WebHDFS port is **50070**. For Hadoop 3.x, in some of the distributions, the default WebHDFS port may be **9870**. For example, in the latest CDH distribution, the default WebHDFS port is **9870**.
+
+    - Enter the **HDFS Username** that you’d like to use to access the filesystem. If Kerberos is supported, enter the Kerberos password and click **Save**.
+
+6. Optionally add a list of path prefixes to sync. If you choose none, everything will be synced. It may be useful to limit the sync to a small section of your system the first time to test your configuration. This way the synchronization will be quick. So, you can confirm it is working.
+7. Click **Run Extraction Now**. Wait for a few seconds. You should see a status update at the bottom of the page showing the extraction running. It may take some time.
+
+Troubleshooting
+---------------
+
+The job fails and shows an error message in the UI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the extraction failed with an error, read the message and try to match it to the below categories.
+
+Authentication Error
+^^^^^^^^^^^^^^^^^^^^^^
+
+Check your credentials, try re-entering them or logging in through a different system.
+
+Network Error
+^^^^^^^^^^^^^^^^^
+
+Confirm the Alation server has access to the internet, so it can reach the HDFS NameNode server.
+
+The job works but no files were synced
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Confirm that the Kerberos setup works correctly, using the ``kinit`` command above. Check for error messages in **/opt/alation/site/logs/taskserver.log**. Sometimes the Alation machine and the HDFS machine might have clocks that drift apart more than five minutes. This causes issues with Kerberos authentication. In this case, the log should show an error message such as ``GSS initiate  (Mechanism level: Clock skew too great (37) - PROCESS_TGS)``. Run the date command on the Alation machine and the HDFS NameNode machine to ensure the displayed times are in five minutes of each other. If not, set the time on any of the machines using the ``sudo date -s`` command. Ask your HDFS admin if you need access to the NameNode machine.
+
+.. Note::
+
+    If you are using SSL, the Alation machine might not have the CA’s key to verify the HDFS machine’s SSL certificate.
+
+2. Check your path prefix filters. Ensure that the authenticated user has read permissions for the files whose metadata you’d like to extract.
+
+I changed the filters and my old files are gone
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is the expected behavior. Only files that match your filters will
+show up in the catalog. If you don’t want to disturb your existing data
+you can add new filters and don’t change old ones. Your annotations to
+the old files will come back if you change the filters back and re-sync.

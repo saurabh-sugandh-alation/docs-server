@@ -1,0 +1,135 @@
+Azure Cosmos DB
+=================
+
+**Supported as Custom DB from version 2020.3**
+
+Scope of Support
+------------------
+
+- Supported as Custom DB with a `CData JDBC Driver for Cosmos DB <https://www.cdata.com/drivers/cosmosdb/jdbc/>`_. Please contact your Azure account manager to find out if this driver is included into your Azure solution.
+
+  - `Driver documentation <http://cdn.cdata.com/help/EHE/jdbc/>`_
+
+- Authentication with the Shared Key authorization
+- Cosmos DB Account APIs: SQL
+- MDE
+
+      - Regular (automatic)
+      - Custom query-based
+      - Extraction of Stored Procedures is supported
+
+- Sampling and Profiling
+
+      - Regular (automatic)
+      - Custom query-based
+
+- Compose: support based on the CData driver for Cosmos DB scope of support for SQL statements
+
+Limitations
+~~~~~~~~~~~~~
+
+- QLI is not supported. Query history is ingested from Compose only. Lineage and Popularity are calculated based on the query history from Compose.
+- CData CosmosDB driver supports SELECT, INSERT, UPDATE, and DELETE statements. CREATE and DROP operations cannot be performed using SQL queries and need to be performed using an app. Please refer to `MS Cosmos DB documentation <https://docs.microsoft.com/en-us/azure/cosmos-db/create-sql-api-java?tabs=sync>`_ for details.
+
+Azure Billing
+----------------
+
+Billable by Microsoft Azure on your Azure account:
+
+- The queries Alation runs on the connected Cosmos DB instance during MDE and Profiling
+- Queries run in Compose
+
+Required Information
+----------------------
+
+- JDBC driver used to connect to the database: **CData Cosmos driver 2020**
+- JDBC URI for the Cosmos DB data source
+- Azure Account Key for the Cosmos DB instance
+- Server-side access to Alation to place the driver on the Alation system
+
+Construct the URI
+~~~~~~~~~~~~~~~~~~~
+
+The JDBC URI must be entered without the “JDBC” tag at the beginning:
+
+Use the RTK parameter only if you have the RTK provided by Alation.
+
+.. code-block:: Bash
+
+        cosmosdb:AccountEndpoint="<Cosmos_DB_URL>";AccountKey="<Account_Key>";SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;SupportsCatalogsInTableDefinitions=True; and SupportsSchemasInTableDefinitions=True;RTK=<RTK_Code>
+
+**Example**:
+
+.. code-block:: Bash
+
+    cosmosdb:AccountEndpoint="https://testUser.documents.azure.com:443/";AccountKey="RzjZqw2uVUAOo6IFVEmCXjFOR6NcbG16ZW5xPdVzRTARlD3TCm4L1SJj7L5jdZSRusipTWnZngeqIJ2bl2g8rg==";SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;RTK=444752465641535552425641454E545042424D333236323900000000000000000000000000000000414C4154494F4E5800005559475655474E4E464242370000
+
+For the other URI parameters that support specific cases, please refer to the CData Driver documentation: `Connection String Options <http://cdn.cdata.com/help/EHE/jdbc/Connection.htm>`_.
+
+Authentication
+-------------------
+
+Azure Account Key
+
+Preliminaries
+-----------------
+
+Add the driver to the Alation server before adding your Cosmos DB source to the Catalog.
+
+Add the CData Driver to Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Refer to :doc:`Add the CData Driver into Alation Instance <../../datasources/CustomDB/CDataDrivers>`.
+
+Steps in Alation
+--------------------
+
+To add a Cosmos DB data source to the Catalog,
+
+1. On the Sources page, add a new data source. Provide a title and proceed to the **Add Data Source** wizard.
+
+2. On the **Add a Data Source** screen of the wizard, specify:
+
+    - **Database Type**: Custom DB
+    - **JDBC URI**: Use the required format. See Construct the URI.
+
+      **Example**:
+
+      .. code-block::
+
+          cosmosdb:AccountEndpoint="https://testUser.documents.azure.com:443/";AccountKey="RzjZqw2uVUAOo6IFVEmCXjFOR6NcbG16ZW5xPdVzRTARlD3TCm4L1SJj7L5jdZSRusipTWnZngeqIJ2bl2g8rg==";SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;RTK=444752465641535552425641454E545042424D333236323900000000000000000000000000000000414C4154494F4E5800005559475655474E4E464242370000
+
+    - **Select Driver**: select the CData driver for Cosmos DB that you have added to Alation: ``cdata.jdbc.cosmosdb.CosmosDBDriver.cdata.jdbc.cosmosdb``
+
+    - **Privacy**: Public or Private
+
+3. Click **Save and Continue**:
+
+    .. image:: ../../_static/DS_Cosmos_01.png
+        :width: 300px
+
+4. On the next screen - **Set Up a Service Account** - select **Yes**, then in the **Username** field, type ``User`` (or any other string) and click **Save and Continue**. As the Account Key is included into the URI, there is no need to provide this information on this screen.
+
+5. On the next screen - **Configure Data Source** - click **Skip This Step**.
+
+After this step, you are navigated to the **Settings** page of the new data source.
+
+Configure the Cosmos DB Data Source
+------------------------------------
+
+Complete the configuration on the Settings page and perform MDE and Profiling:
+
+- **Access**: configure access and Privacy settings.
+- **General Settings**: verify the connection parameters and connection status.
+- **Custom Settings**: :ref:`Set the Catalog Object Definition <Metadata_Extraction_From_Custom_DB-Set-The-Catalog-Object-Definition>` for MDE. Use the **Catalog.Table** option for this data source. Without the Catalog Object Definition set, the object names will include the CData prefix.
+- **Metadata Extraction**: configure and perform MDE.
+- **Data Profiling** (**Data Sampling**): configure and perform :doc:`Sampling and Profiling <../../datasources/CustomDB/ProfilingForCustomDB>`.
+
+Troubleshooting
+-----------------
+
+Logs to collect/review:
+
+- For logs related to MDE: **taskserver.log**, **taskserver_err.log**.
+- For logs related to Compose: **connector.log**, **connector_err.log**
+- For any other errors: **alation-error.log**, **alation-debug.log**

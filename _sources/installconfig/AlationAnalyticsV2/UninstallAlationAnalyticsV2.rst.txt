@@ -1,0 +1,90 @@
+Uninstall Alation Analytics V2
+===============================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Available from release 2020.4*
+
+It is possible to completely uninstall Alation Analytics V2 from the Alation instance. The uninstallation command removes all Alation Analytics V2 components and environmental files from the installation directory and the host.
+
+    .. warning::
+
+        Uninstalling Alation Analytics V2 will result in the loss of all its data (database, schemas, tables, and columns) and the removal of all managed files and folders. If you have customized Alation Analytics by adding custom SQL views, the custom views will be lost when the Alation Analytics V2 PostgreSQL database is deleted.
+
+The uninstallation will:
+
+- Stop and remove the Alation Analytics V2 Docker containers, including the Alation Analytics PostgreSQL database;
+- Remove the Alation Analytics V2 environment file (**/etc/default/alation-analytics.env**);
+- Stop and remove the Analytics Manager (**/usr/bin/alation-analytics-manager**);
+- Delete all content from the installation directory (the default is **/opt/alation-analytics**).
+
+The uninstallation instruction applies to both types of installation of Alation Analytics V2:
+
+- Same-host installation
+- Installation on a separate host
+
+    .. warning::
+
+        Any additional content placed into the Alation Analytics V2 installation directory will also be removed by the uninstall command. Before you uninstall, please make sure that the installation directory does not contain any content that does not belong to Alation Analytics V2. If you placed anything into the Alation Analytics V2 directory, move it out before uninstalling Alation Analytics.
+
+
+Please note that uninstallation does not affect the existing Catalog metadata of Alation Analytics V2:
+
+- The Alation Analytics V2 data source is not removed from the Alation Catalog, although the underlying database is dropped;
+
+    .. note::
+
+        - **release 2021.1 or newer**: The Alation Analytics V2 data source and its metadata can be removed from the Catalog: :doc:`Remove Alation Analytics V2 Data Source From the Catalog <../../installconfig/AlationAnalyticsV2/RemoveAlationAnalyticsV2Source>`.
+
+        - **2020.4**: you can hide the Alation Analytics V2 data source from the Alation Catalog by disabling it on the **Labs** page.
+
+- The Users' Alation Analytics V2 connections data is not removed from Alation;
+- Queries using Alation Analytics V2 remain in the Catalog and need to be located and deprecated or deleted;
+- Catalog field values with references to the Alation Analytics V2 data source remain as is;
+- @-mentions of the Alation Analytics V2 database and its objects in the Catalog fields remain as is.
+
+
+To uninstall Alation Analytics V2:
+
+1. On the host where the Alation Analytics V2 is installed, go to its installation directory, for example: **/opt/alation-analytics**.
+
+2. Run the installer with the uninstall flag. This will remove all data stored in Alation Analytics V2 PostgreSQL, Docker containers, all contents inside the Analytics installation directory, and the environmental files outside the installation directory (**/etc/default/alation-analytics.env** and **/usr/bin/alation-analytics-manager**):
+
+    .. code-block:: Bash
+
+        sudo ./alation-analytics-installer-v-x.x.x -r
+
+3. After the uninstallation completes, verify that the installation directory is empty. You can remove any lingering files. You can also check that the **alation-analytics.env** file has been removed from **/etc/default/**).
+
+4. Use the Docker status command to verify that the Docker containers have been removed:
+
+    .. code-block:: Bash
+
+        docker ps -a
+
+Remove the Alation Analytics V2 Data Source from the Catalog
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Release 2020.4
+^^^^^^^^^^^^^^^^
+
+To hide the Alation Analytics V2 data source from the Alation Catalog:
+
+1. Log in to your Alation instance and go to **Admin Settings > Server Admin > Labs**.
+2. Turn off the toggle for **Alation Analytics V2 - Understand the Alation usage patterns at your organization to disable Alation Analytics**.
+3. Click **Save changes** on top right to save the change.
+
+Disabling the Alation Analytics V2 will:
+
+    - Disable ETL for Alation Analytics V2;
+
+    - Remove the Alation Analytics section from the Admin Settings page;
+
+    - Hide the Alation Analytics V2 data source from the Alation Catalog;
+
+    - Hide the Alation Analytics Dashboard option from the Apps menu on the main toolbar.
+
+Release 2021.1 and Newer
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See :doc:`Remove Alation Analytics V2 Data Source From the Catalog <../../installconfig/AlationAnalyticsV2/RemoveAlationAnalyticsV2Source>`

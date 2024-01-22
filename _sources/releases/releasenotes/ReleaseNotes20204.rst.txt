@@ -1,0 +1,600 @@
+Release Notes 2020.4 (General Availability)
+==============================================
+
+RELEASE 2020.4.15
+-------------------
+
+*build 6.2.17.155524*
+
+This patch is a security update providing fixes to mitigate the Log4j 2 vulnerability discussed in the *December 22, 2021 - Log4j2 Security Advisory*. This addresses the security vulnerability described in `CVE-2021-45105 <https://nvd.nist.gov/vuln/detail/CVE-2021-45105>`_.
+
+This patch is cumulative and fixes all the security issues from the prior two patches, 2021.4.13 and 2021.4.14.
+
+Upgrading to this security patch will apply the fixes automatically. This patch includes:
+
+Security fix for the Hive connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Apache Hive connector is updated with a newer version of Apache Log4j 2. This addresses security vulnerability `CVE-2021-45105 <https://nvd.nist.gov/vuln/detail/CVE-2021-45105>`_.
+
+Security fix for Elasticsearch
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Elasticsearch is updated with a newer version of Apache Log4j 2. This addresses security vulnerability `CVE-2021-45105 <https://nvd.nist.gov/vuln/detail/CVE-2021-45105>`_.
+
+RELEASE 2020.4.14
+----------------------------------
+
+*build 6.2.16.155178*
+
+This patch is a security update providing a fix to mitigate the Log4j 2 vulnerability discussed in *December 17, 2021 - Update to December 15 log4j2 CVE-2021-45046 Security Advisory*.
+
+Security fix for the Hive connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Hive connector is updated to use a newer version of Apache Log4j 2, which addresses a possible DoS vulnerability described in `CVE-2021-45046 <https://nvd.nist.gov/vuln/detail/CVE-2021-45046>`_.
+
+RELEASE 2020.4.13
+----------------------------------
+
+*build 6.2.15.154832*
+
+This patch is a security update providing two important fixes to mitigate the Log4j 2 vulnerability discussed in *December 10, 2021 - log4j2 Security Advisory*.
+
+Upgrading to this security patch will apply the fixes automatically. The patch includes:
+
+Security fix for the Hive connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Apache Hive connector is updated with a newer version of Apache Log4j 2 as per NIST publication `NVD - CVE-2021-44228 <https://nvd.nist.gov/vuln/detail/CVE-2021-44228>`_. In addition to updating the Log4j 2 version, all invocations of the Apache Hive connector will run with the ``-Dlog4j2.formatMsgNoLookups=true`` system property.
+
+With this security update, the Alation Hive connector is not susceptible to remote code execution based on the Log4j 2 vulnerability CVE-2021-44228.
+
+Security fix for Elasticsearch
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As per recommendation from Elastic found at `Apache Log4j2 Remote Code Execution (RCE) Vulnerability - CVE-2021-44228 - ESA-2021-31 <https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476>`_, this fix disables the message lookup substitution for Elasticsearch on the Alation server. With this security update, the **alation_conf** parameter ``elasticsearch.env.es_java_opts``, which sets Java options for Log4j 2, will be set to ``-Dlog4j2.formatMsgNoLookups=true`` by default. This change ensures that the Log4j 2 Java options have the recommended setting and that the Elasticsearch component of the Alation server is not susceptible to remote code execution based on the Log4j 2 vulnerability CVE-2021-44228.
+
+RELEASE 2020.4.12
+----------------------------------
+
+*build 6.2.14.145722*
+
+- Fixed an issue with Backup V2 restore where the restore process failed with the error ``pg_probackup archive-get failed to deliver WAL file``.
+
+RELEASE 2020.4.11
+----------------------------------
+
+*build 6.2.13.143825*
+
+- Previously, metadata extraction from SQL Server sources failed to extract tables from a database when the database collation type was different from the collation type on the SQL Server level. This issue has been fixed.
+
+- Fixed an issue with metadata extraction from Azure Data Warehouse where it failed with the ``0 schemas found`` error. This was resolved by adding support for case sensitive collation.
+
+RELEASE 2020.4.10
+----------------------------------
+
+*build 6.2.12.138408*
+
+- The search group strategy for LDAP groups uses a query that pulls out all the users. Previously, in case of very large LDAP groups, this query could time out or reach the LDAP server limit on how many results were permitted to be retrieved. This fix introduces pagination for the LDAP group search query and an **alation_conf** setting to control it: **alation.authentication.ldap.search_page_size** (defaults to 500). The parameter should be set to a value that is less than the group result size allowed by the LDAP server.
+
+RELEASE 2020.4.9
+----------------------------------
+
+*build 6.2.11.137415*
+
+- Fixed an issue with high CPU usage by Taskserver during extraction, QLI, profiling, search index update, and some other processes. The issue was caused by Hive grammar projection grammar rule: ``antlr`` went into an infinite loop while parsing a query. As a solution, the ``antlr`` version and the timeout for execution of parser threads were updated.
+
+- Previously, QLI could become stalled at the ``StatmentParsingJob`` stage with ``get() returned more than one AlationVersion`` error message. Fixed by adding a unique constraint to the ``tree_hash`` field of the ``AlationVersion`` model so that no duplicate entries can be created due to race condition.
+
+- Fixed a problem when sometimes a subset of web server workers on the Alation server hung and did not serve requests. This fix improves throughput and availability of the Alation web service.
+
+- Added two **alation_conf** parameters to mitigate search timeout issues. Admins can change the values in case they observe timeout issues on the **Advanced Search** page or when using the public Search API:
+
+    - **alation.search.timeout = 10.0**
+    - **alation.search.max_retries = 1**
+
+
+RELEASE 2020.4.8
+----------------------------------
+
+*build 6.2.10.135810*
+
+- Fixed a QLI issue where it failed with the following error: *A string literal cannot contain NUL (0x00) characters*. Now, queries containing nulls will not cause the QLI job to fail.
+
+- Fixed a performance issue when a large number of Groups with multiple members in the system caused the **Customize Catalog** page to load slowly. Now, the page loading time has significantly decreased.
+
+RELEASE 2020.4.7
+----------------------------------
+
+*build 6.2.9.134079*
+
+- Fixed an issue where the **Articles** section of the left-hand navigation panel was unavailable to users who logged in for the first time, requiring a refresh of the browser page. The **Articles** panel is now always available in the left-hand navigation panel.
+
+RELEASE 2020.4.6
+----------------------------------
+
+*build 6.2.8.132865*
+
+- Added support for the back quote character **`** in the Query Log Ingestion parser logic, which should ensure that QLI is successful for the data sources where query SQL includes this character.
+
+- Fixed an issue where long-running extraction jobs were given the *Failed* status in the Job History table in Alation UI before they were completed. The job status will now be properly tracked for the entire duration of the job lifecycle.
+
+RELEASE 2020.4.5
+----------------------------------
+
+*build 6.2.7.132077*
+
+- Added an **alation_conf** flag **alation.backup_v2.pgbackup_compression** to exclude the Postgres backup from Alation backup tarball creation. This reduces backup tarball creation time. Postgres backups should be handled manually and restored separately.
+
+For details, refer to :doc:`How to Exclude Postgres Backup from Alation Backup <../../archive/AdminConfig/HowToExcludePostgresBackupFromAlationBackup>`
+
+RELEASE 2020.4.4
+----------------------------------
+
+*build 6.2.6.131177*
+
+- Fixed a performance issue with search indexing for file objects. This change is expected to make file system objects indexing 3 to 5 times faster.
+
+- Previously, text in tables in the Description field of file system objects was not searchable. This issue was fixed, and the Description field of file system objects is now correctly parsed. The file system objects where the text in tables in the Description field matches the search string will now appear in search results.
+
+- Added support for user impersonation for EMR Presto as Custom DB: users can use impersonation for running queries in Compose.
+
+RELEASE 2020.4.3
+----------------------------------
+
+*build 6.2.5.129768*
+
+- Fixed an issue when Unicode characters in View definition SQL caused MDE to fail. MDE will now correctly parse View definitions that contain Unicode characters.
+
+
+RELEASE 2020.4.2
+----------------------------------
+
+*build 6.2.4.128370*
+
+New Features in 2020.4.2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- For Custom DB, Alation now allows Data Source Admins to enable concurrent queries for Compose. This can be done on the **Custom Settings** tab of the Custom DB data source Settings page with the help of the **Enable Concurrent Queries** checkbox.
+
+- For Custom DB, Alation now allows Data Source Admins to enable **User Impersonation**. This can be used when configuring Kerberos and Keytab authentication for Compose for the data sources that support this setup. User Impersonation can be turned **On** on the **General Settings** tab of the Custom DB data source Settings page.
+
+Bug Fixes
+~~~~~~~~~~
+
+- Fixed the issue of Lexicon overflow error by capping the approve/reject count to 7,000. In the Lexicon job, if the approve/reject count exceeds 7,000, the exceeded count will be capped at 7,000.
+
+- Fixed an issue with delay in loading the **Glossaries** page and glossary pages.
+
+- Previously, metadata extraction from Snowflake extracted the view names in upper case when the original view name was in mixed case. Now, metadata extraction of views extracts the view names in mixed case.
+
+
+RELEASE 2020.4.1
+----------------------------------
+
+*build 6.2.3.127279*
+
+- For Amazon S3 users, fixed an issue where Alation would not extract the last batch of files when extracting more than 1,000 files. For example, if a filesystem had 1,234 files, 1,000 would be extracted and 234 would be ignored.
+
+- For BI users, fixed an issue where setting the automated extraction job from the UI would not make any changes.
+
+- For Hive users, fixed an issue where query logs generated by Hive 2.x would not be extracted when they were URL encoded. Users facing this issue need to include a configuration file named **aha-conf.xml** in their configuration tarball for the datasource. That configuration file should contain the following lines:
+
+    .. code-block:: console
+
+        <configuration>
+          <property>
+            <name>alation.qli.check-url-decode</name>
+            <value>true</value>
+          </property>
+        </configuration>
+
+- Upgrading HA systems to 2020.4 GA with preserving the cluster required an extra step of creating the ``reindex_rosemeta_success`` file on the Secondary server. When upgrading HA systems to 2020.4.1, this extra step is no longer required.
+
+RELEASE 2020.4 - General Availability
+-------------------------------------------
+
+*build 6.2.2.125680*
+
+New Features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation Search Improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- BI Field objects are now included into the BI filter to allow for searching and finding the full range of BI object types;
+- The quotation mark search operator is now supported: by including your search keywords in quotation marks, you can look for an exact match in the Catalog data.
+- Misspelled search keywords are now auto-corrected to speed your search.
+- A number of improvements were made to the search matching algorithm to enhance matching accuracy and search comprehensiveness.
+- **Elasticsearch version 1 has been removed** from the Alation server. During the update to 2020.4, Alation will determine if the Elasticsearch 1 index data is still in use. If it is no longer in use, it will automatically be removed, as well as the Elasticsearch 1.4 directory */data1/elasticsearch*.
+- Breadcrumbs for BI objects have been added to the Search results page.
+- BI Objects in full-page Search can now be filtered by Source.
+
+New Lexicon UI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The new UI of the Lexicon page makes Lexicon management an easy and logical experience. Lexicon abbreviations and expansions are presented in a tabular format with multiple filters. You can easily find and update suggestions, add new abbreviations and expansions, or go through the unconfirmed suggestions and curate them.
+
+Brand Color Consistency
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The custom branding color configured for the Customizable Homepage is now extended to the rest of the Catalog: icons, tabs, font highlighting, and other UI elements - to create a consistent color theme across all Catalog pages.
+
+New Features for Alation Analytics V2
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In 2020.4:
+
+- Alation Analytics V2 schema and ETL are extended with BI object and Catalog Set data;
+- The **Insights** page has been renamed to **Alation Analytics Dashboard**;
+- 2 new visualizations have been added to the Alation Analytics Dashboard: **Popular Tables** and **Popular Queries**;
+- Alation Analytics V2 becomes upgradeable to newer versions. The upgrade process is separate from the Alation application upgrade;
+- The capability to remove the Alation Analytics V2 data source from the Catalog has been added;
+- On the Alation Analytics **Settings** page, there is now an ability to download the Alation Analytics V2 package using a Curl command;
+- Alation Analytics V2 can be installed into a custom directory that can be created automatically during installation or specified during installation if created in advance;
+- The Alation Analytics **Settings** page will now display the currently installed version of Alation Analytics V2;
+- There is now an ability to remove the Alation Analytics V1 data source after enabling Alation Analytics V2.
+
+Table Object Privacy Management
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In previous releases, Table object access permissions were inherited from the parent data source. From 2020.4, a *Server Admin* or a *Data Source Admin* can decide to make a particular table an exception by configuring access settings on the Table object level. For Table objects, there is now a **Settings** page which allows for selecting a Privacy option: *Public* or *Private*. For Private Table objects, the admin can choose individual users and groups who can view this table. This feature is not enabled by default and can be activated using the **alation_conf** command and the dedicated feature flag ``alation.granular_object_privacy.enabled``
+
+ :doc:`Table Privacy Settings <../../datasources/DSConfiguration/TablePrivacySettings>`
+
+Custom DB: Query-Based Column Profiling, Value Distribution Chart, and Profiling Stats
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to provide better and faster data insights from the Catalog, Custom DB sources have been enhanced with column-level Profiling capabilities. More than that, Profiling is now customizable for each individual column. You can:
+
+- write a custom query for each column to be profiled, for both numeric and non-numeric data types;
+- run a full profile of an entire column;
+- view the Value Distribution chart and Profiling stats for numeric data types.
+
+This feature can be enabled using **alation_conf** and the parameter ``alation.feature_flags.enable_profiling_v2``.
+
+ :doc:`Sampling and Profiling <../../datasources/CustomDB/ProfilingForCustomDB>`
+
+GET Lineage API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added a new API allowing users to get objects in lineage paths and traverse lineage graphs for root cause analysis. GET Lineage API documentation is available in the OAS 3.0 format at **http(s)://<your_Alation_URL>/openapi/lineage/** (requires the Swagger UI to be enabled on the Alation instance: ``alation_conf alation.feature_flags.enable_swagger = True``).
+
+Datasources API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Datasources API allows for integrating with CI/CD data pipelines when creating, updating, or deleting data sources and for creating automation to get schemas, run MDE, do configuration checks, or update data source credentials. This API is available in the OAS 3.0 format at **http(s)://<your_Alation_URL>/openapi/datasources/** (requires the Swagger UI to be enabled on the Alation instance: ``alation_conf alation.feature_flags.enable_swagger = True``). Additional data sources have been certified and now the following database types are covered:
+
+    - Snowflake
+    - Amazon Redshift
+    - PostgreSQL
+    - Teradata
+    - SQL Server
+    - MySQL
+    - Oracle
+
+Lineage Diagram Enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Lineage diagram now has the ability to filter out *TMP* objects and a full-screen view mode. General usability of the diagram has also been improved:
+
+    - GBM V2 catalog pages now have a link icon to their respective catalog pages
+    - Untitled Dataflow nodes now have a default title in the tooltip instead of just the Dataflow icon.
+    - Lineage nodes on the diagram now support multiple badges. For example, the TMP or EXT badge will now be displayed next to the Deprecation badge if both are applied to a node.
+    - Action buttons on the diagram are now spaced evenly
+    - The Preview section shows a default visual cue to select a node when no preview is displayed
+    - UI performance of the Lineage diagram has been improved
+
+Open Connector Framework (OCF) for BI Sources
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Open Connector Framework (OCF) allows Alation to support external connectors developed by partnering teams in order to add specific sources to the Catalog. An OCF connector can be viewed as a plugged-in microservice that connects to an external source (such as a BI server) in order to extract raw metadata. Connectors created on the basis of OCF can be installed in addition to the Alation application and maintained separately from the Data Catalog. In addition to OCF, Alation provides OCF-based out-of-the-box connectors for the following BI tools:
+
+  - Power BI
+  - Looker
+
+Alation will provide OOB connector packages for downloading upon request.
+For details, refer to section :doc:`Open Connector Framework <../../sources/OpenConnectorFramework/index>`.
+
+Pass-Through Credentials Compose Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A new authentication mode - **Transient** - is added to Compose when user database credentials are not stored and require to be provided every time connection to the database is established.
+In the *Transient* mode, users establish a connection by entering their database username and password in Compose, but their credentials are not stored on the Alation server side. This applies to Compose query execution, query forms, data upload, and Dynamic Profiling, and other Compose functionality. The credentials storage mode is controlled by the **alation_conf** parameter ``alation.datasource_auth.credentials.storage_mode``. The default is *Persistent* mode (parameter value = **0**) when credentials are stored on the Alation server. To enable the *Transient* mode, set this parameter to **1**.
+
+ :doc:`Transient User Credentials <../../analyst/UserAuthenticationForDataSources/TransientUserCredentials>`
+
+OAuth in Compose for Databricks Sources
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Support for connections using OAuth 2.0 has been added for Azure Databricks with AAD as the authorization server. OAuth can be configured for Databricks data sources and OAuth connections can be made with such data sources for query execution, query scheduling, query forms, and Dynamic Profiling, Excel live reports, and data upload. OAuth can be set up on the General Settings tab of the Databricks data sources, under Compose Connections.
+
+ :doc:`Databricks Azure OAuth for Compose <../../datasources/CustomDB/DatabricksAzureOAuthForCompose>`
+
+Data Source Certifications
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation certifies support for new data sources and new versions of previously certified sources:
+
+  - :doc:`Salesforce <../../datasources/CustomDB/Salesforce>`
+  - :doc:`ServiceNow <../../datasources/CustomDB/Servicenow>`
+  - :doc:`EMR Presto on Hive with AWS Glue as Metastore <../../datasources/CustomDB/EMRPrestoWithAWSGlueAsMetastore>`
+  - newer versions of supported sources (PostgreSQL, Greenplum, Tableau, and others).
+
+Data Source Built-In Driver Updates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In 2020.4, a number of native (built-in) connectors were updated with newer driver versions to keep up with the driver bug fixes and improved functionality. During the update to 2020.4, the data sources using built-in drivers will be automatically switched to the newer driver versions.
+
+- **Databricks**: added Simba JDBC driver for Databricks, driver version 2.6.16:
+
+         - *AWS Databricks*: the new driver is auto-switched during update. The URI is auto-updated to conform to the format required by the driver;
+         - *Azure Databricks* using Custom DB: no changes to the driver during update.
+
+- **Google BigQuery**: updated JDBC driver for Google BigQuery to driver version 1.2.11.1014:
+
+          - no changes to the URI. The driver is auto-switched during the update.
+
+- **MySQL**: added the JDBC driver for MySQL, driver version 8.0.21:
+
+          - no changes to the URI. The driver is auto-switched during the update.
+
+- **PostgreSQL**: updated the JDBC driver for PostgreSQL to driver version 42.2.14:
+
+           - no changes to the URI. The driver is auto-switched during the update.
+
+- **Snowflake**: changed the JDBC driver for Snowflake to driver version 3.12.9:
+
+            - no changes to the URI. The driver is auto-switched during the update.
+
+- **SQL Server**: added Microsoft JDBC driver for SQL Server, driver version 8.2.2:
+
+            - SQL Server sources using older built-in driver versions 6.2 or 7.4.1 are auto-switched to the newer driver version 8.2.2;
+            - SQL Server sources using the NTLM authentication and the built-in jTDS driver are NOT switched over to the new driver during the update. It is recommended to manually change the jTDS driver to 8.2.2 and update the URI after updating to 2020.4.
+
+CentOS 8 for Alation Chroot
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation Chroot has been updated to use CentOS 8.2 to take advantage of the new features and bug fixes on CentOS.
+
+CentOS 8 and RHEL 8 for Alation Host OS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Alation application can now be installed on hosts running on CentOS 8.x and RHEL 8.x. Please note that the older host OS versions, such as CentOS 6.x, RHEL 6.x, and Ubuntu 12 and 14 are no longer supported in 2020.4.
+
+Internal Database Performance Optimization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To avoid issues during Alation upgrades, new detection tools have been implemented to find and troubleshoot Rosemeta indexing issues.
+
+Alation Sandbox
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The upgrade testing framework - *Scarlet* - has been renamed to **Alation Sandbox** and considerably improved with the focus on security, reliability, and efficiency. As a result:
+
+- Alation Sandbox can work in a completely offline mode without requiring a connection to Production;
+- There is a new CLI tool for easily modifying the configuration parameters;
+- There are new configuration parameters to verify the stability of application after upgrade;
+- The ability to set up the connection over SSL has been added;
+- Alation Sandbox logging has been improved and now includes the PostgreSQL logs.
+
+ :doc:`Alation Sandbox </archive/AdminConfig/AlationSandbox/index>`
+
+Improvements
+~~~~~~~~~~~~~~~~
+
+Catalog UI
+^^^^^^^^^^^^^^^^^^^^
+
+- A lot of UI improvements have been done to the Alation Catalog UI as team Alation strives to make Catalog usage an easy and pleasant task.
+
+- Improved the scrolling experience of the Customizable Homepage.
+
+Sources
+^^^^^^^^^^^^^^^^^^^^
+
+- Users now have an option **Enable default schema extraction** for Oracle data sources which explicitly enables extractions from default schemas.
+
+- Alation now supports extracting **Impala** query logs from an Amazon S3 bucket. Previously, queries were ingested from a local file system. To extract from S3, the Impala logs should be placed in an S3 bucket in the same manner they would normally be placed on HDFS. A Server Admin should then provide the location and credentials in Alation to access the S3 bucket.
+
+- Alation now ships with the Hive driver version 1.1.0 that is capable of using Zookeeper in a Hive 1.X environment. When setting up Hive with Zookeeper, select the driver **com.alation.drivers.hive.one.cdh** on your Hive datasource on the **General Settings** tab.
+
+- Alation will now extract SQL Server synonyms only for tables and views as synonym base objects. Synonyms for other base objects, such as functions or stored procedures, will be skipped during metadata extraction.
+
+- Optimized performance for extraction from MicroStrategy BI sources on GBM V2, reducing extraction time for extraction with previews.
+
+Platform
+^^^^^^^^^^^^^^^^^^^^
+
+- Upgraded the internal NGINX component to version 1.19.2.
+
+Bug Fixes
+~~~~~~~~~~~~~~
+
+.. note::
+
+    2020.4 GA also includes all bug fixes listed for the 2020.4 LA version.
+
+- Badging and Workbook Promotion for Tableau data sources did not work after upgrading from V R7 to 2020.3. This issue has been fixed: Badging and Workbook Promotion now work as expected.
+
+- Fixed an issue with table UI where the table would not display the dataset when table pagination was used.
+
+- Fixed an issue with table filtering where applying filters to paginated tables only returned filtered results from the current table page. After the fix, the whole dataset in the table is filtered and displayed.
+
+- Fixed a bug where for MySQL data sources as Custom DB, during Custom Query-Based MDE, the data types that should have been normalized as INT or FLOAT were returned as non-numeric. As a result, the Query-based Column Profiling did not work for such columns.
+
+- Fixed an issue where for Snowflake data sources with OAuth configured, the OAuth authentication dialog was only displayed for users with the Server Admin role.
+
+- Fixed a bug that caused the Data Objects Without Stewards and Curation Progress reports to fail to load the data due to missing information about certain catalog objects.
+
+- Previously, Alation users with the Steward, Composer, Source Admin, and Viewer roles were not able to update their email notification preferences when the Viewer role was enabled. This issue has been fixed and users with any role can update their email notification preferences.
+
+- Fixed a bug where users with the Viewer role were unable to view the Statement Template object catalog pages when the Viewer role was enabled. Now, users with any role can view the Statement Template catalog page if they are provided access to the data source.
+
+- Fixed an issue where after upgrading Alation Analytics V2, the migration status and logs were not displayed on the **Alation Analytics Settings** page.
+
+- Miscellaneous other bug fixes to improve application quality.
+
+
+RELEASE 2020.4 - Limited Availability
+----------------------------------------
+
+*build 6.2.0.124044*
+
+For new features in 2020.4, see `New Features`_.
+
+Bug Fixes
+~~~~~~~~~~~~~~
+
+- When the internal Postgres password was set in **alation_conf**, the Backup V2 failed as it was waiting for the password prompt resolution. This issue has been fixed.
+
+- Previously, identical API requests to update the same value for the custom field of Picker type using the Upload Logical Metadata API would result in multiple field history entries in Alation. After this fix, when the same value update is requested multiple times via the API, the history will only store one update record.
+
+- Fixed an issue with customized Glossary views. When an admin customizes the order of columns for a Glossary page and saves the view, then refreshing the page will not change the order back to default. The user's preferences are now preserved.
+
+- Nulls and array values are now parsed as expected for Doc schemas for MongoDB and NoSQL sources.
+
+- Views created in the Alation Analytics V1 database are no longer cleared during the ETL run.
+
+- Previously, the resolution job in the QLI pipeline might fail if SQL queries in the query log contained numerous predicates (more than 50k predicates in 100k SQL statements). This issue has been fixed.
+
+- Fixed lineage computation in case of custom query-based extraction for Amazon Athena data sources.
+
+- Disabled auto MDE and profiling for the Alation Analytics database as default behavior to avoid false alarm emails from Datadog monitoring.
+
+- Previously, for ADLS Gen2, the Access token was not refreshed after an hour, which caused metadata extraction on large datasets to fail. After this fix, the Access token is refreshed as expected, and MDE can complete successfully.
+
+- Fixed an issue with saving API requests that contain both Description and other custom fields and their values.
+
+- Previously, @-mentioning a synonym in an article did not show up in the Relevant Article section on the page of the synonym. Now,  @-mentioning of a synonym will resolve the synonym type as table in order to retrieve the corresponding article for this synonym in the Relevant Article section. Note that for existing articles, it is required to re-add the @-mention of the synonym to the article for re-calculating the @-mention of synonym type and for the Relevant Article section to be updated correctly.
+
+- Previously, the GET data sources endpoint would request extra data for each row, which caused long response times on the Sources page. This issue has now been fixed as the data sources API was optimized to reduce the load time on the Sources page.
+
+- For Google BigQuery sources, fixed an issue with passing an incorrect username to Compose. Now, Alation uses the authentication parameters provided for the new connection before running the queries and not the user authentication parameters saved in the MDE settings. This also applies to Dynamic Profiling, data upload, query forms, scheduled queries, Excel Live reports, and Desktop Compose.
+
+- Alation Analytics V2 admins ran into an issue during installation when multiple AA manager entries were made in the crontab when the installer was run multiple times. This has now been fixed.
+
+- Azure Databricks data source would throw an error when using the Simba driver because batch insertion of data was not supported for data upload. Made changes to ensure the Databricks sources follow a sequential execution of Insert queries.
+
+- Previously, with the Viewer Role Enforcement feature enabled, users with the Composer and Steward roles were able to see **Upload Data** option in the **More** dropdown menu on a data source catalog page. They would get the 403 error when they clicked on the **Upload Data** link. Now, **Upload Data** option in the **More** dropdown menu is no longer accessible to Steward and Composer roles.
+
+- Previously, when users ran queries in Compose with results exceeding 40MB, they observed a number of UI issues, such as the *Completed* and *Warning* icons not appearing on the results tab or the *File too large* banner not popping up. This bug has now been fixed.
+
+- For OCF, the internal state is now kept consistent even if connector authors produce multiple different connectors with the exact same name and version. Improved compatibility with middleboxes that do not support TLS 1.3.
+
+- Fixed a UI issue for the Firefox browser when Object names were wrapped and cut off on the full-page Search results page.
+
+- Fixed an issue with permission mirroring for MicroStrategy BI Sources on GBM V2. After the fix, enforcing view permissions when performing extraction is supported.
+
+- Fixed an issue with the *New Query* tab in Compose where it would not open in Firefox.
+
+- Fixed a bug where query search on the **Shared with Me** tab in Compose Query Browser resulted in an error in the browser console and no search results.
+
+- Previously, extraction from Tableau 2020.1 would miss some workbooks when permission mirroring was enabled. This issue has now been fixed.
+
+- For Oracle data sources, fixed an issue where Synonym Columns were not extracted when the *Exclude Schema* MDE filter was used.
+
+- Previously, catalog sets that had filter rules on the Data Source with unicode characters embedded in their name or Description would cause an error during indexing. This is now fixed.
+
+- Previously, Stewards of Virtual Data Sources were not included into query results when querying for Steward information in the Alation Analytics V1. After this fix, the ``value_fp`` field is updated correctly and the Alation Analytics V1 queries that retrieve Stewards return Steward information for Virtual Data Sources too.
+
+- Previously, Alation Analytics V1 tables still showed objects as existing even after tables were dropped from data sources. To fix this, the ``ts_updated`` field is also updated when ``ts_deleted`` field is updated.
+
+- Data source configuration check API calls have resulted in an error code 500 since V R7. The issue has now been resolved.
+
+- Previously, intermittent login issues and connection issues during long query runs in Compose were observed by a customer after upgrading Alation from V R2 to V R5. The root cause of this issue was identified and fixed.
+
+- Fixed an issue where lineage calculation failed in some scenarios involving connections between "temp" columns to actual columns in the graph.
+
+- Fixed an issue with data migration during upgrade to 2020.3 or higher where the upgrade failed if no authenticated user existed in the system with a primary key of 1. This has been changed to assign ownership of the saved connections to the data source creator.
+
+- Previously, even if the *Signup Moderation* feature was enabled, all new users logging into Alation through LDAP would have their user accounts active before the Admins can approve their account. After this fix, Admin users can approve/reject user accounts of LDAP users before they can access Alation if signup moderation is enabled.
+
+- - Miscellaneous other bug fixes.
+
+Known Issues
+---------------------
+
+- **Sampling in Query Log Ingestion** is not supported for Google BigQuery data sources. This feature is located on the **General Settings** page of the data source Settings page and is disabled by default. Leave this feature in the **OFF** state for Google BigQuery sources.
+
+- For Snowflake data sources with OAuth configured, the OAuth authentication dialog is only displayed for users with the Server Admin role. No workaround. This will affect all instances with Snowflake sources and OAuth enabled. **FIXED in 2020.4 GA**.
+
+- Alation Analytics V2 ETL fails after updating Alation to 2020.4 from a previous release and then updating Alation Analytics V2. This can be remedied by editing the Alation Analytics V2 env file is not edited first. **FIXED in 2020.4 GA**. *The steps below have limited application and are relevant to 2020.4 LA (build 6.2.0.124044) only*
+
+      .. note::
+
+          Before upgrading Alation Analytics V2 in 2020.4, perform the following steps:
+
+                1. Each Alation Analytics V2 installation **.tar** will has its own installer bundled with the updated files. Extract this tar outside of the installation folder of Alation Analytics V2. Running the update command will copy the bundled files to the installed Analytics folder and proceed to update Alation Analytics to the newer version.
+
+                    .. code-block:: Bash
+
+                        mkdir /tmp/update-analytics
+                        sudo tar -C /tmp/update-analytics -xzf ./alation-analytics-package.tar
+
+                2. Open the **analytics.env** file:
+
+                    .. code-block:: Bash
+
+                        vi /etc/default/alation-analytics.env
+
+                3. Add the following line at the end of the file:
+
+                    .. code-block:: Bash
+
+                        INSTALL_DIRECTORY=/opt/alation-analytics
+
+                4. Run the update Analytics script:
+
+                    .. code-block:: Bash
+
+                        sudo /tmp/update-analytics/alation-analytics-x.x.x.xxxxxx/alation-analytics-installer-v-x.x.x -u
+
+                5. Once the update is successful, go to the Alation Analytics V2 Settings page and click on **Run Database Migration**.
+
+                6. Refresh the Alation Analytics V2 Settings page to view the migration status.
+
+- After upgrading Alation Analytics V2, when the admin clicks on the **Run Database Migration** button, the migration status and logs are not displayed. As a workaround, refresh the page for the logs to be displayed. Additional validation of the migration status: check **Active/Completed Tasks** for Alation Analytics V2 MDE/ETL tasks. **FIXED in 2020.4 GA**
+
+-  The Lexicon job may fail because of index corruption. This manifests itself with the following error during the Lexicon job run: "IntegrityError   True   duplicate key value violates unique constraint "lexicon_token_token_key" DETAIL: Key (token)=(metroarea) already exists". As a temporary workaround, the table ``lexicon_token`` has to be reindexed from the Alation Postgres shell on the instance. **FIXED in 2020.4 GA**.
+
+- Tableau Server integrations - Data Source Badging and Workbook Promotion - does not work since 2020.3. **FIXED in 2020.4 GA**.
+
+- Dynamic column profiling for Custom DB results in the loading error when Transient storage mode is enabled for Compose. In LA, it is not recommended to enable these features at the same time. **FIXED in 2020.4 GA**
+
+- Data upload fails for Custom DB in transient mode when Transient storage mode is enabled for Compose. **FIXED in 2020.4 GA**
+
+- The "Use COP" checkbox cannot be selected for the Teradata data source during data source setup. **FIXED in 2020.4 GA**
+
+- For MySQL data sources as Custom DB, during Custom Query-Based MDE, the data types that should be normalized as INT or FLOAT are returned as non-numeric. As a result, the Query-based Column Profiling does not work for such columns. **FIXED in 2020.4 GA**.
+
+- Data Objects Without Stewards and Curation Progress pages do not load data. **FIXED in 2020.4**.
+
+- Oracle synonym extraction query performance may be slow due to sequential scans for filters.
+
+- After changing the flag ``ALATION_CACHE_DB_CREDENTIAL_IN_MEMORY`` to ``True`` in ``settings_default.py``, the query tab in Compose fails with the "query does not exist" error.
+
+- After enabling **User Impersonation** for a data source, and attempt to run a query in Compose in the **Transient** mode displays an Authentication error message.
+
+- Previously extracted SSRS reports are deleted when new reports are ingested.
+
+- SSRS attributes of a previously extracted report are deleted after extraction of a new report.
+
+- For Teradata data sources, Table aliases in the Select queries are identified as temp tables.
+
+- Incremental restore fails on a clean instance if the /tmp folder and the restore folder under /data2 have not been manually created before restoring.
+
+- During update from V R7 to 2020.4 on RHEL 7.x, 8.x, and CentOS 8.x, there may be a non-critical error "Failed to clear cacheops".
+
+- Filters and Joins do not work as expected for Amazon Athena - Presto grammar: queries shows up in Query History but not on the Filter and Join tab.
+
+- Alation Connector Manager cannot be installed on Debian 9 and CentOS 8 with dependencies enabled: cannot auto-install Docker components. For these systems, install Docker from any accessible repo and then install Alation Connector Manager without installing the dependencies. On Debian 9, you can install Docker 18.09.1, although the recommended version is 18.09.7.
+
+- After a deprecated object is deleted, the deprecation propagated to other objects from the deleted object persists.
+
+- When performing full extraction after selective extraction, aggregate attribute pages show an "unexpected error".
+
+- Automated upgrades from Alation configurable on **Admin Settings** > **Software Updates** will not work in 2020.4 GA. Follow the regular manual update steps to update Alation.
+
+- The automatic ETL is not triggered by the system after running **Initiate Analytics Database** on the Alation Analytics Settings page after installing or upgrading Alation Analytics V2. The scheduled nightly ETL works as expected.

@@ -1,0 +1,202 @@
+OAuth Plugin CRUD Operations
+====================================
+
+*Available from version 2021.4*
+
+Use the information in this section to update the configuration of the OAuth plugin of AuthService.
+
+Reading an Existing Configuration
+------------------------------------
+
+To view your existing OAuth configurations:
+
+1. On the Alation host, enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+2. Enter the Django shell:
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+3. Use the following command to call the AuthClient:
+
+    .. code-block:: Bash
+
+        from auth_client.auth import Client as AuthClient
+
+4. To read the properties of an existing configuration with a specific ``config_name``, run the command below substituting the placeholder value ``'your_value'`` with the real value.
+
+    .. code-block:: Bash
+
+        AuthClient('oauth').configure(operation='read', config={'config_name':'your_value'})
+
+    Example:
+
+    .. code-block:: Bash
+
+        AuthClient('oauth').configure(operation='read', config={'config_name':'azure_conf'})
+
+    Example output:
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_14.png
+
+
+Using the OAuth Plugin Script for Create, Update, and Delete
+------------------------------------------------------------------
+
+The OAuth plugin configuration script can be used to perform the following CRUD operations:
+
+    - Create a new OAuth config (``create``)
+    - Update an existing OAuth configuration properties (``update``)
+    - Delete an OAuth config (``delete``)
+    - Add data sources to an existing OAuth config (``update``)
+
+Call the OAuth Configuration Script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Use SSH to connect to the Alation host.
+
+2. Enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+3. Enter the Django shell:
+
+    .. code-block:: bash
+
+        alation_django_shell
+
+4. From the Django shell, initiate the configuration script with the following commands:
+
+    .. code-block:: bash
+
+        from rosemeta.one_off_scripts.configure_oauth import config_oauth_in_alation_shell
+
+        config_oauth_in_alation_shell()
+
+The script will prompt to select an operation to perform:
+
+    - [1] Create a new OAuth config
+    - [2] Update an existing OAuth config
+    - [3] Delete an OAuth config
+    - [4] Add datasources to an existing OAuth config
+
+Type the number of the operation you want to perform and press Enter.
+
+Create a New OAuth Config
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After calling the OAuth plugin configuration script, select **[1] Create a new OAuth config**. This will initiate the creation of a new OAuth configuration that will be identified by the configuration name (``config_name``) property.
+
+Follow all prompts of the script and specify values or accept defaults.
+
+Update an Existing OAuth Config
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After calling the OAuth plugin configuration script, select **[2] Update an existing OAuth config**. Follow all the prompts and specify the required values or accept defaults.
+
+    .. important::
+
+        When you select the Update action, the script will prompt you to specify **all** the required values again and not only the values that you want to change. It is recommended to have all the required values at hand. The current values of the configuration properties will not be displayed.
+
+        Note that the values you specify when using the Update action will overwrite the values that were specified previously.
+
+        The script does not allow selecting the configuration object to update: you will need to type the name of the configuration (``config_name``) that you are updating.
+
+The required properties:
+
+    - ``config_name``
+    - ``token_endpoint``
+    - ``client_id``
+    - ``scope``
+    - ``authorize_endpoint``
+    - ``user_info_endpoint``
+    - ``redirect_url``
+
+The optional properties:
+
+    - ``subject``
+    - ``token_buffer_time``
+
+On how to find out the existing properties for a configuration, see `Reading an Existing Configuration`_.
+
+Update the OAuth Configuration Using Python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Instead of using the OAuth plugin configuration script, you can use Python to update OAuth configuration objects. Note that even if you want to update one specific value, all the required values must be present in the command.
+
+Use the following format for the update operation:
+
+    .. code-block:: Bash
+
+        AuthClient('oauth').configure(operation='update', config={
+        'config_name':'azure_conf',
+        'subject':'TestUser',
+        'token_buffer_time':'5',
+        'token_endpoint':'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        'client_id':'0fc8eec5-dab8-4123-af88-f9c84be0c637',
+        'scope':'https://database.windows.net/.default,offline_access', 'authorize_endpoint':'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        'user_info_endpoint':'https://graph.microsoft.com/oidc/userinfo',
+        'redirect_url':'http://alationcatalog@alationdata.com/auth/callback/?method=oauth&amp;config_name=azure_conf'})
+
+
+To update using Python:
+
+1. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+2. Enter the Django shell:
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+3. Import AuthClient:
+
+    .. code-block:: Bash
+
+        from auth_client.auth import Client as AuthClient
+
+4. Run the update command, for example:
+
+    .. code-block:: Bash
+
+        AuthClient('oauth').configure(operation='update', config={
+        'config_name':'azure_conf',
+        'token_endpoint':'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        'client_id':'0fc8eec5-dab8-4123-af88-f9c84be0c637',
+        'scope':'https://database.windows.net/.default,offline_access', 'authorize_endpoint':'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        'user_info_endpoint':'https://graph.microsoft.com/oidc/userinfo',
+        'redirect_url':'http://alationcatalog@alationdata.com/auth/callback/?method=oauth&amp;config_name=azure_conf'})
+
+    The output will look similar to the following:
+
+    .. code-block:: Bash
+
+        Out[4]:
+        {'status': True,
+        'code': 'SUCCESS',
+        'message': 'OAuth: azure_conf update successful.'}
+
+Delete an OAuth Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Call the OAuth plugin configuration script from the Django shell and then select **[3] Delete an OAuth config**. You will be prompted to type the name of the configuration that you want to delete. Type the name (the value of ``config_name``) of the OAuth configuration you want to delete and press Enter.
+
+Add Data Sources to an Existing OAuth Config
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Call the OAuth plugin configuration script from the Django shell and then select **[4] Add datasources to an existing OAuth config**. Follow all the prompts and specify the required values or accept defaults.
+
+You will be prompted to first enter the name of the configuration (``config_name``), and then to provide a comma-separated list of data source IDs to be added to this configuration.
+
+This allows adding a data source to an existing config object.

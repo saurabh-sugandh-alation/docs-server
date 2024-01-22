@@ -1,0 +1,307 @@
+Update Alation to 2021.4
+================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Alation recommends using the latest patch version of a major release if you are upgrading from a previous major version.
+
+2021.4 Update Version Dependencies
+----------------------------------------------
+
+Alation supports a direct update to version 2021.4 from the following previous versions:
+
+    - 2021.1.x
+    - 2021.2.x
+    - 2021.3.x
+
+Version 2020.4.x and Older
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Direct update to 2021.4 is not supported from versions 2020.4 and older.
+
+First, update Alation to a version that supports the update to 2021.4, for example, 2021.3, - and then perform a second update to 2021.4. Use the update instructions specific to your release to update.
+
+.. _20214-Release-Specific-Information:
+
+2021.4 Release-Specific Information
+----------------------------------------
+
+Please take note of a number of important changes in 2021.4.
+
+    .. note::
+
+        More information about new features is available in :doc:`Release Notes 2021.4 (General Availability) <../../releases/releasenotes/ReleaseNotes20214>`.
+
+Log4j 2 Security Update
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Version 2021.4.4 includes security fixes for the Log4j 2 vulnerabilities reported in December 2021. In 2021.4.4, the Alation Hive Connector and Elasticsearch components were updated with a newer version of Apache Log4j 2, which mitigates the potential risks. Subsequent versions of 2021.4 will also include this update.
+
+Alation Analytics V2 Database Upgrade to Version 13.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Following the upgrade of the internal server database (*Rosemeta*) to version 13.1 in release 2021.3, the Alation Analytics V2 database is also going to be upgraded to 13.1 during the update to 2021.4.
+
+The database upgrade happens automatically when the Alation Analytics V2 application is updated. The upgrade requires a disk space check in the Alation Analytics installation directory.
+
+Built-In Driver Upgrades
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - **SQL Server**: added the SQL Server driver version **9.4.0**. Data source admins can choose to manually switch to the newer driver.
+    - **MySQL**: upgraded the MySQL driver to version **8.0.26**. The existing MySQL data sources added using the native MySQL connector will be automatically switched to the upgraded driver version.
+    - **Databricks**: upgraded the Databricks driver to version **2.6.17**. The existing AWS Databricks data sources added using the native Databricks connector will be automatically switched to the upgraded driver version.
+    - **Snowflake**: upgraded the Snowflake driver to version **3.13.6**. The existing Snowflake data sources will be automatically switched to the upgraded driver version.
+    - **Google BigQuery**: upgraded the Google BigQuery driver to version **1.2.19.1023**. The existing Google BigQuery data sources will be automatically switched to the upgraded driver version.
+
+alation_conf Default Value Changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default values of a number of **alation_conf** parameters have changed.
+
+Small Query Results No Longer Stored More Than 7 Days (Default)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The default value of the **alation_conf** parameter ``alation.query_exec.results_auto_persist_bytes`` now defaults to zero. This means that no unsaved query results are going to be automatically persisted for longer than seven days (default) and that queries of any size are now subject to the same seven-day retention period.
+
+Advanced Search and Query Search Pages Disabled By Default
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The **Advanced Search** and **Query Search** pages are turned off by default in 2021.4. These pages are behind **alation_conf** parameters ``alation.feature_flags.enable_query_search`` and ``alation.feature_flags.enable_advanced_search``. The default values for these parameters are now set to ``False``.
+
+OCF Connector Framework Enabled by Default
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The **alation_conf** parameter ``alation.feature_flags.enable_gbm_v2_connector_strategy`` is set to ``True`` by default. This means, there is no need to manually set this parameter before installing OCF connectors on the Alation server.
+
+Postgres Table Size Monitoring
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation now monitors Postgres table size relative to the available disk space. When the space occupied by Postgres tables nears a critical threshold, Alation sends out email alerts to Server Admins. Alerts are enabled by default. This means, after updating to 2021.4, Server Admins will begin receiving email notifications based on the default alert configuration.
+
+By default, Alation monitors the size of 1 Postgres table - ``data_storage_blobaccesspostgres`` - that stores Compose query results.
+
+The alerts are sent based on configurable values for both the disk space thresholds and notification frequency. The group of **alation_conf** parameters
+``alation.monitor_pg_disk_usage.*`` can be used to configure the alerts.
+
+CentOS 8 Replaced by Red Hat UBI Init 8.4 in the Chroot
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From version 2021.4, the Alation server no longer uses CentOS 8 in the Chroot and instead uses Red Hat UBI Init 8.4. Red Hat UBI 8.4 is based on RHEL 8.4, with a subset of the full RHEL feature set.
+
+No action is required from Alation admins. This change is internal to the server and does not affect the host operating system or end-users.
+
+Elasticsearch Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The internal Elasticsearch component has been updated to version 7.14. No manual action is required  from Alation admins in connection with this upgrade. The transition to Elasticsearch 7.14 will happen automatically during the update to 2021.4.
+
+Backup and Restore Process Change
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From 2021.4, Alation backs up a new server component - the Event Bus. The Event Bus data is backed up by the Backup V2 tool separately from the rest of the Alation application data. This means, the Backup process will back up both the Alation data and the Event Bus data and create two backup files in the **/backup** directory: the Alation data backup file and the Event Bus backup file.
+
+The restore process will require both backup files. More information: :ref:`Backup20214`.
+
+    .. note::
+
+        The Event Bus backup can be disabled using **alation_conf** if Lineage V3 is not in use on the instance. If the Event Bus backup is disabled, then Alation will only create one backup file as in previous releases. The Event Bus backup has to be enabled if Lineage V3 is enabled.
+
+2021.4 Update Known Issue
+-------------------------------
+
+If you have a password set on the internal PostgreSQL database (Rosemeta), the update to 2021.4 will result in an error: *Password for user alation: psql: fe_sendauth: no password supplied ERROR: Cannot upgrade alation*.
+
+The update to 2021.4 requires that the password on the internal PostgreSQL database should be cleared for the time of the update. The password needs to be set again after the update is completed. On how to set or clear the Postgres password, see :doc:`Set Password for Internal PostgreSQL Instances <../../admins/AdditionalConfiguration/SetPasswordforPostgreSQLInstance>`.
+
+Update Alation from 2021.3.x to 2021.4
+------------------------------------------------
+
+STEP 1: Update the Value of Parameter elasticsearch.env.es_java_opts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if you have previously changed the value of the **alation_conf** parameter ``elasticsearch.env.es_java_opts`` based on recommendations in the initial *Log4j 2 Security Advisory from December 10, 2021*. Before updating Alation to 2021.4.4, clear the value ``-Dlog4j2.formatMsgNoLookups=true`` from ``elasticsearch.env.es_java_opts`` and set a new value. Follow instructions in :doc:`Validating the Value of Parameter elasticsearch.env.es_java_opts <../../installconfig/Update/ValidatingValueOfelasticsearch_env>` to set the required value.
+
+STEP 2: Check Space in the Alation Analytics V2 Installation Directory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if Alation Analytics V2 is in use on your instance. If not, you can skip this step.
+
+On the Alation Analytics V2 host, check the disk space usage. There must be >= 50% free disk space available for the Alation Analytics V2 Postgres upgrade to succeed.
+
+To check the currently available disk space, on the host:
+
+    1. Change to root user:
+
+        .. code-block:: Bash
+
+            sudo -i
+
+    2. Run the disk space check:
+
+        .. code-block:: Bash
+
+            df -h <path/to/AlationAnalyticsV2/installation/directory>
+
+
+STEP 3: Update the Alation Application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Update instructions:
+
+    - :doc:`Manual Software Update for Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+
+    - Update on the HA Pair:
+
+          - with splitting the HA cluster: :doc:`Update HA Pair with Cluster Splitting <../../installconfig/Update/UpdateHAPairwithClusterSplitting>`
+
+          - without splitting the cluster: :doc:`Update HA Pair Configuration (4.7 and above) <../../installconfig/Update/updateHAPair>`
+
+Recommendation
+^^^^^^^^^^^^^^^^^^
+
+Check the value of the **alation_conf** parameter ``elasticsearch.env.es_java_opts`` after the update. It should contain the value -``Djava.security.policy=file:/usr/share/elasticsearch-7.14/log4j.policy`` and should not contain the value ``-Dlog4j2.formatMsgNoLookups=true``.
+
+
+STEP 4: Update Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if Alation Analytics V2 is in use on your instance.
+
+    .. important::
+
+          At least 50% disk space must be available on the host to successfully upgrade the Alation Analytics V2 database.
+
+Use the steps in :doc:`Update Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2>` to update Alation Analytics V2. Note that during this update, the Alation Analytics V2 database version will be automatically updated to version **13.1**.
+
+Related topic: :doc:`Troubleshooting Alation Analytics V2 Upgrade to 2021.4 <../../admins/Troubleshooting/TroubleshootAAV2UpdateTo20214>`
+
+STEP 5: Update Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step is mandatory if OCF components are installed on your instance. Use the steps in :doc:`Update Alation Connector Manager <../../installconfig/Update/OCFUpdateAlationConnectorManager>` to it.
+
+STEP 6: Review Backup and Restore Process
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On the changes to the Backup and Restore process in 2021.4, see: ref:`Backup20214`. You can disable the Event Bus backups in 2021.4 LA.
+
+Update Alation from 2021.1 or 2021.2 to 2021.4
+---------------------------------------------------
+
+Use the steps in this section to update Alation to version 2021.4 from versions 2021.1.x or 2021.2.x.
+
+STEP 1: Update the Value of Parameter elasticsearch.env.es_java_opts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if you have previously changed the value of the **alation_conf** parameter ``elasticsearch.env.es_java_opts`` based on the recommendation in the initial *Log4j 2 Security Advisory from December 10, 2021*. Before updating Alation to 2021.4.4, clear the value ``-Dlog4j2.formatMsgNoLookups=true`` from ``elasticsearch.env.es_java_opts`` and set a new value. See instructions in :doc:`Validating the Value of Parameter elasticsearch.env.es_java_opts <../../installconfig/Update/ValidatingValueOfelasticsearch_env>` to set the required value.
+
+STEP 2: Review Release-Specific Information
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You are skipping releases 2021.2 and 2021.3. Make sure to review information specific to the releases you skip. A number of additional steps or checks are required for these upgrade paths:
+
+    - :ref:`2021.3 Release-Specific Information <20213-Release-Specific-Information>`
+
+    - :ref:`2021.2 Release-Specific Information <20212-Release-Specific-Information>`
+
+STEP 3: Prepare for Postgres Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See :ref:`Prepare for Postgres Upgrade <Update_20213-Step2>` in the update instructions for 2021.3.
+
+STEP 4: Check Space in the Alation Analytics V2 Installation Directory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if Alation Analytics V2 is in use on your instance. If not, you can skip this step.
+
+On the Alation Analytics V2 host, check the disk space usage. There must be >= 50% free disk space available for the Alation Analytics V2 Postgres upgrade to succeed:
+
+To check the currently available disk space, on the host:
+
+    1. Change to root user:
+
+        .. code-block:: Bash
+
+            sudo -i
+
+    2. Run the disk space check:
+
+        .. code-block:: Bash
+
+            df -h <path/to/AlationAnalyticsV2/installation/directory>
+
+STEP 5: Update Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Update instructions:
+
+    - :doc:`Manual Software Update for Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+
+    - Update on the HA Pair:
+
+          - with splitting the HA cluster: :doc:`Update HA Pair with Cluster Splitting <../../installconfig/Update/UpdateHAPairwithClusterSplitting>`
+
+          - without splitting the cluster: :doc:`Update HA Pair Configuration (4.7 and above) <../../installconfig/Update/updateHAPair>`
+
+          .. note::
+
+              PostgreSQL upgrade will not happen on Secondary if you are updating without splitting the cluster. It will be necessary to run the replicate Postgres script to sync with the Primary. This is included into the update instructions for HA Pair as a conditional step.
+
+Recommendation
+^^^^^^^^^^^^^^^^^^
+
+Check the value of the **alation_conf** parameter ``elasticsearch.env.es_java_opts`` after the update. It should contain the value -``Djava.security.policy=file:/usr/share/elasticsearch-7.14/log4j.policy`` and should not contain the value ``-Dlog4j2.formatMsgNoLookups=true``.
+
+
+STEP 6: Verify the Postgres Version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After the Alation update is completed, ensure that Postgres has been successfully upgraded by running the command given below from the Alation shell. This command should return the updated version of PostgreSQL: **13.1**:
+
+    .. code-block:: Bash
+
+          alation_psql
+
+If the command returns 2 versions:
+
+    .. code-block:: Bash
+
+          psql (13.1, server 9.6.13)
+
+this means Postgres upgrade did not happen on your instance. Run the Postgres upgrade command manually from the Alation shell:
+
+    .. code-block:: Bash
+
+          alation_action upgrade_postgres
+
+Ensure there are no errors in Alation UI after the upgrade by performing some basic post-upgrade testing.
+
+STEP 7: Update Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform this step if Alation Analytics V2 is in use on your instance.
+
+    .. important::
+
+        At least 50% disk space must be available on the host to successfully upgrade the Alation Analytics V2 database.
+
+
+Use the steps in :doc:`Update Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2>` to update Alation Analytics V2. Note that during this update, the Alation Analytics V2 database version will be automatically updated to version **13.1**.
+
+Related topic: :doc:`Troubleshooting Alation Analytics V2 Upgrade to 2021.4 <../../admins/Troubleshooting/TroubleshootAAV2UpdateTo20214>`
+
+STEP 8: Update Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step is mandatory if OCF components are installed on your instance. Use the steps in :doc:`Update Alation Connector Manager <../../installconfig/Update/OCFUpdateAlationConnectorManager>` to update it.
+
+STEP 9: Create a Backup of the Updated Instance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Backups created on Postgres 9.6 are not compatible with 2021.4 after Postgres upgrade to 13.1. You need to take a full new backup of your system after updating all components to 2021.4.
+
+1. Before taking the backup, review:
+
+      - ref:`Backup20214`.
+
+2. Create a full backup using the steps in :ref:`Create a Backup of the Updated Instance <Update_20213-Step8>`. Note that an incremental backup will fail. The first backup after the update should be a full backup.

@@ -1,0 +1,203 @@
+Install the Alation Agent
+============================
+
+.. include:: /shared/ProductLabels/Cloud_Label.rst
+
+Installing the Alation Agent (Agent) involves six basic steps:
+
+1. Prepare for the installation.
+
+2. Navigate to the Agent dashboard.
+
+3. Perform the preflight check (optional).
+
+4. Download the Agent and run the installation script.
+
+5. Name the Agent.
+
+6. Generate encryption certificates.
+
+These steps are described in detail below. You will be switching back and forth between Alation and the Agent’s host machine to complete the installation. You’ll use information provided in Alation to run commands on the Agent machine, and you’ll sometimes copy the output of those commands back into Alation.
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-multiple-agents
+   :end-before: .. end-multiple-agents
+
+Step 1: Prepare for the Installation
+------------------------------------
+
+Before you can install the Agent, you must:
+
+-  Open a support ticket to:
+
+   -  Request that the Agent be enabled on your Alation Cloud instance. You can verify this has been done by having a user with the role of Server Admin navigate to the **Admin Settings**, then **Manage Connectors**. If that user can see the **Agents** tab on the left and click on it to open the Agents Dashboard, then the Agent has been enabled on your Alation Cloud instance.
+
+   -  Request the OCF connectors you would like to use with the Agent.
+
+-  Provision a Linux host to install the Agent on.
+
+   -  Check the :ref:`System Requirements <Agent System Requirements>` for the required hardware and software.
+
+   -  The Agent’s host can be a physical or virtual machine. A virtual machine can be set up in a shared server environment, as long as the system requirements are met.
+
+   -  The Agent machine should be located appropriately within your network so that it can access the relevant data sources.
+
+   -  Don’t run other software on the Agent machine—only the Agent should be installed.
+
+-  Ensure that outbound port 443 is open.
+
+-  If you are using an HTTP CONNECT proxy, the proxy needs to allow resolving the DNS address within your Alation Cloud instance that is available for the Agent. You will find this address in :ref:`Step 3: Preflight Check <Preflight Check>`. If your proxy server is a TLS middlebox, additional steps are required. Contact Alation Support for more information.
+
+-  Get access to Alation’s Customer Portal. At least one person in your organization should already have access. If you don’t know who that is, contact your account manager.
+
+-  Make sure you have the Server Admin role in Alation.
+
+Step 2: Navigate to the Agent Dashboard
+---------------------------------------
+
+First ensure you have completed the prerequisites in the prior step. You must have the Server Admin role in Alation to complete the remaining steps.
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-navigate-to-agents-dashboard
+   :end-before: .. end-navigate-to-agents-dashboard
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-click-new-agent-button
+      :end-before: .. end-click-new-agent-button
+
+.. _Preflight Check:
+
+Step 3: Preflight Check (Optional)
+----------------------------------
+
+Check that the Agent host machine can resolve the DNS that is available for the Agent from your Alation Cloud instance. You can find the address on the first screen of the **Add New Agent** dialog.
+
+.. image:: ../../_static/Agent_AddNewAgent_Install_Address.png
+   :class: with-border
+
+You will need to make sure you have SSH credentials to the Agent machine and that it has outbound access to the open internet. If you do not want the Agent to have outbound access to the open internet, you may use a proxy server. In that case you will need to whitelist the Alation Cloud address on your proxy server to allow the Agent machine outbound access to Alation Cloud Service.
+
+Then you can use a tool such as **dig** or **nslookup** to see if you can reach your Alation Cloud instance address. For example:
+
+.. code-block:: bash
+
+   dig <your-alation-cloud-domain>
+
+If your Alation Cloud instance is reachable, the output of the **dig** command should include something like this:
+
+.. code-block:: bash
+
+   ;; ANSWER SECTION:
+   <your-alation-cloud-domain>. 60 IN A <alation-cloud-IP>
+
+If your Alation Cloud instance is not reachable, you will need to configure your network to correctly resolve the DNS.
+
+Step 4: Download and Run Installation Script
+--------------------------------------------
+
+You’re now ready to download the software package and run the installation script.
+
+1. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-click-link-to-portal
+      :end-before: .. end-click-link-to-portal
+
+2. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-select-agent-download
+      :end-before: .. end-select-agent-download
+
+3. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-transfer-installation-file
+      :end-before: .. end-transfer-installation-file
+
+4. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-extract-installation-file
+      :end-before: .. end-extract-installation-file
+
+5. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-change-into-ocf-agent-dir
+      :end-before: .. end-change-into-ocf-agent-dir
+
+6. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-copy-installation-command
+      :end-before: .. end-copy-installation-command
+
+7. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-run-installation-command
+      :end-before: .. end-run-installation-command
+
+8. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-optional-proxy-setup
+      :end-before: .. end-optional-proxy-setup
+
+9. In Alation, click the **Next** button.
+
+You have now installed and configured the Agent on a machine inside your network. Next you’ll need to name the Agent in Alation.
+
+.. _Agent Configure Proxy:
+
+Advanced Configuration
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-configure-proxy
+   :end-before: .. end-configure-proxy
+
+Step 5: Name Your Agent
+-----------------------
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-name-the-agent
+   :end-before: .. end-name-the-agent
+
+Now that you’ve named the Agent, it’s time to establish the secure connection between your Alation Cloud instance and the Agent.
+
+.. note::
+
+   After starting the Add Agent workflow you can always close the Add New Agent dialog. You can pick it back up again at a later time by returning to the Agent Dashboard and clicking on the **Complete Setup** link.
+
+Step 6: Generate Encryption Certificates
+----------------------------------------
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-certificate-intro
+   :end-before: .. end-certificate-intro
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-generate-certificate-request
+      :end-before: .. end-generate-certificate-request
+
+   .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-output-of-request
+      :end-before: .. end-output-of-request
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-copy-certificate-request
+      :end-before: .. end-copy-certificate-request
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-paste-certificate-request
+      :end-before: .. end-paste-certificate-request
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-copy-certificate-installation-command
+      :end-before: .. end-copy-certificate-installation-command
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-paste-certificate-installation-command
+      :end-before: .. end-paste-certificate-installation-command
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-restart-agent
+      :end-before: .. end-restart-agent
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-click-finish
+      :end-before: .. end-click-finish
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-certificate-expiration-note
+   :end-before: .. end-certificate-expiration-note
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-install-done
+   :end-before: .. end-install-done

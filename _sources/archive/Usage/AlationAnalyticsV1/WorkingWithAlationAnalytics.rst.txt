@@ -1,0 +1,185 @@
+Working with Alation Analytics
+================================
+
+*Available from version V R3 (5.6.x)*
+
+.. note::
+
+    This section is for **Alation Analytics Version 1 (V1)**. Please see :doc:`Alation Analytics V2 </installconfig/AlationAnalyticsV2/index>` for information about Version 2 (available from release *2020.3*).
+
+Enabling Alation Analytics
+------------------------------
+
+Prerequisite
+~~~~~~~~~~~~~~~
+
+Alation Analytics is a PostgreSQL database that will consume disk space. Make sure that the disk space in your Alation instance environment is enough to deploy such a database. Alation recommends that there must be at least one-and-a-half to two times of your Alation application database size of disk space for this feature to work correctly.
+
+To calculate disk usage for your Alation application database (*Rosemeta*), you can use the following command on the database host server - from inside Alation shell by a user with sudo permissions:
+
+**In releases before V R6 (5.10.x)**:
+
+.. code-block:: bash
+
+    du -sh /var/lib/pgsql/9.3/
+
+**From V R6 (5.10.x)**: in new installations of *V R6 (5.10.x)* or after upgrading the internal PostgreSQL from 9.3 To 9.6 (see :doc:`Upgrade Internal PostgreSQL Instances from 9.3 to 9.6 </installconfig/Update/UpgradeInternalPostgreSQLInstances>` ):
+
+.. code-block:: bash
+
+    du -sh /var/lib/pgsql/9.6/
+
+Having calculated the size of Rosemeta, make sure you have one-and-a-half to two times more free disk space (GB) before you enable Alation Analytics.
+
+Turning On Alation Analytics
+------------------------------
+
+#. Sign in to Alation as a *Server Admin* and in the upper-right corner of the main toolbar, click the **Admin Settings** icon. The Admin Settings page will open.
+
+#. In the Admin Settings section, click **Labs/Feature Configuration** to open the Labs/Feature Configuration tab.
+
+#. Find and toggle on **Alation Analytics - Understand the Alation usage patterns at your organization**.
+
+#. In the upper-right corner of the **Labs/Feature Configuration** tab, click **Save changes**. This will apply the changes and enable the Alation Analytics in your Alation instance.
+
+Turning on Alation Analytics adds a new data source named **Alation Analytics** to Alation. It can be accessed using the left-hand navigation menu, using the **Sources** page or located with the help of Search.
+
+There is a daily background job that extracts, transforms and loads data from Alation application database to Alation Analytics database. This job is initiated automatically after the Alation Analytics flag is turned on then runs daily at a predefined time. To run this job manually, see :doc:`Analytics ETL on Demand </archive/Usage/AlationAnalyticsV1/AnalyticsETLonDemand>`.
+
+After the Alation Analytics Data Source is added, Server Admins can grant access to this database to themselves first then to other users and run Metadata Extraction to expose the metadata. Note that metadata from this Data Source will not be available without running the MDE.
+
+Granting Access
+-----------------
+
+For users to be able to view, query or manage the Alation Analytics Data Source, they must be granted access.
+
+#. Find Alation Analytics in the Data Source list.
+
+#. Click it in the menu to open its catalog page. Alation Analytics is added as a **Private** Data Source. Server Admins can first grant access to themselves, assign other users to be *Viewers*, *Queriers* or *Admins*.
+
+#. To grant access to yourself as the Server Admin, in the upper-right corner of the Alation Analytics Data Source page, click **More** then click **Settings**. **Edit Your Permissions to Access Settings** warning will pop up.
+
+#. In this popup, click **Go to Access**. The **Access** tab of the Data Source settings page will open.
+Find section **People with Access**. To the right of this title, click **Add**, and in the **Search Users** list that opens, start typing your username. The list will update accordingly. Find and click your username. You will be added to the **People with Access** list.
+
+.. important::
+
+    All new users are added with the access level *Viewer*, including users who are Server Admins. You can change the access level in the **Access Level** column of the **People with Access** table.
+
+To grant access to other users,
+
+#. Click **Add** to the right of title **People with Access** then find and click the required username. The selected user will be added to the **People with Access** list.
+#. To change the access level for a user, find them in the **People with Access** table, and click the current Access value in the **Access Level** column to open the list of options.
+#. In the **Access Level** list, click the access level you want to assign to the user:
+
+    - *Data Source Admin* - can manage the Data Source settings, add other users as Data Source Admins, Viewers, or Queriers, and query the Data Source. Data Source Admins are given a database account to connect to Alation Analytics and can set up the password on their Account Settings page.
+    - *Querier* - can both view the extracted metadata and query Alation Analytics in Compose. Queriers are given a database account, too, and can set up the password on their Account Settings page.
+    - *Viewer* - can only view the extracted metadata of the Data Source. They are not given an account to query Alation Analytics.
+
+.. image:: ../../../_static/AA01.png
+
+Setting Up Database Access Account
+-------------------------------------
+
+Users granted the *Data Source Admin* or *Querier* access level to Alation Analytics will need to complete the setup of their database access account to be able to query this database using Compose or other BI tools. When a user is assigned either the Data Source Admin or the Querier access, they will receive an email notification from Alation with a link to their Account Settings page where they can provide the password for Alation Analytics.
+
+.. note::
+
+    For email notifications to reach users, the Email Server in Alation should be set up correctly.
+
+To set up the database account password,
+
+#. Follow the link in the Data Source assignment email notification. Alternatively, in Alation, you can hover over the user icon in the upper right-hand corner of the main toolbar and in the list that opens, click **Account Settings**. The user’s Account Settings page will open.
+
+#. Click the **DB Connections** tab.
+
+#. Under **Alation Analytics Connection**, click **Create Password** on the right to create a new password or click **Change Password** if you are changing your existing password. Note that you need to have either Data Source Admin or Querier access level for Alation Analytics to see the Alation Analytics Connection section.
+
+#. In the **Create Password** dialog that appears, provide your new password and click **Save**. Your DB Account setup for Alation Analytics is now complete. You can test it by establishing a connection to Alation Analytics in Compose, Alation’s integrated querying tool.
+
+.. image:: ../../../_static/AA02.png
+
+Removing an Alation Analytics Account
+---------------------------------------
+
+To revoke access to Alation Analytics from a user,
+
+#. Sign in to Alation, find the Alation Analytics Data Source and open its catalog page.
+
+#. In the upper-right corner, click **More** then **Settings**. The Data Source setting page will open.
+
+#. On the **Access** tab, in the **People with Access** list, find the user to revoke access from. To find the user, you can start typing their name in the Filter in the top right corner of the table. The list of users with access will update accordingly to display names that fit your search query.
+
+#. For this user, click **Remove**. The corresponding database account will be removed, and the user will no longer be able to access Alation Analytics.
+
+Extracting Metadata
+-----------------------
+
+To expose metadata of Alation Analytics, it is necessary to run Metadata Extraction from this Data Source. For details on Metadata Extraction, see :doc:`Metadata Extraction </sources/CatalogSources/MetadataExtraction>`.
+
+Downloading User Credentials History
+---------------------------------------
+
+As a Data Source Admin, you can obtain a log of all users who have ever had credentials to access Alation Analytics. To do that,
+
+In the **People** section of the Alation Analytics Settings > **Access** page, click **Download User Credential History**. The database users history file in the .csv format (**db_users_history.csv**) will be downloaded to your computer.
+
+The **db_users_history.csv** has the following information:
+
+========================== ================================================================================================
+Column                     Description
+========================== ================================================================================================
+id                         Internal id for the given record
+db_username                Username of the db account
+account_state              Level of access: ``ds_admin`` = Data Source Admin; ``viewer`` = Viewer; ``querier`` = Querier
+user_id                    ID of the user in Alation
+authorizer_id              ID of the user who granted the given user access to Alation Analytics database
+ts_created                 Timestamp - db account created
+ts_updated                 Timestamp - db account updated last
+deleted                    If account is deleted, True or False
+ts_deleted                 Timestamp - account deleted, if it was deleted
+account_exists_on_db       If account exists on the database, True or False
+========================== ================================================================================================
+
+Using Alation Analytics with 3rd Party BI Tools
+--------------------------------------------------
+
+Alation Analytics can be opened for access from 3rd party BI or querying tools. For these tools to connect to Alation Analytics, they need to be added to Whitelisted Connections in Alation Analytics settings. This will allow the service at a specific IP address to access the Alation Analytics database. Note that you will need to provide your Alation Analytics database access credentials to connect.
+
+Alation Analytics Information for External Access
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To connect to Alation Analytics from a 3rd party BI tool, use the following information:
+
+============================= ===============================================================================
+Database type                 PostgreSQL
+URL                           the URL of your Alation instance
+Database name                 alation_analytics
+TCP Port                      5433
+Access credentials            your database access account credentials for Alation Analytics in Alation
+============================= ===============================================================================
+
+.. note::
+
+    If you are working with Tableau, you need to whitelist both the Tableau server and the client IP address of the Tableau desktop machine you are using Tableau on.
+
+To whitelist the 3rd party BI or querying tools,
+
+#. Sign in to Alation, find the Alation Analytics Data Source and open its catalog page.
+#. In the upper-right corner, click **More** then **Settings**. The Data Source settings page will open.
+#. On the **Access** tab, in the **Connections** section, click **Add Connection** on top right of the **Whitelisted Connections** table and in the **Add Connections** dialog that opens, provide the **Connection Name** and **IP address** (in CIDR format: ``127.0.0.1/32``), then click **Save and Restart**. The new connection will be whitelisted.
+
+.. image:: ../../../_static/AA03.png
+
+.. note::
+
+    When the new connection is saved, its status in Alation may be **Pending**. After it changes to **Active**, you can connect to Alation Analytics from an external tool. If status **Pending** persists for a long time, you can try restarting Alation Analytics to push it to **Active**.
+
+Restarting Alation Analytics
+------------------------------
+
+Alation Analytics can be restarted to force any queued jobs to run. To restart the database, click **Restart Database** in the **Connections** section of the **Access** tab. Restart takes a few seconds to complete, but any running queries will be aborted.
+
+Related Topics
+-------------------
+
+:doc:`/installconfig/BackupandRestore/RestoreFromBackup/RestoreAnalytics`

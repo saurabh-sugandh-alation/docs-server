@@ -1,0 +1,33 @@
+Specific Object Fields
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+For the given object, what are the values for each of the fields, as
+seen in Alation Analytics. Mostly used to see how data in the catalog
+will be seen in Alation Analytics. This query is parametrized.
+It will require that you provide the object ID - you can obtain it from
+the object URL in Alation. For example, in the
+URL ``https://alationtest.com/article/308/confirmed-activity``, the number
+308 is the ID of the object (in this example, article).
+
+.. code-block:: console
+
+  -- Fields for a specific article
+  SELECT *
+  FROM
+    public.object_field_value ofv
+    INNER JOIN public.object_field of ON of.field_id = ofv.field_id
+    INNER JOIN public.field_value fv ON ofv.value_fp = fv.value_fp
+  WHERE
+    lpad(to_hex($ { object_number integer }), 32, '0') :: uuid = object_uuid
+    AND object_type_id IN (
+      SELECT
+        object_type_id
+      FROM
+        public.alation_object_type
+      WHERE
+        object_type_name ILIKE '%${object_type  text  default: article}%'
+    );

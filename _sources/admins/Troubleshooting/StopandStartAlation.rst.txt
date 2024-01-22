@@ -1,0 +1,86 @@
+Stopping and Starting Alation
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+You are not expected to regularly stop and start the Alation services. If there
+is an issue, an Alation Support engineer will guide you through the restart process. 
+
+Alation runs in a root jail environment, and access to services in the
+Alation environment is through the Alation shell.  You need to have
+an account with the ``sudo`` access to the Alation server to run the
+commands given below.
+
+Stop Alation
+------------
+
+To stop all Alation services:
+
+.. code-block:: bash
+
+    sudo /etc/init.d/alation stop
+
+
+Start Alation
+------------------
+
+To start all Alation services:
+
+.. code-block:: bash
+
+    sudo /etc/init.d/alation start
+
+Accessing individual services and checking the Alation status
+------------------------------------------------------------------
+
+To access information on individual services running in the Alation
+environment, enter the Alation shell:
+
+.. code-block:: bash
+
+    sudo /etc/init.d/alation shell
+
+In the Alation shell you can check status, start, and stop
+individual services as follows using one of the actions ``start``, ``stop``, or ``status``:
+
+Postgres
+~~~~~~~~~~~~~~~
+
+2021.3.x and newer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    sudo /etc/init.d/postgresql-13 status | start | stop
+
+V R6 (5.10.x) - 2021.2.x
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    sudo /etc/init.d/postgresql-9.6 status | start | stop
+
+Releases Before V R6 (5.10.x)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    sudo /etc/init.d/postgresql-9.3 status | start | stop
+
+
+Other Services
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    sudo /etc/init.d/nginx status | start | stop
+    sudo /etc/init.d/sensu-client status | start | stop
+    sudo /etc/init.d/redis-server status | start | stop
+    sudo /etc/init.d/download-client status | start | stop
+    alation_supervisor status all
+
+System Reboot
+-------------
+
+In Linux distributions that use sysvinit, Alation services are registered with ``chkconfig`` and will be shut down and restarted on reboot. In particular, Debian 9 and 10 may optionally use sysvinit, although they install with systemd by default. Other Linux distributions that Alation supports don't use sysvinit and use systemd instead. On such distributions, you may need to restart Alation services manually after a system reboot.
+

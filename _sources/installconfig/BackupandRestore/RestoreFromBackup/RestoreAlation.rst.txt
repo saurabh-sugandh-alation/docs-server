@@ -1,0 +1,149 @@
+Restore Alation
+===========================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Use the steps below to restore Alation from a backup when the Postgres database backups are included into the compressed Alation backup file (default).
+
+Version 2021.4 or Newer
+--------------------------
+
+In order to restore backups of 2021.4 and newer, you need to use two backup files: the Alation application backup and the Event Bus backup.
+
+    .. note::
+
+        See :doc:`/installconfig/BackupandRestore/FindBackups` for details about the backup storage location.
+
+To restore, follow these steps:
+
+1. On the new system where you are going to restore, create a temporary directory in **/data2**, for example, **/data2/restore**.
+
+2. Move or copy the Alation and Event Bus backup files to this directory. This ensures that both backup files are accessible from inside the Alation chroot.
+
+    .. important::
+
+        Make sure to use two backup files taken by the same backup process. They will have the same timestamp and version, for example:
+
+            - Alation backup file: ``202109232027_10-0-0-147420_alation_backup.tar.gz``
+
+            - Event Bus backup file: ``202109232027_10-0-0-147420_alation_eb_backup.tar.gz``
+
+            The first two parts of the file name, such as ``202109232027`` and ``10-0-0-147420``, separated with underscores, document the timestamp of the backup action and the Alation version.
+
+3. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+4. Using the **alation_conf** command, change the ``alation.backup.restore_file`` parameter value to reflect the path to the backup file, for example:
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup.restore_file -s /data2/restore/202109232027_10-0-0-147420_alation_backup.tar.gz
+
+5. Using the **alation_conf** command, change the ``alation.backup.eb_restore_file`` parameter value to reflect the path to the Event Bus backup file, for example:
+
+    .. code-block:: Bash
+
+        alation_conf alation.backup.eb_restore_file -s /data2/restore/202109232027_10-0-0-147420_alation_eb_backup.tar.gz
+
+6. Change user to ``alation``:
+
+    .. code-block:: Bash
+
+        sudo su alation
+
+7. Change ownership of the Alation backup file to user ``alation``:
+
+    .. code-block:: Bash
+
+        sudo chown alation:alation <path/to/Alation/backup/file>
+
+    Example:
+
+    .. code-block:: Bash
+
+        sudo chown alation:alation /data2/restore/202109232027_10-0-0-147420_alation_backup.tar.gz
+
+8. Change ownership of the Event Bus backup file to user ``alation``:
+
+    .. code-block:: Bash
+
+        sudo chown alation:alation <path/to/Event-Bus/backup/file>
+
+    Example:
+
+    .. code-block:: Bash
+
+        sudo chown alation:alation /data2/restore/202109232027_10-0-0-147420_alation_eb_backup.tar.gz
+
+9. Run the restore command to perform the restore. Note that this command overwrites all existing data on the instance if any exists:
+
+    .. code-block:: Bash
+
+        alation_action destructive_restore_all
+
+Version 2021.3 or Older
+---------------------------
+
+.. note::
+
+    The restore process requires a clean system with no existing configuration.
+
+
+To restore an existing backup,
+
+1. Copy the backup file to the host where you want to restore. This system should have the same version of the Alation software as the version which generated the backup file.
+
+2. Check to make sure you are in the right server: you should be on the machine where you are going to restore.
+
+3. Create a directory accessible from inside the Alation Chroot. For example, create a directory on the backup drive: **/data2/restore**.
+
+4. Copy the backup file into the directory you created inside the Chroot.
+
+5. Enter a Screen session.
+
+    .. code-block:: bash
+
+        screen -S alation-restore
+
+6. Enter the Alation shell.
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+7. Change the ``alation_conf`` value to reflect the path to the backup file. For example:
+
+    .. code-block:: bash
+
+        alation_conf alation.backup.restore_file -s /data2/restore/backup_file.tar.gz
+
+8. Substitute user to ``alation``:
+
+    .. code-block:: bash
+
+        sudo su alation
+
+9. Change ownership of the restore file to the ``alation`` user:
+
+    .. code-block:: bash
+
+        sudo chown alation:alation /data2/restore/backup_file.tar.gz
+
+10. Type the following command to run the restore. As the name suggests, this action overwrites all existing data.
+
+    .. code-block:: bash
+
+        alation_action destructive_restore_all
+
+The Alation data will be restored from the backup file.
+
+To check for success:
+
+Log in to Alation and ensure that the data you expect to see from the backup is displayed. For example, download a data dictionary for a data source and check the number of rows.
+
+    .. note::
+
+        If users testing the restore encounter *Error 500* on some pages in Alation, this may point to the need to reindex some of the internal database tables. See :doc:`How to Reindex Tables after Backup Restore </admins/Troubleshooting/ReindexTablesafterBackupRestore>`.

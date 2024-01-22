@@ -1,0 +1,115 @@
+Elasticsearch Upgrade to 7.4 FAQ and Troubleshooting
+======================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies to release V R7 (5.12.x)*
+
+Before V R7, Alation is using Elasticsearch 1.4 as a component of the application architecture. In V R7 (5.12.x),  Elasticsearch is upgraded to version 7.4 to take advantage of numerous bug fixes, new features, and enhancements released since version 1, covering such areas as search speed, security, and capabilities for improving search quality.
+
+In V R7 (5.12.x), on new installations and after instances are updated from previous releases, both versions of Elasticsearch - 1 and 7 - will be installed, and both versions will start when Alation starts. In the background the search index will be migrated to Elasticsearch 7, and after index migration is completed, Alation will switch to exclusively using version 7.
+
+While index migration is in progress, the memory consumption by the Elasticsearch component is expected to double on a temporary basis. When the migration is completed, memory usage by Elasticsearch will be back to normal.
+
+How can I tell which Elasticsearch version is being used by Alation?
+----------------------------------------------------------------------
+
+The usage of the Elasticsearch versions is governed by the ``alation_conf`` parameter ``elasticsearch.backend_mode``. The valid values for this parameter are:
+
+- ``1`` - In mode 1 Alation writes to and reads from Elasticsearch 1, only.
+- ``2`` - In mode 2 Alation writes to and reads from Elasticsearch 7, only.
+- ``3`` - In mode 3 Alation writes to Elasticsearch 1 and Elasticsearch 7 and reads from Elasticsearch 1.
+
+Index migration between versions is expected to run seamlessly. After installation or update, Alation will start in mode 3 (using both Elasticsearch versions 1 and 7), index all data into Elasticsearch 7, move to mode 2 (Elasticsearch 7 only). During index migration, the Alation application will continue to run and will be using Elasticsearch 1.
+
+To understand which mode is currently being used on an instance, check the value of the ``elasticsearch.backend_mode`` parameter:
+
+#. SSH to your instance.
+#. From the Alation shell, check the parameter value:
+
+    .. code-block:: Bash
+
+       sudo /etc/init.d/alation shell
+       alation_conf elasticsearch.backend_mode
+
+How can I tell if migration to Elasticsearch 7.4 has completed?
+-----------------------------------------------------------------
+
+Migration happens in the background and is not expected to affect Alation users.
+
+If it fails, Alation system admins will be notified if the health check alerts are enabled: see Configuring Alation Server Health Alerts for Admins.
+
+.. note::
+
+   The Elasticsearch migration check rnsn daily and checks the migration status, sending an alert if it has failed. Note that health check notification email will have a summary of all alerts for the day. There will not be a separate notification email exclusively about the Elasticsearch upgrade.
+
+   See `Troubleshooting`_.
+
+How long will index migration take?
+--------------------------------------
+
+The time is proportional to the amount of data in the internal PostgreSQL database and is equivalent to the time it would take to do a full search re-indexing. This may take less than an hour on small deployments and new installations to more than a day on large instances.
+
+What happens to Elasticsearch 1 after a successful migration?
+----------------------------------------------------------------
+
+Elasticsearch 1 component will continue to be present, unused by the Alation application. In a future release, the Elasticsearch 1 will be entirely removed.
+
+Are there any changes to how search works after upgrade?
+---------------------------------------------------------------
+
+Search results for stop words (for example, "a", "and", "the", "for") previously returned all objects but will return no objects after switching to Elasticsearch version 7.
+
+Troubleshooting
+--------------------
+
+OOM
+~~~~~~
+
+If an instance is close to its maximum memory usage before the upgrade to *V R7 (5.12.x)*, it is possible that the Elasticsearch index migration may cause an out of memory error. There may be a brief outage of search functionality while some processes are being restarted. If Elasticsearch migration fails due to an OOM, it will stop and will be re-attempted on the next weekend. If there is still insufficient spare memory available on the next run, the job will keep failing and manual intervention will eventually be required.
+
+How can I tell if my instance has enough memory?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Check how much memory is allocated to Elasticsearch on your instance from the current value of the parameter ``elasticsearch.env.es_heap_size`` in ``alation_conf``. You should have at least this amount of available memory resources:
+
+#. SSH to your instance. From the Alation shell, check the parameter value:
+
+.. code-block:: Bash
+
+   sudo /etc/init.d/alation shell
+   alation_conf elasticsearch.env.es_heap_size
+
+2. If you have monitoring on the instance that tracks CPU/Memory usage over time, you can look at that data. Evaluate the free RAM and the buffer/cache memory to identify how much available memory there is.
+
+3. If you do not have historical monitoring, you can use top memory usage values during normal operation and check if the free and buffer/cache memory is more than the value of ``elasticsearch.env.es_heap_size``.
+
+How much memory does Elasticsearch need?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you get OOM errors in *elasticsearch.log*, increase ``elasticsearch.env.es_heap_size``. If you have over a million objects in your catalog, increase this to 2GB. If you have  >10 million objects, increase to 4GB.
+
+Useful Logs
+-------------------
+
+Migration progress and errors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Log:  ``/opt/alation/site/logs/celery-default_error.log``
+
+Strings to search for in this log:
+
+- ``Starting full index into latest Elasticsearch`` is written at the start of the migration.
+- ``Completed full index into latest Elasticsearc``" is written at the end of the migration.
+- ``Setting Elasticsearch backend mode to ES7 only`` indicates migration has succeeded.
+- ``Migrating to Elasticsearch 7 failed`` prints if migration fails.
+
+Elasticsearch 1 startup, activity and errors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``/opt/alation/site/logs/elasticsearch.log``
+
+Elasticsearch 7 startup, activity and errors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``/opt/alation/site/logs/elasticsearch-7_4_sh.log``

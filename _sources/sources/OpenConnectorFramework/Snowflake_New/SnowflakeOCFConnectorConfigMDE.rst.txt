@@ -1,0 +1,1030 @@
+Configure Metadata Extraction
+===============================
+
+Overview
+-----------
+
+Metadata extraction (MDE) is the process of fetching data source information, such as schemas, tables, columns, keys, functions, and more.
+Alation queries your database to retrieve this metadata, which becomes catalog objects.
+
+You can initiate MDE on demand or schedule it for regular catalog updates.
+
+.. note::
+
+    If the database name is included in the JDBC URI, then the metadata is extracted only from that database. If the database name is not included in the JDBC URI, then all metadata that the service account has access to is extracted, which may increase extraction time.
+
+    There is 45 minutes to 3 hour latency time to update tables, columns, views, primary keys, foreign keys, functions, policies, tags, and procedures in ACCOUNT_USAGE views. The new items created in databases can be extracted into the catalog after this latency time. For information about the latency time for each item, refer to `Account Usage — Snowflake Documentation <https://docs.snowflake.com/en/sql-reference/account-usage.html#account-usage-views>`_.
+
+Configure MDE in Alation
+---------------------------
+
+Metadata extraction (MDE) fetches data source information, such as schemas, tables, columns, keys, functions, and more.
+
+Alation queries your database to retrieve this metadata, which becomes catalog objects. You can initiate MDE on demand or schedule it for regular catalog updates.
+
+Steps involved in metadata extraction are:
+
+    1. `Test Access and Fetch Schemas`_
+
+    2. `Select Schemas for Extraction`_
+
+    3. `Customize the Extraction Scope`_ (Optional)
+
+    4. `Configure Custom Extraction Queries`_ (Optional)
+
+    5. `Run Extraction`_
+
+     .. image:: ../../../_static/Snowflake_OCF_New_MDE_Workflow.png
+        :width: 600px
+
+
+Test Access and Fetch Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Before fetching the schemas for extraction, Alation tests if the service account has the required permissions to run metadata extractions.
+
+Perform these steps to test the access and to fetch schemas.
+
+        .. note::
+
+            Ensure that the service account has the necessary permissions to access required system views and retrieve accessible schemas (see :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOCFConnectorPrerequisites`).
+
+
+    1. On the Settings page of your Snowflake OCF data source, go to the **Metadata Extraction** tab.
+
+    2. Click **Test access and fetch schemas**.
+
+        The retrieved list of schemas appears in the Schemas table under the Select schemas for extraction section of the Metadata Extraction page.
+
+Select Schemas for Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Select schemas for extraction, to which you have access, instead of extracting all the schemas. When selecting schemas for extraction, you retrieve the metadata only for the selected schemas. This makes the extraction quicker and consumes fewer resources than extracting all the schemas.
+
+
+By default, all the schemas Alation fetches from the data source will be selected for extraction. You can adjust the selection of by:
+
+    - Selecting Schemas using Filters
+
+    - Selecting Schemas Manually
+
+If you do not select any schema manually or using rules, Alation extracts all the schemas upon running the metadata extraction.
+
+Select Schemas using Filters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to apply extraction filters, perform these steps:
+
+    1. On the Settings page of your Snowflake OCF connector, go to the **Metadata Extraction** tab.
+
+    2. Under the **Select schemas for extraction** section, enable the **Enable advanced settings** toggle.
+
+    3. Select the required extraction filter option from the **Extract** drop down:
+
+        - **Only selected schemas** — extracts metadata only from the selected schemas. This is the default value.
+
+        - **All schemas except selected** — extracts metadata from all schemas except the selected schemas.
+
+    4. To soft-delete the schemas from previous extraction that are not part of the current schema selection, select the **Keep the catalog synchronized with the current selection of schemas** checkbox.
+
+    5. Create a filter.
+
+        a. From the first drop down, select **Schema** or **Catalog**.
+
+        b. Select the filter criteria (**Contains**, **Starts with**, **Ends with**, **Regex**).
+
+        c. Specify the keyword to look for from the schema or catalog.
+
+        Use this option if you frequently change schemas or if you use extensive metadata.
+
+       You can add multiple filters by clicking the Add another filter link.
+
+
+        .. note::
+
+            You must use rules if you plan to schedule MDE.
+
+    6. Click **Apply filters**.
+
+       The **Schema** table displays the selected schemas that match the rules that you had set.
+
+    .. note::
+
+        After applying rules, you cannot manually adjust the selection of schemas.
+
+Select Schemas Manually
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you opt to manually select the schemas for extraction, perform these steps:
+
+    1. On the Snowflake connector page, go to the **Metadata Extraction** tab.
+
+    2. Under the **Select schemas for extraction** section, turn off the **Enable advanced settings** toggle if not disabled already.
+
+    3. Select the required schemas from the list of schemas in the **Schemas** table.
+
+       Alternatively, you can select schemas by searching for the required schema from the table using either the schema name or any keyword or string in the schema name.
+
+       After you have selected the schemas, your schema selection count is displayed above the **Schema** table.
+
+Customize the Extraction Scope
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    This is an optional step.
+
+You can customize metadata extraction down to the level of specific metadata types, such as tables, columns, views, and other by using custom queries:
+
+    - The extraction of schema, table, view, and column metadata is always enabled and cannot be disabled.
+
+    - The extraction of system schema information is disabled by default. All other supported metadata types are enabled by default.
+
+    - You can disable or enable the metadata types you want to extract by clearing or selecting the corresponding checkboxes.
+
+To customize the extraction scope, perform these steps:
+
+    1. On the Settings page of your Snowflake OCF data source, go to the **Metadata Extraction** tab.
+
+    2. Under the **Customize extraction scope** section, enable or disable the required additional available metadata types from the following options:
+
+        - **Extract primary keys** - extracts primary keys. Enabling this option leads to increased performance demands.
+
+        - **Extract foreign keys** - extracts foreign keys. Enabling this option leads to increased performance demands.
+
+        - **Extract functions** - extracts function information. We recommend that you enable this option.
+
+        - **Extract function definitions** - extracts function definition information
+
+
+Configure Custom Extraction Queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    1. On the Settings page of your Snowflake OCF data source, go to the **Metadata Extraction** tab.
+
+    2. Under the **Custom extraction queries** section, provide custom queries in the respective fields.
+
+       For details on the custom queries, see `Extraction Queries for Snowflake OCF Connector`_.
+
+    3. Click **Save**.
+
+    .. note::
+
+        If you specify the custom query for some metadata types but not all, Alation performs extraction based on the corresponding default query for the metadata types that do not have a custom query.
+
+Extraction Queries for Snowflake OCF Connector
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The Snowflake OCF connector supports the following default extraction queries:
+
+    - `Catalog`_
+
+    - `Schema`_
+
+    - `Table`_
+
+    - `External Table`_
+
+    - `View`_
+
+    - `Column`_
+
+    - `Primary and Foreign Keys`_
+
+    - `Function`_
+
+    - `Function Definition`_
+
+    - `Tags and Tag Links`_
+
+You can customize them to better suit your extraction requirements. You can customize all or some of the queries.
+
+If specified, custom extraction queries takes precedence over the default MDE queries.
+
+.. important::
+
+    The database name may or may not be present in the JDBC URI. In this case, the default queries differ in the operator of the WHERE filter:
+
+        - If the database name is present, the WHERE filter will equal ``CATALOG_NAME`` to the database name.
+
+        - If the database name is not present, the WHERE filter will in most cases use the IN operator and a list of database names that the service account has access to.
+
+Catalog
+''''''''''
+
+Make sure that your query has a column labeled as ``CATALOG`` in the SELECT statement.
+
+**When the Database Name Is Provided in JDBC URI**
+
+
+.. code-block:: sql
+
+    SELECT DATABASE_NAME AS CATALOG
+    FROM SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+    WHERE DELETED IS NULL
+      AND DATABASE_NAME = '<database_name>';
+
+**When the Database Name Is Not Provided in JDBC URI**
+
+
+.. code-block:: sql
+
+    SELECT DATABASE_NAME AS CATALOG
+    FROM SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+    WHERE DELETED IS NULL;
+
+
+Schema
+'''''''
+
+Make sure that your query has a column labeled as ``CATALOG``, ``SCHEMA`` in the SELECT statement.
+
+**When the Database Name Is Provided in JDBC URI**
+
+.. code-block:: sql
+
+    SELECT
+      CATALOG_NAME AS CATALOG,
+      SCHEMA_NAME AS SCHEMA,
+      COMMENT AS REMARKS
+    FROM SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+    WHERE DELETED IS NULL
+      AND SCHEMA_NAME IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>')
+      AND CATALOG_NAME = '<database_name>'
+      AND TRIM(SCHEMA_NAME) !='';
+
+**When the Database Name Is Not Provided in JDBC URI**
+
+.. code-block:: sql
+
+      SELECT
+        CATALOG_NAME AS CATALOG,
+        SCHEMA_NAME AS SCHEMA,
+        COMMENT AS REMARKS
+      FROM
+        SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+      WHERE DELETED IS NULL
+        AND SCHEMA_NAME IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>')
+        AND CATALOG_NAME IN ('<database_name_1>, <database_name_2>')
+        AND TRIM(SCHEMA_NAME) !='';
+
+Table
+'''''''
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TABLE_TYPE``, and ``REMARKS`` in the SELECT statement.
+
+**When the Database Name Is Provided in JDBC URI**
+
+.. code-block:: sql
+
+    SELECT
+        TABLE_CATALOG AS CATALOG,
+        TABLE_SCHEMA AS SCHEMA,
+        TABLE_NAME,
+        'TABLE' AS TABLE_TYPE,
+        COMMENT AS  REMARKS
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TABLES
+    WHERE DELETED IS NULL
+      AND TABLE_TYPE = 'BASE TABLE'
+      AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+      AND TABLE_CATALOG = '<database_name>'
+      AND TRIM(TABLE_NAME) !='';
+
+**When the Database Name Is Not Provided in JDBC URI**
+
+.. code-block:: sql
+
+    SELECT
+        TABLE_CATALOG AS CATALOG,
+        TABLE_SCHEMA AS SCHEMA,
+        TABLE_NAME,
+        'TABLE' AS TABLE_TYPE,
+        COMMENT AS REMARKS
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TABLES
+    WHERE DELETED IS NULL
+        AND TABLE_TYPE = 'BASE TABLE'
+        AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+        AND TABLE_CATALOG IN ('<database_name_1>, <database_name_2>')
+        AND TRIM(TABLE_NAME) !='';
+
+External Table
+'''''''''''''''
+
+**When the Database Name Is Provided in JDBC URI**
+
+.. code-block:: sql
+
+    -- get stages from database using INFORMATION_SCHEMA
+    SELECT
+        STAGE_URL,
+        CONCAT('@',TRIM(STAGE_CATALOG),'.',TRIM(STAGE_SCHEMA),'.',TRIM(STAGE_NAME),'/') AS LOCATION
+    FROM "<database_name>".INFORMATION_SCHEMA.STAGES
+
+    -- get external tables from database using INFORMATION_SCHEMA
+    SELECT
+        ET.TABLE_CATALOG AS CATALOG,
+        ET.TABLE_SCHEMA AS SCHEMA,
+        ET.TABLE_NAME,
+        'TABLE' AS TABLE_TYPE,
+        ET.COMMENT AS REMARKS,
+        ET.LOCATION AS DATA_LOCATION
+    FROM "<database_name>".INFORMATION_SCHEMA.EXTERNAL_TABLES ET
+    WHERE
+        ET.TABLE_SCHEMA
+        IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>');
+
+**When the Database Name Is Not Provided in JDBC URI**
+
+.. code-block:: sql
+
+    -- get stages from all databases using INFORMATION_SCHEMA
+    SELECT
+        STAGE_URL,
+        CONCAT('@',TRIM(STAGE_CATALOG),'.',TRIM(STAGE_SCHEMA),'.',TRIM(STAGE_NAME),'/') AS LOCATION
+    FROM "<database_name>".INFORMATION_SCHEMA.STAGES
+
+    -- get external tables from all databases using INFORMATION_SCHEMA
+    SELECT
+        ET.TABLE_CATALOG AS CATALOG,
+        ET.TABLE_SCHEMA AS SCHEMA,
+        ET.TABLE_NAME,
+        'TABLE' AS TABLE_TYPE,
+        ET.COMMENT AS REMARKS,
+        ET.LOCATION AS DATA_LOCATION
+    FROM "<database_name>".INFORMATION_SCHEMA.EXTERNAL_TABLES ET
+    WHERE ET.TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>');
+
+
+View
+'''''''
+
+Make sure that your query has columns labeled as ``DATABASE_NAME``, ``SCHEMA_NAME``, ``NAME``, ``TEXT``, ``IS_MATERIALIZED``, and ``COMMENT`` in the SELECT statement.
+
+.. note::
+
+    The default view extraction query does not filter out temporary views. If you don't want the temporary views to appear in the catalog, uncomment the condition ``AND VIEW_DEFINITION not ILIKE '%create or replace temporary view%'``  in the WHERE filter.
+
+**When the Database Name Is Provided in JDBC URI**
+
+.. code-block:: sql
+
+      SELECT
+        TABLE_CATALOG AS CATALOG,
+        TABLE_SCHEMA AS SCHEMA,
+        TABLE_NAME AS VIEW_NAME,
+        VIEW_DEFINITION AS VIEW_CREATE_STATEMENT,
+        'VIEW' AS VIEW_TYPE,
+        COMMENT AS REMARKS
+      FROM SNOWFLAKE.ACCOUNT_USAGE.VIEWS
+      WHERE DELETED IS NULL
+        AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+        AND TABLE_CATALOG = '<database_name>'
+        AND TRIM(TABLE_NAME) != ''
+        -- Uncomment the next line to filter out temporary views
+        -- AND VIEW_DEFINITION not ILIKE '%create or replace temporary view%';
+
+**When the Database Name Is Not Provided in JDBC URI**
+
+.. code-block:: sql
+
+    SELECT
+        TABLE_CATALOG AS CATALOG,
+        TABLE_SCHEMA AS SCHEMA,
+        TABLE_NAME AS VIEW_NAME,
+        VIEW_DEFINITION AS VIEW_CREATE_STATEMENT,
+        'VIEW' AS VIEW_TYPE,
+        COMMENT AS REMARKS
+    FROM SNOWFLAKE.ACCOUNT_USAGE.VIEWS
+    WHERE DELETED IS NULL
+        AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+        AND TABLE_CATALOG IN ('<database_name_1>, <database_name_2>')
+        AND TRIM(TABLE_NAME) != ''
+        -- Uncomment the next line to filter out temporary views
+        -- AND VIEW_DEFINITION not ILIKE '%create or replace temporary view%';
+
+Column
+'''''''''
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, and ``COLUMN_DEFAULT`` in the SELECT statement.
+
+**When the Database Name Is Provided in JDBC URI**
+
+.. code-block:: sql
+
+      SELECT
+        TABLE_CATALOG AS CATALOG,
+        TABLE_SCHEMA AS SCHEMA,
+        TABLE_NAME,
+        DECODE(DATA_TYPE,'TEXT','VARCHAR' || '(' || CHARACTER_MAXIMUM_LENGTH || ')','NUMBER',DATA_TYPE || '(' || NUMERIC_PRECISION ||','|| NUMERIC_SCALE || ')', DATA_TYPE) AS TYPE_NAME,
+        DATA_TYPE,
+        COLUMN_NAME,
+        ORDINAL_POSITION,
+        IS_NULLABLE,
+        COMMENT AS REMARKS,
+        COLUMN_DEFAULT
+      FROM
+        SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
+      WHERE DELETED IS NULL
+        AND TABLE_SCHEMA IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>')
+        AND TABLE_CATALOG = '<database_name>'
+        AND TRIM(COLUMN_NAME) NOT IN ('','SYS_MV_SOURCE_PARTITION','METADATA$ROW_VERSION')
+        AND TRIM(TABLE_NAME) !='';
+
+**When the Database Name Is Not Provided in JDBC URI**
+
+.. code-block:: sql
+
+    SELECT
+        TABLE_CATALOG AS CATALOG,
+        TABLE_SCHEMA AS SCHEMA,
+        TABLE_NAME,
+        DECODE(DATA_TYPE,'TEXT','VARCHAR' || '(' || CHARACTER_MAXIMUM_LENGTH || ')',
+            'NUMBER',DATA_TYPE || '(' || NUMERIC_PRECISION ||','|| NUMERIC_SCALE || ')', DATA_TYPE) AS TYPE_NAME,
+        DATA_TYPE,
+        COLUMN_NAME,
+        ORDINAL_POSITION,
+        IS_NULLABLE,
+        COMMENT AS REMARKS,
+        COLUMN_DEFAULT
+    FROM SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
+    WHERE DELETED IS NULL
+        AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+        AND TABLE_CATALOG IN ('<database_name_1>, <database_name_2>')
+        AND TRIM(COLUMN_NAME) NOT IN ('','SYS_MV_SOURCE_PARTITION','METADATA$ROW_VERSION')
+        AND TRIM(TABLE_NAME) !='';
+
+Primary and Foreign Keys
+'''''''''''''''''''''''''
+
+If the database name is specified in the JDBC URI, then we use queries ``SHOW PRIMARY KEYS IN DATABASE <database_name>`` and ``SHOW EXPORTED KEYS IN DATABASE <database_name>``.
+
+If the database name is not specified, then we use queries ``SHOW PRIMARY KEYS IN ACCOUNT`` and ``SHOW EXPORTED KEYS IN ACCOUNT``.
+
+Function
+''''''''''
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``FUNCTION_NAME``, and ``REMARKS`` in the SELECT statement.
+
+**When the Database Name Is Provided in JDBC URI**
+
+.. code-block:: sql
+
+    -- get function arguments
+    WITH FUNCTION_COLUMNS AS (
+      SELECT
+          FUNCTION_CATALOG,
+          FUNCTION_ID,
+          FUNCTION_SCHEMA,
+          FUNCTION_NAME,
+          DATA_TYPE AS ARG_TYPE,
+          TRIM(REGEXP_REPLACE(ARGUMENT_SIGNATURE,'(\\()|(\\))')) AS ARGS,
+          ARGUMENT_SIGNATURE
+      FROM SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS WHERE DELETED IS NULL)
+    SELECT
+        FUNCTION_CATALOG AS CATALOG,
+        FUNCTION_SCHEMA AS SCHEMA,
+        FUNCTION_NAME,
+        ARG_TYPE,
+        SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 0) AS ARG_NAME,
+        SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 2) AS TYPE_NAME,
+        FUNCTION_ID
+    FROM FUNCTION_COLUMNS, LATERAL FLATTEN(INPUT=>SPLIT(ARGS, ',')) FUNCTION_COLUMNS_FLATTENED
+    WHERE FUNCTION_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+      AND FUNCTION_CATALOG = '<database_name>'
+
+    -- get function
+    SELECT FUNCTION_CATALOG AS CATALOG,
+        FUNCTION_SCHEMA AS SCHEMA,
+        FUNCTION_NAME,
+        COMMENT AS REMARKS,
+        '' AS FUNCTION_DEFINITION,
+        ARGUMENT_SIGNATURE,
+        FUNCTION_ID
+    FROM SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+    WHERE DELETED IS NULL
+        AND FUNCTION_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+        AND FUNCTION_CATALOG = '<database_name>';
+
+
+**When the Database Name Is Not Provided in JDBC URI**
+
+.. code-block:: sql
+
+    -- get function arguments
+    WITH FUNCTION_COLUMNS AS (
+      SELECT
+          FUNCTION_CATALOG,
+          FUNCTION_ID,
+          FUNCTION_SCHEMA,
+          FUNCTION_NAME,
+          DATA_TYPE AS ARG_TYPE,
+          TRIM(REGEXP_REPLACE(ARGUMENT_SIGNATURE,'(\\()|(\\))')) AS ARGS,
+          ARGUMENT_SIGNATURE
+      FROM SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS WHERE DELETED IS NULL)
+    SELECT
+      FUNCTION_CATALOG AS CATALOG,
+      FUNCTION_SCHEMA AS SCHEMA,
+      FUNCTION_NAME,
+      ARG_TYPE,
+      SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 0) AS ARG_NAME,
+      SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 2) AS TYPE_NAME,
+      FUNCTION_ID
+    FROM FUNCTION_COLUMNS, LATERAL FLATTEN(INPUT=>SPLIT(ARGS, ',')) FUNCTION_COLUMNS_FLATTENED
+    WHERE
+      FUNCTION_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+      AND FUNCTION_CATALOG IN ('<database_name_1>, <database_name_2>');
+
+    -- get functions
+    SELECT
+      FUNCTION_CATALOG AS CATALOG,
+      FUNCTION_SCHEMA AS SCHEMA,
+      FUNCTION_NAME,
+      COMMENT AS REMARKS,
+      '' AS FUNCTION_DEFINITION,
+      ARGUMENT_SIGNATURE,
+      FUNCTION_ID
+    FROM SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+    WHERE DELETED IS NULL
+      AND FUNCTION_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+      AND FUNCTION_CATALOG IN ('<database_name_1>, <database_name_2>');
+
+
+Function Definition
+'''''''''''''''''''''''
+
+.. code-block:: sql
+
+    SELECT get_ddl('FUNCTION','"<database_name>"."<schema_name>"."<function_name>"(FLOAT,FLOAT)') AS SQL_VIEW_TEXT;
+
+Tags and Tag Links
+'''''''''''''''''''
+
+**When the Database Name Is Provided in JDBC URI**
+
+Ensure your query has columns labeled as ``TAG_DATABASE``, ``TAG_SCHEMA``, ``TAG_NAME``, ``TAG_OWNER``, ``CREATED``, ``TAG_COMMENT``, ``TAG_ID``, ``DELETED``, ``TAG_ID``, ``SCHEMA``, ``TAG_OWNER``, ``CATALOG``, ``TAG_NAME``, ``CREATED``, ``TAG_ID``, ``TAG_COMMENT`` in the SELECT statement.
+
+    .. note::
+
+        Starting Snowflake OCF connector version **2.2.9**, to extract all the tag values associated with the ``ALLOWED_VALUES`` parameter from the Snowflake data source, Alation recommends that you add ``ALLOWED_VALUES`` in the SELECT statement in custom query.
+        If you do not add ``ALLOWED_VALUES``, Alation will not display all the values associated with this tag.
+
+For Tags:
+
+
+.. code-block:: sql
+
+    -- System Tags
+    SHOW TAGS IN SCHEMA "SNOWFLAKE"."CORE";
+
+    -- Tags
+    WITH TAG_QUERIES AS
+        (
+        SELECT
+            TAG_DATABASE,
+            TAG_SCHEMA,
+            TAG_NAME,
+            TAG_OWNER,
+            CREATED,
+            TAG_COMMENT,
+            TAG_ID,
+            DELETED
+            ALLOWED_VALUES
+        FROM SNOWFLAKE.ACCOUNT_USAGE.TAGS
+        WHERE DELETED IS NULL
+          AND TRIM(TAG_NAME) != ''
+          AND (TAG_ID IN
+              (SELECT TAG_ID
+              FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+              WHERE OBJECT_DATABASE = '<database_name>') OR TAG_DATABASE IN ('<database_name>'))
+        )
+    SELECT
+        LISTAGG(TAG_OWNER, ', ') AS TAG_OWNER,
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        CREATED,
+        TAG_ID,
+        TAG_COMMENT,
+        ALLOWED_VALUES
+    FROM TAG_QUERIES
+    GROUP BY
+        CATALOG,
+        SCHEMA,
+        TAG_NAME,
+        TAG_ID,
+        CREATED,
+        TAG_COMMENT,
+        ALLOWED_VALUES;
+
+For Tag Links:
+
+
+Ensure your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TAG_NAME``, ``TAG_VALUE``, ``TAG_ID``, ``OBJECT_DATABASE``, ``OBJECT_SCHEMA``, ``OBJECT_NAME``, ``DOMAIN``, ``COLUMN_NAME`` in the SELECT statement.
+
+.. code-block:: sql
+
+    SELECT
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        TAG_VALUE,
+        TAG_ID,
+        OBJECT_DATABASE,
+        OBJECT_SCHEMA,
+        OBJECT_NAME,
+        DOMAIN,
+        COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+        AND DOMAIN IN ('SCHEMA')
+        AND OBJECT_DATABASE = '<database_name>'
+    UNION
+    SELECT
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        TAG_VALUE,
+        TAG_ID,
+        OBJECT_DATABASE,
+        OBJECT_SCHEMA,
+        OBJECT_NAME,
+        DOMAIN,
+        COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+        AND DOMAIN IN ('TABLE', 'COLUMN')
+        AND OBJECT_DATABASE = '<database_name>'
+        AND OBJECT_SCHEMA IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>';
+
+**Database Name Is Not Provided in JDBC URI**
+
+For Tags:
+
+.. code-block:: sql
+
+    -- System Tags:
+    SHOW TAGS IN SCHEMA "SNOWFLAKE"."CORE"
+
+    -- Tags
+    WITH TAG_QUERIES AS
+      (
+	     SELECT
+          TAG_DATABASE,
+          TAG_SCHEMA,
+          TAG_NAME,
+          TAG_OWNER,
+          CREATED,
+          TAG_COMMENT,
+          TAG_ID,
+          DELETED
+          ALLOWED_VALUES
+      FROM SNOWFLAKE.ACCOUNT_USAGE.TAGS
+      WHERE DELETED IS NULL
+          AND TRIM(TAG_NAME) != ''
+      )
+    SELECT
+        LISTAGG(TAG_OWNER, ', ') AS TAG_OWNER,
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        CREATED,
+        TAG_ID,
+        TAG_COMMENT,
+        ALLOWED_VALUES
+    FROM TAG_QUERIES
+    GROUP BY
+        CATALOG,
+        SCHEMA,
+        TAG_NAME,
+        TAG_ID,
+        CREATED,
+        TAG_COMMENT,
+        ALLOWED_VALUES;
+
+For Tag Links:
+
+.. code-block:: sql
+
+    SELECT
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        TAG_VALUE,
+        TAG_ID,
+        OBJECT_DATABASE,
+        OBJECT_SCHEMA,
+        OBJECT_NAME,
+        DOMAIN,
+        COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+        AND DOMAIN IN ('SCHEMA')
+        AND OBJECT_DATABASE IN ('<database_name_1>', '<database_name_2')
+        AND OBJECT_NAME IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+    UNION
+    SELECT
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        TAG_VALUE,
+        TAG_ID,
+        OBJECT_DATABASE,
+        OBJECT_SCHEMA,
+        OBJECT_NAME,
+        DOMAIN,
+        COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+        AND DOMAIN IN ('TABLE', 'COLUMN')
+        AND OBJECT_DATABASE IN ('<database_name_1>', '<database_name_2')
+        AND OBJECT_SCHEMA IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>');
+
+
+Policies and Policy Links
+'''''''''''''''''''''''''''''
+
+**When the Database Name Is Provided in JDBC URI**
+
+For Policies:
+
+.. code-block:: sql
+
+        WITH POLICIES_QUERIES AS
+          (
+          SELECT * FROM
+            (
+            SELECT
+                POLICY_CATALOG,
+                POLICY_SCHEMA,
+                POLICY_NAME,
+                POLICY_OWNER,
+                'ROW_ACCESS' AS POLICY_TYPE,
+                POLICY_SIGNATURE,
+                POLICY_BODY,
+                POLICY_RETURN_TYPE,
+                CREATED,
+                POLICY_COMMENT,
+                POLICY_ID,
+                DELETED
+            FROM SNOWFLAKE.ACCOUNT_USAGE.ROW_ACCESS_POLICIES
+            WHERE DELETED IS NULL
+            UNION
+            SELECT
+                POLICY_CATALOG,
+                POLICY_SCHEMA,
+                POLICY_NAME,
+                POLICY_OWNER,
+                'DATA_MASK' AS POLICY_TYPE,
+                POLICY_SIGNATURE,
+                POLICY_BODY,
+                POLICY_RETURN_TYPE,
+                CREATED,
+                POLICY_COMMENT,
+                POLICY_ID,
+                DELETED
+            FROM SNOWFLAKE.ACCOUNT_USAGE.MASKING_POLICIES
+            WHERE DELETED IS NULL
+            ) ALL_POLICIES
+          WHERE POLICY_ID IN
+               (SELECT POLICY_ID
+               FROM SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES
+               WHERE REF_DATABASE_NAME = '<database_name>')
+               OR POLICY_CATALOG IN ('<database_name>')
+          )
+        SELECT
+            LISTAGG(POLICY_OWNER, ', ') AS POLICY_OWNER,
+            POLICY_CATALOG AS CATALOG,
+            POLICY_SCHEMA AS SCHEMA,
+            POLICY_NAME,
+            POLICY_TYPE,
+            POLICY_SIGNATURE,
+            POLICY_BODY,
+            POLICY_RETURN_TYPE,
+            CREATED,
+            POLICY_COMMENT
+        FROM POLICIES_QUERIES
+        GROUP BY
+            POLICY_CATALOG,
+            POLICY_SCHEMA,
+            POLICY_NAME,
+            POLICY_TYPE,
+            POLICY_SIGNATURE,
+            POLICY_BODY,
+            POLICY_RETURN_TYPE,
+            CREATED,
+            POLICY_COMMENT;
+
+
+For Policy Links:
+
+.. code-block:: sql
+
+    SELECT
+        POLICY_DB AS CATALOG,
+        POLICY_SCHEMA AS SCHEMA,
+        POLICY_NAME,
+        CASE
+          WHEN POLICY_KIND = 'MASKING_POLICY' THEN 'DATA_MASK'
+          WHEN POLICY_KIND = 'ROW_ACCESS_POLICY' THEN 'ROW_ACCESS'
+          END AS POLICY_TYPE,
+        REF_DATABASE_NAME,
+        REF_SCHEMA_NAME,
+        REF_ENTITY_NAME,
+        REF_ENTITY_DOMAIN,
+        REF_COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES
+    WHERE POLICY_KIND IN ('MASKING_POLICY', 'ROW_ACCESS_POLICY')
+      AND REF_ENTITY_DOMAIN IN ('TABLE', 'VIEW', 'COLUMN', 'EXTERNAL TABLE')
+      AND REF_SCHEMA_NAME IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>')
+      AND REF_DATABASE_NAME = '<database_name>';
+
+**When the Database Name Is Not Provided in JDBC URI**
+
+For Policies:
+
+.. code-block:: sql
+
+    WITH POLICIES_QUERIES AS
+    (
+    SELECT * FROM
+        (
+        SELECT
+            POLICY_CATALOG,
+            POLICY_SCHEMA,
+            POLICY_NAME,
+            POLICY_OWNER,
+            'ROW_ACCESS' AS POLICY_TYPE,
+            POLICY_SIGNATURE,
+            POLICY_BODY,
+            POLICY_RETURN_TYPE,
+            CREATED,
+            POLICY_COMMENT,
+            POLICY_ID,
+            DELETED
+        FROM SNOWFLAKE.ACCOUNT_USAGE.ROW_ACCESS_POLICIES
+        WHERE DELETED IS NULL
+        UNION
+        SELECT
+            POLICY_CATALOG,
+            POLICY_SCHEMA,
+            POLICY_NAME,
+            POLICY_OWNER,
+            'DATA_MASK' AS POLICY_TYPE,
+            POLICY_SIGNATURE,
+            POLICY_BODY,
+            POLICY_RETURN_TYPE,
+            CREATED,
+            POLICY_COMMENT,
+            POLICY_ID,
+            DELETED
+        FROM SNOWFLAKE.ACCOUNT_USAGE.MASKING_POLICIES
+        WHERE
+            DELETED IS NULL
+        )
+        ALL_POLICIES
+    )
+    SELECT
+        LISTAGG(POLICY_OWNER, ', ') AS POLICY_OWNER,
+        POLICY_CATALOG AS CATALOG,
+        POLICY_SCHEMA AS SCHEMA,
+        POLICY_NAME,
+        POLICY_TYPE,
+        POLICY_SIGNATURE,
+        POLICY_BODY,
+        POLICY_RETURN_TYPE,
+        CREATED,
+        POLICY_COMMENT
+    FROM POLICIES_QUERIES
+    GROUP BY
+        POLICY_CATALOG,
+        POLICY_SCHEMA,
+        POLICY_NAME,
+        POLICY_TYPE,
+        POLICY_SIGNATURE,
+        POLICY_BODY,
+        POLICY_RETURN_TYPE,
+        CREATED,
+        POLICY_COMMENT;
+
+
+For Policy Links:
+
+.. code-block:: sql
+
+    SELECT
+        POLICY_DB AS CATALOG,
+        POLICY_SCHEMA AS SCHEMA,
+        POLICY_NAME,
+        CASE
+            WHEN POLICY_KIND = 'MASKING_POLICY' THEN 'DATA_MASK'
+            WHEN POLICY_KIND = 'ROW_ACCESS_POLICY' THEN 'ROW_ACCESS'
+        END AS POLICY_TYPE,
+        REF_DATABASE_NAME,
+        REF_SCHEMA_NAME,
+        REF_ENTITY_NAME,
+        REF_ENTITY_DOMAIN,
+        REF_COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES
+    WHERE
+        POLICY_KIND IN ('MASKING_POLICY', 'ROW_ACCESS_POLICY')
+        AND REF_ENTITY_DOMAIN IN ('TABLE', 'VIEW', 'COLUMN', 'EXTERNAL TABLE')
+        AND REF_SCHEMA_NAME IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+        AND REF_DATABASE_NAME IN ('<database_name_1>', '<database_name_2');
+
+Run Extraction
+----------------
+
+Under the Run extraction section (**General Settings** > **Metadata Extraction**), click **Run Extraction** to extract metadata on demand.
+
+The status of the extraction action is logged in the Extraction Job Status table under the **MDE Job History** tab.
+
+Schedule Extraction
+~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also schedule the extraction. To schedule the extraction, perform these steps:
+
+    1. On the Settings page of your Snowflake OCF data source, go to the **Metadata Extraction**.
+
+    2. Under the **Run extraction** section, enable the **Enable extraction schedule** toggle.
+
+    3. Using the date and time widgets, select the recurrence period and day and time for the desired MDE schedule. The next metadata extraction job for your data source will run on the schedule you have specified.
+
+        .. image:: ../../../_static/Snowflake_OCF_New_ScheduleMDE.png
+            :width: 500px
+            :class: with-border
+
+    .. note::
+
+        Here are some of the recommended schedules for better performance:
+
+            - Schedule extraction to run for every 12 hours at the 30th minute of the hour.
+
+            - Schedule extraction to run for every 2 days at 11:30 PM.
+
+            - Schedule extraction to run every week on the Sunday and Wednesday of the week.
+
+            - Schedule extraction to run for every 3 months on the 15th day of the month.
+
+
+View the MDE Job History
+---------------------------
+
+You can view the status of the extraction actions after you run the extraction or after Alation triggers the MDE as per the schedule. Also, you can view the status of the schemas retreived from the `Test Access and Fetch Schemas` step.
+
+To view the status of extraction, go to **Metadata Extraction** > **MDE Job History** on the Settings page of your Snowflake OCF data source. The Extraction job status table is displayed.
+
+    .. image:: ../../../_static/Snowflake_OCF_New_MDEJobHistory.png
+         :width: 600px
+         :class: with-border
+
+The **Extraction job status** table logs the following status:
+
+    - **Did Not Start** - Indicates that the metadata extraction did not start due to configuration or other issues.
+
+    - **Succeeded** - Indicates that the extraction was successful.
+
+    - **Partial Success** - Indicates that the extraction was successful with warnings. If Alation fails to extract some of the objects during the metadata extraction process, it skips them and proceeds with the extraction process, resulting in partial success.
+
+    - **Failed** - Indicates that the extraction failed with errors.
+
+Click the **View Details** link to view a detailed report of metadata extraction. If there are errors, the **Job errors** table displays the error category, error message, and a hint (ways to resolve the issue). Follow the instructions under the **Hints** column to resolve the error.
+In some cases, **Generate Error Report** link is displayed above the **Job errors** table. Click the **Generate Error Report** link above the **Job errors** table to generate an archive (*.zip*) containing *CSV* files for different error categories, such as Data and Connection errors. Click **Download Error Report** to download the files.
+
+Enable Raw Dump or Replay
+--------------------------
+
+You can enable or disable the Raw Metadata Dump or Replay feature for debugging MDE. By default, this feature is disabled. We recommend enabling it for extraction debugging only. The full use of this feature requires access to the Alation server.
+
+If Raw Metadata Dump or Replay is enabled, Alation breaks MDE into these stages:
+
+    - “Dump” the extracted metadata into files. You can access and review the files on the Alation server to debug extraction issues before attempting to ingest the metadata into the catalog.
+
+    - Ingest the metadata from the files into the catalog (Replay).
+
+Both the stages are manually controlled from the user interface.
+
+To enable the Raw Metadata Dump or Replay perform these steps:
+
+    1. On the Settings page of your Snowflake OCF data source, go to the **Metadata Extraction** > **Troubleshooting: Enable raw dump or replay** section.
+
+    2. From the **Enable Raw Metadata Dump or Replay** dropdown list, select the **Enable Raw Metadata Dump** option.
+
+    3. Click **Save**.
+
+       This enables the first stage of MDE where the extracted metadata is dumped into the following files in a subdirectory within the *opt/alation/site/tmp/* directory on the Alation server (inside the Alation shell):
+
+        *attribute.dump*, *function.dump*, *schema.dump*, *table.dump* —in a subdirectory of the directory opt/alation/site/tmp/ on the Alation server (inside the Alation shell).
+
+    4. Click **Run extraction**.
+
+       Alation performs a raw metadata dump into files. In the Extraction job status table on the MDE Job History tab, click the View Details link to display the details of the MDE job. The log lists the location of the .dump files for the MDE job. For example:  /opt/alation/site/tmp/rosemeta/170/extraction_dump/5028.
+
+    5. Access and review the metadata dump files to intercept any potential extraction issues.
+
+    6. From the **Enable Raw Metadata Dump or Replay** dropdown list, select the option **Enable Ingestion Replay**.
+
+    7. Click **Save**.
+
+       This enables the second stage where the metadata from the files is ingested into the Alation catalog.
+
+    8. Click **Run extraction**.
+
+       The metadata from the files are ingested into the catalog.

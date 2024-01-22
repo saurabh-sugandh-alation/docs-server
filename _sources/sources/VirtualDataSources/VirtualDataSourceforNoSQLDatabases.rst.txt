@@ -1,0 +1,243 @@
+Virtual Data Source for NoSQL Databases
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from release V R5 (5.9.x)*
+
+You can catalog a NoSQL database in Alation using the **Virtual Data
+Source** (VDS) functionality and the `dedicated API <https://developer.alation.com/dev/reference/nosql-apis#create-a-nosql-catalog>`_.
+Alation does not provide automated metadata extraction (MDE) for virtual
+data sources, and you will need to use the API to upload metadata.
+The structure of the uploaded metadata must meet several
+requirements.
+
+To catalog your NoSQL data source,
+
+1. Make sure you have enabled NoSQL support in your Alation catalog: `Enabling NoSQL Data Source Support`_.
+2. Add a Virtual Data Source (VDS) of NoSQL type: :doc:`Adding a NoSQL Virtual Data Source </sources/VirtualDataSources/AddNoSQLVirtualDataSource>`.
+3. Use NoSQL API to load the metadata: `Notes on NoSQL API`_.
+4. View and describe the uploaded metadata in the Alation catalog under this VDS.
+
+Enabling NoSQL Data Source Support
+----------------------------------
+
+NoSQL support is behind the feature flag
+``alation.feature_flags.enable_generic_nosql_support`` that can be enabled using ``alation_conf``.
+
+.. note::
+
+    You need SSH access to your Alation instance to enable feature flags.
+
+To enable support of NoSQL data sources,
+
+1. SSH into your Alation instance and enter the Alation shell:
+
+  .. code-block:: bash
+
+      sudo /etc/init.d/alation shell
+
+  If this command fails with error ``chroot : failed to run command 'su': No such file or directory``, try:
+
+  .. code-block:: bash
+
+      sudo service alation shell
+
+2. Run the following command to set the feature flag to ``True``:
+
+  .. code-block:: bash
+
+      alation_conf alation.feature_flags.enable_generic_nosql_support -s True
+
+3. Restart uWSGI and Celery:
+
+  .. code-block:: bash
+
+      alation_supervisor restart web:uwsgi celery:* 
+
+NoSQL VDS Structure in Alation
+------------------------------
+
+A Generic NoSQL virtual data source (VDS) in Alation is modeled as a set
+of top-level folders, each having at least one collection. Each
+collection can have one or multiple schemas. The schemas in
+collections are used to describe the structure of the documents in your
+noSQL database:
+
+.. image:: ../../_static/No_SQL_APIStructue.png
+    :width: 3.0in
+    :align: center
+
+Before you can upload any metadata, you need to create your VDS in
+Alation. See  :doc:`Adding a NoSQL Virtual Data Source <../../sources/VirtualDataSources/AddNoSQLVirtualDataSource>`  for steps. After that, use the NoSQL API to upload the metadata.
+
+Notes on NoSQL API
+------------------
+
+To be uploaded using the API, the metadata for your NoSQL virtual data
+source must be represented as a single JSON object that includes such
+objects as folders, collections, and schemata, with the actual schemas
+wrapped in the schemata keys and represented in either JSON or Avro
+format (Avro support is available from release *V R6 (5.10.x)*).
+
+This JSON object will be passed in the body of the API POST call.
+
+Required JSON Structure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  Top level is the *folders* key having the list of folder
+   objects, each of them with the name property that defines the
+   name of this folder object. It also has
+   the *collections*  key.             
+-  The *collections*  key has the list of collection objects,
+   each of them with the *name* property that defines the name of this
+   collection object, and the *schemata* key.
+-  The *schemata* key has a list of schema objects, each of them
+   with the *name* property, having the name of the schema, and
+   the *definition* property having the JSON schema object.
+-  If you are using JSON to describe the schema, the schemata
+   property must include the name and definition properties. 
+   The *name* property defines the name of the schema, and
+   the *definition* property has the JSON schema object.
+   See  `Creating the API Request Body with JSON`_
+-  If you are using Avro to describe the schema, the schemata
+   property must have your schema in Avro format. See  :doc:`Avro Data Types Support <../../sources/VirtualDataSources/AvroDataTypesSupport>`.
+
+*NoSQL API Call Body JSON Structure*:
+
+.. code-block:: bash
+
+    {
+       "folders": [
+          {"name": "$folder_name",
+              "collections": [
+                  {"name": "$collection_name",
+                      "schemata": [...]
+                     }
+                   ]
+                 }
+              ]
+           }
+
+
+Creating the API Request Body with JSON
+---------------------------------------
+
+Overview
+^^^^^^^^
+
+JSON schemas do not need to be written by hand. Your database management
+platform may include an export tool to use to retrieve the database
+collections in JSON format. You can use this export tool, if available,
+to export all the collections you want to include in the catalog and
+then use a JSON schema generator to infer the schemas from.
+
+.. note::
+
+    One JSON schema generator you can use is `Genson <https://pypi.org/project/genson/>`_.
+
+After you have the JSON schemas, fill the JSON object structure required
+by the API with the JSON schemas of the collections which you want to
+upload to Alation. Schemas should be included in the definition key of
+the schemata key.
+
+.. important::
+
+   ``name`` must be the first attribute in any JSON sub-object.
+
+   If you want to reference an object (using ``$ref``), then make sure
+   the ``definitions`` property for this object appears in the JSON code
+   before you use this ``$ref``.
+
+*Sample JSON Body Structure With Schemata*:
+
+.. code-block:: console
+
+   {
+    "folders": [
+      {
+        "name": "$folder_name",
+        "collections": [
+            {
+             "name": "$collection_name",
+             "schemata": [
+                {
+                 "name": "$name",
+                 "definition":
+                    {
+                     "title": "$title",
+                     "type": "$type",
+                     "required": ["$attribute1", "$attribute2", "$attribute3"],
+                     "properties":
+                        {
+                         "$attribute1": { "type": "$data_type"},
+                         "$attribute2": { "type": "$data_type"},
+                         "$attribute3": { "type": "$data_type"}
+                          }
+                        }
+                      }                                 
+                   ]
+                }
+             ]
+         }
+     ]
+   }
+
+For property definitions, JSON examples, code samples, and detailed API
+instructions, refer to the `NoSQL API <https://developer.alation.com/dev/reference/nosql-apis#create-a-nosql-catalog>`_ documentation
+on Customer Portal (requires a separate login).
+
+MongoDB Example
+^^^^^^^^^^^^^^^
+
+You can use this example for steps to create the JSON object for loading
+metadata into a MongoDB virtual data source (VDS):
+
+1. Identify the MongoDB instance you want to catalog as a VDS, including authentication details (username/password), server network address, and the database name.
+
+2. Connect to the MongoDB server with the Mongo client (usually **/usr/bin/mongo** ) and to list all the databases on the server, run:
+
+  .. code-block:: bash
+
+      show dbs
+
+3. To verify you have the right database, run:
+
+  .. code-block:: bash
+
+      use <dbname>
+      show collections
+
+4. Exit the Mongo client console and go back to the OS shell.
+5. A Mongo installation includes an export tool (usually **/usr/bin/mongoexport**) that can be used to retrieve the collections in JSON format. For example:
+
+  .. code-block:: bash
+
+      mongoexport -d local -c some_collection > schema_file
+
+  will export the contents of the ``some_collection`` collection in the
+  local database into the ``schema_file`` file.
+
+  Run the ``mongoexport`` command on all collections you want to include
+  in the catalog.
+
+6. Use a JSON schema generator to infer the schema from the JSON objects of the collections. If you are using Genson, from the Genson installation directory, run the following command to output the schema of the objects in the schema_file :
+
+  .. code-block:: bash
+
+      python bin/genson.py schema_file
+
+7. Fill in the required JSON object structure with the JSON schemas according to the `NoSQL API <https://developer.alation.com/dev/reference/nosql-apis#create-a-nosql-catalog>`_.
+
+8. When JSON is ready, you can make a POST request to the upload API to load the metadata to a virtual data source. This data source should already exist in Alation.
+
+Related Topics
+----------------
+
+ :doc:`Viewing NoSQL Schemas in Virtual Data Sources <../../sources/VirtualDataSources/ViewNoSQLSchemasinVirtualDataSources>`
+
+ :doc:`Viewing the Avro Schema Catalog Page <../../sources/VirtualDataSources/ViewAvroSchemaCatalogPage>`
+
+ :doc:`Avro Data Types Support <../../sources/VirtualDataSources/AvroDataTypesSupport>`
+
+ :doc:`Populating a Virtual Data Source From a CSV File <../../sources/VirtualDataSources/PopulateVirtualDataSourcefromCSVFile>`

@@ -1,0 +1,421 @@
+Extraction Queries for Amazon Redshift
+=========================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Query-based extraction allows users to customize metadata extraction down to the level of specific metadata objects, such as tables, columns, views, and others by using custom queries.
+
+Table, column, view, and function definition metadata types are enabled by default, and users cannot disable them.
+
+By default, the following additional metadata types are enabled, but can be disabled by users:
+
+  - Primary keys
+  - Foreign keys
+  - Functions
+
+Users can disable the metadata types that are not required by clearing the corresponding checkboxes.
+
+System schemas are disabled by default. Users can enable their extraction if required.
+
+To use this feature, you will need to write custom queries to extract specific metadata. Alation expects that these queries conform to a required structure and use the expected reserved identifiers. Sections below contain the expected query structure for each metadata type.
+
+Catalog
+------------------
+
+Make sure that your query has a column labeled as ``CATALOG`` in the ``SELECT`` list.
+
+Example:
+
+.. code-block:: sql
+
+    SELECT
+		distinct CURRENT_DATABASE() AS CATALOG
+	FROM
+		PG_NAMESPACE
+	WHERE
+		lower(nspname) NOT LIKE  'pg_%%'
+		AND lower(nspname) NOT IN   ( 'information_schema')
+		AND lower(nspname)  NOT IN ('''');
+
+
+Schema
+------------------
+
+Make sure that your query has a column labeled as ``CATALOG``, ``SCHEMA`` in the ``SELECT`` list.
+
+Example:
+
+.. code-block:: sql
+
+	SELECT
+  		CURRENT_DATABASE() AS CATALOG,
+  		nspname AS SCHEMA
+	FROM
+  		PG_NAMESPACE
+	WHERE
+  		lower(nspname) NOT LIKE  'pg_%%'
+  		AND lower(nspname) NOT IN   ( 'information_schema')
+		AND lower(nspname)  NOT IN ('''');
+
+Table
+------------------
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TABLE_OWNER ``, ``TABLE_TYPE``, and ``REMARKS`` in the ``SELECT`` list.
+
+Example:
+
+.. code-block:: sql
+
+	SELECT
+		*
+	FROM
+		(
+		SELECT
+			CURRENT_DATABASE() AS CATALOG,
+			A.SCHEMA AS SCHEMA,
+			A.TABLE_NAME,
+			A.TABLE_OWNER,
+			A.TABLE_TYPE,
+			pgd.description AS REMARKS
+		FROM
+			(
+			SELECT
+				T.SCHEMANAME AS SCHEMA,
+				T.TABLENAME AS TABLE_NAME,
+				T.TABLEOWNER AS TABLE_OWNER,
+				'TABLE' AS TABLE_TYPE
+			FROM
+				PG_TABLES T
+		UNION
+			SELECT
+				V.SCHEMANAME AS SCHEMA,
+				V.VIEWNAME AS VIEW_NAME,
+				V.VIEWOWNER AS TABLE_OWNER,
+				'VIEW' AS TABLE_TYPE
+			FROM
+				PG_VIEWS V ) A
+		LEFT JOIN PG_CATALOG.pg_statio_all_tables c on
+			(c.relname = A.table_name
+			and c.schemaname = A.SCHEMA)
+		LEFT JOIN PG_CATALOG.pg_description pgd on
+			(pgd.objoid = c.relid)
+		WHERE
+			A.SCHEMA NOT IN (
+			SELECT
+				schemaname
+			from
+				svv_external_schemas)
+			AND lower(A.SCHEMA) NOT LIKE  'pg_%%' 
+			AND (pgd.objsubid = 0)
+	UNION
+		SELECT
+			CATALOG,
+			SCHEMA,
+			TABLE_NAME,
+			TABLE_OWNER,
+			TABLE_TYPE,
+			REMARKS
+		from
+			(
+			SELECT
+				CURRENT_DATABASE() AS CATALOG,
+				A.SCHEMA as SCHEMA,
+				A.TABLE_NAME as TABLE_NAME,
+				A.TABLE_OWNER as TABLE_OWNER,
+				A.TABLE_TYPE as TABLE_TYPE,
+				null AS REMARKS,
+				pgd.objoid as objoid
+			FROM
+				(
+				SELECT
+					T.SCHEMANAME AS SCHEMA,
+					T.TABLENAME AS TABLE_NAME,
+					T.TABLEOWNER AS TABLE_OWNER,
+					'TABLE' AS TABLE_TYPE
+				FROM
+					PG_TABLES T
+			UNION
+				SELECT
+					V.SCHEMANAME AS SCHEMA,
+					V.VIEWNAME AS VIEW_NAME,
+					V.VIEWOWNER AS TABLE_OWNER,
+					'VIEW' AS TABLE_TYPE
+				FROM
+					PG_VIEWS V ) A
+			LEFT JOIN PG_CATALOG.pg_statio_all_tables c on
+				(c.relname = A.table_name
+				and c.schemaname = A.SCHEMA)
+			LEFT JOIN PG_CATALOG.pg_description pgd on
+				(pgd.objoid = c.relid)
+			WHERE
+				A.SCHEMA NOT IN (
+				SELECT
+					schemaname
+				from
+					svv_external_schemas)
+				AND lower(A.SCHEMA) NOT LIKE  'pg_%%' ) tt
+		where
+			not exists(
+			select
+				1
+			from
+				PG_CATALOG.pg_description pt
+			where
+				pt.objoid = tt.objoid
+				and pt.objsubid = 0)
+	UNION
+		SELECT
+			CURRENT_DATABASE() AS CATALOG,
+			A.schemaname AS SCHEMA,
+			A.tablename AS TABLE_NAME,
+			null as TABLE_OWNER,
+			'TABLE' as TABLE_TYPE,
+			null as REMARKS
+		from
+			SVV_EXTERNAL_TABLES A
+		join svv_external_schemas B on
+			A.schemaname = B.schemaname )
+	WHERE
+		lower(SCHEMA) NOT IN   ( 'information_schema')
+		AND lower(SCHEMA) NOT IN ('''') 
+ 	AND TABLE_TYPE != 'VIEW';
+
+
+View
+--------------------
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``VIEW_NAME``, ``VIEW_CREATE_STATEMENT``, ``'VIEW' AS VIEW_TYPE``, and ``REMARKS`` in the ``SELECT`` list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+      	CURRENT_DATABASE() AS CATALOG,
+      	schemaname AS SCHEMA,
+      	viewname AS VIEW_NAME,
+      	CASE
+      	WHEN lower(definition) LIKE 'create materialized view%' THEN definition
+      	WHEN lower(definition) LIKE 'create or replace materialized view%' THEN definition
+      	WHEN lower(definition) LIKE 'create view%' THEN definition
+      	WHEN lower(definition) LIKE 'create or replace view%' THEN definition
+      	ELSE 'CREATE OR REPLACE VIEW ' || SCHEMA || '.' || VIEW_NAME || ' AS ' || definition
+      	END AS VIEW_CREATE_STATEMENT,
+      	'VIEW' AS VIEW_TYPE,
+      	VIEWOWNER AS TABLE_OWNER,
+      	null AS REMARKS
+      FROM
+      	PG_VIEWS
+      WHERE
+      	lower(schemaname) NOT LIKE 'pg_%%'
+      	AND lower(schemaname) NOT IN ('information_schema')
+      	AND lower(schemaname) NOT IN ('''');
+
+
+Column
+-------------------
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, and ``COLUMN_DEFAULT`` in the ``SELECT`` list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+      	table_catalog AS CATALOG,
+      	table_schema AS SCHEMA,
+      	table_name,
+      	column_name,
+      	data_type,
+      	CASE
+      		WHEN data_type = 'character varying' THEN 'varchar'
+      		WHEN data_type = 'timestamp without time zone' THEN 'timestamp'
+      		WHEN data_type = 'timestamp with time zone' THEN 'timestamptz'
+      		WHEN data_type = 'double precision' THEN 'FLOAT'
+      		ELSE data_type
+      	END as type_name,
+      	CASE
+      		WHEN data_type = 'character varying' THEN character_maximum_length
+      		WHEN data_type = 'numeric' THEN numeric_precision
+      		WHEN data_type = 'character' THEN character_maximum_length
+      		ELSE -1
+      	END AS length,
+      	numeric_scale,
+      	ordinal_position,
+      	is_nullable,
+      	column_default,
+      	remarks
+      FROM
+      	svv_columns
+      WHERE
+      	lower(SCHEMA) NOT LIKE 'pg_%%'
+      	AND lower(SCHEMA) NOT IN ('information_schema')
+      	AND lower(SCHEMA) NOT IN ('''');
+
+
+Primary Key
+--------------------
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``COLUMN_NAME`` and ``KEY_SEQ`` in the ``SELECT`` list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+      	CURRENT_DATABASE() AS CATALOG,
+      	S.NSPNAME AS SCHEMA,
+      	C.RELNAME AS TABLE_NAME,
+      	CONSTR.CONNAME AS PK_NAME,
+      	ATTR.ATTNAME AS COLUMN_NAME,
+      	ATTR.ATTNUM AS KEY_SEQ
+      FROM
+      	PG_CONSTRAINT CONSTR
+      INNER JOIN PG_ATTRIBUTE ATTR ON
+      	ATTR.ATTNUM = ANY (CONSTR.CONKEY)
+      	AND ATTR.ATTRELID = CONSTR.CONRELID
+      INNER JOIN PG_CLASS C ON
+      	CONSTR.CONRELID = C.OID
+      INNER JOIN PG_NAMESPACE S ON
+      	C.RELNAMESPACE = S.OID
+      WHERE
+      	lower(S.NSPNAME) NOT LIKE 'pg_%%'
+      	AND lower(S.NSPNAME) NOT IN ('''')
+      	AND lower(S.NSPNAME) NOT IN ('information_schema')
+      	AND CONSTR.CONTYPE = 'p';
+
+
+Foreign Key
+-----------------------
+
+Make sure that your query has columns labeled as ``PK_CATALOG``, ``PK_SCHEMA``, ``PK_TABLE``, ``PK_COLUMN``, ``FK_CATALOG``, ``FK_SCHEMA``, ``FK_TABLE``, and ``FK_COLUMN`` in the ``SELECT`` list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+      	CURRENT_DATABASE() AS FK_CATALOG,
+      	CURRENT_DATABASE() AS PK_CATALOG,
+      	F.FKTABLE_SCHEM AS FK_SCHEMA,
+      	F.FKTABLE_NAME AS FK_TABLE,
+      	F.FK_NAME,
+      	F.FKCOLUMN_NAME AS FK_COLUMN,
+      	F.KEY_SEQ,
+      	P.PKTABLE_SCHEM AS PK_SCHEMA,
+      	P.PKTABLE_NAME AS PK_TABLE,
+      	P.PK_NAME,
+      	P.PKCOLUMN_NAME AS PK_COLUMN
+      FROM
+      	(
+      	SELECT
+      		S.NSPNAME AS FKTABLE_SCHEM,
+      		C.RELNAME AS FKTABLE_NAME,
+      		CONSTR.CONNAME AS FK_NAME,
+      		ATTR.ATTNAME AS FKCOLUMN_NAME,
+      		ATTR.ATTNUM AS KEY_SEQ,
+      		CONSTR.CONFKEY,
+      		CONSTR.CONFRELID
+      	FROM
+      		PG_CONSTRAINT CONSTR
+      	INNER JOIN PG_ATTRIBUTE ATTR ON
+      		ATTR.ATTNUM = ANY (CONSTR.CONKEY)
+      		AND ATTR.ATTRELID = CONSTR.CONRELID
+      	INNER JOIN PG_CLASS C ON
+      		CONSTR.CONRELID = C.OID
+      	INNER JOIN PG_NAMESPACE S ON
+      		C.RELNAMESPACE = S.OID
+      		AND CONSTR.CONTYPE = 'f'
+      	WHERE
+      		lower(S.NSPNAME) NOT LIKE 'pg_%%'
+      		AND lower(S.NSPNAME) NOT IN ('''')
+      		AND lower(S.NSPNAME) NOT IN ( 'information_schema')
+       ) F
+      INNER JOIN (
+      	SELECT
+      		S.NSPNAME AS PKTABLE_SCHEM,
+      		C.RELNAME AS PKTABLE_NAME,
+      		CONSTR.CONNAME AS PK_NAME,
+      		ATTR.ATTNAME AS PKCOLUMN_NAME,
+      		ATTR.ATTNUM AS PKEY_SEQ,
+      		C.OID
+      	FROM
+      		PG_CONSTRAINT CONSTR
+      	INNER JOIN PG_ATTRIBUTE ATTR ON
+      		ATTR.ATTNUM = ANY (CONSTR.CONKEY)
+      		AND ATTR.ATTRELID = CONSTR.CONRELID
+      	INNER JOIN PG_CLASS C ON
+      		CONSTR.CONRELID = C.OID
+      	INNER JOIN PG_NAMESPACE S ON
+      		C.RELNAMESPACE = S.OID
+      		AND CONSTR.CONTYPE = 'p'
+      	WHERE
+      		lower(S.NSPNAME) NOT LIKE 'pg_%%'
+      		AND lower(S.NSPNAME) NOT IN ('''')
+      		AND lower(S.NSPNAME) NOT IN ( 'information_schema')
+       ) P ON
+      	P.PKEY_SEQ = ANY (F.CONFKEY)
+      	AND P.OID = F.CONFRELID;
+
+Function
+--------------------------
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``FUNCTION_NAME``, and ``REMARKS`` in the ``SELECT`` list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+      	CURRENT_DATABASE() AS CATALOG,
+      	S.NSPNAME AS SCHEMA,
+      	P.PRONAME AS FUNCTION_NAME,
+		P.PROSRC AS FUNCTION_DEFINITION,
+      	NULL AS SPECIFIC_NAME,
+      	NULL AS REMARKS
+      FROM
+      	PG_PROC P
+      INNER JOIN PG_NAMESPACE S ON
+      	P.PRONAMESPACE = S.OID
+      INNER JOIN PG_LANGUAGE L ON
+      	P.PROLANG = L.OID
+      WHERE
+      	(L.LANNAME IN ('internal', 'sql')
+      	AND p.prorettype <> 'pg_catalog.trigger'::pg_catalog.regtype
+      	OR L.LANNAME IN ('plpythonu'))
+      	AND lower(S.NSPNAME) NOT IN ('''')
+      	AND lower(S.NSPNAME) NOT LIKE 'pg_%%'
+      	AND lower(S.NSPNAME) NOT IN ( 'information_schema');
+
+Function Definition
+-----------------------------
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``FUNCTION_NAME``, ``ARG_NAME``, ``TYPE_NAME``, ``ARG_TYPE``, and ``ARG_DEF`` in the ``SELECT`` list.
+
+Example:
+
+.. code-block:: sql
+
+      SELECT
+      	CURRENT_DATABASE() AS CATALOG,
+      	N.NSPNAME AS SCHEMA,
+      	P.PRONAME AS FUNCTION_NAME,
+      	ISNULL(P.PROARGNAMES,'{}') AS ARG_NAME,
+      	P.PRONARGS AS NUM_OF_FUNCTION_ARGS,
+      	ISNULL(STRING_TO_ARRAY(REPLACE(OIDVECTORTYPES(P.PROARGTYPES), '\"', ''), ','),'{}') AS ARG_TYPE,
+      	FORMAT_TYPE(P.PRORETTYPE, NULL) AS TYPE_NAME,
+      	P.PROSRC AS ARG_DEF
+      FROM
+      	PG_PROC P
+      INNER JOIN PG_NAMESPACE N ON
+      	P.PRONAMESPACE = N.OID
+      INNER JOIN PG_LANGUAGE L ON
+      	P.PROLANG = L.OID
+      WHERE
+      	(L.LANNAME IN ('internal',
+      	'sql')
+      	AND p.prorettype <> 'pg_catalog.trigger'::pg_catalog.regtype
+      	OR L.LANNAME IN ('plpythonu'))
+      	AND lower(N.NSPNAME) NOT IN ('''')
+      	AND lower(N.NSPNAME) NOT LIKE 'pg_%%'
+      	AND lower(N.NSPNAME) NOT IN ('information_schema');

@@ -1,0 +1,40 @@
+Define the Number of Backups to Retain
+=========================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+.. note::
+
+    This information applies to both Backup V1 and Backup V2.
+
+You can configure the number of backups you want to store in the designated backup storage directory.
+
+Use the **alation_conf** parameter ``alation.backup.data_dump_versions`` to configure the number of backups you want to retain. For example, when this parameter is set to ``5`` (default), Alation will keep five latest Alation backup files, five corresponding Event Bus files, and five corresponding Postgres backups if Postgres backups are configured to be excluded from the compressed Alation backup file. If incremental backups are enabled, Alation will keep five latest full backups, the corresponding incremental backups, and the corresponding Postgres incremental backups if Postgres backups are not compressed together with the Alation backup. Older backups will be automatically removed.
+
+    .. note::
+
+        For more information about excluding Postgres backups from the compressed Alation backups, see :doc:`/installconfig/BackupandRestore/ManagePostgresBackupsSeparately` (available from version 2022.3).
+
+
+To set the number of backups to retain:
+
+1. Enter the Alation shell.
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+2. Run the following command, substituting ``<number>`` with an actual number.
+
+    .. code-block:: bash
+
+        alation_conf alation.backup.data_dump_versions -s <number>
+
+    **Example**:
+
+    .. code-block:: bash
+
+        alation_conf alation.backup.data_dump_versions -s 6
+
+
+No restart is required.

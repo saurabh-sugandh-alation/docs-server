@@ -1,0 +1,118 @@
+Network Requirements  
+======================
+
+Ports
+-----
+As Alation needs to communicate with various systems, open the following firewall ports.
+
+Outbound implies outbound from Alation. Inbound implies inbound into Alation.
+
+============================= =============== ========================= ==========================
+Service                       Direction       Ports                     Destination
+============================= =============== ========================= ==========================
+DNS                           outbound        TCP, UDP 53               DNS Servers
+
+Email (default)               outbound        TCP,UDP 25                0.0.0.0/0
+
+Email using corporate server  outbound        Corp. email server port   Corp. email server
+
+SSH                           inbound only    TCP 22                    Alation server
+
+HTTP/HTTPS                    inbound only    TCP 80, 443               Alation server
+
+LDAP                          outbound        TCP 389                   AD/LDAP server
+
+LDAPS                         outbound        TCP 636                   AD/LDAP server
+
+Auto S/W update               outbound        TCP 443                   Alation Cloud: 52.4.59.229
+
+Usage Stats                   outbound        TCP 443                   Alation Cloud: 52.4.59.229
+============================= =============== ========================= ==========================
+
+.. _Network_Requirements-Email_Server_Configuration:
+
+Email Server Configuration Prerequisites
+----------------------------------------
+In Alation, users can share and receive information using email. They can subscribe to email notifications about specific events: scheduled query runs, updates to articles, or user mentions in conversations. In order for the email-based functionality to work, you will need to set up an email server. There are several setup options:
+
+.. tabularcolumns:: |p{5cm}|p{10cm}|
+
++-------------------------------+---------------------------------------------------------------------------+
+| Parameter                     |     Description                                                           |
++===============================+===========================================================================+
+|  Built-in                     |     Alation uses Postfix as its built-in SMTP server.                     |
+|                               |     This option will be available during installation.                    |
+|                               |     You can use it as is, without any additional configuration;           |
+|                               |     however, using the built-in SMTP server is prone to issues as the     |
+|                               |     emails may be blocked by your company’s receiving                     |
+|                               |     server.                                                               |
+|                               |                                                                           |
+|                               |     Alation recommends to select this option during installation          |
+|                               |     to move through the installation steps and to later fine-tune         |
+|                               |     the email server configuration in the Alation UI.                     |
++-------------------------------+---------------------------------------------------------------------------+
+| Corporate SMTP Server         |     It is possible to use a corporate SMTP server to send emails          |
+|                               |     from Alation. This option is available both during installation and   |
+|                               |     in **Admin Settings > Email Server**.                                 |
++-------------------------------+---------------------------------------------------------------------------+
+| Built-in SMTP Server with     |     This option allows utilizing the built-in SMTP server  in             |
+| a separate relay server       |     combination with a relay server (Postfix, Sendmail, or other) outside |
+|                               |     the Alation chroot. Such a configuration cannot be performed          |
+|                               |     during installation or in the UI as it requires changes to the main   |
+|                               |     configuration file of the Postfix service on the Alation host server. |
+|                               |                                                                           |
+|                               |     The use of a separate relay server may help avoid email blocking      |
+|                               |     issues by the receiving server.                                       |
++-------------------------------+---------------------------------------------------------------------------+
+| Microsoft (MS) modern         |     *Available from version 2022.1*                                       |
+| authentication                |                                                                           |
+|                               |     It is possible to configure email notifications using MS modern       |
+|                               |     authentication and an MS email account. This option is available in   |
+|                               |     the Alation UI only, in **Admin Settings > Email Server**.            |
++-------------------------------+---------------------------------------------------------------------------+
+
+Built-in SMTP Server
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Required ports:
+
+=============== =============== ============= ===============
+Service         Direction       Ports         Destination
+=============== =============== ============= ===============
+DNS             outbound        TCP, UDP 53   DNS Servers
+
+Email (default) outbound        TCP 25        0.0.0.0/0
+=============== =============== ============= ===============
+
+Corporate SMTP Server
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Required ports:
+
+============================ =============== ============================= ========================
+Service                      Direction       Ports                         Destination
+============================ =============== ============================= ========================
+DNS                          outbound        TCP, UDP 53                   DNS Servers
+
+Email using corporate server   outbound        Corporate email server port   Corporate email server
+============================ =============== ============================= ========================
+
+**To use the corporate email server, you will need the following information**:
+
+#. Confirm connectivity to the corporate email server.
+
+    ::
+
+        telnet <EMAIL_SERVER_IP> <EMAIL_SERVER_PORT>
+
+    Example:
+
+    ::
+
+        telnet smtp.google.com 25
+
+2. Check if your network configuration requires that the Alation server IP should be whitelisted, and if so, whitelist it.
+3. Confirm that the corporate email server allows SMTP authentication.
+4. Confirm that Alation has a dedicated account with Send privileges on the corporate email server and obtain the credentials.
+5. Obtain information on which port the corporate SMTP server is running.
+6. Obtain information on whether the SMTP server uses SSL/TLS.

@@ -1,0 +1,171 @@
+Configure LDAP Groups
+=========================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+When Alation is configured to use LDAP authentication, you can create groups that use the Group type **Defined in LDAP**. LDAP Groups will be auto-synchronized with the groups in the LDAP Directory of your organization. Alation users who belong to the corresponding group in your LDAP directory, will be placed into the corresponding LDAP Group in Alation, based on Group DN that is specified in the configuration of the Group.
+
+.. note::
+
+   Using LDAP Groups in Alation requires that Bind DN should be set in the LDAP settings on the **Authentication** tab to enable searching for groups. Before you set up LDAP Groups in Alation, make sure that the Bind DN has been specified. See :doc:`/installconfig/ServerInstallation/UserAuthenticationSetup/UserAuthenticationLDAP`.
+
+To create LDAP Groups in Alation,
+
+1. Log in to Alation as a *Server Admin* or a *Catalog Admin* and go to the **Groups** page:
+
+   .. image:: ../../_static/LDAP_1.png
+       :width: 5.5in
+       :align: center
+
+2. Hover over **Custom Groups** to reveal the **Add Group** link on the right:
+
+   .. image:: ../../_static/LDAP_3.png
+       :width: 5.5in
+       :align: center
+
+3. Click **Add Group**. This will add a new custom group in the Edit mode:
+
+   .. image:: ../../_static/LDAP_4.png
+       :width: 5.5in
+       :align: center
+
+4. In the **Group Name** field, specify a name for the group you are creating.
+
+5. From the **Defined in** list, select **LDAP**:
+
+   .. image:: ../../_static/LDAP_2.png
+       :width: 300px
+       :align: center
+
+6. The Alation group requires a full  `Distinguished Name <https://www.ldap.com/ldap-dns-and-rdns>`_  (DN) of the corresponding LDAP group. For example: ``cn=Engineering,ou=Groups,dc=alation,dc=com``. Specify the DN in the Group DN field:
+
+   .. image:: ../../_static/LDAP_5.png
+       :width: 300px
+       :align: center
+
+7. Click **Test** to test the group configuration.
+
+8. *Release 2021.1 and later*: map an Alation role onto the group using the Mapped to list. Mapping a role onto the group is optional if you are using the default method of role assignment. However, it is required if you are going to enable role assignment using custom groups. This action is available to Server Admins only, and will appear as disabled to a Catalog Admin.
+
+    .. note::
+
+        For details on role assignment using custom groups, see :doc:`Use Custom Groups to Assign User Roles <../../admins/AdminSettings/UseCustomGroupsToAssignRoles>`.
+
+10. Click **Save** to save the group.
+
+When a new user logs in to Alation for the first time authenticating
+against your LDAP server, their group membership in Alation will be
+automatically updated and the corresponding LDAP-based group will show
+this user in the list of members.
+
+Details on LDAP Group Sync in Alation
+-------------------------------------
+
+Alation creates a flat list of members for a group.
+
+.. note::
+
+   If an organization has groups and subgroups, Alation drills down to the level of a subgroup to find all users of the group and populates the list of members.
+
+Alation supports two methods to determine group membership. This is
+configurable on the **Authentication** tab:
+
+.. image:: ../../_static/Screen_Shot_2018-10-11_at_3.41.31_PM.png
+    :width: 400px
+
+- **Search group for all members** Alation queries the LDAP Server to get attributes of the group DN specified. Members of the group are inferred by processing the member DNs in the "memberOf" attribute (or whichever is configured as the Membership Attribute) on the group.
+
+- **Search members for group** This is the default option to find members of a group. Alation  constructs a filter to query the LDAP server for getting all members who belong to a group. Alation checks if the member DN matches the "memberOf" (or whichever is configured as the Membership Attribute). 
+
+The Admin can either leave the default option or use **Search group for all members** option.
+
+Group Membership Updates
+------------------------
+
+Alation queries the LDAP server every 15 minutes (default) to periodically update
+the details of group membership. In addition, group membership is updated every time a group Defined in LDAP is re-saved in the UI or when a user logs in to Alation using LDAP authentication.
+
+You can use the dedicated **alation_conf** parameter to change the frequency of the auto-sync. Replace the default value 15 with any suitable number of minutes.
+
+Release 2021.3 and Newer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+1. Enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+2. Set the value:
+
+    .. code-block:: bash
+
+        alation_conf user_group_management.sync_from_directory_provider.ldap.group_sync_period -s <value_in_minutes>
+
+    **Example**:
+
+    .. code-block:: bash
+
+        alation_conf user_group_management.sync_from_directory_provider.ldap.group_sync_period -s 20
+
+3. Restart Web:
+
+    .. code-block:: bash
+
+        alation_supervisor restart web:*
+
+Releases V R7 - 2021.2.x
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. SSH to the host and enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+2. Set the value:
+
+    .. code-block:: bash
+
+        alation_conf alation.authentication.ldap.group_sync_period -s <value_in_minutes>
+
+    **Example**:
+
+    .. code-block:: bash
+
+        alation_conf alation.authentication.ldap.group_sync_period -s 20
+
+  3. Restart Web:
+
+    .. code-block:: bash
+
+        alation_supervisor restart web:*
+
+Error Logging
+-------------
+
+Paths in this section are given inside the Alation Chroot: can be accessed from the Alation shell.
+
+Issues with the periodic LDAP group sync are logged in:
+
+    - **/opt/alation/site/logs/celery-default_error.log**
+
+Trace and debug information related to issues with LDAP login or configuration can be found in:
+
+    - **/opt/alation/site/logs/alation-error.log**
+    - **/opt/alation/site/logs/alation-debug.log**
+    - **/opt/alation/site/logs/alation-info.log**
+
+Known Issues
+------------
+
+After saving a group defined in LDAP (on the Groups page), the "<number
+of users> not in Alation" line does not currently appear until a page
+refresh is done or the page is subsequently loaded.
+
+Cache Membership
+------------------
+
+The LDAP group member relationship in Alation is stored similar to regular Alation groups and users, which means this information is cached. You may see a delay in users appearing in their respective groups or in changes to be applied. This delay would typically be about 15 minutes (or the refresh time you have configured) that is required for searching and synchronizing group members between the systems.

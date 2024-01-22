@@ -1,0 +1,166 @@
+MarkLogic
+===========
+
+*Applies from 2020.2*
+
+Alation has certified the MarkLogic data source with the following CData driver to support additional features:
+
+    - cdata.jdbc.marklogic.MarkLogicDriver.cdata.jdbc.marklogic
+
+Alation can provide the above mentioned CData driver license for MarkLogic.
+
+Scope of Support
+---------------------
+
+    - Supported as Custom DB with the CData Driver for MarkLogic.
+    - Metadata Extraction (MDE)
+
+        - Automated MDE
+
+    - Compose
+    - Data Profiling
+    - QLI is not supported
+
+Ports
+---------
+
+Port 8000 must be open.
+
+Service Account
+-------------------
+
+Create the service account for MarkLogic, refer to `Secure Credentials <https://docs.marklogic.com/guide/security/secure-credentials#id_36331>`_.
+
+SSL Certificate
+~~~~~~~~~~~~~~~~~~~~
+
+Obtain a SSL certificate, refer to `Procedures for Enabling SSL <https://docs.marklogic.com/guide/security/SSL#id_90097>`_. Once obtained, enable the SSL on the Alation server; refer to :doc:`Enable SSL <../../datasources/DSConfiguration/InstallingCertificatesforSecureDataSourceCon>`.
+
+Required Information
+-----------------------
+
+    - JDBC driver used to connect to the database: CData JDBC Driver for MarkLogic
+    - JDBC URI for the MarkLogic data source
+
+JDBC URI
+~~~~~~~~~~~~
+
+When building the URI, include the following components:
+
+    - Host Name
+    - Port Number
+    - SSL Certificate (Optional)
+    - RTK Key - when you purchase a CData driver from Alation, you are provided an RTK that needs to be included into the URI. If you purchased the driver from CData, you should have a license file that needs to be placed on the Alation server together with the driver .jar file.
+
+Use the following format for the JDBC URI:
+
+.. code-block:: Bash
+
+      Marklogic://<Host_Name>;Port=8000;API=REST;UseSSL=True;SSLServerCERT=/tmp/certificate.crt;RTK=<RTK_Key>
+
+*Example:*
+
+.. code-block:: Bash
+
+      Marklogic://10.13.64.245;Port=8000;API=REST;UseSSL=True;SSLServerCERT=/tmp/certificate.crt;RTK=444752465641535552425641454E545042424D333236323900000000000000000000000000000000414C4154494F4E5800005559475655474E4E464242370000
+
+Limitation
+--------------
+
+Query Log Ingestion is not supported.
+
+Set Up in Alation
+-------------------
+
+Step 1: Add the CData Driver for MarkLogic to Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Depending on how you purchased the CData driver, from Alation or from CData, the driver installation process will be different. Refer to :doc:`Add the CData Driver into Alation Instance <../../datasources/CustomDB/CDataDrivers>` and use the scenario appropriate to your case.
+
+STEP 2: Add a New Datasource
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a new Datasource on the Sources page.
+
+Step 3: Set up the Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  1. On the **Add a Data Source** screen of the wizard, specify:
+
+        - **Database Type:** Custom DB
+        - **JDBC URI:** URI in the required format. See JDBC URI.
+          *Example:*
+          
+          .. code-block:: Bash
+          
+            Marklogic://10.13.64.245;Port=8000;API=REST;User=UserName;Password=Password;UseSSL=True;SSLServerCERT=/tmp/certificate.crt;RTK=444752465641535552425641454E545042424D333236323900000000000000000000000000000000414C4154494F4E5800005559475655474E4E464242370000
+
+        - Select Driver: select the JDBC driver for MarkLogic from the Select Driver drop-down list:
+
+          **cdata.jdbc.marklogic.MarkLogicDriver.cdata.jdbc.marklogic**
+
+  2. Click **Save and Continue**. The next wizard screen - **Set Up a Service Account** - will open.
+
+  .. note::
+
+      Do not select the Kerberos **‘Use Kerberos’** checkbox.
+
+    .. image:: ../../_static/Marklogic_01.png
+
+Step 4: Enter Service Account Credentials
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  1. Select **Yes**.
+
+  2. Provide the username and password of the service account created for Alation.
+
+  3. Click **Save and Continue**. The next wizard screen, **Configure Your Data Source**, will open.
+
+Step 5: Configure Your Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Click **Skip this Step**. After this step, you are navigated to the **Settings** page of your data source.
+
+Metadata Extraction
+----------------------
+
+Configure and perform metadata extraction and verify the results:
+
+      - In **Settings > Custom Settings**, set the **Catalog Object Definition** to **Catalog.Schema.Table**:
+
+        .. image:: ../../_static/Marklogic_02.png
+
+      - In **Settings > Metadata Extraction**, set up and perform MDE. Refer to Metadata Extraction.
+
+Profiling
+------------
+
+Configure and perform :doc:`Sampling and Profiling <../../datasources/CustomDB/ProfilingForCustomDB>` :
+
+    - Users can run a sample for an individual table on the **Samples** tab of the Table Catalog page or profile an individual column on the **Overview** tab of the Column page.
+    - Automatic full and selective Profiling is supported.
+    - Use the **Per-Object Parameters** in Settings tab to specify which objects to profile.
+    - Custom query-based Sampling is supported. :ref:`Custom Query-Based Sampling <Sampling_Profiling-Custom_Query_Based_Sampling_for_Tables>` allows you to provide a custom query for profiling each specific table.
+    - Deep Column Profiling (:ref:`Profiling V2 <profilingV2-label>` ) is supported.
+
+Query Log Ingestion
+---------------------
+
+Not supported.
+
+Compose
+---------
+
+Log into Compose:
+
+    - Authenticate compose with your Starburst Enterprise Presto credentials.
+    - Use the **Catalog.Schema.Table** format for writing queries.
+    
+Troubleshooting
+-----------------
+
+Logs to collect/review:
+
+    - For logs related to MDE: **taskserver.log, taskserver_err.log**.
+    - For logs related to Compose: **connector.log, connector_err.log**.
+    - For any other errors: **alation-error.log, alation-debug.log**

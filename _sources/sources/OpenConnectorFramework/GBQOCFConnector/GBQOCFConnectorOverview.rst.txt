@@ -1,0 +1,133 @@
+OCF Connector for Google BigQuery: Overview
+===============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The OCF connector for Google BigQuery was developed by Alation and is available as a Zip file that can be uploaded and installed in the Alation application. The connector is compiled together with the required database driver, so no additional effort is needed to procure and install the driver.
+
+To download the Google BigQuery OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+This connector should be used to catalog Google BigQuery as a data source on Alation customer-managed (on-prem) and Cloud Service instances. It extracts and catalogs such database objects as schemas, tables, views, and columns. The extracted metadata is represented in the data catalog as a hierarchy of catalog pages under a parent data source. Alation users can leverage the full catalog functionality to search and find the metadata, curate the corresponding catalog pages, create documentation about the data source, exchange information about it, and follow data transformations using lineage diagrams.
+
+Team
+----------
+
+    - Alation administrator:
+
+      - Ensures that Alation Connector Manager is available or installs it.
+      - Installs the OCF connector.
+      - Creates and configures a Google BigQuery data source in the data catalog.
+      - Performs initial extraction and prepares the data source for Alation users.
+
+    - Google Cloud Platform administrator:
+
+      - Assists in configuring authentication for extraction and Compose.
+      - Provides the JDBC URI.
+
+Scope
+----------------
+
+The table below describes which metadata objects are extracted by the connector and which catalog functionality is supported.
+
++----------------------------+---------------------------------------------------------------+-------------+
+| Feature                    | Scope                                                         | Availability|
++============================+===============================================================+=============+
+| **Authentication**                                                                                       |
++----------------------------+---------------------------------------------------------------+-------------+
+| Authentication             | Authentication with a service account                         | Yes         |
+| with a service account     |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Authentication with        | Authentication with a user account and an OAuth client        | Yes         |
+| OAuth and a user account   |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Metadata extraction (MDE)**                                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| Default MDE                | Extraction of metadata from Google BigQuery projects.         | Yes         |
+|                            | This connector uses Google BigQuery API to retrieve metadata  |             |
+|                            | into the Alation catalog                                      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based MDE     | Extraction of metadata based on extraction                    | No          |
+|                            | queries provided by a user                                    |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Extracted metadata objects**                                                                           |
++----------------------------+---------------------------------------------------------------+-------------+
+| Data Source                | Data source object in Alation that is parent to extracted     | Yes         |
+|                            | metadata                                                      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Schemas                    | List of schemas                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Tables                     | List of tables                                                | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Columns                    | List of columns                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column data types          | Column data types                                             | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Views                      | List of views                                                 | Yes         |
+|                            |                                                               |             |
+|                            | Extraction of materialized views is supported                 |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Source comments            | Source comments are extracted for schema, table, view,        | Yes         |
+|                            | materialized view, and column objects                         |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Primary keys               | Primary key information for extracted tables                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Foreign keys               | Foreign key information for extracted tables                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Functions                  | Function metadata                                             | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Function definitions       | Function definition metadata                                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Sampling and profiling**                                                                               |
++----------------------------+---------------------------------------------------------------+-------------+
+| Table sampling             | Retrieval of data samples from extracted tables               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column sampling            | Retrieval of data samples from extracted columns              | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Deep column profiling      | Profiling of columns with the calculation of                  | Yes         |
+|                            | value distribution stats                                      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Dynamic profiling          | Ability for individual users to connect with                  | Yes         |
+|                            | their own database accounts to retrieve table and column      |             |
+|                            | samples and profiles                                          |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based table   | Ability to use custom queries for sampling specific tables    | Yes         |
+| sampling                   |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based column  | Ability to use custom queries for profiling specific columns  | Yes         |
+| sampling                   |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Query log ingestion (QLI)**                                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| Table-based QLI            | Ingestion of query history based on a table or view that      | Yes         |
+|                            | contains query history data                                   |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Query-based QLI            | Ingestion of query history based on a custom query history    | Yes         |
+|                            | extraction query                                              |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| JOINs and filters          | Calculation of JOIN and filter information based on ingested  | Yes         |
+|                            | query history                                                 |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Predicates                 | Ability to parse predicates in ingested queries               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Lineage**                                                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+| Automatic lineage          | Auto-calculation of lineage based on query history ingested   | Yes         |
+| generation                 | from QLI, MDE, and Compose queries                            |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column-level lineage       | Calculation of lineage data at the column level.              | Yes         |
+|                            |                                                               |             |
+|                            | Requires the column-level lineage parser add-on for           |             |
+|                            | Google BigQuery                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Compose**                                                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+| Customer-managed (on-prem) | Compose on on-prem Alation instances                          | Yes         |
+| Alation instances          |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Alation Cloud Service      | .. include:: ../../../shared/OCF/OCF_Scope_ComposeAgent.rst   | Yes         |
+| instances                  |                                                               |             |
+|                            | Compose with Agent is supported from connector version        |             |
+|                            | **1.1.1.4664**.                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| OAuth                      | Authentication in Compose using the OAuth protocol            | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+

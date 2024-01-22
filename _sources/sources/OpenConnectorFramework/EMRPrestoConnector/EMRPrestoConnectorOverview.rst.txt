@@ -1,0 +1,155 @@
+Amazon EMR Presto Connector: Overview
+============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from Alation version 2022.2*
+
+Overview
+------------
+
+The latest OCF connector for Amazon EMR Presto can be downloaded from the Connector Hub on `Alation Customer Portal <https://customerportal.alationdata.com/>`_. Ask an Alation admin with access to Customer Portal to download the connector from the **Connectors** section (Customer Portal > Connectors).
+
+The connector file can be uploaded and installed in the Alation application. The connector is compiled together with the required database driver, so no additional effort is needed to procure and install the driver.
+
+This connector should be used to catalog Amazon EMR Presto as a data source on Alation on-premise and Cloud Service instances. 
+It extracts and catalogs such database objects as schemas, tables, views, and columns. 
+After the metadata is extracted, it is represented in the data catalog as a hierarchy of catalog pages under the parent data source.
+Alation users can leverage the full catalog functionality to search for and find the extracted metadata, curate the corresponding catalog pages, create documentation about the data source, and exchange information about it.
+
+Team
+----------
+
+You may need the assistance of the following administrators to configure this connector:
+
+    - Amazon EMR Presto administrator:
+
+        - Provides the connection information and the JDBC URI.
+        - Provides the authentication information and assists in configuring the authentication.
+        - Provides the SSL certificate.
+        - Assists in configuring Kerberos authentication.
+        - Provides access to the schema for metadata extraction.
+
+
+    - Alation Server administrator:
+
+        - Ensures that Alation Connector Manager is installed and running or installs it.
+        - Installs the connector.
+        - Creates and configures the Amazon EMR Presto data source in the catalog.
+        - Performs initial extraction and prepares the data source for Alation users.
+
+
+
+Scope
+----------------
+
+The table below describes which metadata objects are extracted by the connector and which catalog functionality is supported.
+
++----------------------------+---------------------------------------------------------------+-------------+
+| Feature                    | Scope                                                         | Availability|
++============================+===============================================================+=============+
+| **Authentication**                                                                                       |
++----------------------------+---------------------------------------------------------------+-------------+
+| Basic                      | Authentication with username, password, and security token    | Yes         |                                                    
++----------------------------+---------------------------------------------------------------+-------------+
+| AWS IAM user               | Authentication with an IAM user access                        | No          |
+|                            | key and secret                                                |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| AWS IAM role               | Authentication with an STS token for an AWS IAM role          | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSL                        | Connection over the TLS protocol                              | Yes         |                                                           
++----------------------------+---------------------------------------------------------------+-------------+
+| Kerberos                   | Authentication with an IAM user access                        | Yes         |
+|                            | key and secret                                                |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Keytab                     | Support for Kerberos with keytabs                             | Yes         |                                                            
++----------------------------+---------------------------------------------------------------+-------------+
+| LDAP                       | Authentication with a database service account that is an LDAP| Yes         |
+|                            | account in an organization's network                          |             |                                                                 
++----------------------------+---------------------------------------------------------------+-------------+
+| **Metadata Extraction (MDE)**                                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| Default MDE                | Extraction of metadata based on the JDBC driver methods       | Yes         |
+|                            | in the connector code                                         |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based MDE     | Extraction of metadata based on extraction                    | No          |
+|                            | queries provided by a user                                    |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Extracted metadata objects**                                                                           |
++----------------------------+---------------------------------------------------------------+-------------+
+| Data Source                | Data source object in Alation that is parent to extracted     | Yes         |
+|                            | metadata                                                      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Schemas                    | List of databases                                             | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Tables                     | List of tables                                                | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Columns                    | List of columns                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column data types          | Column data types                                             | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Views                      | List of views                                                 | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Source comments            | Source comments                                               | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Primary keys               | Primary key information for extracted tables                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Foreign keys               | Foreign key information for extracted tables                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Functions                  | Extraction of function metadata                               | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Function definitions       | Extraction of function definition metadata                    | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Sampling and Profiling**                                                                               |
++----------------------------+---------------------------------------------------------------+-------------+
+| Table sampling             | Retrieval of data samples from extracted tables               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column sampling            | Retrieval of data samples from extracted columns              | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Deep column profiling      | On-demand profiling of specific columns with the calculation  | Yes         |
+|                            | of value distribution stats                                   |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Dynamic profiling          | On-demand table and column profiling by individual users who  | Yes         |
+|                            | use their own database accounts to retrieve the profiles      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based table   | Ability to use custom queries for sampling specific tables    | Yes         |
+| sampling                   |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based column  | Ability to use custom queries for profiling specific columns  | Yes         |
+| profiling                  |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Query Log Ingestion (QLI)**                                                              |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Table-based QLI            | Ingestion of query history based on a table that contains     | No          |
+|                            | query history data                                            |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Query-based QLI            | Ingestion of query history based on a custom query history    | Yes         |
+|                            | extraction query                                              |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| JOINs and filters          | Calculation of JOIN and filter information based on ingested  | Yes         |
+|                            | query history                                                 |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Predicates                 | Ability to parse predicates in ingested queries               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Lineage**                                                                                |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Automatic lineage          | Auto-calculation of lineage based on query history ingested   | Yes         |
+| generation                 | from QLI, MDE, and Compose queries                            |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Direct lineage             | Extraction of lineage from system tables during MDE           | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column-level lineage       | Extraction of lineages on the column level                    | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Compose**                                                                                |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| On-premise instances       | Availability of Compose on on-premise instances of Alation    | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Alation Cloud Service      | Depending on your network configuration, you may be using     | Yes         |
+| instances                  | Alation Agent to connect to your data source                  |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Basic authentication in    | Authentication in Compose with username and password          | Yes         |
+| Compose                    |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSO authentication in      | Authentication in Compose with SSO credentials                | No          |
+| Compose                    |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+

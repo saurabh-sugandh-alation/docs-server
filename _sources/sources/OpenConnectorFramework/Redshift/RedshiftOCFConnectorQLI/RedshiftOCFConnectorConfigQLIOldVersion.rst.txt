@@ -1,0 +1,55 @@
+Versions Before 1.7.0
+======================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+.. important::
+
+    This section is applicable to all Alation versions and Amazon Redshift OCF Connector versions **prior to 1.7.0**.
+
+
+You can either create a table for Alation to pull the query logs from or use a custom query to query the logs from the Amazon Redshift data source.
+
+Before performing query log ingestion (QLI), perform the QLI setup. Refer to :ref:`Redshift QLI Setup <Appendix_3>`.
+
+.. include:: ../../../../shared/OCF/OCF_QLIIntroText.rst
+
+Connector Settings
+----------------------
+
+Table-Based QLI
+~~~~~~~~~~~~~~~~~~~
+
+In the **Table Name** field, provide the name of the table in which the query logs are available. The table name must be provided in the following format: ``database.table``.
+
+Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you cannot create a table or view, you can use a Custom QLI Query to perform QLI. Provide the expected query structure as shown below and click **Save**:
+
+.. code-block:: sql
+
+      SELECT
+          user_name AS username,
+          to_char(start_time, 'YYYY-MM-DD HH:MI:SS.US') AS startTime,
+          text AS queryString,
+          session_id AS sessionId,
+          seconds_taken AS seconds,
+          'false' AS cancelled,
+          default_database AS defaultDatabases,
+          split_part(session_id, '/', 2) AS sessionStartTime,
+          seq
+      FROM
+          public.alation_qlog
+      WHERE
+        starttime BETWEEN STARTTIME AND ENDTIME
+        AND queryString IS NOT NULL
+        AND queryString <> ''
+        AND username != 'rdsdb'
+      ORDER BY startTime, username, seq;
+
+
+Automated and Manual Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../../shared/OCF/OCF_ManualAutomatedQLI.rst

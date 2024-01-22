@@ -1,0 +1,49 @@
+Set bulk_insert_sql_str_length_limit Parameter
+==============================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Alation extracts metadata from data sources and inserts the extracted metadata information into Postgres in batches. The ``bulk_insert_sql_str_length_limit`` parameter sets the
+batch size for bulk metadata synchronization. The default value is 500 MB set in bytes:  ``alation.metadata_syncing.bulk_insert_sql_str_length_limit = 500000000``.
+
+Users may have to adjust the value of this parameter using
+**alation_conf** if they observe performance issues during metadata
+extraction (MDE), such as extreme slowness that leads to MDE
+failure. The **postgres.log** in this case will contain Out of Memory
+errors and the information on MDE failure during the execution of the
+``Insert query``. Analysis by Alation engineers shows that in such cases the Insert query may be
+terminated by the operating system due to memory pressure.
+
+Alation does not currently provide a specific recommendation for
+the ``bulk_insert_sql_str_length_limit`` value because it largely depends on the
+instance size and resources. You may need to experimentally find the
+value that works for your Alation instance.
+
+To configure ``bulk_insert_sql_str_length_limit`` :
+
+#. SSH to your Alation host.
+
+#. Enter the Alation shell:
+
+      .. code-block:: bash
+
+          sudo /etc/init.d/alation shell
+
+#. To view the current value of the ``bulk_insert_sql_str_length_limit``, run:
+
+      .. code-block:: bash
+
+          alation_conf alation.metadata_syncing.bulk_insert_sql_str_length_limit
+
+4. To set a new value, run the following command substituting **<value in bytes>** by the actual value:
+
+      .. code-block:: bash
+
+          alation_conf alation.metadata_syncing.bulk_insert_sql_str_length_limit -s <value in bytes>
+
+
+You can start with reducing the default value of the parameter by half and re-running the MDE from Alation to check if it runs successfully.
+
+ 
+
+ 

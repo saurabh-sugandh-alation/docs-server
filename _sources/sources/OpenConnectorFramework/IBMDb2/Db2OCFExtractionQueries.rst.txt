@@ -1,0 +1,267 @@
+Extraction Queries for IBM Db2 Database
+================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Schema
+---------------------
+
+Ensure your query has a column labelled as ``CATALOG`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT DISTINCT
+          TRIM(SCHEMANAME) AS SCHEMA,
+          '' AS CATALOG
+      FROM syscat.schemata
+      WHERE SCHEMANAME  NOT IN ('''')
+          AND SCHEMANAME NOT IN ( 'SYSIBMTS' , 'SYSCAT' , 'SYSIBMADM' , 'SYSIBM' ,
+              'SYSPROC' , 'SYSPUBLIC' , 'NULLID' , 'SQLJ' , 'SYSIBMINTERNAL' ,
+              'SYSSTAT' , 'SYSFUN' , 'SYSTOOLS');
+
+
+Table
+------------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``TABLE_NAME``, ``TABLE_TYPE``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+          '' AS CATALOG,
+          TRIM(TABSCHEMA) AS SCHEMA,
+          TABNAME AS TABLE_NAME,
+          TYPE AS TABLE_TYPE,
+          REMARKS AS REMARKS,
+          ALTER_TIME AS ALTER_TIME,
+          CREATE_TIME AS CREATE_TIME,
+          OWNER AS OWNER
+      FROM
+          SYSCAT.TABLES
+      WHERE TABSCHEMA  NOT IN ('''')
+          AND TABSCHEMA NOT IN  ( 'SYSIBMTS' , 'SYSCAT' , 'SYSIBMADM' , 'SYSIBM' ,
+              'SYSPROC' , 'SYSPUBLIC' , 'NULLID' , 'SQLJ' , 'SYSIBMINTERNAL' ,
+              'SYSSTAT' , 'SYSFUN' , 'SYSTOOLS')
+          AND TYPE IN ('T')
+      ORDER BY
+        TABLE_TYPE,
+        CATALOG,
+        SCHEMA,
+        TABLE_NAME;
+
+
+View
+-------------------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``VIEW_NAME``, ``VIEW_CREATE_STATEMENT``, ``'VIEW' AS VIEW_TYPE``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+          '' AS CATALOG,
+          TRIM(VIEWSCHEMA) AS SCHEMA,
+          VIEWNAME AS VIEW_NAME,
+          'VIEW' AS VIEW_TYPE,
+          '' AS  REMARKS,
+          TEXT AS VIEW_CREATE_STATEMENT
+      FROM
+          SYSCAT.VIEWS
+      WHERE VIEWSCHEMA  NOT IN ('''')
+          AND VIEWSCHEMA NOT IN  ( 'SYSIBMTS' , 'SYSCAT' , 'SYSIBMADM' , 'SYSIBM' ,
+          'SYSPROC' , 'SYSPUBLIC' , 'NULLID' , 'SQLJ' , 'SYSIBMINTERNAL' ,
+          'SYSSTAT' , 'SYSFUN' , 'SYSTOOLS')
+      ORDER BY
+          SCHEMA,
+          VIEW_NAME;
+
+Column
+---------------------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, ``COLUMN_DEFAULT`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+        '' AS CATALOG,
+        TRIM(c.TABSCHEMA) AS SCHEMA,
+        c.TABNAME AS TABLE_NAME,
+        c.COLNAME AS COLUMN_NAME,
+        CASE
+            WHEN c.TYPENAME = 'VARCHAR' THEN 'VARCHAR('||c.LENGTH||')'
+            WHEN c.TYPENAME = 'DECIMAL' THEN 'DECIMAL('||c.LENGTH||')'
+            WHEN c.TYPENAME = 'REAL' THEN 'REAL('||c.LENGTH||')'
+            WHEN c.TYPENAME = 'CLOB' THEN 'CLOB('||c.LENGTH||')'
+            WHEN c.TYPENAME = 'DBCLOB' THEN 'DBCLOB('||c.LENGTH||')'
+            WHEN c.TYPENAME = 'CHARACTER' THEN 'VARCHAR('||c.LENGTH||')
+            WHEN c.TYPENAME = 'BLOB' THEN 'BLOB('||c.LENGTH||')'
+            WHEN c.TYPENAME = 'GRAPHIC' THEN 'GRAPHIC('||c.LENGTH||')'
+            WHEN c.TYPENAME = 'VARGRAPHIC' THEN 'VARGRAPHIC('||c.LENGTH||')'
+            ELSE c.TYPENAME
+        END AS TYPE_NAME,
+            c.TYPENAME AS DATA_TYPE,
+            c.COLNO AS ORDINAL_POSITION,
+            nulls AS IS_NULLABLE,
+            c.DEFAULT AS COLUMN_DEF,
+            c.REMARKS AS REMARKS,
+            c.LENGTH AS MAX_LENGTH,
+            null AS COLUMN_DEFAULT,
+            c.SCALE AS NUMERIC_SCALE
+      FROM SYSCAT.COLUMNS AS c,
+        SYSCAT.TABLES AS t
+      WHERE c.TABSCHEMA = t.TABSCHEMA
+        AND c.TABNAME = t.TABNAME
+        AND c.TABSCHEMA  NOT IN ('''')
+        AND c.TABSCHEMA NOT IN  ( 'SYSIBMTS' , 'SYSCAT' , 'SYSIBMADM' ,
+              'SYSIBM' , 'SYSPROC' , 'SYSPUBLIC' , 'NULLID' , 'SQLJ' ,
+              'SYSIBMINTERNAL' , 'SYSSTAT' , 'SYSFUN' , 'SYSTOOLS' )
+      ORDER BY
+        CATALOG,
+        SCHEMA,
+        TABLE_NAME,
+        ORDINAL_POSITION;
+
+Primary Key
+---------------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``TABLE_NAME``, ``COLUMN_NAME`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+          '' AS CATALOG,
+          TRIM(COL.TBCREATOR) AS SCHEMA,
+          COL.TBNAME AS TABLE_NAME,
+          INDEX.NAME AS INDEX_NAME,
+          KEYSEQ,
+          COL.NAME AS COLUMN_NAME
+      FROM
+          SYSIBM.SYSCOLUMNS AS COL
+          INNER JOIN SYSIBM.SYSINDEXES AS INDEX
+              ON COL.TBNAME = INDEX.TBNAME
+      WHERE COL.KEYSEQ > 0
+          AND COL.TBCREATOR  NOT IN ('''')
+          AND COL.TBCREATOR NOT IN  ( 'SYSIBMTS' , 'SYSCAT' , 'SYSIBMADM' ,
+              'SYSIBM' , 'SYSPROC' , 'SYSPUBLIC' , 'NULLID' , 'SQLJ' ,
+              'SYSIBMINTERNAL' , 'SYSSTAT' , 'SYSFUN' , 'SYSTOOLS')
+      ORDER BY
+          COLUMN_NAME;
+
+
+Foreign Key
+---------------------------
+
+Ensure your query has columns labelled as ``PK_CATALOG``, ``PK_SCHEMA``, ``PK_TABLE``, ``PK_COLUMN``, ``FK_CATALOG``, ``FK_SCHEMA``, ``FK_TABLE``, ``FK_COLUMN`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+          '' AS FK_CATALOG,
+          TRIM(FK.TABSCHEMA) AS FK_SCHEMA,
+          FK.TABNAME AS FK_TABLE,
+          FK.CONSTNAME AS FK_NAME,
+          FKCOL.COLNAME AS FK_COLUMN,
+          FK.REFTABSCHEMA AS PK_SCHEMA,
+          FK.REFTABNAME AS PK_TABLE,
+          FK.REFKEYNAME AS PK_NAME,
+          PKCOL.COLNAME AS PK_COLUMN,
+          null AS PK_CATALOG
+      FROM
+          SYSCAT.REFERENCES FK
+          INNER JOIN SYSCAT.KEYCOLUSE FKCOL
+              ON FK.TABSCHEMA = FKCOL.TABSCHEMA
+              AND FK.TABNAME = FKCOL.TABNAME
+              AND FK.CONSTNAME = FKCOL.CONSTNAME
+          INNER JOIN SYSCAT.KEYCOLUSE PKCOL
+              ON FK.REFTABSCHEMA = PKCOL.TABSCHEMA
+              AND FK.REFTABNAME = PKCOL.TABNAME
+              AND FK.REFKEYNAME = PKCOL.CONSTNAME
+              AND FKCOL.COLSEQ = PKCOL.COLSEQ
+      WHERE FK.TABSCHEMA  NOT IN ('''')
+          AND FK.TABSCHEMA NOT IN  ( 'SYSIBMTS' , 'SYSCAT' , 'SYSIBMADM' ,
+            'SYSIBM' , 'SYSPROC' , 'SYSPUBLIC' , 'NULLID' , 'SQLJ' ,
+            'SYSIBMINTERNAL' , 'SYSSTAT' , 'SYSFUN' , 'SYSTOOLS')
+      ORDER BY
+        FK_SCHEMA,
+        FK_TABLE,
+        FKCOL.COLSEQ;
+
+Function
+-----------------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``FUNCTION_NAME``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+          DISTINCT '' AS CATALOG,
+          SPECIFICNAME AS FUNCTION_NAME,
+          TRIM(ROUTINESCHEMA) AS SCHEMA,
+          NULL AS REMARKS
+      FROM
+          SYSIBM.SYSROUTINEPARMS
+      WHERE ROUTINESCHEMA NOT IN ('''')
+          AND ROUTINESCHEMA NOT IN ( 'SYSIBMTS' , 'SYSCAT' , 'SYSIBMADM' ,
+              'SYSIBM' , 'SYSPROC' , 'SYSPUBLIC' , 'NULLID' , 'SQLJ' ,
+              'SYSIBMINTERNAL' , 'SYSSTAT' , 'SYSFUN' , 'SYSTOOLS');
+
+Function Definition
+---------------------------
+
+Please ensure your query has columns labelled as ``CATALOG``, ``FUNCTION_NAME``, ``ARG_NAME``, ``TYPE_NAME``, ``ARG_TYPE``, ``ARG_DEF`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+          '' AS FUNCTION_CAT,
+          TRIM(SRP.ROUTINESCHEMA) AS SCHEMA,
+          SRP.ROUTINETYPE AS FUNCTION_TYPE,
+          SRP.ROUTINENAME AS FUNCTION_NAME,
+          SRP.ROUTINENAME AS ARG_NAME,
+          SRP.ROUTINETYPE AS ARG_TYPE,
+          SRP.SPECIFICNAME AS SPECIFIC_NAME,
+          SRP.TYPENAME AS TYPE_NAME,
+          SRP.PARMNAME AS COLUMN_NAME,
+          null AS COLUMN_DEFAULT,
+          SRP.ROWTYPE AS ROW_TYPE,
+          R.TEXT AS CREATE_TEXT
+      FROM
+          SYSIBM.SYSROUTINEPARMS SRP
+          INNER JOIN SYSCAT.ROUTINES R
+              ON SRP.ROUTINESCHEMA = R.ROUTINESCHEMA
+              AND SRP.ROUTINENAME = R.ROUTINENAME
+              AND SRP.ROUTINETYPE = R.ROUTINETYPE
+      WHERE SRP.ROUTINESCHEMA NOT IN ('''')
+          AND SRP.ROUTINESCHEMA NOT IN  ( 'SYSIBMTS' , 'SYSCAT' , 'SYSIBMADM' ,
+            'SYSIBM' , 'SYSPROC' , 'SYSPUBLIC' , 'NULLID' , 'SQLJ' ,
+            'SYSIBMINTERNAL' , 'SYSSTAT' , 'SYSFUN' , 'SYSTOOLS')
+          AND SRP.ROWTYPE IN ('P', 'O', 'B', 'C')
+      ORDER BY
+          SCHEMA,
+          FUNCTION_NAME,
+          SPECIFIC_NAME,
+          FUNCTION_TYPE,
+          COLUMN_NAME;
+
+Index
+-------------------
+
+Ensure your query has columns labelled as ``CATALOG``, ``TABLE_NAME``, ``COLUMN_NAME``, ``REMARKS`` in the ``SELECT`` list.
+
+.. code-block:: SQL
+
+      SELECT
+          '' AS CATALOG,
+          TRIM(TABSCHEMA) AS SCHEMA,
+          TABNAME AS TABLE_NAME,
+          INDNAME AS INDEX_NAME,
+          INDEXTYPE AS INDEX_TYPE,
+          LTRIM(COLNAMES,'+-') AS COLUMN_NAME,
+          NULL AS FILTER_CONDITION,
+          NULL AS ASC_OR_DESC,
+          0 AS ORDINAL_POSITION
+      FROM
+          SYSCAT.INDEXES
+      WHERE TABSCHEMA  NOT IN ('''')
+          AND TABSCHEMA NOT IN  ( 'SYSIBMTS' , 'SYSCAT' , 'SYSIBMADM' , 'SYSIBM' ,
+              'SYSPROC' , 'SYSPUBLIC' , 'NULLID' , 'SQLJ' , 'SYSIBMINTERNAL' ,
+              'SYSSTAT' , 'SYSFUN' , 'SYSTOOLS');

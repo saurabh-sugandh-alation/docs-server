@@ -1,0 +1,67 @@
+Migrate from Legacy to Supported High Availability
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+This article outlines how to migrate replication from Legacy Setup to
+Current Setup (Alation v 4.8).
+
+Migrate from Legacy to Supported HA
+-----------------------------------
+
+.. important::
+
+   Do not run this step until you are ready to migrate to new HA and have validated port connectivity on 2022 on both Primary and Secondary.
+
+Step 1: Generate keys
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#. From both the Primary and the Secondary, run:
+
+   .. code-block:: Bash
+
+      sudo /etc/init.d/alation shell
+      alation_action cluster_generate_keys
+
+   You are prompted with a message to run replication helper directly
+   afterward.
+
+#. Type YES to continue.
+
+Step 2: Run the Replication Helper
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#. From both the Primary and the Secondary, run:
+
+   .. code-block:: Bash
+
+      sudo /etc/init.d/alation shell
+      replication_helper
+
+#. You are prompted for the public exchange key for this server. Enter the key.
+#. You are prompted for the IP address of this server. Enter the IP Address in **ipv4** format. For example: 10.0.0.1
+
+Step 3: Run a one-time sync of files and configurations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Performing this step one time validates that the Secondary is able to
+connect to the Primary to sync files and configurations.
+
+From the Secondary, run:
+
+.. code-block:: Bash
+
+      sudo /etc/init.d/alation shell
+      alation_action cluster_replicate_files 
+
+Step 4: Restart the Sync Deamon
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Restart the Sync Deamon to force the daemon to reload and use the settings above.
+
+2. From the Secondary, run:
+
+   .. code-block:: Bash
+
+         sudo /etc/init.d/alation shell
+         sudo /etc/init.d/supervisord restart

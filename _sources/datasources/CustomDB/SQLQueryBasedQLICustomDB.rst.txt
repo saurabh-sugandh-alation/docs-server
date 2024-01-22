@@ -1,0 +1,69 @@
+SQL Query QLI
+===================
+
+The SQL query execution QLI can be used when for some reason, you cannot create the view for QLI on the database. To perform QLI using this method,
+
+#. Make sure MDE is run.
+
+#. Go to the **Query Log Ingestion** tab.
+
+#. In *V R5 (5.9.x)* and above, select the checkbox **Enable Table Based Query Log Ingestion**. (In releases before V R5, this checkbox is not available, so skip this step).
+
+#. Enter  the query for QLI under **Query to Execute** section.
+
+    .. note::
+
+        If a SQL query is provided on the Query Log Ingestion tab, the Query Log Privilege parameter on the General Settings tab will not take effect on QLI.
+
+5. Click **Save**.
+
+6. Under **Run Manual Query Ingestion**, set the **Date Range** for QLI.
+
+7. Click **Preview** to fetch a sample of QLI data.
+
+8. Click **Import** to start QLI. You can monitor the job status in the Job History table at the bottom of the page:
+
+    .. image:: ../../_static/DS_CustomDB21.png
+        :width: 5.5in
+        :align: center
+
+Example Queries for QLI
+---------------------------
+
+See below for query structure. Substitute the placeholder values in red with your actual values. DO NOT substitute values ``'STARTTIME1'`` and ``'STARTTIME2'`` in the WHERE filter.
+
+Query 1
+~~~~~~~
+
+.. code-block:: sql
+
+      SELECT
+        <userNameColumn> AS userName,
+        <textColumn> as queryString,
+        <defaultDatabases> AS defaultDatabases,
+        <sessionIdColumn> AS sessionId,
+        <sessionStartTimeColumn> AS sessionStartTime,
+        <StartTimeColumn> AS startTime,
+        <QueryCancelledColumn> AS cancelled,
+        <milliSecondsColumn> AS milliSeconds,
+        <sequenceidColumn> AS sequence
+      FROM <Table/View>
+          WHERE startTime BETWEEN 'STARTTIME1' and 'STARTTIME2'
+          ORDER BY sessionId, startTime
+
+Query 2
+~~~~~~~
+
+.. code-block:: sql
+
+      SELECT * FROM <Table/View>
+        WHERE startTime BETWEEN 'STARTTIME1' and 'STARTTIME2'
+        ORDER BY sessionId, startTime
+
+Example: If the name of the table or view you are using is ``SYS.alation_query_log_view``, then the complete query should be as follows:
+
+.. code-block:: sql
+
+     SELECT * FROM SYS.alation_query_log_view
+        WHERE startTime between 'STARTTIME1' and 'STARTTIME2'
+        ORDER BY sessionId, startTime

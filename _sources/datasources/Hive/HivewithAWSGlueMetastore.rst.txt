@@ -1,0 +1,46 @@
+Hive with AWS Glue Metastore
+============================
+
+There are a few specific steps in setting up a Hive data source with the
+metastore on AWS Glue.
+
+Hive with AWS Glue Metastore uses :doc:`Default Hive <../../datasources/Hive/DefaultHive>`.
+
+.. note::
+
+   AWS Glue Data Catalog can be configured with multiple Hive instances.
+   Currently, filtering is not available in the AWS Glue catalog for the
+   different instances that are connected. It is recommended to
+   configure one AWS Glue account for a Hive instance.  
+
+Connectivity
+------------
+
+Confirm that Alation can reach your server on the following port. The default port is 10000. There is no port for AWS Glue.
+
+Metadata Extraction
+--------------------
+
+The extended metadata extracted includes the following: **Owner information**, **Table Location**, and **Created Time**.
+
+If MDE fails with an exception "Error Serializing dbobjects: The
+security token included in the request has expired", check the
+values you provided for the **Access Key ID** and **Access Key Secret** both
+should be valid. This type of error is caused by expired Access Key
+ID and Access Key Secret. Ensure that the user account needs to be active
+for existing users.
+
+If a user deletes the access key by mistake, generate a new access key:
+
+1. Log in to the AWS Portal.
+2. Click **IAM** then click **Users**.
+3. Select your user and click **Create Access Key**. If the user is
+   not present on the AWS portal,  then, select the option **Add User** and
+   select **Programmatic access** which will generate the **Access Key ID** and
+   the **Access Key Secret**.
+
+Profiling/Sampling
+------------------
+
+The service account should have SELECT grants on the Hive tables to
+profile.

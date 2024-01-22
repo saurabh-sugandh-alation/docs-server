@@ -1,0 +1,400 @@
+Alation Analytics Object Queries
+=====================================================================
+
+.. note::
+
+    These queries are for **Alation Analytics Version 1 (V1)**.
+
+Almost everything in Alation is an *Alation Object.* Alation Objects are
+stored in table public.alation_object. For descriptions of Alation
+Analytics metadata, refer to :doc:`Alation Analytics Metadata Descriptions </archive/Usage/AlationAnalyticsV1/AnalyticsMetadataDescriptions>`.
+
+Objects Types
+-------------
+
+Alation Objects are characterized by *type*. Each *Object Type* has an
+ID in AA. Some important object types and their IDs are:
+
+=============== ==================
+Object Type     Object Type ID
+=============== ==================
+Data Source     7
+
+Schema          23
+
+Table           27
+
+Column          1
+
+Article         0
+=============== ==================
+
+To find out all object types by frequency from AA, you can run the
+following query:
+
+Object Types By Frequency
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      object_type_name,
+      O.object_type_id,
+      count(1) AS freq
+    FROM
+      public.alation_object AS O
+      JOIN public.alation_object_type AS OT ON OT.object_type_id = O.object_type_id
+    -- so we can use the object type by name
+    GROUP BY
+      object_type_name,
+      O.object_type_id
+    ORDER BY
+      freq DESC;
+
+Querying Objects
+----------------
+
+If you are interested in values for a specific object, you should filter
+by its Object Type. The field values of Alation objects are stored in
+table public.field_value.
+
+For example, the sample query below retrieves all *Tables* in Alation
+and available Fields.
+
+All Tables and Their Fields
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    -- we want to see all fields belonging to tables:
+    SELECT
+      object_url,
+      field_name,
+      count(1) AS freq
+    FROM
+      public.object_field_value AS OFV
+      JOIN public.object_field AS OF ON OFV.field_id = OF.field_id
+      -- so we can use the field name
+      JOIN public.alation_object_type AS OT ON OT.object_type_id = OFV.object_type_id
+      -- so we can use the object type by name
+      JOIN public.field_value AS FV ON FV.value_fp = OFV.value_fp
+      -- so we can get the field value
+      JOIN public.alation_object AS O ON O.object_uuid = OFV.object_uuid
+      AND O.object_type_id = OFV.object_type_id -- so we can get the object URL
+    WHERE
+      object_type_name = 'table' -- because the object_uuid is not global
+    GROUP BY
+      object_url,
+      field_name
+    ORDER BY
+      object_url;
+
+However, the query above does not pull all custom fields. There are some
+custom fields that use *HSTORE* data type and are stored in the
+hstore_value field. The *HSTORE* fields need to be accessed as shown in
+the sample query below.
+
+Custom HSTORE Fields for Tables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    -- display which "normal" custom fields are filled for Alation objects of a certain type
+    SELECT
+      OFV.field_id,
+      field_name,
+      count(1) AS filled,
+      'normal' AS origin
+    FROM
+      public.object_field_value OFV
+      JOIN public.object_field AS OF on OFV.field_id = OF.field_id
+    --so we can use the field name
+    WHERE
+      OFV.object_type_id = 27
+      /* table */
+    GROUP BY
+      OFV.field_id,
+      field_name
+    UNION
+      /* combine the two datasets */
+      -- display which "hstore-" custom fields are filled
+    SELECT
+      custom_fields.field_id,
+      field_name,
+      count(1) AS filled,
+      'hstore' AS origin
+    FROM
+      (
+        SELECT
+          (each(hstore_value)).key :: int AS field_id,
+          (each(hstore_value)).value AS output
+        FROM
+          public.object_field_value OFV
+          JOIN public.field_value AS FV ON FV.value_fp = OFV.value_fp
+        -- so we can get the field value
+        WHERE
+          OFV.object_type_id = 27
+          /* table */
+          AND OFV.field_id = 3048
+          /* custom field values */
+      ) custom_fields
+      JOIN public.object_field AS OF ON custom_fields.field_id = OF.field_id
+    -- so we can use the field name
+    GROUP BY
+      custom_fields.field_id,
+      field_name
+
+This query joins several tables so that the analyst can more easily
+interpret the output and change the query. 
+
+Identifying Objects
+-------------------
+
+An *Object* in Alation can be addressed in different ways, depending on
+context. For example, a *Table* can be identified in several
+different ways:
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
+====================== ====================== =====================
+Identification         Example                Comment
+====================== ====================== =====================
+URL                    /table/1810/           Used for finding an
+                                              object in the UI
+
+table_id in API call   1810                   Used for the Catalog
+                                              API
+
+UUID in Alation        00000000-0000-0        ID in
+Analytics              000-0000-00000000013d  public.alation_object
+                                              Identical in value
+                                              (not format) to
+                                              numerical ID in URL
+
+name                   alation_object         Technical name in the
+                                              database
+
+key                    public.alation_object  Key format used in
+                                              Alation data
+                                              dictionaries
+
+@-mention              <a data-oid="1810"     Used to create the
+                       data-otype="table"     active hyperlinks in
+                       href="/table/1810/">   Alation
+====================== ====================== =====================
+
+The most efficient way to identify an Object in AA is the
+:doc:`UUID </archive/Usage/AlationAnalyticsV1/AnalyticsUUID>`, but it may be more
+practical to use other ways of identifying the Object. It is useful to
+understand how to look up the other identifiers.
+
+Obtaining Title and Description
+-------------------------------
+
+You can build a query that shows names, titles, and
+descriptions for our tables. This query is complex because the
+fields appear as rows, and we need to "pivot" them using the CASE
+technique.
+
+Titles and Descriptions For Tables 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    -- we want to see certain fields and values belonging to tables:
+    SELECT
+      object_url,
+      MAX(CASE WHEN field_name = 'name' THEN text_value END) AS name,
+      MAX(CASE WHEN field_name = 'title' THEN text_value END) AS title,
+      MAX(
+        CASE WHEN field_name = 'schema_original_name' THEN text_value END
+      ) AS schema,
+      MAX(
+        CASE WHEN field_name = 'description' THEN text_value END
+      ) AS description
+    FROM
+      public.object_field_value AS OFV
+      JOIN public.object_field AS OF ON OFV.field_id = OF.field_id
+      -- so we can use the field name
+      JOIN public.alation_object_type AS OT ON OT.object_type_id = OFV.object_type_id
+      -- so we can use the object type by name
+      JOIN public.field_value AS FV ON FV.value_fp = OFV.value_fp
+      -- so we can get the field value
+      JOIN public.alation_object AS O ON O.object_uuid = OFV.object_uuid
+      AND O.object_type_id = OFV.object_type_id
+    WHERE
+      object_type_name = 'table' -- because the object_uuid is not global
+    GROUP BY
+      object_url;
+
+
+Getting Children and Parents
+----------------------------
+
+There is a parent - child relationship for many objects in Alation: Data
+Source->Schema->Table->Column. These relationships are stored in
+table ``public.object_parent_relationship``.
+
+You can create a hierarchical list of all columns in Alation, starting at
+the Data Source level. All of the relevant UUIDs can be found with the following query:
+
+Table Objects Hierarchy
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    -- get the full data dictionary out of alation
+    SELECT
+      column_id,
+      MAX(
+        CASE WHEN parent_object_type_id = 27 THEN parent_object_uuid :: text END
+      ) AS table_id,
+      MAX(
+        CASE WHEN parent_object_type_id = 23 THEN parent_object_uuid :: text END
+      ) AS schema_id,
+      MAX(
+        CASE WHEN parent_object_type_id = 7 THEN parent_object_uuid :: text END
+      ) AS ds_id
+    FROM
+      (
+        SELECT
+          object_uuid AS column_id,
+          object_url AS column_url
+        FROM
+          public.alation_object
+        WHERE
+          object_type_id = 1
+          /* column */
+      ) columns
+      JOIN public.object_parent_relationship AS OP ON OP.object_uuid = columns.column_id
+      AND OP.object_type_id = 1
+    GROUP BY
+      column_id;
+
+Custom HSTORE Fields For Articles
+---------------------------------
+
+Custom fields that are stored inside an *HSTORE* value need to be
+unpacked with Postgres.
+
+Retrieving Custom Fields For Articles
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    -- display which "normal" custom fields are filled for Alation objects of a certain type
+    SELECT
+      OFV.field_id,
+      field_name,
+      count(1) AS filled,
+      'normal' AS origin
+    FROM
+      public.object_field_value OFV -- to get object_url
+      -- JOIN public.alation_object  AS O ON O.object_uuid = OFV.object_uuid
+      -- AND O.object_type_id = OFV.object_type_id
+      JOIN public.object_field AS OF ON OFV.field_id = OF.field_id -- so we can use the field name
+    WHERE
+      OFV.object_type_id = 0
+      /* article */
+    GROUP BY
+      OFV.field_id,
+      field_name
+    UNION
+      /* combine the two datasets */
+      -- display which "hstore-" custom fields are filled
+    SELECT
+      custom_fields.field_id,
+      field_name,
+      count(1) AS filled,
+      'hstore' AS origin
+    FROM
+      (
+        SELECT
+          (each(hstore_value)).key :: int AS field_id,
+          (each(hstore_value)).value AS output
+        FROM
+          public.object_field_value OFV -- to get object_url
+          --  JOIN public.alation_object AS O ON O.object_uuid =
+          OFV.object_uuid --  AND O.object_type_id = OFV.object_type_id
+          JOIN public.field_value AS FV ON FV.value_fp = OFV.value_fp
+        -- so we can get the field value
+        WHERE
+          OFV.object_type_id = 0
+          /* article */
+          AND OFV.field_id = 3048
+          /* custom field values */
+      ) custom_fields
+      JOIN public.object_field AS OF ON custom_fields.field_id = OF.field_id
+    -- so we can use the field name
+    GROUP BY
+      custom_fields.field_id,
+      field_name
+
+If the custom field has a user, it needs to be joined from the user
+table.
+
+Joining Users
+~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    WITH custom_field_values AS (
+      SELECT
+        object_uuid,
+        field_name,
+        field_datatype,
+        output
+      FROM
+        (
+          SELECT
+            ofv.object_uuid,
+            (each(hstore_value)).key :: int AS field_id,
+            (each(hstore_value)).value AS output
+          FROM
+            public.object_field_value AS OFV
+            JOIN public.field_value AS FV ON FV.value_fp = OFV.value_fp
+            -- so we can get the field value
+            JOIN public.alation_object AS O ON O.object_uuid = OFV.object_uuid
+            AND O.object_type_id = OFV.object_type_id -- to get object_url
+          WHERE
+            OFV.field_id = 3048
+            /* custom field values */
+            AND OFV.object_type_id = 0
+            /* article */
+        ) T
+        INNER JOIN public.object_field AS OF ON T.field_id = OF.field_id
+    )
+    SELECT
+      object_uuid AS article_id,
+      oid AS user_id,
+      display_name,
+      email
+    FROM
+      (
+        SELECT
+          object_uuid,
+          kv :: json ->> 'otype' AS otype,
+          kv :: json ->> 'oid' AS oid,
+          kv
+        FROM
+          (
+            SELECT
+              object_uuid,
+              field_name,
+              json_array_elements(output :: json) AS kv
+            FROM
+              custom_field_values
+            WHERE
+              field_datatype = 'OBJECT_SET'
+          ) KV
+      ) Users
+      INNER JOIN public.alation_user AU ON AU.user_id = oid :: int
+    WHERE
+      otype = 'user'
+    GROUP BY
+      1,
+      2,
+      3,
+      4
+    ORDER BY
+      object_uuid;

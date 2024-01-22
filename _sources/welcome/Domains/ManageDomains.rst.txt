@@ -1,0 +1,169 @@
+Managing Domains
+=================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from release 2021.1*
+
+.. note::
+
+      The steps mentioned in this document can be performed only by Catalog or Server Admins.
+
+Create a New Domain
+---------------------
+
+To add a new Domain,
+
+  1. Go to **Apps** > **Domains**.
+
+    .. image:: ../../_static/ManageDomains_01.png
+
+  2. Click on **Create Domain** to create a new Domain.
+
+    .. image:: ../../_static/ManageDomains_02.png
+
+  3. Provide the **Title** of the new Domain. Once satisfied with the title press RETURN/ENTER or click outside of the input to save it.
+
+    .. note::
+
+          Avoid clicking ‘Create Subdomain’ as it will create new nested Domain instead of saving the current title.
+
+    .. image:: ../../_static/ManageDomains_12.png
+
+  4. Click the **Edit** button to provide the description of the Domain.
+
+    .. image:: ../../_static/ManageDomains_03.png
+
+Create a New Subdomain
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From a Domain catalog page perform the following steps to create a new Subdomain,
+
+  1. Click on the **Create Subdomain** button.
+
+    .. image:: ../../_static/ManageDomains_04.png
+
+  2. Provide the **Title** of the new Subdomain. Click the **Edit** button to provide the description of the Subdomain.
+
+    .. image:: ../../_static/ManageDomains_05.png
+
+Add Objects to Domain/Subdomain
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To add any supported Data Object to a Domain/Subdomain, go to the Object page or use :doc:`Domain Search </welcome/Domains/DomainsSearch>` to find the relevant object for the Domain/Subdomain:
+
+  1. First check to see if the Object is already a member of the desired Domain. Is the specific Domain already listed under the Domains section? If it isn’t, it may be indirectly referenced with a subdomain. Hover over each listed Domain and observe the individual domain breadcrumbs. Is the Domain listed as an ancestor? If so, the object is already a member of that Domain and there is no need to add it again. If not, continue on with the subsequent steps.
+
+  2. On the Object page, click the + icon on the Domains Menu.
+
+    .. image:: ../../_static/ManageDomains_06.png
+
+  3. It displays a list of Domains and Subdomains. Select any Domain/Subdomain to add the Object to the applicable Domain/Subdomain.
+
+      .. note::
+
+          The listing does not specify any difference between the Domains and Subdomains.
+
+  4. Click the Confirm button on the modal window. If the Object has children, they will be automatically added to the Domain. This process of resolving children will take some time so don’t worry if they aren’t updated right away.
+
+  For example, if you add any data source to a Domain the schemas, tables and columns associated with the data source will automatically be added to the Domain.
+
+    .. image:: ../../_static/ManageDomains_07.png
+
+  .. note::
+
+      The added objects can be viewed only in the Domains search screen.
+
+Objects are included into Domains and Subdomains according to the following rules:
+
+  1. Domains/Subdomains can have any number of objects mapped under them.
+
+  #. An object can be added to any number Domain/Subdomains.
+
+  #. An object that has parent objects can be added to a Domain independently from its parent objects.
+
+  #. When a parent object is added to a Domain its child objects are recursively added to this Domain. A child object can be excluded from a Domain if necessary.
+
+*From 2021.4:*
+
+When adding an object to a Domain, users can choose to add this object and all its child objects or add a single object only (shallow add), without adding the child objects.
+
+      .. image:: ../../_static/ManageDomains_13.png
+          :width: 4.0in
+          :align: center
+
+  - Choose **Add this object and all of its current and future children to this domain** to add the parent and the child objects to the Domain. If any new child object is added to this parent later will also be added to the Domain.
+
+    .. note::
+
+          Objects with many child objects will take some time for the change to be reflected on all child object pages and in search.
+
+  - Choose **Add only this object to the domain** to add only the selected parent object.
+
+Explore Domains
+~~~~~~~~~~~~~~~~~
+
+**Explore Domains** lets users search for the objects within domains. Click the Explore Domain button to perform the search.
+
+  .. image:: ../../_static/ManageDomains_08.png
+
+Users can expand the search to other domains as well by selecting the domains from the drop list.
+
+  .. image:: ../../_static/ManageDomains_09.png
+
+Delete Domains/Subdomains
+----------------------------
+
+On the Domain/Subdomain page, click **Delete** to delete the Domain/Subdomain. The delete action deletes all the Domain/Subdomain and unassign all the object mappings from the Domain/Subdomain.
+
+.. image:: ../../_static/ManageDomains_10.png
+
+.. note::
+
+      After deleting. It will take some time to reflect the change in the object catalog pages.
+
+If a Domain has multiple levels of Subdomains and many objects mapped within Subdomains, Alation recommends to delete the inner levels of subdomains first, working your way out to the targeted domain. Pausing between domains is useful to ensure time for search indexing updates. Failure to do this may result in other low priority search updates taking even longer to be reflected in search results.
+
+Customizing Domains Page
+---------------------------
+
+Alation enables the Server Admins and Catalog Admins to customize the Domains page to facilitate better curation. Go to **Settings > Catalog Admin > Customize Catalog > Custom Templates > Domain**.
+
+.. image:: ../../_static/ManageDomains_11.png
+
+To customize, refer to :doc:`Customize your Data Catalog </steward/DataCatalogCustomization/index>`.
+
+Materialization
+------------------
+Alation is set to perform periodical metadata extraction which adds or deletes the objects, however, those updates are not  reflected in Domains immediately. Materialization helps to keep the Domains updated by doing the weekly job runs to pick up these changes.
+
+We suggest running the weekly materialization job as it will resolve new child objects and reflect them in domains.
+
+The **domains_materialize_domains** enabled once to run at 4 Am every Sunday. This can be rescheduled in the crontab syntax:
+
+.. code-block:: Bash
+
+      alation.domains.materialize_all_domains_job.schedule.day -s 0
+      alation.domains.materialize_all_domains_job.schedule.hour -s 0
+      alation.domains.materialize_all_domains_job.schedule.minute -s 0
+      Once you reschedule, restart the celery beat:
+      alation_supervisor restart celery:celery-beat
+
+The run time of the **domains_materialize_domain** depends on the complexity of the Domains and the size of its members. If Domains are large (say >1M members) materialization may take a long time to finish. For instance, we expect roughly 5M members to take 24 hours on a m4.2xlarge host. The output of this job run is available in the **celery-domains_error.log file**.
+
+Enable Materialize All Domains Job
+------------------------------------
+
+  1. Log in to the Alation server instance.
+
+  2. Enable feature flag using the **alation_conf** command:
+
+    .. code-block:: Bash
+
+            alation_conf alation.domains.materialize_all_domains_job.enable -s True
+
+  3. Restart the celery.
+
+    .. code-block:: Bash
+
+            alation_supervisor restart celery:*

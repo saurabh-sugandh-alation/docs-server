@@ -1,0 +1,135 @@
+Compose SSO for Azure Data Sources: Register an Application in Azure AD
+=============================================================================
+
+*Available from version 2021.4*
+
+Before configuring Compose SSO on the Alation server, register an app in Azure AD. This app will be used to authorize Compose to access Azure resources. From this app, Alation will need:
+
+    - client ID
+    - secret
+    - API endpoints
+
+The redirect URL will be set up in this app, pointing to the OAuth callback endpoint within Alation.
+
+Prerequisites
+------------------------
+
+1. You may need the assistance of an Azure AD admin with the following access level:
+
+    - Ability to access the Azure AD tenant to register an app
+
+    - Ability to register apps in Azure AD
+
+    - Ability to manage users and groups in Azure AD
+
+        - The app registration will authenticate users who exist in the Azure AD tenants of your organization. The token-identified principal, or the user initiating the OAuth flow, must have access to the data resources on Azure cloud.
+
+    - Ability to create and grant permissions to use scopes. Some scopes may require superuser or root access.
+
+    - Ability to add admin users to Azure SQL resources.
+
+    - Ability to create users in the Azure SQL databases.
+
+2. On the Alation server, the admin performing this configuration requires the Alation shell access on the host.
+
+Register an App in Azure AD
+---------------------------------------------
+
+1. Log in to Azure Portal.
+
+2. Go to the Azure Active Directory homepage.
+
+3. In the left-hand menu, click **App registrations**.
+
+4. On the **App registrations** page, click **New registration**:
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_01.png
+
+5. On the **Register an application** screen that opens, register your application:
+
+    - **Name**: specify a name for your app registration, for example "Alation-Compose-OAuth"
+
+    - **Supported account types**: select a value that is required by your environment, for example: *Accounts in any organizational directory (Any Azure AD directory - Multitenant)*. Refer to Azure AD documentation for information about account types.
+
+    - Redirect URI:
+
+        - **Type**: Web
+
+        - Format: ``https://<base_URL>/auth/callback/?method=oauth&config_name=<config_name>``
+
+            The parameter ``config_name`` and its value are required by the Alation server. You can use the value ``azure_conf``, which is the Alation default or specify another name. If you provide your own value, note it down as you will need it later when configuring the Alation server. Note that you can edit this Redirect URI later if necessary.
+
+            Example:
+
+            .. code-block:: Bash
+
+                https://alationcatalog.alationdata.com/auth/callback/?method=oauth&config_name=azure_conf
+
+6. Click **Register**:
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_02.png
+
+7. You will be navigated to the properties page of your app registration. Note down the items listed below and store them safely. You will need to provide them when performing the OAuth configuration on the Alation server:
+
+    - Application (client) ID
+
+        .. image:: ../../_static/AzureAD_ComposeSSO_03.png
+
+    - Endpoints:
+
+        - OAuth 2.0 authorization endpoint (v2)
+        - OAuth 2.0 token endpoint (v2)
+
+        .. image:: ../../_static/AzureAD_ComposeSSO_04.png
+
+8. In the left-side menu, click **Authentication**.
+
+9. On the Authentication screen, under **Implicit grant and hybrid flows**, select these checkboxes:
+
+    - Access tokens (used for implicit flows)
+    - ID tokens (used for implicit and hybrid flows)
+
+10. Save.
+11. In the left-hand menu, select **Certificates and secrets**.
+12. On the Certificates and secrets page, click **New client secret**, specify a **Description** and select an expiration period. Click **Add**:
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_05.png
+
+13. A new secret will be added to the **Secrets** table. Copy the secret value and store it safely. It will be required during the configuration on the Alation server.
+14. In the left-hand menu, select **API permissions**.
+15. On the API permissions page, click **Add a permission**, and then click **APIs my organization uses**.
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_06.png
+
+16. In the search bar, type *Azure SQL Database* and then select it from the list.
+17. On the **Request API permissions** screen for Azure SQL Database, click **Delegated permissions**. This will reveal the **Select permissions** search bar and the **Permissions** list.
+18. Under **Select permissions**, select the **user_impersonation** checkbox. Click **Add permissions**:
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_07.png
+
+19. You will be navigated back to the API permissions page. Click **Add a permission** again.
+20. On the **Request API permissions** page, click **APIs my organization uses** again.
+21. Search for *Microsoft Azure Synapse Gateway*. Then click it in the search results list.
+22. For the Microsoft Azure Synapse Gateway API, select the permission **workspaceartifacts.management** and click **Add permissions**.
+23. Back on the **API permissions** page, click **Grant admin consent for <your domain>** and confirm the consent:
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_08.png
+
+    The permissions status will change to **Granted for <your_domain>**:
+
+    .. image:: ../../_static/AzureAD_ComposeSSO_09.png
+
+
+User Verification
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Next, verify that Alation users who need access to Azure data sources from Compose exist in Azure AD and have been provided access to the databases. A user initiating the OAuth flow in Compose or the Catalog must have access to the protected resource within Azure.
+
+Azure Synapse-based SQL Pools, SQL Servers, and SQL Databases require that an Azure AD user should be created on the database as a user from an external provider in order for these users to be able to initiate the SSO flow from Alation.
+
+Check that all users who require access to Azure resources from Alation exist on the databases that they will need to access. A SQL Server admin can create users on the databases under this resource. For details on creating users on Azure databases, refer to Azure documentation, for example:
+
+    - `Configure and manage Azure AD authentication with Azure SQL <https://docs.microsoft.com/en-us/azure/azure-sql/database/authentication-aad-configure?tabs=azure-powershell>`_
+    - `CREATE USER (Transact-SQL) <https://docs.microsoft.com/en-us/sql/t-sql/statements/create-user-transact-sql?view=sql-server-ver15>`_
+
+After you have registered the app, collected the required app information, and verified that users who need access from Compose exist in the Azure databases, configure SSO on the Alation side: :doc:`Compose SSO for Azure Data Sources: Configure Compose SSO in Alation <../../datasources/ComposeSSOAzureDataSources/ConfigureComposeSSOwithAAD>`.

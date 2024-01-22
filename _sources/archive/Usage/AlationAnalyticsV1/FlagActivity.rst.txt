@@ -1,0 +1,176 @@
+Flagging Activity
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+Full Version
+------------
+
+This query retrieves information on which users are setting flags
+and when plus the information if this user is assigned as Steward on the
+flagged data object.
+
+.. code-block:: sql
+
+  -- object flags information
+  DROP TABLE IF EXISTS psCustomTempTable_allStewards;DROP TABLE IF EXISTS psCustomTempTable_allUndeletedObjects;DROP INDEX IF EXISTS idx_psMain1;DROP INDEX IF EXISTS idx_psMain2;
+  SELECT
+    DISTINCT FV.object_type_uuid_value AS stewardUUID,
+    AU.user_id,
+    AU.user_name AS stewardUsername,
+    AU.email AS stewardEmail,
+    AU.is_active AS stewardActiveFlag,
+    AU.display_name AS stewardDisplayname INTO TEMP TABLE psCustomTempTable_allStewards
+  FROM
+    public.alation_object AS AO -- Join on object UUID and object type ID to get value_fp associated with the catalog object
+    JOIN public.object_field_value AS OFV ON AO.object_uuid = OFV.object_uuid
+    AND AO.object_type_id = OFV.object_type_id -- Use value_fp to get the attached steward UUID and object type ID
+    JOIN public.field_value AS FV ON OFV.value_fp = FV.value_fp -- Using object UUID and type ID, we get the value_fp associated to the stewards
+    JOIN public.object_field_value as OFV2 ON FV.object_type_uuid_value = OFV2.object_uuid
+    AND FV.object_type_id_value = OFV2.object_type_id -- Now we get the value of the steward fields
+    JOIN public.field_value AS FV2 ON OFV2.value_fp = FV2.value_fp -- Get user information
+    JOIN public.alation_user AS AU ON AU.email = FV2.text_value -- Get object type information
+    JOIN public.alation_object_type AS OT1 ON AO.object_type_id = OT1.object_type_id -- Get deletion information
+    -- First grab the object UUID (uuid + type_id) and get the value_fp (value pointer)
+    JOIN public.object_field_value AS OFV3 ON AO.object_uuid = OFV3.object_uuid
+    AND AO.object_type_id = OFV3.object_type_id -- Get field value
+    JOIN public.field_value AS FV3 ON OFV3.value_fp = FV3.value_fp -- Match on field id to get deletion flag
+    JOIN public.object_field AS OBF ON OFV3.field_id = OBF.field_id -- Requesting field_id for stewards only
+  WHERE
+    OFV.field_id IN (
+      SELECT
+        field_id
+      FROM
+        public.object_field
+      WHERE
+        field_name = 'steward'
+    )
+    AND -- ensure only field_name = 'deleted' field values are extracted
+    OBF.field_name = 'deleted'
+    AND -- Get only objects which are not deleted
+    FV3.boolean_value IS False;CREATE INDEX idx_psMain1 ON psCustomTempTable_allStewards(user_id);-- Now we need all objects which are not deleted so that we can find their flags
+  SELECT
+    DISTINCT AO.object_uuid,
+    AO.object_type_id,
+    AO.object_url INTO TEMP TABLE psCustomTempTable_allUndeletedObjects
+  FROM
+    public.alation_object AS AO -- Get deletion information
+    -- First grab the object UUID (uuid + type_id) and get the value_fp (value pointer)
+    JOIN public.object_field_value AS OFV ON AO.object_uuid = OFV.object_uuid
+    AND AO.object_type_id = OFV.object_type_id -- Get field value
+    JOIN public.field_value AS FV ON OFV.value_fp = FV.value_fp -- Match on field id to get deletion flag
+    JOIN public.object_field AS OBF ON OFV.field_id = OBF.field_id
+  WHERE
+    -- ensure only field_name = 'deleted' field values are extracted
+    OBF.field_name = 'deleted'
+    AND -- Get only objects which are not deleted
+    FV.boolean_value IS False;CREATE INDEX idx_psMain2 ON psCustomTempTable_allUndeletedObjects(object_uuid, object_type_id);-- Grab all the data where users are stewards
+    (
+      SELECT
+        DATE(OFL.ts_created) AS Date,
+        CASE OFL.flag_type -- Integer representing the type of the flag: ENDORSEMENT = 1, WARNING = 2, DEPRECATION = 3
+        WHEN 1 THEN 'ENDORSEMENT' WHEN 2 THEN 'WARNING' WHEN 3 THEN 'DEPRECATION' END AS flag_type,
+        tempTable.stewardUsername AS userName,
+        tempTable.stewardActiveFlag AS activeFlag,
+        tempTable.stewardDisplayName AS displayName,
+        AOT.object_type_name AS objectType,
+        OFL.is_propagated,
+        'Steward' AS userType,
+        COUNT(*) AS numberOfFlags
+      FROM
+        public.object_flags AS OFL -- keep only undeleted objects
+        JOIN psCustomTempTable_allUndeletedObjects AS AUO ON OFL.object_uuid = AUO.object_uuid
+        AND OFL.object_type_id = AUO.object_type_id
+        JOIN psCustomTempTable_allStewards AS tempTable ON OFL.user_id = tempTable.user_id
+        JOIN public.alation_object_type AS AOT ON OFL.object_type_id = AOT.object_type_id
+      GROUP BY
+        DATE(OFL.ts_created),
+        OFL.flag_type,
+        tempTable.stewardUsername,
+        tempTable.stewardActiveFlag,
+        tempTable.stewardDisplayName,
+        AOT.object_type_name,
+        userType,
+        OFL.is_propagated
+    )
+  UNION
+    -- Now for the data where users are not stewards
+    (
+      SELECT
+        DATE(OFL.ts_created) AS Date,
+        CASE OFL.flag_type -- Integer representing the type of the flag: ENDORSEMENT = 1, WARNING = 2, DEPRECATION = 3
+        WHEN 1 THEN 'ENDORSEMENT' WHEN 2 THEN 'WARNING' WHEN 3 THEN 'DEPRECATION' END AS flag_type,
+        AU.user_name AS userName,
+        AU.is_active AS activeFlag,
+        AU.display_name AS displayName,
+        AOT.object_type_name AS objectType,
+        OFL.is_propagated,
+        'Not Steward' AS userType,
+        COUNT(*) AS numberOfFlags
+      FROM
+        public.object_flags AS OFL -- keep only undeleted objects
+        JOIN psCustomTempTable_allUndeletedObjects AS AUO ON OFL.object_uuid = AUO.object_uuid
+        AND OFL.object_type_id = AUO.object_type_id
+        JOIN public.alation_user AS AU ON OFL.user_id = AU.user_id
+        JOIN public.alation_object_type AS AOT ON OFL.object_type_id = AOT.object_type_id
+      WHERE
+        OFL.user_id NOT IN (
+          SELECT
+            DISTINCT user_id
+          FROM
+            psCustomTempTable_allStewards
+        )
+      GROUP BY
+        DATE(OFL.ts_created),
+        OFL.flag_type,
+        AU.user_name,
+        AU.is_active,
+        AU.display_name,
+        AOT.object_type_name,
+        userType,
+        OFL.is_propagated
+    );-- clean up
+    DROP TABLE IF EXISTS psCustomTempTable_allStewards;
+    DROP TABLE IF EXISTS psCustomTempTable_allUndeletedObjects;
+    DROP INDEX IF EXISTS idx_psMain1;
+    DROP INDEX IF EXISTS idx_psMain2;
+
+
+Simplified Version
+------------------
+
+This query produces a day resolution time series indicating number of
+flags set by a user on a given object type.
+
+.. code-block:: sql
+
+  -- The following query produces a time series of flags by user
+  SELECT
+    DATE(OFL.ts_created) AS Date,
+    CASE OFL.flag_type --Integer representing the type of the flag: ENDORSEMENT = 1, WARNING = 2, DEPRECATION = 3
+    WHEN 1 THEN 'ENDORSEMENT' WHEN 2 THEN 'WARNING' WHEN 3 THEN 'DEPRECATION' END AS flag_type,
+    AU.user_name AS userName,
+    AU.is_active AS activeFlag,
+    AU.is_admin AS adminFlag,
+    AU.display_name AS displayName,
+    AOT.object_type_name AS objectType,
+    OFL.is_propagated,
+    COUNT(*) AS numberOfFlags
+  FROM
+    public.object_flags AS OFL
+    JOIN public.alation_user AS AU ON OFL.user_id = AU.user_id
+    JOIN public.alation_object_type AS AOT ON OFL.object_type_id = AOT.object_type_id
+  WHERE
+    -- Object name you are interested in. Replace with with the type name you want
+    AOT.object_type_name = 'table'
+  GROUP BY
+    DATE(OFL.ts_created),
+    OFL.flag_type,
+    AU.user_name,
+    AU.is_admin,
+    AU.is_active,
+    AU.display_name,
+    AOT.object_type_name,
+    OFL.is_propagated;

@@ -1,0 +1,541 @@
+Databricks on AWS OCF Connector: Install and Configure
+=============================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Prerequisites
+------------------
+
+Firewall Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - Open the outbound TCP port **443** to Databricks on AWS server
+
+Driver
+~~~~~~~~~~~
+
+The driver for Databricks on AWS is compiled with the connector  and does not require installation. Refer to the :ref:`Support Matrix <20221_Data_Source_Support_Matrix-OCF_Connectors>`. for your Alation release to find out the version of the available driver for Databricks on AWS.
+
+Service Account
+~~~~~~~~~~~~~~~~~~
+
+Sample SQL to create an account
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      CREATE USER alation WITH PASSWORD 'password';
+      GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA schema_name TO alation;
+
+Permissions for Metadata Extraction and Profiling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The service account must have the following permissions to perform MDE and profiling:
+
+    - Workspace access — Refer to `Manage users <https://docs.databricks.com/administration-guide/users-groups/users.html#manage-user-entitlements>`_.
+    - Cluster level access — Refer to `Cluster access control <https://docs.databricks.com/security/access-control/cluster-acl.html>`_.
+
+By default, all cluster users have access to all data stored in a cluster's managed tables unless table access control is enabled for that cluster. The table access control option is only available for high-concurrency clusters. Refer to `Table Access Control <https://docs.databricks.com/security/access-control/table-acls/table-acl.html#create-a-cluster-enabled-for-table-access-control>`_ for more information
+
+If the **Table Access Control** option is enabled on the cluster:
+
+    - Grant the SELECT privilege on all schemas and all their tables and views in a catalog.
+
+      .. code-block:: Bash
+
+            GRANT USAGE ON CATALOG <catalog-name> TO `<user>@<domain-name>`;
+            GRANT SELECT ON CATALOG <catalog-name> TO `<user>@<domain-name>`;
+
+    - Grant the SELECT privilege on a specific schema and all its tables and views.
+
+      .. code-block:: Bash
+
+            GRANT USAGE ON SCHEMA <schema-name> TO `<user>@<domain-name>`;
+            GRANT SELECT ON SCHEMA <schema-name> TO `<user>@<domain-name>`;
+
+    - Grant the SELECT privilege on specific tables and views in a schema.
+
+      .. code-block:: Bash
+
+            GRANT USAGE ON SCHEMA <schema-name> TO `<user>@<domain-name>`;
+            GRANT SELECT ON TABLE <schema-name>.<table-name> TO `<user>@<domain-name>`;
+            GRANT SELECT ON VIEW <schema-name>.<view-name> TO `<user>@<domain-name>`;
+
+Refer to `Data object privileges <https://docs.databricks.com/security/access-control/table-acls/object-privileges.html#data-governance-model>`_ for more information.
+
+Authentication
+--------------------
+
+The connector supports `token-based authentication <https://docs.databricks.com/en/administration-guide/access-control/tokens.html#overview-of-personal-access-token-management>`_. Follow the steps in Databricks documentation to generate a personal access token for the service account and save it in a secure location:
+
+    - `Databricks personal access tokens for workspace users <https://docs.databricks.com/en/dev-tools/auth.html#databricks-personal-access-tokens-for-workspace-users>`_
+
+You will use the personal access token as password when configuring your data source connection from Alation.
+
+JDBC URI
+~~~~~~~~~~~~
+
+When building the URI, include the following components:
+
+  - Hostname or IP of the instance
+  - Port number
+  - HTTP path
+
+  .. note::
+
+      The property ``UseNativeQuery=0`` is required for custom query-based sampling and profiling. Without this property in the JDBC URI, custom query-based sampling or profiling will fail. If you are not using custom query-based sampling and profiling in your implementation of this data source type, you can omit this property from the JDBC URI string.
+
+      Find more information in `ANSI SQL-92 query support in JDBC <https://learn.microsoft.com/en-us/azure/databricks/integrations/jdbc-odbc-bi#--ansi-sql-92-query-support-in-jdbc>`_ in Azure Databricks documentation.
+
+
+Format
+^^^^^^^^^
+
+``databricks://<Hostname>:<Port_Number>/default;transportMode=http;ssl=1;httpPath=<Path>;AuthMech=3;UseNativeQuery=0;``
+
+Example
+^^^^^^^^^^
+
+``databricks://dbc-65ebe48d-8ugcb.cloud.databricks.com:443/default;transportMode=http;ssl=1;httpPath=sql/protocolv1/o/66268686827900751/0520-195244-whizz481;AuthMech=3;UseNativeQuery=0;``
+
+QLI Configuration in Databricks
+--------------------------------------
+
+To configure QLI in Databricks on AWS:
+
+1. Create an Amazon S3 bucket to store the log files. The bucket should be accessible to Alation.
+
+    .. note::
+
+        This should be an S3 bucket other than the Databricks root S3 bucket. The Databricks root S3 bucket operates like Alation’s chroot: it prevents outside tools from reading or modifying the files. Alation will experience Access Denied issues since the AWS storage settings bucket is access-protected by Databricks.
+
+2. In admin settings of the Databricks user interface, set the **Cluster Log Path** and **Destination** under the Logging tab:
+
+    - **Destination** is **S3**.
+
+        .. note::
+
+            Do not leave the destination path as None.
+
+    - The bucket path should be accessible.
+
+    - Your AWS region should match the new S3 bucket region.
+
+        .. image:: ../../../_static/AWSDatabricksOCF_01.png
+            :width: 500px
+            :class: with-border
+
+3. The S3 bucket that stores the logs must have AWS IAM role settings as recommended in `Configure S3 access with instance profiles <https://docs.databricks.com/en/aws/iam/instance-profile-tutorial.html>`_ in Databricks documentation.
+
+4. `Enable Logging`_ using a Python init script.
+
+Enable Logging
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_Databricks_QLI_script_warning.rst
+
+To enable logging:
+
+.. include:: ../../../shared/OCF/OCF_Databricks_QLI_script_steps.rst
+
+.. include:: ../../../shared/OCF/OCF_Databricks_QLI_scripts.rst
+
+5. Add the file with the script as an init script using the information in `Configure a cluster-scoped init script using the UI <https://docs.databricks.com/en/init-scripts/cluster-scoped.html#configure-a-cluster-scoped-init-script-using-the-ui>`_.
+
+    .. note::
+
+        The path should look like /``<folder_path>/<script_name>.sh``, for example, ``/alation_init_scripts/alation_qli_init_sript.sh``.
+
+            - Ensure ``Workspace`` is selected as the **Destination** and not ``DBFS``.
+            - The keyword ``workspace`` should not be prefixed to the path.
+
+6. Save the changes and restart the cluster.
+
+
+Scala Script
+~~~~~~~~~~~~~~~~
+
+As an alternative to the init script, you can use a Scala script to enable logging.
+
+Run the following script in the Databricks cluster through a Scala notebook. This script, provided by Databricks, enables debug logs having queries.
+
+.. important::
+
+   The script below should be run every time the cluster is started or restarted.
+
+.. tabs::
+
+    .. tab:: Databricks version 11.x and newer
+
+        .. code-block:: Bash
+
+            %scala
+            import org.apache.logging.log4j.LogManager
+            import org.apache.logging.log4j.core.LoggerContext
+            import org.apache.logging.log4j.core.config.{Configuration, LoggerConfig}
+            import org.apache.logging.log4j.core.config.Configurator
+            import org.apache.logging.log4j.Level
+            import org.apache.logging.log4j.core.layout.PatternLayout
+            import org.apache.logging.log4j.core.appender.RollingFileAppender;
+            import org.apache.logging.log4j.core.appender.RollingFileAppender.Builder;
+            import org.apache.logging.log4j.core.filter.AbstractFilterable;
+            import org.apache.logging.log4j.core.config.AppenderRef;
+            import org.apache.logging.log4j.core.appender.rewrite.RewriteAppender;
+            import com.databricks.logging.ServiceRewriteAppender;
+            import org.apache.logging.log4j.core.config.AbstractConfiguration;
+            Configurator.setRootLevel(Level.DEBUG);
+
+            val ctx = LogManager.getContext(false).asInstanceOf[LoggerContext];
+            val conf = ctx.getConfiguration();
+            val layout = PatternLayout.newBuilder()
+            .withConfiguration(conf)
+            .withPattern("%d{yyyy-MM-dd HH:mm:ss.SS} [%t] %p %c{1}: %m%n")
+            .build();
+
+            val rollingFileAppender = conf.getAppenders().get("publicFile.rolling").asInstanceOf[RollingFileAppender];
+            val appenderBuilder: RollingFileAppender.Builder[_] = RollingFileAppender.newBuilder();
+            appenderBuilder.setConfiguration(conf)
+            appenderBuilder.setName(rollingFileAppender.getName())
+            appenderBuilder.setLayout(layout)
+            appenderBuilder.withFileName(rollingFileAppender.getFileName())
+            appenderBuilder.withFilePattern(rollingFileAppender.getFilePattern())
+            appenderBuilder.withPolicy(rollingFileAppender.getTriggeringPolicy())
+            appenderBuilder.setBufferedIo(false)
+            appenderBuilder.setBufferSize(rollingFileAppender.getManager().getBufferSize())
+            appenderBuilder.setImmediateFlush(rollingFileAppender.getImmediateFlush())
+            appenderBuilder.withCreateOnDemand(rollingFileAppender.getManager().isCreateOnDemand())
+            val appender = appenderBuilder.build();
+
+            val appenderRef = Array(AppenderRef.createAppenderRef(appender.getName(), null, null));
+            var policy = new ServiceRewriteAppender();
+
+            val rewriteAppender = conf.getAppenders().get("publicFile.rolling.rewrite").asInstanceOf[RewriteAppender];
+            val updatedRewriteAppender = RewriteAppender.createAppender(rewriteAppender.getName(), String.valueOf(rewriteAppender.ignoreExceptions()), appenderRef, conf, policy, rewriteAppender.getFilter());
+
+            rollingFileAppender.stop();
+            rewriteAppender.stop();
+
+            val config = ctx.getConfiguration().asInstanceOf[AbstractConfiguration];
+            config.removeAppender(rollingFileAppender.getName());
+            config.removeAppender(rewriteAppender.getName());
+
+            conf.addAppender(appender);
+            conf.addAppender(updatedRewriteAppender);
+            appender.start();
+            updatedRewriteAppender.start();
+
+            conf.getRootLogger().addAppender(updatedRewriteAppender, null, null);
+            ctx.updateLoggers();
+
+    .. tab:: Databricks versions older than 11.x
+
+        .. code-block:: Bash
+
+            import org.apache.log4j.{LogManager, Level, ConsoleAppender}
+            import org.apache.commons.logging.LogFactory
+            import org.apache.log4j.PatternLayout
+
+              LogManager.getRootLogger().setLevel(Level.DEBUG)
+
+              val ca = LogManager.getRootLogger().getAppender("publicFile")
+              println("layout " + ca.getLayout.asInstanceOf[PatternLayout].getConversionPattern)
+              ca.setLayout(new PatternLayout("%d{yy/MM/dd HH:mm:ss} [%t] %p %c{1}: %m%n"));
+
+
+Configuration in Alation
+-------------------------------
+
+Step 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation On-Prem
+^^^^^^^^^^^^^^^^^^^^^^
+
+  .. important::
+
+        Installation of OCF connectors requires Alation Connector Manager to be installed as a prerequisite.
+
+1. If this has not been done on your instance, install the Connector Manager: :doc:`Install Alation Connector Manager <../../../sources/OpenConnectorFramework/OCFInstallAlationConnectorManager>`.
+
+2. Make sure that the connector Zip file which you received from Alation is available on your local machine.
+
+3. Install the connector on the Connectors Dashboard page. Refer to :doc:`Manage Connector Dashboard <../../../sources/OpenConnectorFramework/ManageConnectors>` for details.
+
+Alation Cloud Service
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+      OCF connectors require Alation Connector Manager. Alation Connector Manager is available by default on all Alation Cloud Service instances and there is no need to separately install it.
+
+
+1. Make sure that the OCF connector Zip file that you received from Alation is available on your local machine.
+
+2. Install the connector on the Connectors Dashboard page: refer to :doc:`Manage Connector Dashboard <../../../sources/OpenConnectorFramework/ManageConnectors>`.
+
+Step 2: Create and Configure a New Databricks on AWS Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Log in to the Alation instance and add a new Databricks on AWS source by clicking on **Apps > Sources > Add > Data Source**.
+
+2. Provide a **Title** for the data source and click on ***Continue Setup**.
+
+3. From the **Database Type** dropdown, select **Databricks OCF Connector**. You will be navigated to the Settings page of your new Databricks on AWS OCF data source.
+
+        .. image:: ../../../_static/AWSDatabricksOCF_03.png
+            :width: 400px
+            :class: with-border
+
+Access
+----------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+-----------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab:
+
+  1. Specify **Application Settings**:
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Description**                                               |
+      +============================+===============================================================+
+      | BI Connection Info         | Not applicable                                                |
+      +----------------------------+---------------------------------------------------------------+
+      | Disable Automatic Lineage  | Not applicable                                                |
+      | Generation                 |                                                               |
+      +----------------------------+---------------------------------------------------------------+
+
+  2. Click **Save**.
+
+  3. Specify **Connector Settings**:
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Description**                                               |
+      +============================+===============================================================+
+      |                     **Data Source Connection**                                             |
+      +----------------------------+---------------------------------------------------------------+
+      | JDBC URI                   | Specify the `JDBC URI`_ in the required format.               |
+      +----------------------------+---------------------------------------------------------------+
+      | Username                   | Use the value ``token``.                                      |
+      +----------------------------+---------------------------------------------------------------+
+      | Password                   | Paste the personal access token for the service account.      |
+      +----------------------------+---------------------------------------------------------------+
+      |                     **Logging Information**                                                |
+      +----------------------------+---------------------------------------------------------------+
+      | Log Level                  | Select the Log Level to generate logs. The available log      |
+      |                            | levels are based on the log4j framework.                      |
+      +----------------------------+---------------------------------------------------------------+
+
+  4. Click **Save**.
+
+  5. **Obfuscate Literals** - Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+  6. Under **Test Connection**, click **Test** to validate network connectivity.
+
+  .. image:: ../../../_static/AWSDatabricksOCF_04.png
+
+Add-On OCF Connector for dbt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddonDBTConnector.rst
+
+Metadata Extraction
+---------------------------
+
+You can perform a default extraction which is based on default SQL queries that are built in the connector code.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - **Enable Raw Metadata Dump or Replay**: The options in this drop list can be used to dump the extracted metadata into files in order to debug extraction issues before ingesting the metadata into Alation. This feature can be used during testing in case there are issues with MDE. It breaks extraction into two steps: first, the extracted metadata is dumped into files and can be viewed; and second, it can be ingested from the files into Alation. It is recommended to keep this feature enabled only if debugging is required.
+
+        -  **Enable Raw Metadata Dump**: Select this option to save the extracted metadata into a folder for debugging purposes. The dumped data will be saved in four files (attribute.dump, function.dump, schema.dump, table.dump) in the folder **opt/alation/site/tmp/** inside Alation shell.
+
+        -  **Enable Ingestion Replay**: Select this option to ingest the metadata from the dump files into Alation.
+
+        -  **Off** - Disable the **Raw Metadata Dump** or **Replay** feature. Extracted metadata will be ingested into Alation.
+
+Selective Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCFSelectiveExtraction.rst
+
+Automated Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCFAutomatedExtraction.rst
+
+Compose
+-----------
+
+On the **Compose** tab, an admin can enable the use of the Compose tool for this data source.
+
+  1. Enable or disable the **Allow Export and Download** toggle to export or download the results of this data source.
+
+  2. Enable the **Enabled in Compose** toggle to enable Compose for this data source.
+
+      - Provide the `JDBC URI`_ in the Default Connection field which Compose will use as a default connection and Save.
+
+      - Select **Compose Connection Sharing** option based on the description in the table:
+
+        +------------------------------+---------------------------------------------------------------+
+        | **Compose Connection Option**| **Description**                                               |
+        +==============================+===============================================================+
+        | Shared connections across    | This option lets users use the same connection across multiple|
+        | tabs                         | Compose tabs.                                                 |
+        +------------------------------+---------------------------------------------------------------+
+        | Separate connection per tab  | Users can use different connections for each Compose tab,     |
+        |                              | which enables them to run multiple queries at the same time.  |
+        +------------------------------+---------------------------------------------------------------+
+
+  3. Select a Data Uploader option based on the description below:
+
+     +------------------------------+---------------------------------------------------------------+
+     | **Data Uploader**            | **Description**                                               |
+     +==============================+===============================================================+
+     | Use Global Setting (True)    | Use the global setting option that is set in **alation_conf** |
+     |                              | using **alation.data_uploader.enabled** flag.                 |
+     |       Or                     |                                                               |
+     |                              | Users can upload data if the flag is set to **true** or if the|
+     | Use Global Setting (False)   | flag is set to **false**, users cannot upload the data for any|
+     |                              | data source.                                                  |
+     +------------------------------+---------------------------------------------------------------+
+     | Enable for this data source  | Use this option to enable the data upload for this data source|
+     |                              | and override the global setting if the global setting in      |
+     |                              | **alation_conf** if it is set to **false**.                   |
+     +------------------------------+---------------------------------------------------------------+
+     | Disable for this data source | Use this option to disable the data upload for this data      |
+     |                              | source and override  the global setting in **alation_conf** if|
+     |                              | it is set to **true**.                                        |
+     +------------------------------+---------------------------------------------------------------+
+
+  .. note::
+
+       OAuth connection is not supported for this data source.
+
+  .. image:: ../../../_static/AWSDatabricksOCF_05.png
+
+Data Sampling
+-------------------
+
+Automated and Manual Sampling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCFAutomatedandManualSampling.rst
+
+
+.. important::
+
+  To use custom query-based sampling and profiling, ensure that the `JDBC URI`_ includes the ``UseNativeQuery=0`` property.
+  If you enable dynamic profiling, then users should ensure that their individual connections also include this property.  
+
+
+Per-Object Parameters
+----------------------------
+
+Refer to :ref:`Per-Object Parameters <Sampling_Profiling-Per_Object_Parameters>`.
+
+
+Query Log Ingestion
+-------------------------
+
+Configure the following parameters in the following sections to perform file based QLI for this datasource.
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: ../../../_static/AWSDatabricksOCF_06.png
+
+Configure Amazon S3 Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+    The common format of the Databricks log files is log4j-yyyy-mm-dd-hh.log.gz and the current hour log or real-time will be in the log4j-active.log. format.
+
+Specify the Configure Amazon S3 Connections settings and click **Save**:
+
++----------------------------+----------------------------------------------------------------+
+| **Parameter**              | **Description**                                                |
++============================+================================================================+
+| Spark Log Folder AWS S3    | Specify the path of S3 bucket where log files are stored.      |
+| Path                       |                                                                |
+|                            | **Format:** ``/s3_bucket_name/path_to_the_file``               |
+|                            |                                                                |
+|                            | **Example:**                                                   |
+|                            |                                                                |
+|                            | /databricks-logging-20220420/dbc-36ad4224-mb19/0330-193314-    |
+|                            | wuadi0q9/driver                                                |
++----------------------------+----------------------------------------------------------------+
+| Spark Log File Name Prefix | A common name prefix for the files to be extracted is log4j-.  |
+|                            |                                                                |
+|                            | **Example:** Files to be extracted usually have names like:    |
+|                            | log4j-2022-01-01-10.log.gz. Setting the prefix value to        |
+|                            | log4j- serves this file name format.                           |
++----------------------------+----------------------------------------------------------------+
+| Number of Log Files in     | Provide the limit of log files that needs to be extracted from |
+| Directory                  | the folder.  If not specified, all files matching the prefix   |
+|                            | will be captured.                                              |
++----------------------------+----------------------------------------------------------------+
+| Log4j Time Format          | The time format is set based on the script you are using. The  |
+|                            | value should be set to **yyyy-MM-dd HH:mm:ss**.                |
++----------------------------+----------------------------------------------------------------+
+| Log4j Conversion Pattern   | The conversion pattern is set based on the init script you are |
+|                            | using. The format is TIMESTAMP [THREAD] LEVEL LOGGER MESSAGE.  |
+|                            |                                                                |
+|                            | **Note:**                                                      |
+|                            |                                                                |
+|                            | The thread name for Databricks has a space. We enclose the     |
+|                            | thread name in square brackets to enable correct processing in |
+|                            | Alation.                                                       |
+|                            |                                                                |
++----------------------------+----------------------------------------------------------------+
+
+Amazon S3 Settings
+^^^^^^^^^^^^^^^^^^^^^^
+
+Specify the Amazon S3 Settings and click **Save**:
+
++----------------------------+---------------------------------------------------------------+
+| **Parameter**              | **Description**                                               |
++============================+===============================================================+
+| AWS Access Key ID          | Provide the AWS access key ID. Make sure that the IAM user has|
+|                            | read access to the bucket where the log files are stored.     |
++----------------------------+---------------------------------------------------------------+
+| AWS Access Key Secret      | Provide the AWS access key secret.                            |
++----------------------------+---------------------------------------------------------------+
+| AWS Region                 | Specify the AWS region.                                       |
++----------------------------+---------------------------------------------------------------+
+| Exclude log files          | Provide the log file names that you want to exclude from      |
+|                            | ingestion.                                                    |
++----------------------------+---------------------------------------------------------------+
+
+.. _aws-databricks-run-QLI:
+
+Automated and Manual Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Users can either perform manual QLI or enable automated QLI:
+
+  1. To perform manual QLI, make sure that the **Enable Automated Query Log Ingestion** toggle is Off. Click the **Import** button to do manual QLI.
+  2. Set the **Enable Automated Query Log Ingestion** toggle to On to perform the automated QLI.
+  3. Set a schedule in the corresponding fields of the schedule section, specify values for week, day and time.
+
+.. note::
+
+      Hourly schedule for automated QLI is not supported.
+
+
+Custom Settings
+---------------------
+
+.. include:: ../../../shared/OCF/OCFCustomSettings.rst
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.

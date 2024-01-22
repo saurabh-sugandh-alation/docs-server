@@ -1,0 +1,201 @@
+Update Source Field for Dataflow Objects
+========================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Perform these steps to add and populate the Source field for dataflow objects after updating Alation to 2022.4.
+
+This action applies if you enabled Lineage V3 prior to 2022.4. Running the script described below is required to ensure the correct filtering of dataflow objects using the Source filter on Lineage diagrams.
+
+    .. note::
+
+        In version 2022.4, Lineage graphs can be filtered by the data source from which they were generated using the Source field on dataflow objects. For the filtering to work correctly, this field must have a value. This script populates the Source field for dataflow objects created on versions before 2022.4 where this field was not populated.
+
+        In version 2023.1.6, this script has been updated to fix an issue where group IDs were not created for certain link types. When updating to version 2023.1.6, you should `check if using this script is required`_.
+
+On the HA pair, run the script **on the primary server**.
+
+Prerequisites
+-------------------
+
+Determine Which Lineage Service You Are Using
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are not sure which Lineage service is in use on your instance, you can check it in the following way.
+
+1. Use SSH to connect to the server and enter the Alation shell.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+2. From the Alation shell, check if Lineage V3 is in use.
+
+    .. code-block:: Bash
+
+        alation_conf lineage-service.enabled
+
+    This command should return the value ``True``.
+
+        .. code-block:: Bash
+
+            lineage-service.enabled = True
+
+    If this check returns ``False``, you are not using Lineage V3. Do not proceed with the script as it does not apply to your instance.
+
+Check if Using this Script is Required
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are using Lineage V3, check if you have dataflow objects where the Source field is not populated. If you do, proceed with the script. If you don’t, there is no need to run this script on your instance.
+
+1. From the Alation shell, enter the Postgres shell.
+
+    .. code-block:: Bash
+
+        alation_psql
+
+2. Run the following queries:
+
+    .. code-block:: Bash
+
+        SELECT count(*) FROM object_lineage_dataflow WHERE lineage_source_group_id IS NULL;
+        
+        \c lineage
+        SELECT count(fp) FROM vertex WHERE is_temp=false and (agreegate_dataflow_fp <> '') IS TRUE and group_id IS NULL;
+
+
+    If any of the values returned is not zero, run the script using the steps in `Script Usage`_ below.
+
+3. Exit the Postgres shell.
+
+    .. code-block:: Bash
+
+        \q
+
+Script Usage
+----------------------
+
+The script should be run from the Alation shell.
+
+1. Ensure that the Lineage V3 service is in a healthy state.
+
+    .. code-block:: Bash
+
+        alation_supervisor status lineage
+
+    This command should return the status ``RUNNING``.
+
+    .. code-block:: Bash
+
+        lineage     RUNNING   pid 1184, uptime 5 days, 19:10:35
+
+2. Check that the Event Bus is running.
+
+    .. code-block:: Bash
+
+        alation_supervisor status event-bus:*
+
+    This command should return the status ``RUNNING``:
+
+    .. code-block:: Bash
+
+        event-bus:kafka-server       RUNNING   pid 1128, uptime 5 days, 19:11:05
+        event-bus:zookeeper-server   RUNNING   pid 1127, uptime 5 days, 19:11:05
+
+3. Enter the Django shell.
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+4. Ensure that the Event Bus is consuming published messages.
+
+    .. code-block:: Bash
+
+        from alation_event_bus_utils import check_event_bus
+
+        check_event_bus()
+
+    The command should return ``success``:
+
+    .. code-block:: Bash
+
+        Out[1]: {'success': 'Successfully published and consumed a message'}
+
+    .. note::
+
+	       If you see errors like an example below, do not proceed and contact Alation Support.
+
+         Example error:
+
+         ``%3|1668643409.805|FAIL|rdkafka#producer-1| [thrd:localhost:9092/bootstrap]: localhost:9092/bootstrap: Connect to ipv4#127.0.0.1:9092 failed: Connection refused (after 0ms in state CONNECT)``
+
+5. If all the previous checks are successful, run the script:
+
+    .. code-block:: Bash
+
+        from rosemeta.tasks.migrations import deferred_lineage_group_sync
+
+        deferred_lineage_group_sync.delay()
+
+
+    The script creates a background job ``deferred_lineage_group_sync`` that can be monitored in **Admin Settings > Monitor > Active Tasks**. When the job finishes running, the status of the corresponding task will change to *Completed*.
+
+    The script will add the Source field to dataflow objects which have the source information in the corresponding lineage link and where the source nodes are not of type ``external`` or ``dataflow_component``.
+
+6. Exit the Django shell.
+
+    .. code-block:: Bash
+
+        exit
+
+Log Location
+---------------------
+
+The logs are written to ``celery-lineagepublishing_error.log`` and ``lineage_error.log`` in **/opt/alation/site/logs** inside the Alation shell. You can use ``grep`` to view logs for the ``rosemeta.tasks.migrations.deferred_lineage_group_sync`` task.
+
+.. code-block:: Bash
+
+    cat /opt/alation/site/logs/celery-lineagepublishing_error.log | grep rosemeta.tasks.migrations.deferred_lineage_group_sync
+
+Example output that indicates success:
+
+.. code-block:: Bash
+
+    "message": "Task rosemeta.tasks.migrations.deferred_lineage_group_sync[c43d9fd7-0080-4892-bc45-ea818ddda2d6] succeeded in 0.3742910510045476s: None"
+
+If the script fails, the log will capture the "failed" state. Contact Alation Support if the script results in a failure.
+
+Validate Success
+----------------------
+
+After the ``deferred_lineage_group_sync`` task completes, validate the success as follows:
+
+1. From the Alation shell, enter the Postgres shell.
+
+    .. code-block:: Bash
+
+        alation_psql
+
+2. The migration has succeeded when the SQL query below shows a count of zero:
+
+    .. code-block:: Bash
+
+        \c lineage
+        SELECT count(fp) FROM vertex WHERE is_temp=false and (agreegate_dataflow_fp <> '') IS TRUE and group_id IS NULL;
+
+    By the time these verification queries are run, there may be more groups created in the ``lineage`` database than in ``rosemeta``. This is expected and not an issue.
+
+    Contact Alation Support if the count in the ``lineage`` database **is less** than the count in ``rosemeta``. 
+    
+3. Exit the Postgres shell.
+
+    .. code-block:: Bash
+
+        \q
+
+4. Exit the Alation shell.
+
+    .. code-block:: Bash
+
+        exit

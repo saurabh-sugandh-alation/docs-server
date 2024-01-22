@@ -1,0 +1,57 @@
+Configure Incremental Backups
+--------------------------------
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+.. note::
+
+    Incremental backups are available with **Backup V2**. Refer to :doc:`/installconfig/BackupandRestore/BackupV1AndV2/CheckCurrentBackupTool` for information on how to check your current backup framework.
+
+Incremental backups are not enabled by default.
+
+Use the **alation_conf** command to enable incremental backups and configure the incremental cycle using these parameters:
+
+    - ``alation.backup_v2.incr_backup`` - enables incremental backups. Set this parameter to ``True`` to enable them.
+
+    - ``alation.backup_v2.incr_backup_versions`` - defines how many incremental backups are taken between full backups. Each incremental backup is performed based on the difference from the last full backup and not on the difference from the previous incremental backup. The value is numeric.
+
+No restart of Alation components is required after these parameters are set.
+
+To enable incremental backups:
+
+1. Use SSH to connect to your Alation instance.
+
+2. Enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+3. Enable incremental backups with the following command:
+
+    .. code-block:: bash
+
+        alation_conf alation.backup_v2.incr_backup -s True
+
+4. Specify the number of incremental backups in the backup cycle with the following command:
+
+    .. code-block:: bash
+
+        alation_conf alation.backup_v2.incr_backup_versions -s <value>
+
+5. Exit the Alation shell.
+
+    .. code-block:: bash
+
+        exit
+
+
+For example, if the parameter ``alation.backup_v2.incr_backup_versions`` is set to ``4``, then Alation will start with the full backup on day one after this parameter is set, then create four consecutive incremental backups on the next four days. This way, there will be five backups in all created by one incremental backup cycle (one full and four consecutive incremental backups). On day six, Alation again creates a full backup, and the incremental cycle repeats itself.
+
+    .. image:: ../../../_static/backupV2.png
+        :width: 500px
+
+
+If you wish the full backup to be created once a week, set the  ``alation.backup_v2.incr_backup_versions`` parameter to ``6``.
+
+Note that if the incremental backups are enabled (``alation.backup_v2.incr_backup = True``), then the backup action ``alation_action backup_all`` creates a consecutive incremental backup when this action is run manually on demand.

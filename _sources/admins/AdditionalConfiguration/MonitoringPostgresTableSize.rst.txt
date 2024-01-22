@@ -1,0 +1,215 @@
+Managing Space: Monitor Postgres Table Size
+==============================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from version 2021.4*
+
+
+Alation can monitor the size of the internal Postgres tables relative to the available disk space. When the size of the tables that are monitored nears a critical threshold, Alation will send out email alerts to all Server Admins of the instance.
+
+By default, Alation monitors one table, **data_storage_blobaccesspostgres**, which stores query results of queries executed in Compose. This table tends to grow over time as it stores each individual result. Increase in the size of this table is proportional to the number of queries run by users in Compose. According to the default settings, Alation runs the table size check daily and will send out alerts if the **data_storage_blobaccesspostgres** table reaches 80% of the space of the **/data** drive.
+
+More tables can be added to the list of tables monitored for their size if needed.
+
+The list of tables, thresholds, and alerts can be configured using a group of dedicated parameters in **alation_conf**.
+
+See the table below for a summary of all the parameters:
+
++-------------------------------------------------------------------------------------------+
+| ``alation.monitor_pg_disk_usage.enabled``                                                 |
++--------------------------------------------+----------------------------------------------+
+| Enables or disables the                    | ``True`` or ``False``                        |
+| table size check on the                    |                                              |
+| Alation server.                            | Default: ``True`` (enabled)                  |
++--------------------------------------------+----------------------------------------------+
+| ``alation.monitor_pg_disk_usage.check.in_minutes``                                        |
++--------------------------------------------+----------------------------------------------+
+| Minute of the hour for                     | Value range is from ``0`` to ``59``          |
+| which the table size                       | (minute of the hour)                         |
+| check is scheduled,                        |                                              |
+| in Cron syntax.                            | Default: ``0``                               |
+|                                            |                                              |
+|                                            | ``0`` means the check will run at 00         |
+|                                            | minutes of the scheduled hour.               |
+|                                            |                                              |
+|                                            |                                              |
++--------------------------------------------+----------------------------------------------+
+| ``alation.monitor_pg_disk_usage.check.in_hours``                                          |
++--------------------------------------------+----------------------------------------------+
+| Hour of the day for which the table size   | Value range is from ``0`` to ``24``          |
+| check is in Cron syntax.                   | (hour of the day)                            |
+|                                            |                                              |
+|                                            | Default: ``0``                               |
+|                                            |                                              |
+|                                            | ``0`` means the check runs at 12:00 AM.      |
+|                                            |                                              |
++--------------------------------------------+----------------------------------------------+
+| ``alation.monitor_pg_disk_usage.check.in_day_of_the_week``                                |
++--------------------------------------------+----------------------------------------------+
+| Day of the week on which the table size    | Value range is from ``0`` to ``6``, where:   |
+| check is to run, in Cron syntax.           |                                              |
+|                                            | - ``0`` = Sunday                             |
+|                                            | - ``1`` = Monday                             |
+|                                            | - ``2`` = Tuesday                            |
+|                                            | - ``3`` = Wednesday                          |
+|                                            | - ``4`` = Thursday                           |
+|                                            | - ``5`` = Friday                             |
+|                                            | - ``6`` = Saturday                           |
+|                                            |                                              |
+|                                            | Default: \*                                  |
+|                                            |                                              |
+|                                            | \* means all days. The check runs daily at   |
+|                                            | the scheduled time.                          |
++--------------------------------------------+----------------------------------------------+
+| ``alation.monitor_pg_disk_usage.threshold.table_size_percent_of_free_space``              |
++--------------------------------------------+----------------------------------------------+
+| A percentage threshold value which, when   | Value range is ``0`` to ``100`` (percent)    |
+| set, is used to validate if any of the     |                                              |
+| tables listed in ``tables_to_monitor`` go  | Default: ``80``                              |
+| beyond the percentage of the remaining     |                                              |
+| free space available on the disk.          | The check is performed if the value is >     |
+|                                            | ``0``.                                       |
+|                                            |                                              |
+|                                            | ``0`` means the threshold based on           |
+|                                            | percentage is not set.                       |
+|                                            |                                              |
+|                                            | Email alerts will be sent to Server          |
+|                                            | Admins if any single table breaches          |
+|                                            | the threshold.                               |
++--------------------------------------------+----------------------------------------------+
+| ``alation.monitor_pg_disk_usage.threshold.table_size_in_mb``                              |
++--------------------------------------------+----------------------------------------------+
+| A numeric threshold value in megabytes     | Value is number of megabytes                 |
+| which, when set, will validate if any of   |                                              |
+| the tables listed in                       | Default: ``0``                               |
+| ``tables_to_monitor`` go beyond the        |                                              |
+| threshold size limit.                      | ``0`` means the threshold based on space in  |
+|                                            | megabytes is not set.                        |
+|                                            |                                              |
+|                                            | The check is performed if the value is >     |
+|                                            | > ``0``.                                     |
+|                                            |                                              |
+|                                            | Email alerts will be sent to Server          |
+|                                            | Admins if any single table breaches          |
+|                                            | the threshold.                               |
++--------------------------------------------+----------------------------------------------+
+| ``alation.monitor_pg_disk_usage.threshold.aggregated_table_size_percentage``              |
++--------------------------------------------+----------------------------------------------+
+| A percentage value, which, when set, will  | Value is in percent, ``0`` - ``100``         |
+| validate if the total size of all monitored|                                              |
+| tables goes beyond the set percentage      | Default: ``80``                              |
+| limit of disk size.                        |                                              |
+|                                            | The check is performed if the value is       |
+|                                            | > ``0``.                                     |
+|                                            |                                              |
+|                                            | Email alerts will be sent to Server Admins   |
+|                                            | if the threshold is breached                 |
++--------------------------------------------+----------------------------------------------+
+| ``alation.monitor_pg_disk_usage.tables_to_monitor``                                       |
++--------------------------------------------+----------------------------------------------+
+| Comma-separated list of table names to     | Defaults to one table:                       |
+| monitor                                    | **data_storage_blobaccesspostgres**          |
++--------------------------------------------+----------------------------------------------+
+
+Disable or Enable Table Size Monitoring
+---------------------------------------------
+
+Use the parameter ``alation.monitor_pg_disk_usage.enabled`` to disable or enable the table size  check on the Alation server:
+
+1. SSH to the Alation host.
+2. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Using **alation_conf**, set the value to ``False`` to disable or to ``True`` to enable the check:
+
+    .. code-block:: Bash
+
+        alation_conf alation.monitor_pg_disk_usage.enabled -s False
+
+4. Restart the Celery component:
+
+    .. code-block:: Bash
+
+        alation_supervisor restart celery:*
+
+    .. note::
+
+        Restarting the Celery component will make the Alation UI unavailable for a few seconds. If this action is performed when users are actively using the Alation UI, they may notice the short pause. Users will need to refresh their browser page after the Celery restart is complete.
+
+Customize the Schedule of the Table Size Check
+--------------------------------------------------
+
+To customize the schedule of the table size check, use the parameters:
+
+  - ``alation.monitor_pg_disk_usage.check.in_day_of_the_week``
+  - ``alation.monitor_pg_disk_usage.check.in_hours``
+  - ``alation.monitor_pg_disk_usage.check.in_minutes``
+
+By default, the schedule is set to *daily at 00:00 AM*.
+
+Example
+~~~~~~~~~
+
+To configure the table size check to run every Saturday at 3:55 PM, an admin needs to perform the following steps:
+
+1. SSH to the Alation host
+2. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Use **alation_conf** to set the following values:
+
+    - To set the day of the week to *Saturday*:
+
+        .. code-block:: Bash
+
+            alation_conf alation.monitor_pg_disk_usage.check.in_day_of_the_week -s 6
+
+    - To set the hour of the day to *3 PM*:
+
+        .. code-block:: Bash
+
+            alation_conf alation.monitor_pg_disk_usage.check.in_hours -s 15
+
+    - To set the minute of the hour to *55*:
+
+        .. code-block:: Bash
+
+            alation_conf alation.monitor_pg_disk_usage.check.in_minutes -s 55
+
+No restart of Alation services is required.
+
+Set the Table Size Thresholds
+---------------------------------
+
+Use the following three parameters to set space thresholds for monitoring:
+
+  - ``alation.monitor_pg_disk_usage.threshold.table_size_percent_of_free_space``
+  - ``alation.monitor_pg_disk_usage.threshold.table_size_in_mb``
+  - ``alation.monitor_pg_disk_usage.threshold.aggregated_table_size_percentage``
+
+You can set one or all of these parameters. If all parameters are set, the check will calculate the result based on each of the thresholds. If a threshold is breached, Server Admins will receive a separate alert about each of the specified thresholds.
+
+To set a threshold:
+
+1. SSH to the Alation host.
+
+2. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Use the **alation_conf** command to set the required threshold, for example:
+
+    .. code-block:: Bash
+
+        alation_conf alation.monitor_pg_disk_usage.threshold.table_size_percent_of_free_space -s 50
+
+No restart of Alation services is required.

@@ -1,0 +1,85 @@
+Configure QLI for Oracle on AWS RDS
+===============================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Use the steps in this section to configure query log ingestion for an Oracle data source on AWS RDS. QLI from Oracle on RDS uses database auditing.
+
+To configure QLI:
+
+1. Under your AWS account, go to **AWS RDS** > **Parameter groups**.
+2. Click **Create parameter group**.
+3. Fill in the required fields and click **Create**.
+4. Search and select the created parameter group.
+5. Click **Edit parameters** and change these parameters:
+
+      - ``audit_sys_operations``—Set to ``TRUE``
+      - ``audit_trail``—Set to ``DB, EXTENDED``
+      - ``enable_ddl_logging``—Set to ``TRUE``.
+
+6. Click the **Preview changes** button to view the changed parameters and make sure the value is set as desired.
+7. Click **Save changes** to save the changes.
+8. Go to the **Databases** page.
+9. Click your RDS instance and associate the DB parameter group you created with this instance.
+10. Reboot the database.
+
+    .. note::
+
+        The parameter group name changes and applies immediately, but the parameter group isn't applied until you manually reboot the instance.
+
+11. Make sure database audit trail is enabled for your Oracle database or enable it. We recommend including these statements into auditing:
+
+    - ``CREATE TABLE``
+    - ``CREATE VIEW``
+    - ``SELECT TABLE``
+    - ``UPDATE TABLE``
+    - ``INSERT TABLE``
+    - ``DELETE TABLE``
+    - ``ALTER TABLE``
+
+12. In Alation, you'll be able to choose one of two configuration options for QLI: table-based QLI or query-based QLI. Table-based QLI requires a QLI view to be created on the Oracle database on top of the audit table ``SYS.AUD$``. The service account you’re using in Alation should be granted the ``SELECT`` permissions on this QLI view.
+
+    If creating a view is not an option, you can use query-based QLI and query the ``SYS.AUD$`` table directly from Alation. In the latter case, the service account should be granted enough permissions to query this table.
+
+Table-based QLI
+--------------------
+
+.. code-block:: SQL
+
+      CREATE view <SCHEMA>.<VIEW_NAME> AS
+      SELECT
+          q.userid AS userName,
+          to_char(q.NTIMESTAMP#, 'yyyy-MM-dd HH:mm:ss.ff') AS startTime,
+          q.sqltext AS queryString,
+          q.sessionid AS sessionId,
+          q.NTIMESTAMP# AS sessionStartTime,
+          0 AS seconds,
+          'N' AS cancelled,
+          (SELECT * FROM Global_name) AS defaultDatabases
+      FROM sys.aud$ q
+      WHERE q.sqltext IS NOT NULL
+      ORDER BY
+        sessionId,
+        startTime;
+
+Query-based QLI
+-------------------------
+
+Use the query below to set up query-based QLI.
+
+.. code-block:: SQL
+
+      SELECT
+          q.userid AS userName,
+          to_char(q.NTIMESTAMP#, 'yyyy-MM-dd HH:mm:ss.ff') AS startTime,
+          q.sqltext AS queryString,
+          q.sessionid AS sessionId,
+          q.NTIMESTAMP# AS sessionStartTime,
+          0 AS seconds,
+          'N' AS cancelled,
+          (SELECT * FROM Global_name) AS defaultDatabases
+      FROM sys.aud$ q
+      WHERE q.sqltext IS NOT NULL
+      ORDER BY
+          sessionId,
+          startTime;

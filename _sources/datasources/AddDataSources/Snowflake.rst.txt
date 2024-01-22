@@ -1,0 +1,777 @@
+Snowflake
+================
+
+.. important::
+
+      Starting **August 30, 2023**, we will remove the ability to create new data sources using the Snowflake Native Connector. Support for the Snowflake Native Connector will cease on **December 1, 2023**, as set out in Alation’s `Support Policy <https://www.alation.com/tscs/support/>`_. See the `Transition from Native to OCF Connectors <https://community.alation.com/communityhubmicrosite/blogs/diby-malakar/2023/07/12/transition-from-native-to-ocf-connectors>`_ announcement in Alation Community (requires login to Community).
+
+Scope
+-----------
+
+The table below shows what features are covered by the connector.
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
++------------------------+--------------------------------------------------+---------------+
+| Feature                | Scope                                            | Availability  |
++========================+==================================================+===============+
+| Metadata Extraction    | Extract metadata from data source                | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Schemas                | Extract schemas                                  | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Tables                 | Extract tables                                   | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Views                  | Extract views                                    | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Materialized Views     | Extract materialized views                       | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Columns                | Extract columns                                  | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Primary Key            | Extract primary keys                             | No            |
++------------------------+--------------------------------------------------+---------------+
+| Foreign Key            | Extract foreign keys                             | No            |
++------------------------+--------------------------------------------------+---------------+
+| Policies               | Extract Snowflake policies                       | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Tags                   | Extract Snowflake tags (from 2022.1)             | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Source Comments        | Extract source comments                          | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Profiling              | Profile the data                                 | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Query Log Ingestion    | Ingest query logs                                | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Lineage                | Build Lineage based on ingested query logs       | Yes           |
++------------------------+--------------------------------------------------+---------------+
+| Compose                | Use Compose to run queries on data source        | Yes           |
++------------------------+--------------------------------------------------+---------------+
+
+
+Required Information
+--------------------------
+
+To configure Snowflake in Alation, you will need the following information:
+
+- Hostname
+
+      - For instances on AWS: ``<account_name>.<region_id>.snowflakecomputing.com``:
+
+            .. code-block:: Bash
+
+                alation_partner.us-east-1.snowflakecomputing.com
+
+      - For instances on Azure: ``<account_name>.<region_id>.azure.snowflakecomputing.com``:
+
+            .. code-block:: Bash
+
+                lj16805.east-us-2.azure.snowflakecomputing.com
+
+- Port
+
+      - The default port is: ``443``
+
+- Warehouse Name
+
+      - The currently active/running warehouse in your account for which the service account you are going to use in Alation has access privileges
+
+- Database Name (optional):
+
+      - Provide the database name for which you have access privileges.
+
+    .. note::
+
+       If the database name is specified, the metadata will be extracted
+       for this specific database only.
+
+       If the database name is not provided, the metadata will be
+       extracted for all the databases that the user account provided as a
+       service account in Alation has access to.
+
+       This setting does not affect QLI.
+
+- Authentication
+
+      - `Snowflake Service Account`_
+      - `Key Pair Authentication`_
+      - :doc:`Snowflake OAuth For Compose <../../../sources/OpenConnectorFramework/Snowflake/SnowflakeOAuth/index>`
+
+Snowflake Service Account
+-----------------------------
+
+Under your Snowflake account, set up a user account for Alation. You can also use an existing account. Alation will use it for Metadata Extraction (MDE), Profiling/Sampling, and Query Log Ingestion (QLI). It must be assigned a role that has enough privileges for these data jobs.
+
+Security and account administrators for Snowflake (users with the SECURITYADMIN or ACCOUNTADMIN roles) can create users.
+
+Snowflake connection requires a warehouse and role. A Snowflake user may have multiple roles which give them different access. As a best practice, when setting up a user account in Snowflake for Alation, it is  recommended to set a default role and default warehouse for this user.
+
+Example:
+
+- Create role for the Alation service account:
+
+    .. code-block:: sql
+
+        CREATE ROLE <alation_role>;
+
+- Create Alation Service Account User:
+
+    .. code-block:: sql
+
+        CREATE USER <alation_user> PASSWORD='*****' DEFAULT_ROLE = <alation_role> MUST_CHANGE_PASSWORD = TRUE;
+
+- Add a default warehouse:
+
+    .. code-block:: Bash
+
+          ALTER USER <alation_user> SET DEFAULT_WAREHOUSE={warehouse_name};
+
+
+    .. code-block:: sql
+
+      GRANT ROLE <alation_role> TO USER <alation_user>;
+
+
+    .. code-block:: sql
+
+      GRANT USAGE ON WAREHOUSE <warehouse_name> TO ROLE <alation_role>;
+
+Privileges for MDE
+~~~~~~~~~~~~~~~~~~~~~~
+
+The role you are using for the Alation account needs to have access to the INFORMATION_SCHEMA of the database for which you wish to perform MDE:
+
+    -  INFORMATION_SCHEMA.TABLES
+    -  INFORMATION_SCHEMA.COLUMNS
+    -  INFORMATION_SCHEMA.PROCEDURES
+    -  INFORMATION_SCHEMA.FUNCTIONS
+    -  INFORMATION_SCHEMA.SCHEMATA
+    -  INFORMATION_SCHEMA.VIEWS
+
+.. note::
+
+      When querying an INFORMATION_SCHEMA view or table function, only objects for which the current role has been granted access privileges are returned. For more details, refer to `Information Schema <https://docs.snowflake.com/en/sql-reference/info-schema.html>`_ in Snowflake documentation.
+
+
+You can use the following template query to grant privileges. The placeholder ``<alation_role>`` stands for the default role of the Alation service account:
+
+.. code-block:: sql
+
+    USE ROLE ACCOUNTADMIN;
+    -- Grant access to warehouse if MDE will be performed on a warehouse that is not the default warehouse of the Alation user
+    GRANT USAGE ON WAREHOUSE <warehouse_name> TO ROLE <alation_role>;
+    -- GRANT access to Database
+    GRANT USAGE ON DATABASE <DBNAME> TO ROLE <alation_role>;
+    -- GRANT access to all schemas in a Database
+    GRANT USAGE ON ALL SCHEMAS IN DATABASE <DBNAME> TO ROLE <alation_role>;
+    -- OR grant access to specific schemas in Database
+    GRANT USAGE ON SCHEMA <DBNAME.SCHEMANAME> TO ROLE <alation_role>;
+    -- Grant access to all tables in all schemas in Database
+    GRANT SELECT ON ALL TABLES IN DATABASE <DBNAME> TO ROLE <alation_role>;
+    -- OR grant access to all tables in specific schemas
+    GRANT SELECT ON ALL TABLES IN SCHEMA <DBNAME.SCHEMANAME> TO ROLE <alation_role>;
+    -- OR grant access to specific tables
+    GRANT SELECT ON TABLE <DBNAME.SCHEMANAME.TABLENAME> TO ROLE <alation_role>;
+    -- OR grant access to all views in all schemas in Database
+    GRANT SELECT ON ALL VIEWS IN DATABASE <DBNAME> TO ROLE <alation_role>;
+    -- OR grant access to all VIEWS in specific schemas
+    GRANT SELECT ON ALL VIEWS IN SCHEMA <DBNAME.SCHEMANAME> TO ROLE <alation_role>;
+    -- OR grant access to specific views
+    GRANT SELECT ON VIEW <DBNAME.SCHEMANAME.VIEWNAME> TO ROLE <alation_role>;
+
+
+    -- OPTIONAL: allow access to future objects
+    USE ROLE ACCOUNTADMIN;
+    -- OPTIONAL: GRANT access to future schemas (not yet created)
+    GRANT USAGE ON FUTURE SCHEMAS IN DATABASE <DBNAME> TO ROLE <alation_role>;
+    -- OPTIONAL: grant access to future tables in database
+    GRANT SELECT ON FUTURE TABLES IN DATABASE <DBNAME> TO ROLE <alation_role>;
+    -- OR grant access to future tables in specific schemas
+    GRANT SELECT ON FUTURE TABLES IN SCHEMA <DBNAME.SCHEMANAME> TO ROLE <alation_role>;
+    -- OPTIONAL: GRANT access to future views in database
+    GRANT SELECT ON FUTURE VIEWS IN DATABASE <DBNAME> TO ROLE <alation_role>;
+    -- OR grant access to future tables in specific schemas
+    GRANT SELECT ON FUTURE VIEWS IN SCHEMA <DBNAME.SCHEMANAME> TO ROLE <alation_role>;
+
+
+.. _privileges-for-policy-center:
+
+Privileges for Policy Center and Tags
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*Available from version 2022.1*
+
+For more on working with policies extracted into the catalog, see :doc:`/steward/PolicyCenter/index`. For more on tags, see :doc:`Snowflake tags <../../steward/SnowflakeTags/index>`.
+
+.. note::
+
+    The configuration described below is only relevant to **native** data sources. Do not use it if your Snowflake data source is added via the :doc:`Open Connector Framework (OCF) connector </sources/OpenConnectorFramework/Snowflake/SnowflakeOCFConnectorOverview>`.
+
+For a **native** Snowflake data source, Alation retrieves policy and tag metadata from views in METADATA_DB.METADATA_SCHEMA. If the database and schema do not exist yet, create them first, and then create the required views (see below). The service account must be granted permissions for METADATA_DB, METADATA_DB.METADATA_SCHEMA, and the views:
+
+- Database:
+   - METADATA_DB
+- Schema:
+   - METADATA_SCHEMA
+- Views for policies:
+   - POLICY_REFERENCES
+   - MASKING_POLICIES
+   - ROW_ACCESS_POLICIES
+- Views for tags:
+   - TAGS
+   - TAG_REFERENCES
+
+ A Snowflake administrator must grant the required permissions to the service account before running metadata extraction.
+
+    .. note::
+
+        Tag and policy views on the Snowflake database sometimes undergo structural changes, with columns being added or removed. After such a change goes into production on Snowflake, metadata extraction from Alation may fail. In this case you may need to recreate the views in the schema METADATA_DB.METADATA_SCHEMA. Find the most recent example in :doc:`/admins/Troubleshooting/SnowflakeMDEFailsDueToViewChanges`.
+
+Database and Schema
+'''''''''''''''''''
+
+If they don't exist yet, create the required database and schema.
+
+.. code-block:: sql
+
+   CREATE DATABASE METADATA_DB;
+   CREATE SCHEMA METADATA_DB.METADATA_SCHEMA;
+
+Views for Policies
+''''''''''''''''''
+
+Create the required views for policies.
+
+    .. code-block:: sql
+
+        CREATE VIEW METADATA_DB.METADATA_SCHEMA.POLICY_REFERENCES
+            AS SELECT POLICY_DB,
+                      POLICY_SCHEMA,
+                      POLICY_ID,
+                      POLICY_NAME,
+                      POLICY_KIND,
+                      REF_DATABASE_NAME,
+                      REF_SCHEMA_NAME,
+                      REF_ENTITY_NAME,
+                      REF_ENTITY_DOMAIN,
+                      REF_COLUMN_NAME,
+                      REF_ARG_COLUMN_NAMES
+            FROM SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES;
+
+|
+
+    .. code-block:: sql
+
+        CREATE VIEW METADATA_DB.METADATA_SCHEMA.MASKING_POLICIES
+            AS SELECT * FROM SNOWFLAKE.ACCOUNT_USAGE.MASKING_POLICIES;
+
+|
+
+    .. code-block:: sql
+
+        CREATE VIEW METADATA_DB.METADATA_SCHEMA.ROW_ACCESS_POLICIES
+            AS SELECT * FROM SNOWFLAKE.ACCOUNT_USAGE.ROW_ACCESS_POLICIES;
+
+Grant the Alation service account role access to the policy views. Replace ``<alation_role>`` with the Alation service account role you've chosen to give access.
+
+    .. code-block:: sql
+
+        GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.POLICY_REFERENCES TO <alation_role>;
+        GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.MASKING_POLICIES TO <alation_role>;
+        GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.ROW_ACCESS_POLICIES TO <alation_role>;
+
+Views for Tags
+''''''''''''''
+
+Create the required views for tags.
+
+    .. code-block:: sql
+
+        CREATE VIEW METADATA_DB.METADATA_SCHEMA.TAGS
+          AS SELECT * FROM SNOWFLAKE.ACCOUNT_USAGE.TAGS
+            WHERE TAG_ID IS NOT NULL;
+
+|
+
+    .. code-block:: sql
+
+        CREATE VIEW METADATA_DB.METADATA_SCHEMA.TAG_REFERENCES
+          AS SELECT * FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+            WHERE TAG_ID IS NOT NULL;
+
+Grant the Alation service account role access to the tag views. Replace ``<alation_role>`` with the Alation service account role you've chosen to give access.
+
+.. code-block:: sql
+
+   GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.TAGS TO <alation_role>;
+   GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.TAG_REFERENCES TO <alation_role>;
+
+See :doc:`Snowflake Tags <../../steward/SnowflakeTags/index>` for more on how to configure and use tags in Alation.
+
+Privileges for Profiling/Sampling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To profile a table, the connected account needs SELECT privileges on this table:
+
+.. code-block:: sql
+
+    GRANT SELECT ON TABLE <DBNAME.SCHEMANAME.TABLENAME> TO ROLE <alation_role>;
+
+Privileges for Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+QLI requirements depend on your Alation release.
+
+Releases V R6 (5.10.4) and below
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation performs QLI using the QUERY_HISTORY table function of the
+INFORMATION_SCHEMA which allows for extracting a maximum of 10,000 query
+logs for the last  7 days, which is optimized to fetch 10,000 query
+logs for the last 24 hours.
+
+There are no specific requirements for the privileges for the service
+account.
+
+Starting from V R6 (5.10.5) and above
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Starting with *V R6 (5.10.5)*, Alation supports QLI on the
+INFORMATION_SCHEMA (as in prior releases) and QLI on the
+ACCOUNT_USAGE.QUERY_HISTORY view of the SNOWFLAKE database
+(**recommended**).
+
+The use of the ACCOUNT_USAGE.QUERY_HISTORY schema for QLI helps overcome
+the limitation of the INFORMATION_SCHEMA which only allows to extract
+10,000 logs for the last 24 hours.
+
+To use the ACCOUNT_USAGE.QUERY_HISTORY view for QLI, grant IMPORTED
+PRIVILEGES on the SNOWFLAKE database to the default role of the user
+account you are going to use in Alation. This can be done by a user with
+the ACCOUNTADMIN role or by any user who has access to the SNOWFLAKE
+database:
+
+.. code-block:: sql
+
+    GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <alation_role>;
+
+If for some reason access to the SNOWFLAKE database cannot be granted to
+this user account, create a general or secure view based on a
+query of the SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY view then grant:
+
+-  USAGE privileges on the database and schema where the view is created
+-  SELECT privileges on the created view -
+
+to the role of the user account you are going to use in Alation.
+Remember to replace the placeholder values in red with your actual
+values:
+
+.. code-block:: sql
+
+      CREATE OR REPLACE [SECURE] VIEW <DBNAME>.<SCHEMANAME>.<VIEWNAME> AS
+      SELECT
+        START_TIME,
+        DATABASE_NAME,
+        SCHEMA_NAME,
+        WAREHOUSE_NAME,
+        ERROR_MESSAGE,
+        QUERY_TYPE,
+        TRIM(QUERY_TEXT) as QUERY_TEXT,
+        QUEUED_PROVISIONING_TIME,
+        QUEUED_REPAIR_TIME,
+        QUEUED_OVERLOAD_TIME,
+        TRANSACTION_BLOCKED_TIME,
+        USER_NAME,
+        COMPILATION_TIME,
+        EXECUTION_TIME,
+        QUERY_ID,
+        ERROR_CODE,
+        SESSION_ID
+      FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY;
+
+      GRANT USAGE ON DATABASE <DBNAME> TO ROLE <alation_role>
+      GRANT USAGE ON SCHEMA <DBNAME>.<SCHEMANAME> TO ROLE <alation_role>
+      GRANT SELECT ON VIEW <DBNAME>.<SCHEMANAME>.<VIEWNAME> TO ROLE <alation_role>
+
+Key Pair Authentication
+----------------------------
+
+Alation supports the Key Pair Authentication method for the service account connection to Snowflake. To use Key Pair Authentication, a number of Key Pair Authentication-relevant parameters need to be included into the Snowflake URI in the Alation Catalog.
+
+Key Pair Authentication requires preliminary configuration on Snowflake and the Alation server side before the Snowflake data source is added to the Catalog.
+
+Configuration on the Snowflake Side
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Generate and assign a key pair to the user account you created for Alation. Refer to `Key Pair Authentication & Key Pair Rotation <https://docs.snowflake.com/en/user-guide/key-pair-auth.html>`_  for details.
+2. Once the private key is generated, store the private key securely in your local machine as it needs to be uploaded in Alation while configuring the key pair authentication.
+
+Configuration on the Alation Server Side
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Version 2022.1 and Newer Versions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You will need to upload the private key file in the General Settings > Service Account section of your Snowflake data source after adding this data source to the Catalog. The steps to upload the file are described below in `Authentication with the Key Pair`_.
+
+Version 2021.4 and Older Versions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You need to upload the private key file to the Alation host and place it inside the Alation shell. To upload the file, follow these steps:
+
+
+1. SSH to the Alation host and inside the Alation Chroot, create a folder and copy the private key file into this folder. The Alation chroot is located at /opt/alation/alation-X.X.X.X, where X.X.X.X represents the version of Alation that’s installed.
+
+2. Change ownership of the private key file to ``alation``:
+
+    .. code-block:: bash
+
+        sudo chown alation:alation rsa_key.p8
+
+3. Note down the path to the private key file inside the Alation Chroot. You will need to provide this path in the URI field in Alation.
+
+Build the URI
+~~~~~~~~~~~~~~~~
+
+Version 2022.1 and Newer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Build the URI with the following parameters:
+
+    - Hostname
+    - Port
+    - Warehouse Name
+    - Database Name (Optional)
+
+.. note::
+
+    Key Pair Authentication values must be provided in the **General Settings > Service Account** section and should not be included in the URI. Refer to  `Authentication with the Key Pair`_.
+
+**Format:**
+
+.. code-block:: bash
+
+      snowflake://<Hostname>:<Port>/?warehouse=<Warehouse_Name>&db=<Database_Name>
+
+**Example:**
+
+.. code-block:: bash
+
+      snowflake://alation.snowflakedb.com:443/?warehouse=EX_DEMO&db=EX_SNOWCASE
+
+Version 2021.4 and Older
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To build the URI for Snowflake connection with Key Pair Authentication, the URI has to include the parameters that pass the path to the private key file and the passphrase. Include the following parameters to build the URI:
+
+
+- **user**: username of the service account
+- **role**: role of the service account
+- **private_key_file**: path to the private key file inside the Alation shell
+- **private_key_file_pwd**: the passphrase, if set for the private key file. Note that currently, the passphrase has to be provided as a plain text parameter value which will be visible to Data Source Admins in the URI string on the data source Settings page.
+- **authenticator**: ``authenticator=snowflake_jwt``
+
+**Example**:
+
+    .. code-block:: Bash
+
+          snowflake://caa03991.us-east-1.snowflakecomputing.com:443/?user=alation&role=alation_admin&private_key_file=/snowflakeKPA/rsa_key.p8&private_key_file_pwd=1234&authenticator=snowflake_jwt
+
+URI to Extract Policies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Snowflake URI must include the default database name as shown below to extract the policies from a particular database, if not all the policies will be extracted from the complete Snowflake data source.
+
+.. code-block:: Bash
+
+      snowflake://alation_partner.us-east-1.snowflakecomputing.com:443/?warehouse=OXY_WH&db=PC_DB
+
+Compose
+~~~~~~~~~
+
+The Default connection URI that includes the Key Pair Authentication parameters can also work as the Default Compose connection. A restart of Alation is required after the data source is set up in order to use the Default connection in Compose.
+
+  .. note::
+
+      - Key Pair Authentication for individual user account connections from Compose is currently not supported.
+      - Key Pair Authentication for Snowflake OAuth in Compose is currently not supported. Snowflake OAuth uses authentication based on the provided Client ID and Secret.
+
+Steps in Alation
+------------------------
+
+Basic Authentication with Username/Password
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    The steps in this section are applicable only for the basic authentication with username/password. For key pair authentication, perform the steps in `Key Pair Authentication (URI)`_ section.
+
+
+To add a Snowflake data source to Alation,
+
+#. Follow the instructions in :doc:`Add Data Sources <../../datasources/DSConfiguration/AddingaDataSource>` to bring up the **Add Data Source** wizard.
+
+#. On Step 1 of the **Add Data Source** wizard provide the connection information for your new source:
+
+    -  In the **Database Type** list select **Snowflake**;
+    -  In the **Host** field, provide the hostname.
+    -  In the **Port** field, type the port number or leave the defaults;
+    -  In the **Warehouse Name** field, specify the name of the warehouse you would like to catalog in Alation;
+    -  Optionally, in the **Database Name** field, specify the name of the
+       database. If the database name is provided, metadata will be
+       extracted for this particular database only. If the database name is
+       not provided, the metadata is extracted for all the databases
+       that the user account you will provide in Alation has access to.
+    -  Under **Catalog**, provide the **Title**, **Description**, and **Privacy** settings, and click **Save and Continue**:
+
+       .. image:: ../../_static/DS_Snowflake01.png
+           :width: 3.5in
+           :align: center
+
+3. Step 2 of the **Add Data Source** wizard will open. At this stage, provide your service account information then click **Save and Continue**:
+
+  .. image:: ../../_static/DS_Snowflake02.png
+      :width: 3.5in
+      :align: center
+
+4. The next step of the wizard will open. This step is devoted to QLI setup. Click **Skip This Step**. You can set up QLI later on the Settings page of the data source.
+
+Key Pair Authentication (URI)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To add a Snowflake data source using Key Pair Authentication,
+
+1. Follow the instructions in :doc:`Add Data Sources <../../datasources/DSConfiguration/AddingaDataSource>` to bring up the **Add Data Source** wizard.
+2. On **Step 1** of the Add Data Source wizard, select the **Enter JDBC URI** checkbox.
+3. Enter the URI you have built for the key pair authentication.
+
+    - For version 2021.4 and older versions, enter the URI using the format described in `Version 2021.4 and Older`_.
+    - For version 2022.1 and newer versions, enter the URI using the format described in `Version 2022.1 and Newer`_.
+
+     .. note::
+
+          From version 2022.1, Key Pair Authentication values must be provided in the General Settings > Service Account section and should not be included in the URI.
+
+  .. image:: ../../_static/DS_Snowflake04.png
+      :width: 3.5in
+      :align: center
+
+3. Under **Catalog**, provide the **Title**, **Description**, and **Privacy** settings, and click **Save and Continue**.
+
+4. **Step 2** of the **Add Data Source** wizard will open. At this stage, select the **Yes** radio button for the service account, then specify the **Username** and leave the Password field empty. Click **Save and Continue**.
+
+  .. image:: ../../_static/DS_Snowflake05.png
+      :width: 3.5in
+      :align: center
+
+5. The next step of the wizard will open. This step is devoted to QLI setup. Click **Skip This Step**. You can set up QLI later on the Settings page of the data source.
+
+6. If you intend to use the key pair authentication-based default connection in Compose, restart Alation:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        alation_action restart_alation
+
+Complete the Configuration
+------------------------------
+
+After you have walked through the **Add Data Source** wizard screens, your
+source will be added to Alation and you will land on the **Access** tab of
+the data source Settings page:
+
+  .. image:: ../../_static/DS_Snowflake03.png
+      :width: 5.5in
+      :align: center
+
+Access Tab
+-------------
+
+On the **Access** tab, you can change the data source Privacy settings and
+give/remove access to/from users.
+
+General Settings
+------------------
+
+On the **General Settings** tab, you can edit the connection parameters, specify miscellaneous data source information, and configure authentication with Snowflake OAuth for Compose users.
+
+Authentication with the Key Pair
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Version 2022.1 and newer*
+
+If you chose to use key pair authentication instead of authentication with the username and password, you need to upload the private key file for your data source. In the Service Account section, perform the following steps for key pair authentication:
+
+  1. Select the **Enable Snowflake Key Pair Auth** checkbox.
+
+  2. Specify the values for the key pair authentication fields based on the description in the following table:
+
+      .. tabularcolumns:: |p{5cm}|p{10cm}|
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Description**                                               |
+      +============================+===============================================================+
+      | User                       | Provide the user name of the service account that has the     |
+      |                            | public key assigned to it.                                    |
+      |                            |                                                               |
+      |                            | Make sure that the username provided here is the same as the  |
+      |                            | service account username provided in the course of  the data  |
+      |                            | source configuration.                                         |
+      +----------------------------+---------------------------------------------------------------+
+      | Role                       | Provide the role of the service account user with the public  |
+      |                            | key.                                                          |
+      +----------------------------+---------------------------------------------------------------+
+      | Password                   | Provide the service account password.                         |
+      +----------------------------+---------------------------------------------------------------+
+      | Upload Private Key File    | Click the **Upload** button to upload the private key file.   |
+      +----------------------------+---------------------------------------------------------------+
+      | Private Key Passpharse     | Provide the passphrase of the private key file.               |
+      +----------------------------+---------------------------------------------------------------+
+
+  3. Click **Save**.
+
+  4. Click Test to validate network connectivity.
+
+  .. image:: ../../_static/DS_Snowflake13.png
+      :width: 5.5in
+      :align: center
+
+Metadata Extraction (MDE)
+----------------------------
+
+You can perform MDE on the **Metadata Extraction** tab of the Setting page.
+No specific pre-configuration is required.
+
+*From 2021.3:*
+
+Materialized views will be extracted during the Metadata Extraction.
+
+*From 2021.4:*
+
+External tables will be extracted during the Metadata Extraction. The catalog page displays the location of the base file of the external table in the right pane.
+
+  .. image:: ../../_static/DS_Snowflake07.png
+      :width: 5.5in
+      :align: center
+
+*From 2022.1:*
+
+Snowflake tags will be extracted during Metadata Extraction, if the feature has been enabled and the required setup has been performed. See :doc:`Snowflake Tags <../../steward/SnowflakeTags/index>` for more information.
+
+Query Log Ingestion (QLI)
+-----------------------------
+
+Available starting from version *V R2 (5.4.x)*.
+
+.. note::
+
+    MDE must are performed before attempting QLI.
+
+There are differences in how Snowflake QLI can be configured depending on your Alation version.
+
+Releases V R6 (5.10.4) and below
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation reads query logs from their default location in the
+INFORMATION_SCHEMA. No specific configuration is required for Alation to
+read the logs. You can perform QLI on the Query Log Ingestion tab of the
+Setting page.
+
+.. note::
+
+    QLI over the INFORMATION_SCHEMA is limited to ingesting 10,000
+    logs from the last 24 hours due to the specifics of the
+    QUERY_HISTORY table function of this schema.
+
+Starting from V R6 (5.10.5) and above
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default
+''''''''''
+
+By default, QLI is based on INFORMATION_SCHEMA.QUERY_HISTORY. With no additional configuration, Alation will use the QUERY_HISTORY table function of the INFORMATION_SCHEMA for QLI.
+
+Recommended
+''''''''''''
+
+You can configure QLI to use the ACCOUNT_USAGE.QUERY_HISTORY view. This is a recommended approach that lets overcome the limitation of 10,000 query logs of the INFORMATION_SCHEMA. This approach requires that
+some configuration should be performed in Alation before running QLI.
+
+.. note::
+
+    Make sure the user account you are using in Alation is
+    given the required privileges for the SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+    view. See `Privileges for Query Log Ingestion`_.
+
+
+To configure QLI based on the SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY view, do the following:
+
+#. On the data source Settings page, **General Settings** tab, in the **Query Log Privileges** section, specify either:
+
+  -  directly the view SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY - if the user
+     account you have provided in Alation is granted the required
+     privileges to the ACCOUNT_USAGE.QUERY_HISTORY view of the SNOWFLAKE
+     database;
+
+  -  Or the qualified name of a view you have created for Alation QLI off
+     the SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+     view: <DBNAME>.<SCHEMANAME>.<VIEWNAME>.
+
+  .. note::
+
+      If the Query Log Privileges field is left blank, QLI will be
+      performed based on the QUERY_HISTORY table function of the INFORMATION_SCHEMA.
+
+  .. image:: ../../_static/DS_Snowflake06.png
+      :width: 5.5in
+      :align: center
+
+2. Click **Save**.
+3. Go to the **Query Log Ingestion** tab and perform QLI.
+
+Per-Object Parameters
+------------------------
+
+We recommend setting per-object parameters before you perform Profiling.
+
+MDE must are performed for you to see the extracted metadata on
+the Per-Object Parameters page.
+
+Data Profiling
+------------------------
+
+MDE must have been performed before Profiling.
+
+Lineage
+--------------
+
+From 2021.4, column-level lineage is supported for the Snowflake data source in addition to table-level lineage.
+
+  .. note::
+
+        This feature requires the Snowflake Column-Level Lineage parser add-on. Contact Alation Support about purchasing this add-on.
+
+
+Enable Column-Level Lineage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To enable column-level lineage:
+
+ 1. Go to **Settings > Feature Configuration**.
+
+ 2. Turn on the toggle **Automatically extracts Column Level Lineage for Snowflake data sources**.
+
+ 3. Click the **Save changes** button to save the changes.
+
+     .. image:: ../../_static/DS_Snowflake08.png
+         :width: 5.5in
+         :align: center
+
+ 3. In the **Verify Feature Configuration Change** dialog, click the **Save Configuration** button.
+
+      .. image:: ../../_static/DS_Snowflake09.png
+           :width: 3.5in
+           :align: center
+
+View Column-Level Lineage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/ColumnLevelLineage.rst

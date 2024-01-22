@@ -1,0 +1,148 @@
+MicroStrategy OCF Connector: Overview
+===========================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The OCF connector for MicroStrategy is developed by Alation and is available as a Zip file. You can upload and install the Zip file in the Alation application.
+
+The latest MicroStrategy OCF connector package can be downloaded from the Connector Hub on the `Alation Customer Portal <https://customerportal.alationdata.com/>`_. Ask an Alation admin with access to the Customer Portal to download the connector from the Connectors section (Customer Portal > Connectors).
+
+This connector should be used to catalog MicroStrategy Cloud and MicroStrategy On-premise (version 2021 and later) as a data source on Alation on-premise and Cloud Service instances. It extracts MicroStrategy objects such as projects, folders, reports, report fields, documents, dossiers, and cubes. After the metadata is extracted, it is represented in the data catalog as a hierarchy of catalog pages under the parent BI source. Alation users can leverage the full catalog functionality to search for and find the extracted metadata, curate the corresponding catalog pages, create documentation about the data source, and exchange information.
+
+Team
+---------
+
+The following administrators are required to install this connector:
+
+    - MicroStrategy Admin:
+
+        - Provides the connection information
+        - Provides the SSL certificate
+        - Creates a service account with the necessary permissions
+
+    - Alation Server Admin:
+
+        - Installs the connector
+        - Creates a BI source
+        - Configures the BI source
+
+Scope
+-----------
+
+The table below describes which metadata objects this connector extracts and which operations are supported.
+
++------------------------+--------------------------------------------------+-----------------+
+| Feature                | Scope                                            | Availability    |
++========================+==================================================+=================+
+| MicroStrategy BI source| The MicroStrategy instance is represented as a BI| Yes             |
+|                        | source.                                          |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Projects               | Extract projects                                 | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Folders                | Extract folders                                  | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Reports                | Extract reports in a project.                    | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Report prompts         | Extract the prompts that appear in reports.      | No              |
++------------------------+--------------------------------------------------+-----------------+
+| Report attributes      | Extract reports attributes in reports.           | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Report metrics         | Extract dimensions, measures, and measure        | Yes             |
+|                        | expressions of report objects.                   |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Report derived metrics | Extract derived metrics of reports.              | No              |
++------------------------+--------------------------------------------------+-----------------+
+| Report owner           | Extract information about the owner or author who| Yes             |
+|                        | created the report.                              |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Report previews        | Extract report previews.                         | No              |
++------------------------+--------------------------------------------------+-----------------+
+| Dossiers and documents | Extract dossiers and documents.                  | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Dossiers or documents  | Extract attributes and metrics of dossiers and   | Yes             |
+| attribute and metrics  | documents.                                       |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Dossier owner or       | Extract information about the owner or author who| Yes             |
+| documents owner        | created dossiers or documents.                   |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Dossiers or document   | Extract derived metrics of dossiers or documents.| No              |
+| derived metrics        |                                                  |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Cubes                  | Extract dimensions and measure of a dashboard    | Yes             |
+|                        | object.                                          |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Cubes metric and       | Ability to show a thumbnail image of reports and | Yes             |
+| attributes             | dashboards.                                      |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Cubes owner            | Extract information about the owners or authors  | Yes             |
+|                        | who created a cube.                              |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Connections            | Extract connection objects.                      | No              |
++------------------------+--------------------------------------------------+-----------------+
+| Document or Document   | Extract document or dossier preview image.       | Yes             |
+| previews               |                                                  |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Lineage                | Ability to generate lineage for the BI source    | Yes             |
+|                        | including report level lineage.                  |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Cross-System lineage   | Ability to generate lineage between the BI source| No              |
+|                        | and a data source.                               |                 |
++------------------------+--------------------------------------------------+-----------------+
+
+
+MicroStrategy Object Hierarchy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following diagram shows the hierarchy of MicroStrategy objects and how they are cataloged in Alation:
+
+.. image:: ../../../_static/MicrostrategyOCF_01.png
+    :width: 600px
+    :class: with-border
+
+Connector API Methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MicroStrategy APIs used by this connector to extract metadata are described below:
+
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Type               | API Endpoint                            | Description                                                    |
++====================+=========================================+================================================================+
+| Authentication     | POST : {BaseUrl}/MicroStrategyLibrary/  | Get the access token for authentication.                       |
+|                    | api/auth/login                          |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| All users          | GET : {BaseUrl}/MicroStrategyLibrary/   | Get all users.                                                 |
+|                    | api/users                               |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| User groups        | GET : {BaseUrl}/MicroStrategyLibrary/   | Get all user groups of MicroStrategy.                          |
+|                    | api/usergroups                          |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| All projects       | GET : {BaseUrl}/MicroStrategyLibrary/   | Get the list of all projects.                                  |
+|                    | api/projects                            |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| All folders        | GET :                                   | Gets the response of all the folders inside a project.         |
+|                    | {BaseUrl}/MicroStrategyLibrary/api/     | ```7`` - The value 7 is used for **my_folders**                |
+|                    | folders/preDefined/7                    | ``20`` - The value 20 is used for **shared_folders**           |
+|                    | {BaseUrl}/MicroStrategyLibrary/api/     |                                                                |
+|                    | folders/preDefined/20                   |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Project permissions| GET : {BaseUrl}/MicroStrategyLibrary/   | Gets permissions for a project for which the ID is passed.     |
+|                    | api/objects/$projectID?type=32          |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| All permissions    | POST : {BaseUrl}/MicroStrategyLibrary/  | This call reach a search id with which the metadataSearch has  |
+|                    | %type_of_objects                        | to be called to get list of all objects and permissions.       |
+|                    |                                         |                                                                |
+|                    | GET : {BaseUrl}/MicroStrategyLibrary/api|                                                                |
+|                    | /metadataSearches/results?searchId=     |                                                                |
+|                    | %id_from_get_call                       |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Cubes              | getCubeDefinition                       | Gets cubes, cube attributes and fields.                        |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Documents and      | getDossier/DocDefinition                | Gets documents and dossiers definition.                        |
+| dossiers           |                                         |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Reports            | getReportDefinition                     | Gets reports and their attributes.                             |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Dashboards         | exportToPDF                             | Gets images of documents or dossiers.                          |
+| (Document or       |                                         |                                                                |
+| Dossier) images    |                                         |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+

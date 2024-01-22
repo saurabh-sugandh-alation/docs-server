@@ -1,0 +1,151 @@
+Update Alation to 2022.4
+======================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+2022.4 Update Version Dependencies
+-----------------------------------------
+
+Alation supports a direct update to version 2022.4 from the following previous versions:
+
+    - 2022.3.x
+    - 2022.2.x
+    - 2022.1.x
+
+Version 2021.4.x and Older
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Direct update to 2022.4 is not supported from version 2021.4 and older versions. First, update Alation to a version that supports the update to 2022.4 and then perform a second update to 2022.4. Use the update instructions specific to your release.
+
+2022.4 Release-Specific Information
+-----------------------------------------
+
+    .. note::
+
+        The full list of new features is available in :doc:`/releases/releasenotes/ReleaseNotes20224`.
+
+Elasticsearch Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Elasticsearch component of the Alation application was updated to a newer minor version of version 7.17. This upgrade does not cause rebuilding of the search index. No action is required from Alation admins as the version upgrade happens automatically during the Alation update.
+
+Event Bus Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Event Bus component was upgraded to a new minor version of Kafka 3.3 to take advantage of improvements, bug fixes, and the removal of the Log4j 1 library that was previously reported to contain a security flaw. The newest version of Kafka uses an alternative Log4j library.
+
+    .. note::
+
+        ZooKeeper has been upgraded to a new minor version of version 3.6 as part of the Kafka upgrade.
+
+Lineage V3 is Default
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From this release, Lineage V3 becomes the default Lineage service in Alation:
+
+    - New installations of Alation version 2022.4 have Lineage V3 enabled by default (**alation_conf** parameter ``lineage-service.enabled`` is set to ``True`` by default).
+    - The upgrade to 2022.4 does not automatically enable Lineage V3 as this process involves migration of lineage data. Customers currently using Lineage V2 will remain on V2 after the upgrade to 2022.4.
+
+Higher Version of Docker Compose Required for Alation Analytics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From this release, Alation Analytics requires Docker Compose version 1.27.0. If using Alation Analytics, you’ll need to upgrade Docker Compose before upgrading the Alation Analytics application. The steps are included into the upgrade instructions below.
+
+Update of the Source Field for Dataflow Objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On instances that use Lineage V3, additional action is required after the update to 2022.4 to add the Source field to dataflow objects. This action will enable correct filtering by the Source field on Lineage diagrams for dataflow objects created on versions prior to 2022.4. The corresponding step is included into the update instructions below.
+
+Encryption Security Fix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Version 2022.4.2 includes a security fix that removes a risk identified in the current encryption mechanism. Information about this risk is available in `November 3, 2022 - Encryption Key Reuse Security Advisory <https://community.alation.com/askalationexpertsmicrosite/viewdocument/november-3-2022-encryption-key-r?CommunityKey=ae45134b-412a-4cff-bb26-1e9f3caa2f60>`_  available on Alation Community (requires Community login). On customer-managed instances, additional action is required after the update as existing data needs to be re-encrypted. The step to perform re-encryption is included in the update instructions below.
+
+
+Update Alation to 2022.4
+------------------------------------
+
+Use the steps in this section to update Alation to 2022.4.x from 2022.3.x, 2022.2.x, and 2022.1.x.
+
+    .. note::
+
+        If you are updating from releases 2022.1.x or 2022.2.x and skipping releases 2022.2.x and 2022.3.x, review the information specific to the releases you skip in the corresponding release notes.
+
+            - :doc:`/releases/releasenotes/ReleaseNotes20223`
+            - :doc:`/releases/releasenotes/ReleaseNotes20222`
+
+Step 1: Scan Postgres
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateScanPostgres.rst
+
+Step 2: Update the Alation Application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateAlation.rst
+
+Step 3: Update Alation Analytics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you are using the Alation Analytics application. To update:
+
+1. On the Alation Analytics host, check your Docker Compose version.
+
+    .. code-block:: Bash
+
+        docker-compose version
+
+    If you are on version below 1.27.0, upgrade Docker Compose. If you already are on version 1.27.0 or newer, you can proceed to upgrading Alation Analytics.
+
+2. To upgrade Docker Compose:
+
+    .. code-block:: Bash
+
+        sudo curl -SL "https://github.com/docker/compose/releases/download/1.27.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+        sudo chmod +x /usr/local/bin/docker-compose
+
+        sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+3. Use the steps in :doc:`/installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2` to update Alation Analytics.
+
+    .. note::
+
+        The Alation Analytics installer will quit automatically with the message below if Docker Compose version is older than 1.27.0 and requires an update.
+
+        .. code-block:: Bash
+
+            [ ✖ Failed  ] Checking docker-compose Version.
+            Failure Reason => You need to have
+            at least docker-compose version 1.27 or higher to continue
+
+
+Step 4: Update Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you are using Open Connector Framework (OCF) and OCF connectors.
+
+.. include:: ../../shared/UpdateACM.rst
+
+Step 5: De-duplicate Mixed Case Usernames
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you have updated Alation from version **2022.1.x or 2022.2.x** skipping release 2022.3.
+
+.. include:: ../../shared/UpdateDeduplicateUsernames.rst
+
+Step 6: Run Script to Update Source Field for Dataflow Objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if:
+
+    - You began using Lineage V3 on a previous version before updating to 2022.4. If you are still using Lineage V2, you don't need to perform this step.
+
+In order to enable correct filtering of dataflow objects on Lineage diagrams using the Source filter, Alation provides a script that populates the Source field for dataflow objects created on previous versions. The script does not require a downtime or affect user activity in the catalog. You can run it any time after the update to 2022.4. For detailed information on how to run this script, refer to :doc:`/installconfig/Update/UpdateSourceForDataflows`.
+
+Step 7: Perform Re-encryption
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you updated Alation from a previous version where the encryption security fix was not available. If you already performed re-encryption on a previous version, there is no need to do it again and you can skip this step.
+
+After the update to 2022.4.2 or a later version of 2022.4, the existing data on your updated instance needs to be re-encrypted. Re-encryption will run as a background process and no separate downtime is required. Users can work in Alation while the re-encryption job is in progress. For re-encryption steps, refer to :doc:`/installconfig/Update/ReencryptData`.

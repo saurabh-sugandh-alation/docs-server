@@ -1,0 +1,171 @@
+Use Terraform to Set Up Inventory and Incremental MDE
+=========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Alation can provide a Terraform script that can be used to create the necessary AWS resources such as destination bucket for inventory reports and setting up Lambda function to perform incremental extraction for the Amazon S3 OCF connector. Create a ticket with Alation Support about receiving the Terraform script.
+
+To perform the required configuration for an S3 OCF file system source using Terraform, install `Terraform <https://www.terraform.io/downloads>`_ version 1.0.10 or above. The Terraform script will need some inputs.
+
+Terraform script structure:
+
+.. image:: ../../../_static/S3OCF_18.png
+    :width: 4 in
+    :align: center
+    :class: with-border
+
+The following table provides the description of each file in the script:
+
++----------------------------+---------------------------------------------------------------+
+| **File Name**              | **Purpose**                                                   |
++============================+===============================================================+
+| ReadMe.md                  | This file provides the basic information about the Terraform  |
+|                            | script.                                                       |
++----------------------------+---------------------------------------------------------------+
+| backend.tfvars             | This file will be used to maintain Terraform backend state.   |
++----------------------------+---------------------------------------------------------------+
+| terraform.tfvars           | This file will have the parameters details which needs to be  |
+|                            | provided by the user.                                         |
++----------------------------+---------------------------------------------------------------+
+| source-bucket-list.json    | This file will have the list of buckets in a json format.     |
++----------------------------+---------------------------------------------------------------+
+| lambda/template/alation-s3-| A template file with lambda function definition.              |
+| lambda.tftpl               |                                                               |
++----------------------------+---------------------------------------------------------------+
+| setup-s3-ocf.tf            | Actual script file that will create all the resources.        |
++----------------------------+---------------------------------------------------------------+
+
+Prerequisite
+-------------------
+
+  1. Create a bucket in Amazon S3 to maintain a Terraform state. This bucket will store the Terraform state information remotely so if multiple users are using the same script then it will be consistent.
+
+  2. Create a new user with the following access to run the terraform script:
+
+        - Create bucket, edit/view existing buckets (buckets that are to be cataloged in Alation).
+        - Create an IAM policy and role with the following access:
+
+            - IAMFullAccess
+            - AmazonS3FullAccess
+            - AWSLambda_FullAccess
+
+        - Lambda function
+
+      These permissions are required to create and /or update these entities with the script.
+
+  3. Update the **backend.tfvars** file with the following information:
+
+    .. tabularcolumns:: |p{3cm}|p{7cm}|p{5cm}|
+
+    +---------------------+---------------------------------------+------------------------------------------------+
+    | Variable name       | Sample value                          | Description                                    |
+    +=====================+=======================================+================================================+
+    | ``bucket``          | ``terraform-state-management-bucket`` | The bucket that was created to store the       |
+    |                     |                                       | Terraform state                                |
+    +---------------------+---------------------------------------+------------------------------------------------+
+    | ``key``             | ``tf-state/terraform.tfstate``        | Terraform state will be stored in this key. It |
+    |                     |                                       | is not recommended to change the key if it is  |
+    |                     |                                       | not required.                                  |
+    +---------------------+---------------------------------------+------------------------------------------------+
+    | ``region``          | ``us-east-1``                         | AWS region                                     |
+    +---------------------+---------------------------------------+------------------------------------------------+
+    | ``access_key``      | ``XXXXX``                             | AWS Access Key of the user created for         |
+    |                     |                                       | Terraform.                                     |
+    +---------------------+---------------------------------------+------------------------------------------------+
+    | ``secret_key``      | ``XXXXX``                             | AWS Access Secret Key                          |
+    +---------------------+---------------------------------------+------------------------------------------------+
+
+   4. Update the **terraform.tfvars** file with below information:
+
+    .. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
+    +---------------------------------+--------------------------------+------------------------------------------------+
+    | Variable name                   | Sample value                   | Description                                    |
+    +=================================+================================+================================================+
+    | ``aws_access_key``              | ``XXXXX``                      | AWS Access Key of the user created for         |
+    |                                 |                                | Terraform.                                     |
+    +---------------------------------+--------------------------------+------------------------------------------------+
+    | ``aws_secret_key``              | ``XXXXX``                      | AWS Access Secret Key                          |
+    +---------------------------------+--------------------------------+------------------------------------------------+
+    | ``aws_region``                  | ``us-east-1``                  | AWS region                                     |
+    +---------------------------------+--------------------------------+------------------------------------------------+
+    | ``target_bucket_for_inventory`` | ``alation-destination-bucket`` | Provide a unique name for the destination      |
+    |                                 |                                | bucket.                                        |
+    |                                 |                                | A destination bucket where inventory and       |
+    |                                 |                                | incremental data will be stored. This bucket   |
+    |                                 |                                | will be created by the Terraform script.       |
+    +---------------------------------+--------------------------------+------------------------------------------------+
+    | ``incremental_sync``            | ``true / false``               | **True** - Set as true if you want to use the  |
+    |                                 |                                | incremental sync feature. If set as true, then |
+    |                                 |                                | the script will create a lambda function and   |
+    |                                 |                                | its related resources.                         |
+    |                                 |                                |                                                |
+    |                                 |                                | **False** - Set as false if you don’t want to  |
+    |                                 |                                | use the incremental sync feature. If set as    |
+    |                                 |                                | false, then the script will create only the    |
+    |                                 |                                | inventory configuration.                       |
+    +---------------------------------+--------------------------------+------------------------------------------------+
+    | ``lambda_function_name``        | ``alation-s3-lambda-function`` | Provide a unique name for the destination      |
+    |                                 |                                | bucket. This is applicable only if the         |
+    |                                 |                                | incremental_sync is set to true.               |
+    +---------------------------------+--------------------------------+------------------------------------------------+
+
+    The following optional variables can be added in the terraform.tfvars file if required.
+
+    .. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
+    +-------------------------+-----------------------+------------------------------------------------+
+    | Variable name           | Sample value          | Description                                    |
+    +=========================+=======================+================================================+
+    | ``inventory_frequency`` | ``Daily``             | If you want to change the inventory frequency  |
+    |                         |                       | then you can change it to Weekly. Make sure    |
+    |                         |                       | that the frequery match with the metadata      |
+    |                         |                       | extraction schedule.                           |
+    +-------------------------+-----------------------+------------------------------------------------+
+    | ``inventory_enablement``| ``false``             | Set this to false if you want to disable       |
+    |                         |                       | inventory.                                     |
+    +-------------------------+-----------------------+------------------------------------------------+
+
+   5. Update the **source-bucket-list.json** file with a list of buckets. The buckets that are added to this file must exist in Amazon S3.
+
+      Example:
+
+      .. code-block:: json
+
+              [
+                "bucket-1",
+                "bucket-2"
+              ]
+
+Execute the Terraform Script
+-------------------------------
+
+Sequentially execute the following commands:
+
+    - ``terraform init --backend-config=backend.tfvars``
+    - ``terraform apply -auto-approve``
+
+  .. note::
+
+        To review the changes made by the Terraform script, execute terraform plan before terraform apply -auto-approve.
+
+The following table provides the purpose of optional commands that can be executed only if required:
+
++----------------------------------+-----------------------------------------------------------------+
+| **Command**                      | **Purpose**                                                     |
++==================================+=================================================================+
+| terraform destroy -auto-approve  | To remove all the resources created using Terraform script.     |
++----------------------------------+-----------------------------------------------------------------+
+| terraform apply -auto-approve    | To add/remove a new bucket, update the                          |
+|                                  | ``source-bucket-list.json file`` and add/remove the bucket, then|
+|                                  | execute this command.                                           |
++----------------------------------+-----------------------------------------------------------------+
+| terraform apply -auto-approve    | To add a new bucket, update the ``source-bucket-list.json file``|
+|                                  | and add the bucket, then execute this command.                  |
++----------------------------------+-----------------------------------------------------------------+
+| terraform apply -refresh-only    | If a bucket is deleted from Amazon S3 and still present in      |
+| -auto-approve                    | ``source-bucket-list.json`` file:                               |
+| terraform apply -auto-approve    |                                                                 |
+|                                  |     - Remove the bucket from ``source-bucket-list.json`` file   |
+|                                  |     - Execute this command to keep Terraform script in sync     |
++----------------------------------+-----------------------------------------------------------------+

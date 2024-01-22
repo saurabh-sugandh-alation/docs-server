@@ -1,0 +1,81 @@
+Fix Job Schedules after 2022.3 Upgrade
+======================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+In the 2022.3 release, we unified our use of time zones on the Alation server. We made UTC the default server time zone and adjusted various schedules so they would continue to run at the same time. Unfortunately, we failed to adjust the schedule for some jobs, causing them to run eight hours earlier than they should. This affected the schedule for:
+
+-  Metadata extraction (MDE)
+-  Query log ingestion (QLI)
+-  Profiling
+
+Determine If You Were Affected
+------------------------------
+
+To determine if you were affected by this issue, check the schedule for MDE, QLI, and profiling on your data sources. If they appear to be scheduled eight hours sooner than you would expect, you may be affected.
+
+How To Fix the Problem
+----------------------
+
+If you’re an Alation Cloud Service customer and you know you were affected by this issue contact Support to request the fix.
+
+If you’re using an on-premises instance of Alation and you were affected, you can fix the issue in several ways:
+
+-  Alation 2023.1.4 contains a built-in script that can be run to fix the issue.
+-  For earlier versions of Alation, contact Alation Support to get a copy of the script, as it isn’t available in the installation directory yet.
+-  Update the schedules manually. This can be a good solution if you only have a few schedules to change.
+
+Run the Script
+--------------
+
+If you’ve already fixed your schedules manually, there is no need to run the script. The script will shift the affected schedules eight hours later, back to their original time. You can run the script at any time after upgrading to 2022.3 or later.
+
+To run the job schedule fix in 2023.1.4 for on-premises instances of Alation:
+
+.. include:: /shared/AccessingAlationShell.rst
+
+#. Make a backup of the Alation database. See :doc:`Create Backups Manually </installconfig/BackupandRestore/CreateBackupsManually>` for help making a backup.
+
+#. Change into the Django directory:
+
+   .. code:: bash
+
+      cd /opt/alation/django
+
+#. Enter the Django shell:
+
+   .. code:: bash
+
+      python manage.py shell
+
+#. Run the following statement:
+
+   .. code:: bash
+
+      from rosemeta.one_off_scripts.update_job_timezones_utc import *; main()
+
+   When the script has run successfully, the number of schedules that were updated will be printed to the console like this:
+
+   .. code:: bash
+
+      Updating 3 schedules.
+
+   If no schedules needed to be updated because they were already correct, the script will say zero schedules were updated.
+
+   .. code:: bash
+
+      Updating 0 schedules.
+
+   If the script produces errors, contact Alation Support.
+
+#. When you are done, exit the Django shell:
+
+   .. code:: bash
+
+      exit
+
+#. Exit the Alation shell:
+
+   .. code:: bash
+
+      exit

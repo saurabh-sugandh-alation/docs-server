@@ -1,0 +1,92 @@
+Configure Authentication with SAML from Admin Settings
+========================================================
+*Available from version 2021.4*
+
+Alation supports SAML authentication, and your data catalog can be one of the applications accessed using single sign-on (SSO). With SSO, users are logged in into their SSO provider application in order to access multiple authorized apps.
+
+Prerequisite
+---------------
+
+- Your company uses corporate authentication using either a native SAML server or a third party SAML Identity Provider (IdP) service, such as Okta, OneLogin, or other.
+
+    .. note::
+
+        *From version 2021.3*
+
+        Alation supports automatic group management using SCIM 2.0 APIs. If you are going to manage groups via the IdP, you will need to configure SCIM in addition to SAML in both your IdP and Alation.
+
+
+1. Log in to Alation as a Server Admin.
+
+2. On the upper right, click the **Settings** icons to open the **Admin Settings** page.
+
+3. Go to **Server Admin** > **Authentication**.
+
+4. Select **Edit** for the SAML authentication method.
+
+.. image:: /_static/SAML_settings.png
+
+5. Follow the steps applicable to your IdP configuration and click the **Save** button.
+
+.. image:: /_static/SAML_save.png
+
+6. To activate the SAML configuration that was just set up, on the **Auth** tab, select the **Activate** button on the row for SAML.
+
+.. image:: /_static/SAML_activate.png
+
+7. A confirmation dialog will appear. Click the **Confirm** button to commit the configuration change.
+
+.. image:: /_static/SAML_confirm.png
+
+8. Validate the configuration changes made perform as expected. Visit your Alation server in the browser of your choice and ensure that:
+    -  You are redirected to your IdP login page correctly
+    -  After you authenticate with your IdP (log in using the corporate username and password), you are then redirected to Alation, and logged in.
+
+Debugging SAML Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    When you are configuring SAML, you may find it useful for additional debugging information to be made available. This can be completed from within the Alation shell.
+
+    You can use the following command on the host server - from inside the Alation shell by a user with sudo permissions.
+
+    .. important::
+
+        Changing the logging level requires a restart of the Alation server. Alation recommends to perform this configuration at a time when users are the least active in the Catalog. A restart will cause the Alation user interface to reload and users may lose their unsaved work.
+
+    Setting the value:
+
+        1.  Use SSH to connect to the Alation server.
+
+        2.  Enter the Alation shell:
+
+            .. code-block:: Bash
+
+                sudo /etc/init.d/alation shell
+
+        3.  Set the parameter for SAML debugging:
+
+            .. code-block:: Bash
+
+                alation_conf alation.authentication.saml.debug -s 1
+
+        4.  Restart the Web service:
+
+            .. code-block:: Bash
+
+                alation_supervisor restart web:*
+
+        5.  Exit the Alation shell:
+
+            .. code-block:: Bash
+
+                exit
+
+    Setting the value to 1 enables additional SAML debug-level messages to be added to the alation-* log files for analysis and debugging. To revert to default logging of info-level only messages added to the alation-* log files, set this parameter to 0 and restart the Web service.
+
+.. note::
+
+    Parameters such as the following remain available for configuration in the Alation shell, but are currently unavailable in the **Auth** tab in the user interface.
+
+    ``alation.authentication.saml.entity_id`` - SAML IDP provider's entity ID
+
+    ``alation.authentication.saml.debug`` - Enables SAML debugging

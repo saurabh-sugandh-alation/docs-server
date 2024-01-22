@@ -1,0 +1,193 @@
+Metadata Extraction
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Metadata extraction (MDE) allows the metadata in an Alation data source
+to stay in sync with the actual data found in the source. Metadata
+extraction can be run manually or by scheduling a periodic job based on
+your organization’s needs and usage.
+
+The **Metadata Extraction** tab of the data source **Settings** page is
+where you can specify schemas to include or exclude during metadata
+extraction.
+
+MDE is one of the initial steps in building out your catalog: perform
+MDE after adding your data source to Alation. After running MDE for the
+first time, you can schedule this process to run automatically
+to keep your Alation catalog up-to-date.
+
+For details on scheduling, see `Scheduling MDE`_.
+
+.. note::
+
+     MDE from large datasets may consume resources on the database.
+     Alation recommends you should consult with your DBA about the best
+     time to perform MDE on a specific database to minimize impact
+     on its performance.
+
+To perform MDE on your data source,
+
+1. Open the catalog page of the data source for which you want to run MDE.
+2. In the upper-right corner of the data source page, click **More...** then **Settings** to open the settings:
+
+  .. image:: ../../_static/Screen_Shot_2019-11-08_at_10.52.18_AM.png
+        :width: 3.0in
+        :align: center
+
+3. Click the **Metadata Extraction** tab to open it. If this is initial MDE, click the **Fetch from DB Now!** button to fetch the schemas from your database. This action fetches the list of available schemas:
+
+  .. image:: ../../_static/MDE_1.png
+      :width: 5.5in
+      :align: center
+
+After the schemas are fetched, you can configure `Selective Extraction`_ or extract all
+schemas. Specify the schemas to extract and click **Launch Job** to
+start MDE.
+
+Selective Extraction
+--------------------
+
+Before triggering MDE, specify which schemas should be extracted and how
+the next extraction should treat the previously extracted schemas which
+are already in the catalog.
+
+There are two sets of controls under Selective Extraction section:
+
+-  Checkbox **Remove schemas from the catalog that are not captured by
+   the lists below**  
+-  Lists **Schemas** and **…excluding**
+
+.. image:: ../../_static/MDE_4.png
+    :width: 5.5in
+    :align: center
+
+Remove schemas from the catalog that are not captured by the lists below
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The  **Remove schemas...** checkbox "looks back" on what is already in the
+catalog. It does not affect loading metadata for the
+first time, but if there are some schemas already in the catalog, you
+can remove them during the next MDE if you select the **Remove schemas…**
+checkbox and make sure these schemas are not present in the **Schemas** or
+**...excluding** lists.
+
+You can:
+
+-  Select this checkbox to remove previously extracted schemas. The
+   schemas to be removed should *not appear* in the **Schemas** and
+   **…excluding** lists.
+-  Leave this checkbox clear if you want to leave the previously
+   extracted schemas in the catalog. MDE will use the **Schemas** or
+   **…excluding** lists during the next extraction, but will not touch
+   the schemas that have not been specified in these fields.
+
+Schemas  and "…excluding"
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default Alation extracts all the schemas it can fetch from a data source.
+
+To extract metadata selectively, use the **Schemas** and
+**…excluding** fields to specify which schemas you want to extract.
+
+The **Schemas** and **…excluding** lists are mutually exclusive: you
+can either specify one or the other, but not both together. This means
+you can configure selective extraction either by selecting schemas to be
+included or by specifying schemas to be excluded.
+
+Schemas
+^^^^^^^^^^^
+
+To view all the fetched schemas, click the down arrow icon next to **Schemas**. **All Schemas** info-box will open. It lists all schemas Alation fetched from the data source:
+
+.. image:: ../../_static/MDE_2.png
+    :width: 5.5in
+    :align: center
+
+To select specific schemas, click the **Schemas** field then, from the
+list that opens, select the schemas to be extracted. When you
+change the **Schemas** list, the **...excluding** list will become
+disabled because these lists are mutually exclusive. When you specify
+schemas in the **Schemas** field, the MDE job you run based on these
+settings will extract only the schemas you have specified in this list:
+
+.. image:: ../../_static/MDE_5.png
+    :width: 5.5in
+    :align: center
+
+...excluding
+^^^^^^^^^^^^^^^^
+
+Alternatively, in the **...excluding** list, select the schemas you do
+not want to extract into the catalog. You can only change this
+list if the **Schemas** list is blank because they are interchangeable. When
+you specify schemas to be excluded in the **...excluding** field, the
+Schemas field becomes disabled. The MDE job you run based on the
+exclusion settings will extract all schemas except the ones specified in
+the **...excluding list**.
+
+To select specific schemas to be excluded, click the
+**...excluding** field then select the schemas to be extracted
+from the schema list:
+
+.. image:: ../../_static/MDE_6.png 
+    :width: 5.5in
+    :align: center
+
+Example
+~~~~~~~
+
+For example, the following setting will remove all the previously
+extracted schemas from the catalog and will only extract the one schema
+specified in Schemas :
+
+.. image:: ../../_static/MDE_7.png
+    :width: 5.5in
+    :align: center
+
+Scheduling MDE
+--------------
+
+A scheduled automatic MDE job will extract the most up-to-date metadata
+based on the schedule you define. By default, scheduled automatic
+extraction is disabled.
+
+To enable scheduled extraction, 
+
+1. On the **Metadata Extraction** tab, find the **Automated Extraction** section.
+2. Clear the **Disable automatic extraction** checkbox. This will reveal the time settings:
+
+  .. image:: ../../_static/MDE_8.png
+      :width: 5.5in
+      :align: center
+
+3. Specify the schedule for MDE using the time controls. After you have scheduled MDE, it will run automatically in the background, based on the schedule you have set.
+
+.. note::
+
+     Time is displayed according to the local time zone (as
+     determined by your browser/operating system) but stored on the
+     Alation server subject to the Daylight Savings Time policies in
+     effect for most of North America (the United States, Canada, and a
+     number of island nations).
+
+     Implications:
+
+     On the *second Sunday in March*, the server clock will be advanced by one hour.
+
+     On the *first Sunday in November*, the server clock will be
+     reverted by one hour.
+
+Launching MDE
+-------------
+
+To manually launch MDE, click **Relaunch Job** under the **Selective
+Extraction** section:
+
+.. image:: ../../_static/MDE_9.png
+    :width: 5.5in
+    :align: center
+
+You can monitor the job status
+(from *Started* to *Ingesting* to *Succeeded* (or *Failed* ) in
+the Job History table. Click **Refresh** to display the most recent state. 

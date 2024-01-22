@@ -1,0 +1,45 @@
+Shared Queries
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+Lists queries (ID, URL) that are shared with other users. The
+``query_text_shared_with`` field has a list of ``user_id`` s who have
+been shared the query.
+
+.. note::
+
+    Queries may are deleted, and even if they were, they would
+    be shown as a result of this query.
+
+.. code-block:: sql
+
+    SELECT
+      ofv.object_uuid,
+      ofv.object_type_id,
+      ao.object_url,
+      integer_array_value as query_text_shared_with
+    FROM
+      public.object_field_value ofv
+      INNER JOIN public.field_value fv USING (value_fp)
+      LEFT JOIN public.alation_object ao USING (object_uuid, object_type_id)
+    WHERE
+      object_type_id = (
+        select
+          object_type_id
+        from
+          public.alation_object_type
+        where
+          object_type_name = 'query'
+      )
+      AND field_id = (
+        select
+          field_id
+        from
+          public.object_field
+        where
+          field_name = 'query_text_shared_with'
+      )
+      AND fv.integer_array_value != '{}';

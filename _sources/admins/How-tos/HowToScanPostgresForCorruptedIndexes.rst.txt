@@ -1,0 +1,140 @@
+How to Scan Postgres For Corrupted Indexes
+======================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from release 2020.4*
+
+Alation provides a tool to scan the internal Alation server database (Postgres) for corrupted indexes. It is recommended to scan Postgres once a week and review the results. The Postgres scan action writes logs to the **scan-postgres.log** file that can be found in:
+
+    - *Versions before 2021.2.x*
+
+          **/var/log** (path inside the Alation shell)
+
+
+    - *Versions 2021.2 and newer*
+
+          **/opt/alation/site/logs** (path inside the Alation shell)
+
+The Postgres scan is not expected to have any impact on the performance of the Alation server or to result in an increase of CPU or memory utilization.
+
+The Postgres scan should be run from the Alation shell. You can either run it manually on demand or schedule it to run automatically.
+
+To scan Postgres,
+
+1. Enter the shell on the Alation host:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+
+2. You can run either a default or a full scan. The default scan is usually enough to validate the Postgres health status. A default scan performs an index scan and a scan for frozen rows.
+
+    .. note::
+
+        According to measurements taken at Alation, the default scan takes about 54 min for 576 GB of data, while the full scan takes about 1hr 17 min for 576 GB of data.
+
+    To run a default Postgres scan:
+
+        .. code-block:: Bash
+
+            # change user to alation:
+
+            sudo su alation
+
+            # scan postgres
+
+            alation_action scan_postgres
+
+
+    If Postgres is healthy and there are no corrupted indexed, the scan will complete without any "ERROR" messages.
+    If the scan finds any corrupted indexes, it will issue errors to the console:
+
+    .. image:: ../../_static/PostgresScan_01.png
+        :width: 500px
+
+
+3. You can enable a full Postgres scan using the **alation_conf** command. In addition to the index and frozen rows scans, the full scan checks invariants that span parent/child index relationships and the number of rows with the index scan disabled. The full scan is more time-consuming when compared to the default scan. It is recommended to run a full scan if the default scan results in errors in order to get more detailed logs.
+
+    To enable the full Postgres scan, run the command given below from the Alation shell. No restart is required:
+
+    .. code-block:: Bash
+
+        alation_conf alation.postgresql.full_scan -s True
+
+    When the full scan is enabled, use the same command ``alation_action scan_postgres``  to perform a full scan.
+
+    .. code-block:: Bash
+
+        # change user to alation
+
+        sudo su alation
+
+        # scan postgres
+
+        alation_action scan_postgres
+
+
+Details of the scan can be found in the **scan-postgres.log** file.
+
+Starting in 2022.1, you can get email alerts when the Postgres scan finds problems. To turn on the alerts, see :ref:`Enabling Admin Alerts`. To add or remove the Postgres scan from the list of alerts, see :ref:`Configuring Which Alerts to Get`. Before 2022.1, the Postgres scan action did not issue any email alerts to Alation admins. The admin had to either monitor the console output or review the logs to evaluate the state of Postgres.
+
+.. important::
+
+    If the Postgres scan results in errors, contact Alation Support to resolve the Postgres issues.
+
+Schedule the Postgres Scan
+----------------------------
+
+You can schedule the Postgres scan on your instance using the **alation_conf** command and the parameters described below. Depending on the current value of the parameter ``alation.postgresql.full_scan`` (True or False), you can schedule a default or full scan:
+
++---------------------------------------------------+-----------------------------------------------------+
+| Parameter                                         | Description                                         |
++===================================================+=====================================================+
+| ``alation.postgresql.auto_scan``                  | - Use to schedule the Postgres scan                 |
+|                                                   |                                                     |
+|                                                   | - Default value: ``False``                          |
+|                                                   |                                                     |
+|                                                   | - Set to ``True`` to enable the schedule            |
+|                                                   |                                                     |
+|                                                   | - Requires the restart of celery-beat               |
++---------------------------------------------------+-----------------------------------------------------+
+| ``alation.postgresql.auto_scan.scheduled_hour``   | - The hour value to start the automated scan        |
+|                                                   |                                                     |
+|                                                   | - Accepts values from **0** to **23**.              |
+|                                                   |                                                     |
+|                                                   | - Default value: **4**                              |
+|                                                   |                                                     |
+|                                                   | - Requires the restart of celery-beat               |
++---------------------------------------------------+-----------------------------------------------------+
+| ``alation.postgresql.auto_scan.scheduled_minute`` | - The minutes value to start the automated scan     |
+|                                                   |                                                     |
+|                                                   | - Accepts values from **0** to **59**.              |
+|                                                   |                                                     |
+|                                                   | - Default value: **0**                              |
+|                                                   |                                                     |
+|                                                   | - Requires the restart of celery-beat               |
++---------------------------------------------------+-----------------------------------------------------+
+| ``alation.postgresql.auto_scan.scheduled_day``    | - The day value to start the automated scan         |
+|                                                   |                                                     |
+|                                                   | - Default value: **sun,mon,tue,wed,thu,fri,sat**    |
+|                                                   |                                                     |
+|                                                   | - Requires the restart of celery-beat               |
++---------------------------------------------------+-----------------------------------------------------+
+
+To restart celery-beat, from the Alation shell, run:
+
+    .. code-block:: Bash
+
+        alation_supervisor restart celery:celery-beat
+
+For example, to schedule the Postgres scan to run at 12:30 am every Saturday, do:
+
+    .. code-block:: Bash
+
+        alation_conf alation.postgresql.scheduled_hour -s 0
+        alation_conf alation.postgresql.scheduled_minute -s 30
+        alation_conf alation.postgresql.scheduled_day -s sat
+        alation_conf alation.postgresql.auto_scan -s True
+        alation_supervisor restart celery:celery-beat

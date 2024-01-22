@@ -1,0 +1,239 @@
+PostgreSQL Connector: Install and Configure
+====================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Prerequisites
+---------------------
+
+Network Connectivity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Open outbound TCP port **5432** to PostgreSQL server.
+
+
+Create Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sample SQL to create an account
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+      CREATE USER alation WITH PASSWORD '[password]';
+
+Permissions for Metadata Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  .. code-block:: sql
+
+        GRANT USAGE ON SCHEMA PG_CATALOG TO alation;
+        GRANT SELECT ON ALL TABLES IN SCHEMA PG_CATALOG TO alation;
+
+Permissions for Table Profiling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+        GRANT USAGE ON SCHEMA [schema] TO alation;
+        GRANT SELECT ON ALL TABLES IN SCHEMA [schema] TO alation;
+
+JDBC URI
+~~~~~~~~~~~~~~~~
+
+When building the URI, include the following components:
+
+    - Hostname or IP of the instance
+    - Port number
+    - Database name
+
+**URI format:**
+
+.. code-block:: Bash
+
+      postgresql://<Host>:<Port>/<Database_Name>
+
+**Example:**
+
+.. code-block:: Bash
+
+      postgresql://ifac-pgsql.ceyrldata.us-west-2.amazonaws.com:5432/postgres
+
+
+Configuration in Alation
+-----------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New PostgreSQL Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **PostgreSQL OCF Connector**.
+
+  .. image:: ../../../_static/PostgreSQLOCF_01.png
+      :width: 350px
+      :class: with-border
+
+Access
+----------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+-----------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab:
+
+  1. Specify **Application Settings**:
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Description**                                               |
+      +============================+===============================================================+
+      | BI Connection Info         | Not applicable                                                |
+      +----------------------------+---------------------------------------------------------------+
+
+  2. Click **Save**.
+
+  3. Specify **Connector Settings**:
+
+      .. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Description**                                               |
+      +============================+===============================================================+
+      |                     **Data Source Connection**                                             |
+      +----------------------------+---------------------------------------------------------------+
+      | JDBC URI                   | Provide the JDBC URI constructed in `JDBC URI`_.              |
+      +----------------------------+---------------------------------------------------------------+
+      | Username                   | Provide the service account username.                         |
+      +----------------------------+---------------------------------------------------------------+
+      | Password                   | Provide the service account password.                         |
+      +----------------------------+---------------------------------------------------------------+
+      | Enable Kerberos            | Enable or disable Kerberos authentication by selecting or     |
+      | Authentication             | clearing the **Enable Kerberos Authentication** checkbox.     |
+      |                            |                                                               |
+      |                            | If the Kerberos Authentication checkbox is enabled, upload    |
+      |                            | the **krb5.conf** file using the upload link below.           |
+      +----------------------------+---------------------------------------------------------------+
+      | Keytab                     | Not applicable                                                |
+      +----------------------------+---------------------------------------------------------------+
+      | SSL Certificate            | Select the **Enable SSL** checkbox to enable SSL connection   |
+      |                            | for PostgreSQL EC2 and PostgreSQL Enterprise.                 |
+      |                            |                                                               |
+      |                            | If the **Enable SSL** checkbox is selected, upload the SSL    |
+      |                            | certificate using the upload link below.                      |
+      +----------------------------+---------------------------------------------------------------+
+      | Use pem file for SSL       | Select the **Use pem file for SSL** checkbox to enable SSL    |
+      |                            | connection for PostgreSQL RDS.                                |
+      |                            |                                                               |
+      |                            | If the **Use pem file for SSL** checkbox is selected, upload  |
+      |                            | the pem file using the upload link below.                     |
+      +----------------------------+---------------------------------------------------------------+
+      | Truststore Password        | Provide the password for the SSL certificate.                 |
+      |                            |                                                               |
+      |                            | The password will be deleted if the data source               |
+      |                            | connection is deleted.                                        |
+      +----------------------------+---------------------------------------------------------------+
+      |                     **Logging Information**                                                |
+      +----------------------------+---------------------------------------------------------------+
+      | Log Level                  | Select the Log Level to generate logs. The available log      |
+      |                            | levels are based on the Log4j framework.                      |
+      +----------------------------+---------------------------------------------------------------+
+
+  4. Click **Save**.
+
+  5. **Obfuscate Literals** - Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+  6. Under **Test Connection**, click **Test** to validate network connectivity.
+
+      .. image:: ../../../_static/PostgreSQLOCF_02.png
+          :width: 600px
+          :class: with-border
+
+Add-On OCF Connector for dbt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddonDBTConnector.rst
+
+Metadata Extraction
+---------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+The default queries that the connector uses to extract metadata can be found in :doc:`/sources/OpenConnectorFramework/PostgreSQLOCFConnector/ExtractionQueriesforPostgreSQL`. You can customize these queries to adjust the extraction to your needs.
+
+
+Compose
+-----------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+    .. image:: ../../../_static/PostgreSQLOCF_03.png
+        :width: 600px
+        :class: with-border
+
+    .. note::
+
+        OAuth connection is not supported for this data source.
+
+Data Sampling
+-------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Query Log Ingestion
+-------------------------
+
+You can either create a view for Alation to retrieve the query log from or use a custom query to return the logs from the PostgreSQL data source.
+
+.. note::
+
+  Alation does not support query log ingestion (QLI) with the **PGAUDIT** extension. 
+
+Alation supports the following PostgreSQL deployment: Amazon EC2, Amazon RDS, and EDB Postgres Server.
+
+  - To configure QLI for PostgreSQL on Amazon EC2, EDB Postgres Server (PostgreSQL Enterprise), or a generic on-premise instance, see :doc:`/sources/OpenConnectorFramework/PostgreSQLOCFConnector/PostgreSQLConnectorEC2andEnterpriseQLI`.
+
+  - To configure QLI for PostgreSQL on Amazon RDS, :doc:`/sources/OpenConnectorFramework/PostgreSQLOCFConnector/PostgreSQLConnectorRDSQLI`.
+
+
+Native to OCF Migration
+-------------------------
+
+For information on migrating PostgreSQL sources to OCF connectors, see :doc:`Migrate Native File System Sources to OCF <../../../sources/OpenConnectorFramework/MigrateNativeSourcestoOCF/MigrateNativeDataSourcestoOCFConnector>`.
+
+Configure QLI Post Migration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you already have a view to pull queries into Alation, after migration, follow the steps in `Configure View-Based QLI`_ or `Configure Custom Query-Based QLI`_. If you do not have a view to use, :doc:`configure QLI for PostgreSQL On Amazon EC2 and Enterprise <../../../sources/OpenConnectorFramework/PostgreSQLOCFConnector/PostgreSQLConnectorEC2andEnterpriseQLI>` or :doc:`configure QLI on RDS <../../../sources/OpenConnectorFramework/PostgreSQLOCFConnector/PostgreSQLConnectorRDSQLI>`.
+
+Configure View-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, select **Use Native QLI Table Name**. In the **Table Name** field, provide the view name.
+
+3. Click **Save**.
+
+    .. image:: ../../../_static/PostgresSQL_QLI.png
+        :width: 5.5in
+        :align: center
+
+Configure Custom Query-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See the Custom Query-Based QLI section of :doc:`/sources/OpenConnectorFramework/PostgreSQLOCFConnector/PostgreSQLConnectorRDSQLI`
+
+
+Troubleshooting
+-----------------
+
+Refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.

@@ -1,0 +1,163 @@
+Azure Power BI Scanner OCF Connector: Overview
+==================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The Azure Power BI Scanner OCF connector should be used to catalog Power BI as a BI source in Alation. The connector catalogs Power BI objects such as workspaces, apps, dashboards, tiles, datasets, and reports. It enables end users to search and find Power BI objects from the Alation user interface.
+
+.. note::
+
+    The latest available version of the connector (**2.0.1**) is compatible with Alation version **2022.4**. Newer connector versions require newer Alation versions:
+
+        - Version **2.1.0** (compatible with Alation version **2023.3.2**)—Supports Lineage for Unity Catalog Databricks, Azure SQL and Azure Synapse.
+
+
+To download the Azure Power BI Scanner OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+Team
+---------------
+
+The following administrators are required to install this connector:
+
+- Alation Server Admin:
+
+    - Installs the connector
+    - Creates a Power BI source
+    - Provisions Alation API tokens
+
+- Azure administrator:
+
+    - Creates an application in Azure Cloud
+    - Provisions application ID, Tenant ID, and Secret Key
+    - Provisions a security group and adds the created application to the group
+
+- Power BI administrator:
+
+    - Grants consent to access Power BI Admin APIs under the Power BI tenant settings
+
+Scope
+----------------
+
+The table below shows what features are covered by the connector.
+
+.. tabularcolumns:: |p{5cm}|p{8cm}|p{2cm}|
+
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Feature                                             | Scope                                                                     | Availability  |
++=====================================================+===========================================================================+===============+
+| Power BI Instance                                   | Catalog a Power BI instance that exists in an Azure Cloud environment     | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Pro and Premium                                     | Supports both Pro and Premium instances of Power BI                       | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Workspaces                                          | Catalog workspaces in Power BI                                            | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Classical workspaces                                | Catalog classical workspaces                                              | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Workspace description                               | Extract the description of a workspace                                    | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Filter workspaces                                   | Ability to include or exclude specific workspaces                         | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Power BI reports                                    | Catalog reports in a workspace                                            | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Power BI paginated reports                          | Catalog paginated reports in a workspace                                  | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Large Size Power BI Reports                         | Catalog reports which are in large size                                   | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Power BI reports from different workspace datasets  | Catalog reports that are created from datasets under different workspace  | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Power BI report object data sources                 | Catalog datasets used by report objects                                   | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Paginated report object data sources                | Catalog data source used by a paginated report                            | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Report object lineage                               | Catalog the lineage of a report object                                    | Yes*          |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Power BI dashboards                                 | Catalog dashboards in a workspace                                         | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Power BI dashboard tiles                            | Catalog tiles of the dashboard                                            | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Power BI apps                                       | Catalog Apps from Power BI                                                | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Power BI datasets                                   | Catalog datasets from Power BI                                            | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Power BI dataflows                                  | Catalog dataflows from Power BI                                           | Yes****       |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Datasets without reports                            | Catalog datasets which does not have reports                              | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Datasets with XMLA                                  | Catalog datasets that are managed by XMLA endpoints                       | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Datasets with incremental refresh                   | Catalog datasets with incremental refresh                                 | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Dataset fields                                      | Catalog fields of dataset and DAX expressions of the fields               | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Dataflow fields                                     | Catalog fields of Dataflows                                               | Yes           |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Report pages and  visuals                           | Catalog pages and visuals of a report                                     | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Report object dimensions, measures and  expressions | Catalog dimensions, measures and measure expressions of a report object   | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Report owner                                        | Owners or authors who created a report                                    | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Dashboard object measures and dimensions            | Catalog dimensions and measure of a dashboard object                      | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Image preview                                       | Ability to show a thumbnail image of reports and dashboards               | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Popularity                                          | Popularity of dashboards and reports                                      | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Security replication                                | Replicate access control to reports and dashboards                        | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Filter reports                                      | Ability to include or exclude certain reports                             | No            |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Filter applications                                 | Ability to include or exclude certain applications                        | No**          |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+| Source Description                                  | Extraction of the description from dataset fields                         | Yes***        |
++-----------------------------------------------------+---------------------------------------------------------------------------+---------------+
+
+\* - Report object lineage from Power BI dataset to the underlying datasource is available only if the dataset is created directly from the underlying datasource. Lineage does not work if the dataset is created from Power BI dataflows for Alation versions **2023.3.2 or earlier**.
+Lineage is supported for MySQL, SQL Server, Oracle, Postgres, Azure Databricks, Snowflake, Amazon Redshift, Azure Synapse, Azure SQL DB, Teradata, and Google BigQuery.
+Lineage for Azure Synapse, Azure SQL and Unity Catalog Databricks is supported from connector version **2.1.0**.
+
+\** - Apps cannot be directly selected and filtered. Filtering of apps is done based on the workspaces selected in selective extraction. The apps that belong to the workspaces selected during selective extraction will only be cataloged in Alation.
+
+\*** - Extraction of source description is supported from connector version 1.4.3.
+
+\**** - Lineage for dataflows is supported from Alation version **2023.3.3** onwards.
+
+Power BI Objects Hierarchy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following diagram shows the hierarchy of Power BI objects and how they are cataloged in Alation:
+
+.. image:: ../../../_static/powerb1.png
+    :width: 500px
+    :align: center
+
+Power BI APIs
+~~~~~~~~~~~~~~~~
+
+The following table lists the Power BI APIs used by this connector to extract metadata from Power BI:
+
++----------------------+-----------------+-----------------------------------------------------------------+------------------------------------------------------------------+
+| Type                 | Category        | API Endpoint                                                    | Description                                                      |
++======================+=================+=================================================================+==================================================================+
+| Authentication       | Authentication  | :samp:`https://login.microsoftonline.com/common/oauth2/token`   | Gets the access token for authentication                         |
++----------------------+-----------------+-----------------------------------------------------------------+------------------------------------------------------------------+
+| Workspace            | Admin           | :samp:`https://api.powerbi.com/v1.0/myorg/groups`               | Gets workspaces                                                  |
++----------------------+-----------------+-----------------------------------------------------------------+------------------------------------------------------------------+
+| Apps                 | Admin           | {BaseURL}/v1.0/myorg/admin/apps                                 | Gets Apps using Admin API                                        |
++----------------------+-----------------+-----------------------------------------------------------------+------------------------------------------------------------------+
+| Modified Workspaces  | Scanner         | {BaseURL}/v1.0/myorg/admin/workspaces/modified                  | Gets the list of modified Workspace IDs                          |
++----------------------+-----------------+-----------------------------------------------------------------+------------------------------------------------------------------+
+| Scan Request         | Scanner         | {BaseURL}/v1.0/myorg/admin/workspaces/getinfo                   | Gets the "scan id" required to get “scan status"                 |
+|                      |                 | ?lineage=True&datasourceDetails=true                            |                                                                  |
+|                      |                 | &datasetSchema=true&datasetExpressions=true                     |                                                                  |
++----------------------+-----------------+-----------------------------------------------------------------+------------------------------------------------------------------+
+| Scan Status          | Scanner         | {BaseURL}/v1.0/myorg/admin/workspaces/scanStatus/{scan_id}      | Gets scan status for posted workspace IDs                        |
++----------------------+-----------------+-----------------------------------------------------------------+------------------------------------------------------------------+
+| Scan Result          | Scanner         | {BaseURL}/v1.0/myorg/admin/workspaces/scanResult/{scan_id}      | If Scan status is “Success”, returns all the Power BI artifacts  |
++----------------------+-----------------+-----------------------------------------------------------------+------------------------------------------------------------------+
+
+The following are the {BaseURL} for Azure Power BI Scanner:
+
+* :samp:`https://api.powerbi.com`
+
+* :samp:`https://api.powerbigov.us` - For Gov Cloud

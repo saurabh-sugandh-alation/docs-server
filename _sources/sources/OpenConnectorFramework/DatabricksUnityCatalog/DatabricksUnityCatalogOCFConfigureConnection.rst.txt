@@ -1,0 +1,188 @@
+Configure the Data Source Connection
+=========================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+You configure the connection to the data source on the **General Settings** tab of the settings.
+
+.. note::
+
+    If your organization has configured Azure KeyVault or AWS Secrets Manager to hold to hold the credentials and connection information, the user interface for the **General Settings** page will change to include the following icons to the right of most options:
+
+        - Version **2.2.0** or newer
+
+            .. image:: /_static/VaultOrDB_New.png
+
+        - Versions before **2.2.0**
+
+            .. image:: /_static/VaultOrDB.png
+
+    By default, the standard mode is selected.
+
+    In the vault case, instead of the actual credential information, you enter the ID of the secret. See :doc:`Configure Secrets for OCF Connector Settings </sources/OpenConnectorFramework/ConfigureSecretsforOCFConnectors/index>` for details.
+
+
+Depending on your connector version, use the information in the relevant topic:
+
+    - `Version 2.2.0 or Newer`_
+    - `Versions Before 2.2.0`_
+
+
+Version 2.2.0 or Newer
+----------------------------
+
+Use the information in this section to configure the **General Settings** tab for the Databricks Unity Catalog OCF connector  version **2.2.0** or newer. In version **2.2.0**, the user interface of the **General Settings** page was redesigned. The new interface will be available if your Alation version is **2023.3.4** or newer.
+
+    .. note::
+
+        If you have installed connector version **2.2.0** or newer on an Alation version older than **2023.3.4**, refer to :ref:`Versions Before 2.2.0 <uc-connect-old-ui>`. The user interface of the **General Settings** tab for connector version **2.2.0** or newer on Alation versions older than **2023.3.4** will be the same as in versions before **2.2.0**.
+
+Follow these steps to configure and test the data source connection on the **General Settings** tab:
+
+    - `Provide the JDBC URI`_
+    - `Configure Authentication`_
+    - `Test the Connection`_
+    - `Configure Advanced Settings`_
+    - `Configure Logging Level`_
+
+Provide the JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Under section **Step 1: Provide the JDBC URI** of the **General Settings** tab, enter the JDBC URI in the required format and save your input. Find the information on the JDBC URI formats in :ref:`Build the JDBC URI <uc-build-uri>`.
+
+Configure Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under section **Step 2: Configure authentication**, provide the authentication information and save your input:
+
+    - If you are authenticating with the username and password, provide them in the **Username** and **Password or Personal Access Token** field.
+    - If you are authenticating with a personal access token (PAT), then type the word ``token`` in the **Username** field and enter your PAT in the **Password or Personal Access Token** field.
+
+Test the Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under section **Step 3: Test connection**, test the connection by clicking **Test**. Alation will try to reach Databricks using your JDBC URI and authentication information. The test status will be displayed in the user interface.
+
+In case the test ends in errors or partial success, Alation will display an error log. Review the error messages in the log for troubleshooting suggestions.
+
+    .. note::
+
+        On Alation Cloud Service instances only, the connection test may fail with the following error if Alation hits the connection timeout (one minute): *Request failed with status code 504*.
+
+        For example, if Alation's user has the ``Can Restart`` permission but the cluster is down, the test connection can fail as the cluster start takes more than one minute. Reattempt the test after the cluster has started.
+
+Configure Advanced Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can optionally configure more settings for your data source. You can find the additional settings in the **Advanced settings (optional)** section of the **General Settings** tab:
+
+    - `Configure Additional Data Source Connections`_
+    - `Configure Obfuscation of Literals`_
+
+Configure Additional Data Source Connections
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Populate the **Additional data source connections** field if you have BI sources in the catalog that use data from the current data source. This enables Alation to link the data source to the relevant BI sources through lineage. Enter the connection information in the ``<host>:<port>`` format. If you are entering multiple values, separate them with commas.
+
+    .. note::
+
+        For more guidance on how to use this field, refer to :doc:`BI Connection Info </sources/OpenConnectorFramework/BIConnectionInfoField>`. (For some connectors or connector versions, the **Additional data source connections** field may be named **BI Connections Info**. It is the same field.)
+
+Configure Obfuscation of Literals
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This setting is not applicable to Databricks Unity Catalog data sources.
+
+Configure Logging Level
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the **Connector logs (optional)** section, from the **Log Level** dropdown list, select a level and save your choice. The available log levels are based on the Log4j logging framework.
+
+You can view the connector logs in **Admin Settings > Server Admin > Manage Connectors > Databricks Unity Catalog OCF Connector**.
+
+.. _uc-connect-old-ui:
+
+Versions Before 2.2.0
+--------------------------
+
+Use the information in this section to configure the **General Settings** tab for connector versions before **2.2.0**. Enter the required information in each section of the General Settings user interface:
+
+    - `Application Settings`_
+    - `Connector Settings`_
+    - `Logging Configuration`_
+    - `Obfuscate Literals`_
+    - `Test Connection`_
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Specify **Application Settings** if applicable. Click **Save** to save the changes after providing the information.
+
+    .. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+    +---------------------------------+-------------------------------------------------------------------------------------------+
+    | Parameter                       | Description                                                                               |
+    +=================================+===========================================================================================+
+    | Additional data source          | This parameter is used to generate lineage                                                |
+    | connections                     | between the current data source and another                                               |
+    |                                 | source in the catalog, for example a BI source                                            |
+    |                                 | that retrieves data from the underlying database.                                         |
+    |                                 | The parameter accepts host and port information                                           |
+    |                                 | of the corresponding BI data source connection.                                           |
+    |                                 |                                                                                           |
+    |                                 | Use the following format: ``host:port``                                                   |
+    |                                 |                                                                                           |
+    |                                 | You can provide multiple values as a                                                      |
+    |                                 | comma-separated list:                                                                     |
+    |                                 |                                                                                           |
+    |                                 | ``10.13.71.216:1541,sever.com:1542``                                                      |
+    |                                 |                                                                                           |
+    |                                 | Find more details in                                                                      |
+    |                                 | :doc:`BI Connection Info <../../../sources/OpenConnectorFramework/BIConnectionInfoField>`.|
+    +---------------------------------+-------------------------------------------------------------------------------------------+
+    | Disable Automatic               | This checkbox enables or disables automatic lineage generation from QLI, MDE,             |
+    | Lineage Generation              | and Compose queries.                                                                      |
+    |                                 |                                                                                           |
+    | (Present in the user interface  | If you are using connector version **2.0.2.6259**, you must disable auto-lineage          |
+    | in connector versions before    | generation before running QLI by selecting this checkbox.                                 |
+    | **2.0.3.6564**)                 |                                                                                           |
+    |                                 | On connector version **2.0.3.6564** or newer, you don't have                              |
+    |                                 | to manually disable automatic lineage as it's disabled programmatically.                  |
+    |                                 |                                                                                           |
+    +---------------------------------+-------------------------------------------------------------------------------------------+
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Populate the data source connection information and save the values by clicking **Save** in this section.
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    +--------------------------+---------------------------------------------------------+
+    | Parameter                | Description                                             |
+    +==========================+=========================================================+
+    | JDBC URI                 | Specify the JDBC URI in the required format.            |
+    +--------------------------+---------------------------------------------------------+
+    | Username                 | For token-based authentication, use the value ``token``.|
+    +--------------------------+---------------------------------------------------------+
+    | Password                 | Paste the personal access token for Alation's user      |
+    |                          | you created in Databricks to use as a service account.  |
+    +--------------------------+---------------------------------------------------------+
+
+Logging Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Skip this section as it's not applicable to Databricks Unity Catalog data sources.
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+If the connection test fails, make sure the JDBC URI and Alation's user credentials are correct.

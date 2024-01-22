@@ -1,0 +1,40 @@
+Full Data Dictionary
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query shows the parent objects for all objects of the types: column
+-> table -> schema. The information comes
+from  public.object_parent_relationship. The MAX function is used
+because there is not first or any aggregate function.
+
+.. code-block:: sql
+
+    -- get the full data dictionary out of Alation
+    SELECT
+      column_id,
+      MAX(
+        CASE WHEN parent_object_type_id = 27 THEN parent_object_uuid :: text end
+      ) AS table_id,
+      MAX(
+        CASE WHEN parent_object_type_id = 23 THEN parent_object_uuid :: text end
+      ) AS schema_id,
+      MAX(
+        CASE WHEN parent_object_type_id = 7 THEN parent_object_uuid :: text end
+      ) AS ds_id
+    FROM
+      (
+        SELECT
+          object_uuid AS column_id,
+          object_url AS column_url
+        FROM
+          public.alation_object
+        where
+          object_type_id = 1 /* column  */
+      ) columns
+      JOIN public.object_parent_relationship AS OP ON OP.object_uuid = columns.column_id
+      AND OP.object_type_id = 1
+    GROUP BY
+      column_id;

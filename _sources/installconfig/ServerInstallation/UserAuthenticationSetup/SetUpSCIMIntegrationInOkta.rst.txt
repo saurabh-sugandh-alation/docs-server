@@ -1,0 +1,195 @@
+Set Up SCIM Integration in Okta
+===================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from release 2021.3*
+
+Okta offers 2 configuration options to enable  SCIM for an application integration. You can either enable SCIM Provisioning on an existing SAML application integration or create an additional OIN-type application integration.
+
+Perform the configuration in Okta after enabling SCIM on the Alation server. This will give you the ability to test connection between the Alation server and Okta using the service account credentials you set up on the Alation side.
+
+Set Up SCIM Integration Using an AIW Application Integration
+---------------------------------------------------------------
+
+    .. note::
+
+        The configuration described below is based on `Add SCIM provisioning to app integrations <https://help.okta.com/en/prod/Content/Topics/Apps/Apps_App_Integration_Wizard_SCIM.htm?cshid=ext_Apps_App_Integration_Wizard-scim>`_ in Okta documentation.
+
+
+Prerequisite
+~~~~~~~~~~~~~
+
+You have a fully-configured SAML application integration in Okta that is used for user authentication with SAML on the Alation server.
+
+Configuration Steps
+~~~~~~~~~~~~~~~~~~~~~~
+
+1. In Okta admin console > **Applications**, open the page of your SAML application integration. App Settings should be available on the **General** tab.
+
+2. Click **Edit** for **General** > **App Settings**. This will enable editing of the application configuration.
+
+3. Under **Provisioning**, select **SCIM**.
+
+4. Click **Save** for this block of settings. After you save, the tab **Provisioning** will appear in the application configuration.
+
+    .. image:: /_static/OktaSCIM_01.png
+        :width: 600px
+
+5. Click the **Provisioning** tab. Under the **Settings** menu on the left, select **Integration**.
+
+    .. image:: /_static/OktaSCIM_02.png
+        :width: 600px
+
+6. Click **Edit** and under **SCIM Connection**, fill in the following information:
+
+    +------------------+------------------------------------------+-------------------------------+
+    | Settings         | Values                                   | Recommendations               |
+    +==================+==========================================+===============================+
+    | SCIM connector   | ``https://<base_Alation_URL>/scim/v2/``  | The value for the SCIM        |
+    | base URL         |                                          | endpoint on the Alation       |
+    |                  |                                          | server                        |
+    +------------------+------------------------------------------+-------------------------------+
+    | Unique           | userName                                 | Alation expects the value     |
+    | identifier       |                                          | ``userName``                  |
+    | field for users  |                                          |                               |
+    +------------------+------------------------------------------+-------------------------------+
+    | Supported        | Select checkboxes for:                   | Do not select the option      |
+    | provisioning     |                                          | **Import New Users** and      |
+    | actions          |   - Push New Users                       | **Profile Updates**.          |
+    |                  |   - Push Profile Updates                 | Alation does not support      |
+    |                  |   - Push Groups                          | import to the IdP             |
+    +------------------+------------------------------------------+-------------------------------+
+    | Authentication   | - Basic Auth                             | - Select Basic Auth to use    |
+    | Mode             |                                          |   basic authentication with   |
+    |                  | - HTTP Header (from version 2021.4)      |   username and password       |
+    |                  |                                          |                               |
+    |                  |                                          | - Select HTTP Header to use   |
+    |                  |                                          |   token authentication.       |
+    |                  |                                          |                               |
+    |                  |                                          | See `Authentication Mode`_    |
+    +------------------+------------------------------------------+-------------------------------+
+
+7. Click **Test Connector Configuration** to test if SCIM connection is successful.
+
+8. Save.
+
+9. Back on the settings > **Provisioning** tab, two new options should become available in the Settings menu on the left: **To App** and **To Okta**. Select **To App** and click **Edit**.
+
+10. Enable the following options under **To App**:
+
+        - Create Users
+        - Update User Attributes
+        - Deactivate Users Provisioning
+
+    Do not select *Sync Password* as it is not supported by Alation.
+
+    .. image:: /_static/OktaSCIM_03.png
+        :width: 600px
+
+
+11. Save.
+
+12. Click the **Push Groups** tab in the upper row of tabs. Create or link groups that you wish to be pushed to Alation. Groups should be consistent with assignments in the SAML settings.
+
+13. Push the Groups.
+
+14. Log in to Alation and make sure the Groups and their members are now in Alation. See :doc:`Testing SCIM Configuration </installconfig/ServerInstallation/UserAuthenticationSetup/TestingSCIMConfiguration>`.
+
+Authentication Mode
+^^^^^^^^^^^^^^^^^^^^^^^
+
+If you have selected **Basic Auth**, provide the username and password:
+
+    - **Username**: Specify the username of the SCIM service account you created when configuring SCIM integration on the Alation server
+
+    - **Password**: Specify the password of the SCIM service account you created when configuring SCIM integration on the Alation server
+
+    .. image:: /_static/OktaSCIM_09.png
+        :width: 400px
+
+If you have selected HTTP Header, provide the access token you created on the Alation server:
+
+    - **Bearer**: Provide the authorization token value
+
+    .. image:: /_static/OktaSCIM_10.png
+        :width: 400px
+
+
+Set Up SCIM Integration Using an OIN Application Integration
+-----------------------------------------------------------------
+
+This setup uses 2 separate Okta applications: a SAML application integration for authentication and a SCIM integration application for automated user and groups management.
+
+Prerequisite
+~~~~~~~~~~~~~~~~
+
+You have configured and enabled SAML authentication and SCIM integration on the Alation side.
+
+    .. important::
+
+        It is important to keep user and group assignments in the SAML app (authentication) and the SCIM app (users & groups management) consistent.
+
+        If a user is assigned to the SAML app but not to the SCIM app, this user will be able to log in to Alation, but the lifecycle of this user account will not be manageable by the automatic SCIM sync.
+        If a user is assigned to the SCIM app but not to the SAML app, this user will be pushed to Alation by the SCIM sync process but will not be able to log in.
+        You will need to make sure that users who are assigned to the SAML app are the same users assigned to the SCIM app.
+
+Configuration Steps
+~~~~~~~~~~~~~~~~~~~~~~~
+
+1. In Okta admin console, go to **Applications** and click **Browse App Catalog**:
+
+    .. image:: /_static/OktaSCIM_04.png
+        :width: 600px
+
+2. Search for **SCIM 2.0 Test App (Basic Auth)** and click the app name:
+
+    .. image:: /_static/OktaSCIM_05.png
+        :width: 600px
+
+3. On the page of the SCIM 2.0 Test App (Basic Auth) application, click **Add** to add it to your applications:
+
+    .. image:: /_static/OktaSCIM_06.png
+        :width: 600px
+
+4. On the **Sign on** tab, make sure the following information is specified:
+
+    - In the **Sign on methods** section:
+
+        - **SAML 2.0** radio button is selected
+        - checkbox **Disable Force Authentication** is selected;
+
+    - In the **Credentials Details** section:
+
+        - Application username format: **Okta username**
+        - Update application username on: **Create and update**
+
+    .. image:: /_static/OktaSCIM_07.png
+        :width: 600px
+
+5. Click **Done**.
+
+6. On the **Provisioning** tab, click **Integration** on the left-hand sidebar and click the **Configure API Integration** button:
+
+    .. image:: /_static/OktaSCIM_08.png
+        :width: 600px
+
+7. Select the **Enable API integration** checkbox and enter the required information:
+
+    - **SCIM 2.0 Base Url**: ``https://<BASE_URL>/scim/v2/``
+    - **Username**: service account username created in Alation during SCIM configuration
+    - **Password**: service account password created in Alation during SCIM configuration
+
+8. Click **Test API Credentials** to test connectivity.
+
+9. Click **Save**.
+
+10. Select the **To App** option in the left sidebar, then click **Edit** and enable the following options:
+
+    - Create Users
+    - Update User Attributes
+    - Deactivate Users Provisioning
+    - Do not select *Sync Password* (not supported by Alation).
+
+13. Assign users and groups, then push groups to Alation.
+14. Test the configuration.

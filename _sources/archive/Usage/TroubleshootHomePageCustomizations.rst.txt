@@ -1,0 +1,95 @@
+Troubleshoot Homepage Customizations V R4 to V R7
+=====================================================================
+
+*Applies to releases V R4 (5.8.x) - V R7 (5.12.x)*
+
+Clicking on tiles isn't taking me anywhere
+-------------------------------------------
+
+Check if the tile URL is formatted correctly: Some URLs require a trailing backslash ``"/"`` in the value: ``"/sources/"``. You can check the URL by opening the desired target Alation page in your browser. Everything after the host address must be included: ``https://test-master.alation-test.com/sources/``
+
+I don't see any object windows
+---------------------------------
+
+Reason may be:
+
+- Only a few types of objects are currently supported: Article (``article``), BI Report (``bi_report``), Tableau Sheet (``tableau_sheet``). Check you have added a supported object type.
+- The user may not be able to view the object due to not having the right permissions. Make sure you have the required permissions for the object.
+- The object specified using the ``otype`` and ``oid`` values does not exist in the Alation instance. Check if the object exists.
+- Double-check there are no syntax errors in the **homepage.json** file
+
+Trailing comma after the last key value pair
+----------------------------------------------
+
+The **,** after the last ``navigateURL`` key value pair will cause the backend to throw an error because the parser will expect another key value after the comma.
+
+Remove all trailing commas after the last key value pairs in the **homepage.json** file.
+
+.. code-block:: bash
+
+      {
+        "action_links" : [
+            {
+              "title" : "Write a Query",
+              "img" : "/static/img/WriteAQuery.png",
+            #The next line has a training comma.
+            #Remove such trailing commas from the last
+            #key value pair to fix the syntax
+              "url" : "/compose/new",
+              }
+            ],
+            ...
+          }
+
+Dynamic tiles don't load the content they should
+-------------------------------------------------
+
+Inspect the homepage file and make sure the objects load by finding these objects in Alation and verifying their ``oid`` value.
+
+Tiles don't load images correctly
+-----------------------------------
+
+Tile images are loaded based on the tile object type (otype). Here is a list of supported otypes that have a matching image:
+
+- ``article``
+- ``custom_glossary``
+- ``attribute``
+- ``data``
+- ``query``
+- ``schema``
+- ``table``
+- ``tag``
+- ``bi_report``
+
+Make sure you are using the supported object types.
+
+Objects tiles don't show the right images for their otype
+----------------------------------------------------------
+
+When writing homepage tile data, it is explicitly required that the object declaration is present as a property for Alation to recognize this object type: **/static/img/homepage_images/colored_images/TableBlue.png**
+
+If it is not present in the supported tile images, however, it will show a blank colored generic tile: **/static/img/homepage_images/colored_images/Blue.png**
+
+Modal error is popping up on the page
+---------------------------------------
+
+**homepage.json** is missing either the ``admin_sections`` or the ``article_links``.
+
+Both the ``admin_sections`` and ``article_links`` must exist in the **homepage.json**, even if they are empty. If one of these objects is empty, Alation will display the default configuration of the section. The bare minimum JSON, if it exists, would look like this:
+
+.. code-block:: bash
+
+      {
+        "action_links" : [
+        ],
+        "admin_sections" : [
+        ]
+      }
+
+Homepage.json is not being updated when data is sent to it
+-------------------------------------------------------------
+
+Verify that you are sending a PUT request and not a GET request. There may be a redirect happening, and the API application you are using (for example, Postman) or the Python request module (if using a Python script) may be following this redirect and switching your request to a GET. Examine the URL that is given in the redirect and verify that in your API request:
+
+- you have used the expected URL syntax. For example, check if a trailing backslash ``/`` needs to be used in the request: ``https://test-master.alation-test.com/api/homepage/``
+- you have used the expected protocol. If the redirect URL has HTTPS and you have used HTTP, or vice versa, change your request to match what you see in the redirect URL.

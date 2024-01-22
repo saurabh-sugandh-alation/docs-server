@@ -1,0 +1,58 @@
+Databricks for Custom DB
+================================
+
+Overview
+-----------
+
+Databricks on different platforms such as Azure and Google Cloud Platform (GCP) are supported as Custom DB data source type in Alation. It is recommended to use the Simba Spark JDBC Driver for Databricks on Azure and Databricks on GCP. For more details on the driver version, refer to the appropriate version of the Support Matrix. The Simba Spark JDBC Driver is available by default in Alation.
+
+To set up the connection for Databricks on Azure or GCP,  or , see the corresponding sections dedicated to each of the sources:
+
+ - :doc:`Azure Databricks <../../datasources/CustomDB/DatabricksAzure>`
+ - :doc:`GCP Databricks <../../datasources/CustomDB/GCPDatabricks>`
+
+Databricks Objects to Alation Objects Mapping
+-----------------------------------------------------
+
+ +-------------------------+---------------------------+------------------------------------------------+
+ | Databricks Object       | Alation Object            | Notes                                          |
+ +=========================+===========================+================================================+
+ | Cluster                 | Data Source               | MDE is always performed against a concrete     |
+ |                         |                           | cluster, which must be running at the time.    |
+ +-------------------------+---------------------------+------------------------------------------------+
+ | Hive Metastore          | Data Source               | The Hive Metastore is required to perform MDE  |
+ +-------------------------+---------------------------+------------------------------------------------+
+ | Notebook                | N/A                       | Alation does not usually catalog code other    |
+ |                         |                           | than SQL.                                      |
+ +-------------------------+---------------------------+------------------------------------------------+
+ | Schema                  | Schema                    | A collection of tables                         |
+ +-------------------------+---------------------------+------------------------------------------------+
+ | Table / DataFrame       | Table                     | Alation only knows about DataFrames which have |
+ |                         |                           | been registered as Tables in the Hive Metastore|
+ +-------------------------+---------------------------+------------------------------------------------+
+ | Column                  | Attribute                 | Complex data types may not be fully supported  |
+ +-------------------------+---------------------------+------------------------------------------------+
+ | Spark SQL Query         | Query                     | Starting with 2020.3, QLI is supported for     |
+ |                         |                           | Spark SQL queries. Requires configuration.     |
+ +-------------------------+---------------------------+------------------------------------------------+
+ | Functions / procedures  | Functions                 | Not supported                                  |
+ +-------------------------+---------------------------+------------------------------------------------+
+ |                         | Service Account           | An account specific for each user so that      |
+ |                         |                           | Compose can be used with the correct           |
+ |                         |                           | privileges, and QLI can be attributed to the   |
+ |                         |                           | right user.                                    |
+ +-------------------------+---------------------------+------------------------------------------------+
+ |                         | DB Account                | An account specific for each user, so that     |
+ |                         |                           | Compose can be used with the correct           |
+ |                         |                           | privileges, and QLI can be attributed to the   |
+ |                         |                           | right user                                     |
+ +-------------------------+---------------------------+------------------------------------------------+
+
+Troubleshooting
+---------------------
+
+ Logs to collect/review:
+
+     - For logs related to MDE: **taskserver.log, taskserver_err.log**.
+     - For logs related to Compose: **connector.log, connector_err.log**.
+     - For any other errors: **alation-error.log, alation-debug.log**

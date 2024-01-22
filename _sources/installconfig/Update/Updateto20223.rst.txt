@@ -1,0 +1,139 @@
+Update Alation to 2022.3
+=====================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+2022.3 Update Version Dependencies
+-------------------------------------
+
+Alation supports a direct update to version 2022.3 from the following previous versions:
+
+    - 2022.2.x
+    - 2022.1.x
+    - 2021.4.x
+
+Version 2021.3.x and Older
+--------------------------------------
+
+Direct update to 2022.3 is not supported from version 2021.3 and older versions. First, update Alation to a version that supports the update to 2022.3 and then perform a second update to 2022.3. Use the update instructions specific to your release.
+
+.. _20223-Release-Specific-Information:
+
+2022.3 Release-Specific Information
+---------------------------------------
+
+Postgres Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The internal Alation server database (Postgres) was updated from version 13.1 to version 13.6. No manual actions are required from Alation admins as the database version upgrade happens automatically during the Alation application update.
+
+Elasticsearch Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Elasticsearch component of the Alation application was updated to a newer minor version of version 7.17. No manual actions are required from Alation admins as the version upgrade happens automatically during the Alation update.
+
+Case Insensitive Usernames
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From version 2022.3, usernames in Alation become case insensitive. This means that usernames differing only in the use of the uppercase or lowercase letters are now considered identical. For example, usernames *john.doe* and *John.Doe* are considered identical usernames. The switch-over between case sensitive and case insensitive usernames happens during the update to 2022.3.
+
+With 2022.3, Alation provides a special script for you to ensure there are no duplicate usernames on your instance. The information about the script is included into the update steps below in this guide.
+
+    .. note::
+
+        1. After the update to 2022.3, users will not be able to log in using any of the duplicate usernames. For users to log in, an admin has to de-duplicate their usernames using the script.
+
+        2. If for some reason you want to allow case sensitive usernames, you can explicitly enable username case sensitivity on your instance. After the update, set the **alation_conf** flag ``enable_username_case_insensitivity`` to ``False`` to allow case sensitive usernames. On how to use **alation_conf**, see :doc:`Using alation_conf <../../admins/AdditionalConfiguration/Usingalation_conf>`.
+
+Alation Server Runs on UTC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Alation server now runs on UTC. Previously, some of the log files, such as **alation-backup.log**, used PDT to capture the logs. From this release, the server captures all logs on UTC. The catalog users will continue scheduling extraction, ingestion, queries, and other scheduled processes as before using their local time zone. The server uses the UTC offset to run the jobs on the set schedules.
+
+User Interface for Authentication to Data Sources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In 2022.3, we added a user interface for the configuration of authentication to data sources that goes through AuthService. It is now possible to create AWS, OAuth, and Azure Key Vault plug-in configuration objects in Alation. If you previously set up such configurations on the backend of your Alation instance, they will become viewable in **Admin Settings** > **Authentication** > **Data Source Authentication Configuration Methods**.
+
+    .. note::
+
+        The full list of new features is available in :doc:`Release Notes 2022.3 (General Availability) <../../releases/releasenotes/ReleaseNotes20223>`.
+
+Job Schedule Fix
+~~~~~~~~~~~~~~~~
+
+In the 2022.3 release, we introduced a bug that caused the schedule for certain jobs to be shifted eight hours earlier. See :doc:`Fix Job Schedules after 2022.3 Upgrade </admins/Troubleshooting/FixJobSchedules>` for details on how to fix the issue.
+
+Update Alation from 2022.1.x and 2022.2.x to 2022.3
+---------------------------------------------------------
+
+Step 1: Scan Postgres
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateScanPostgres.rst
+
+Step 2: Update the Alation Application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateAlation.rst
+
+Step 3: Update Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateAA.rst
+
+
+Step 4: Update Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateACM.rst
+
+Step 5: De-duplicate Mixed Case Usernames
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateDeduplicateUsernames.rst
+
+Update Alation from 2021.4.x to 2022.3
+----------------------------------------------
+
+This update path skips releases 2022.1 and 2022.2. Release 2022.1 includes a number of important changes. Make sure to review the information specific to release 2022.1 and the release notes for 2022.2 to inform yourself on the new features in these releases.
+
+    - :ref:`2022.1 Release-Specific Information <20221-Release-Specific-Information>`
+    - :doc:`2022.2 Release Notes <../../releases/releasenotes/ReleaseNotes20222>`
+
+To update Alation:
+
+Step 1: Scan Postgres
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateScanPostgres.rst
+
+Step 2: Update the Value of Parameter ``elasticsearch.env.es_java_opts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateCheckESParameters.rst
+
+Step 3: Update the Alation Application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateAlation.rst
+
+Step 4: Update Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateAA.rst
+
+Step 5: Reset the ETL Checkpoints for Users on Alation Analytics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateResetETLCheckpoint.rst
+
+Step 6: Update Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateACM.rst
+
+Step 7: De-duplicate Mixed Case Usernames
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateDeduplicateUsernames.rst

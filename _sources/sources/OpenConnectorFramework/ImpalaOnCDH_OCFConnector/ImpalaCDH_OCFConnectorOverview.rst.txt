@@ -1,0 +1,171 @@
+Impala on CDH OCF Connector: Overview
+===========================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The OCF connector for Impala on CDH was developed by Alation and is available on demand as a Zip file that can be uploaded and installed in :doc:`Manage Connectors <../../../sources/OpenConnectorFramework/ManageConnectors>`. 
+
+To download the Impala on CDH OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+This connector should be used to catalog Impala on CDH as a data source in Alation. The connector catalogs Impala objects such as schemas, tables, views, and columns. It enables users to search and find the Impala metadata from the Alation user interface.
+
+Team
+----------
+
+The following administrators are required to install this connector:
+
+    - Alation administrator:
+
+        - Installs the connector.
+        - Creates and configures an OCF Impala data source in the catalog.
+
+    - Impala administrator:
+
+        - Creates a service account for Alation and grants it the required privileges.
+        - Provides the authentication information and Kerberos configuration files (krb5.conf and keytab) to Alation Server Admin.
+        - Provides the SSL certificate.
+        - Provides the JDBC URI.
+        - Provides access to the metastore server to extract metadata.
+        - Assists in configuring query log ingestion (QLI).
+
+    - HDFS administrator:
+
+        - Provides access to the query log history directory on HDFS.
+
+Scope
+-----------
+
+The table below describes which metadata objects are extracted by the connector and which catalog functionality is supported.
+
++----------------------------+---------------------------------------------------------------+-------------+
+| Feature                    | Scope                                                         | Availability|
++============================+===============================================================+=============+
+| **Authentication**                                                                                       |
++----------------------------+---------------------------------------------------------------+-------------+
+| Basic authentication       | Authentication with a service account created on the          | Yes         |
+|                            | database that uses a username and password                    |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| LDAP                       | Authentication with a database service account that is an     | Yes         |
+|                            | LDAP account in an organization's network                     |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSL                        | Database connection over SSL                                  | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Kerberos                   | Support for Kerberos authentication                           | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Keytab                     | Support for Kerberos with keytabs                             | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSO                        | SSO authentication with an identity provider application      | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Metadata Extraction (MDE)**                                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| Default MDE                | Extraction of metadata based on CDH API                       | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based MDE     | Extraction of metadata based on extraction                    | No          |
+|                            | queries provided by a user                                    |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Extracted metadata objects**                                                                           |
++----------------------------+---------------------------------------------------------------+-------------+
+| Data source                | Data source object in Alation that is parent to extracted     | Yes         |
+|                            | metadata                                                      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Schemas                    | List of schemas                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Tables                     | List of tables                                                | Yes         |
+|                            |                                                               |             |
+|                            | Extraction of Kudu tables is supported from connector         |             |
+|                            | version **1.0.4.4751** (requires Alation version 2023.1       |             |
+|                            | or newer)                                                     |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Columns                    | List of columns                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column data types          | Column data types                                             | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Views                      | List of views                                                 | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Source comments            | Source comments                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Primary keys               | Primary key information for extracted tables                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Foreign keys               | Foreign key information for extracted tables                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Functions                  | Function metadata                                             | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Function definitions       | Function definition metadata                                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Sampling and Profiling**                                                                               |
++----------------------------+---------------------------------------------------------------+-------------+
+| Table sampling             | Retrieval of data samples from extracted tables               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column sampling            | Retrieval of data samples from extracted columns              | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Deep column profiling      | Profiling of columns with the calculation of                  | Yes         |
+|                            | value distribution stats                                      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Dynamic profiling          | Ability for individual users to connect with                  | Yes         |
+|                            | their own database accounts to retrieve table and column      |             |
+|                            | samples and profiles                                          |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based table   | Ability to use custom queries for sampling specific tables    | Yes         |
+| sampling                   |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based column  | Ability to use custom queries for profiling specific columns  | Yes         |
+| profiling                  |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Query Log Ingestion (QLI)**                                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| API-based QLI              | Ingestion of query history based on a table or view that      | Yes         |
+|                            | contains query history data                                   |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Query-based QLI            | Ingestion of query history based on a custom query history    | No          |
+|                            | extraction query                                              |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| JOINs and filters          | Calculation of JOIN and filter information based on ingested  | Yes         |
+|                            | query history                                                 |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Predicates                 | Ability to parse predicates in ingested queries               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Lineage**                                                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+| Automatic lineage          | Auto-calculation of lineage based on query history ingested   | Yes         |
+| generation                 | from QLI, MDE, and Compose queries                            |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column-level lineage       | Calculation of lineage at column level                        | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Compose**                                                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+| Customer-managed (on-prem) | Compose on on-prem Alation instances                          | Yes         |
+| Alation instances          |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Alation Cloud Service      | Compose for data sources connected without                    | No          |
+| instances, connection      | :doc:`/cloud/AlationAgent/index`                              |             |
+| without Agent              |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Alation Cloud Service      | Compose for data sources connected through                    | No          |
+| instances, connection      | :doc:`/cloud/AlationAgent/index`                              |             |
+| via Agent                  |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Basic authentication in    | Authentication in Compose with username and password          | Yes         |
+| Compose                    |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Kerberos authentication    | Authentication in Compose through Kerberos                    | No          |
+| in Compose                 |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSL authentication         | Authentication in Compose through Kerberos                    | No          |
+| in Compose                 |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSO authentication in      | Authentication in Compose with SSO credentials                | No          |
+| Compose                    |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+
+Limitations
+----------------
+
+- Compose is supported with basic authentication only. Kerberos authentication in Compose is not supported.
+- SSL authentication is not supported in Compose.
+- Sampling and profiling is not available for complex data types.
+- Data upload into columns with complex data types is not available yet.
+
+Driver Information
+------------------------
+
+The connector is packaged with the Hive 2 driver for Impala—``com.alation.drivers.hive-driver-2.1.1-java-9-patched 2.1.1``. The driver is bundled with HiveShims and HadoopShims APIs. This driver works only for Compose connections and executing queries. MDE and QLI use the Impala APIs.

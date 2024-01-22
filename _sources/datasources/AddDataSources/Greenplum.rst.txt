@@ -1,0 +1,194 @@
+Greenplum
+==========
+
+.. important::
+
+      Starting **August 30, 2023**, we will remove the ability to create new data sources using the Greenplum Native Connector. Support for the Greenplum Native Connector will cease on **December 1, 2023**, as set out in Alation’s `Support Policy <https://www.alation.com/tscs/support/>`_. See the `Transition from Native to OCF Connectors <https://community.alation.com/communityhubmicrosite/blogs/diby-malakar/2023/07/12/transition-from-native-to-ocf-connectors>`_ announcement in Alation Community (requires login to Community).
+
+Required Information
+--------------------------------
+
+To configure Greenplum in Alation, you will need the following information:
+
+-  Hostname or IP address of your server
+-  Port number
+-  Database name
+-  Service account with privileges listed below
+-  Query Log Ingestion setup: ``gpperfmon``
+
+.. image:: ../../_static/DS_Greenplum01.png
+    :width: 3.5in
+    :align: center
+
+Preliminaries
+-------------
+
+Firewall Configuration:
+
+-  Open outbound TCP port **5432**
+
+Server Connection:
+
+**jdbc:postgresql://hostname:5432/setupdatabase**
+
+Create Service Account
+------------------------
+
+Example:
+
+    .. code-block:: Bash
+
+        CREATE ROLE alation LOGIN password 'passwd'; 
+        GRANT CONNECT ON DATABASE setupdatabase TO alation;                
+
+Metadata Extraction
+-------------------
+
+No additional grants are required for metadata extraction; the default grants are enough.
+
+Profiling
+---------------
+
+Example:
+
+    .. code-block:: Bash
+
+        GRANT USAGE ON SCHEMA schema_name TO alation;  
+
+        GRANT USAGE ON SCHEMA schema_name.table_name TO alation;
+
+QLI
+-------------
+
+Query logging requires the Superuser privileges. Example:
+
+    .. code-block:: Bash
+
+        CREATE ROLE alation SUPERUSER LOGIN PASSWORD 'passwd';
+
+If the user ``alation`` has already been created:
+
+    .. code-block:: Bash
+
+
+        ALTER ROLE alation SUPERUSER;
+
+Greenplum QLI Setup Using ``gpperfmon``
+------------------------------------------
+
+1. Create the ``gpperfmon`` database. For steps, refer to the corresponding Greenplum documentation, for example:
+
+    - `The gpperfmon Database <https://docs.vmware.com/en/VMware-Tanzu-Greenplum/6/greenplum-database/GUID-ref_guide-gpperfmon-dbref.html>`_
+    - `gpperfmon_install <https://gpdb.docs.pivotal.io/6-3/utility_guide/ref/gpperfmon_install.html#topic1>`_.
+
+2. Give the ``alation`` user permission to ``gpperfmon``:
+
+    .. code-block:: bash
+
+        psql postgres
+        GRANT CONNECT ON DATABASE gpperfmon TO alation;
+        \q
+
+3. On ``gpperfmon``, give the ``alation`` user permission to the view:
+
+    .. code-block:: bash
+
+        psql gpperfmon
+        <run create view SQL  below>
+        GRANT USAGE ON SCHEMA public TO alation;
+        GRANT SELECT ON TABLE alation_qli_view TO alation;
+        \q
+
+    .. note::
+
+        ``min_query_time`` sets to log queries that run longer than this value. The default is 20 s, and configurable at **$MASTER_DATA_DIRECTORY/gpperfmon/conf/gpperfmon.conf**. If you do not see many logs ingested, this config would be worth checking.
+
+Also, use ``ctime`` as a partition column on the Alation data source Settings page.
+
+CREATE VIEW Query
+~~~~~~~~~~~~~~~~~~~~
+
+Greenplum 4
+^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+    CREATE VIEW public.alation_qli_view AS
+    SELECT
+      qh.ctime,
+      qh.rows_out,
+      qh.tfinish,
+      qh.tstart,
+      qh.cpu_elapsed,
+      qh.status,
+      qh.tmid,
+      qh.ssid,
+      qh.ccnt,
+      qh.username,
+      qh.application_name,
+      qh.query_text,
+      qh.tsubmit,
+      qh.db,
+      ih.pid
+    FROM
+      queries_history qh
+      LEFT OUTER JOIN iterators_history ih ON qh.tmid = ih.tmid
+      AND qh.ssid = ih.ssid
+      AND qh.ccnt = ih.ccnt
+    WHERE lower(username) NOT IN ('gpmon')
+      AND query_text NOT ILIKE '%jdbc_savepoint%'
+      AND query_text NOT ILIKE 'select current_schema()';
+
+Greenplum 5 to 6.19
+^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: SQL
+
+    CREATE VIEW public.alation_qli_view AS
+      SELECT
+        ctime,
+        rows_out,
+        tfinish,
+        tstart,
+        cpu_elapsed,
+        status,
+        cast(tmid AS varchar(10)),
+        ssid,
+        ccnt,
+        username,
+        application_name,
+        query_text,
+        tsubmit,
+        db,
+        tmid AS pid
+      FROM queries_history
+      WHERE lower(username) NOT IN ('gpmon')
+        AND query_text NOT ILIKE '%jdbc_savepoint%'
+        AND query_text NOT ILIKE 'select current_schema()';
+
+
+Greenplum 6.20 and later
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: SQL
+
+    CREATE VIEW public.alation_qli_view AS
+      SELECT
+        rows_out,
+        tfinish,
+        tstart,
+        cpu_elapsed,
+        status,
+        cast(tmid AS varchar(10)),
+        ssid,
+        ccnt,
+        username,
+        query_text,
+        cast('' AS varchar(64)) AS application_name,
+        tsubmit,
+        db,
+        tmid AS pid
+      FROM gpmetrics.queries_history
+      WHERE lower(username) NOT IN ('gpmon')
+        AND query_text NOT ILIKE '%jdbc_savepoint%'
+        AND query_text NOT ILIKE 'select current_schema()';

@@ -1,0 +1,422 @@
+Sizing Guidelines Detail
+=====================================
+
+Overview
+----------
+
+This document attempts to summarize the current state of Alation
+instance sizing, including what guidance we give and why and what
+problems we have run into.
+
+Our recommended sizing guidelines are a bit conservative, especially
+when the scale gets large. It leaves out some details on purpose trying
+to be a guide people can understand and follow.
+
+This guide was developed by testing with a relatively small scale and
+then extrapolating to large scales using a theoretical understanding of
+the system.
+
+Below we go through each system resource and how it scales with Alation
+usage. This is the detail behind our current recommendations.
+
+Memory
+------
+
+Memory is the most common bottleneck for Alation instances. Alation
+internally runs several services that each have their own memory
+requirements. Each service has a base amount that is required for normal
+functioning then some flexible amount that depends on the scale of
+installation.
+
+Memory Formula
+~~~~~~~~~~~~~~
+
+#. Start with 32 GB minimum requirement regardless of the installation details.
+#. Add 2 GB per million columns in their datasources.
+#. If you are over the line for a particular size (64GB instance size for example) it should be safe to round down.
+
+Minimum Memory Requirements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The sum of the base memory requirements for all the services is roughly
+28 GB. Now not all of those services are constantly using all that
+memory. However, at peak usage (not of users usually, but batch jobs)
+ if you don’t have the buffer things will crash.
+
+RAM is typically only apportioned in 2x blocks (ex. 16/32/64/128 GB).
+16 GB is cutting it low so we advise a 32GB base instance size. This
+recommendation is independent of the scale of the installation.
+
+.. warning::
+
+  Do not use 16GB memory. If you try to run Alation on 16 GB it will appear to work but you are likely to run into occasional crashes or performance issues.
+
+Scale dependent memory requirements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For installations that have larger scale in some particular dimensions
+Alation will need more than the base 32 GB memory.
+
+The main dimension you need to factor in is the total number of columns
+in the data sources you intend to ingest. Number of users/queriers is a
+secondary and smaller factor.
+
+Number of Columns
+^^^^^^^^^^^^^^^^^
+
+The biggest factor driving memory requirements is the total number of
+database objects ingested into Alation. By database object we mean
+Schema/Table/Column whose metadata we have ingested into Alation. In
+most cases the number of Columns in the connected relational stores is a
+good proxy for this number. This is because the Columns are usually 10x
+tables so there is only a minor difference if you include the other
+objects.
+
+Some jobs scale in the number of total objects. For example we get the
+new metadata from a system and diff it on the current metadata that we
+know of then ingest the difference. That diff operation is done in
+one bulk query. Also in one job we load an ID to name map for each
+object into memory. The search index also benefits from being able to
+load the objects into memory.
+
+A rough formula to safely size the memory is to start with the 32 GB
+minimum then add 2 GB per million objects. 2 GB per million is a
+conservative estimate. It doesn’t take 2 GB to load 2M rows
+representing those objects into memory. However, there are multiple
+batch jobs that scale in the factor of number of objects. They may run
+in parallel and use varying amounts of memory per object. 2 GB is a good
+estimate to allow for a few overlapping jobs.
+
+Because RAM offerings usually jump from 32 GB to 64 GB this most often
+results in a 64 GB recommendation. If the formula asks for over
+64 GB it’s probably fine to stick with 64 GB, which is a rough guide and
+errs on the conservative side. It’s peak memory usage that we are
+worried about, most of the time you would expect to see lower usage.
+
+Example:
+
+10M columns in your databases, 32 + 2 x 10 = 52 GB recommendation.
+
+Number of Queriers
+^^^^^^^^^^^^^^^^^^
+
+The number of Queriers (Compose Users)  has a small impact on the
+memory usage. However, at most it would require 2-4 GB. Because the
+formula is approximate, this is generally not worth worrying about
+when instance sizing.
+
+Typically, you do not need more than 128 GB.
+It’s unlikely that having more than 128 GB will be helpful. Almost
+certainly some other piece of the system would break before this becomes
+the bottleneck resource at that size.
+
+Monitoring Memory Usage
+^^^^^^^^^^^^^^^^^^^^^^^
+
+You can monitor your Alation instances memory usage over time to get a
+more precise idea what it uses. Look at the lows for free + cached
+memory. The OS uses most free memory for its cache, but it can always
+use that memory for other things. Don’t optimize for having no cache at
+all. Postgres and Elasticsearch perform better with a good chunk of
+memory in OS cache. If you see only ⅓ of the memory being used even at
+peak usage then you can consider halving the instance size.
+
+CPU
+---
+
+CPU is hardly ever the bottleneck resource for Alation in practice.
+Therefore we don’t recommend worrying about it when instance sizing.
+Generally instances with more memory also have more CPU and memory is
+almost always the limiting factor. Follow the standard CPU count
+for the memory requirement and it should be fine.
+There are cases where CPU caused an issue. These were all due to
+runaway processes that got hung. If this keeps happening eventually all
+the CPUs can be taken up no matter how many there are. Preventing this
+is less about getting a bigger machine and more about having CPU
+monitoring that would notice if something is pegged at 100% for days.
+
+Disk Space
+----------
+
+Alation uses a lot of disk space. Expect that your disk space usage will
+keep increasing over time as you use Alation.
+
+The primary factors contributing to disk space are
+
+-  Number of queries ingested
+-  Amount of Compose usage
+-  Alation Analytics
+
+Minimum requirements
+~~~~~~~~~~~~~~~~~~~~
+
+Base requirements
+^^^^^^^^^^^^^^^^^
+
+There is a minimum requirement for the root drive to have 80 GB
+to hold the Alation binaries.  By default, Alation installs at
+``/opt/alation``.  A separate mount of 80GB at ``/opt`` or ``/opt/alation`` can also
+be used.
+
+Data drive requirements
+^^^^^^^^^^^^^^^^^^^^^^^
+
+For the data drive we recommend a baseline 500 GB. Most of this is used
+for Alation’s internal database.
+
+Backup drive requirements
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation runs automatic backups on a nightly basis.  The backup drive
+should be larger than the data drive, as data is staged on the backup
+drive before being compressed.  A conservative estimate of backup = 1.5
+x data will give space to hold both the staged data and the compressed
+backup files.
+
+Number of queries ingested
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+QLI (query log ingestion) refers to the process of ingesting logs from
+external data sources into Alation then processing them to compute
+aggregate stats like popularity.
+QLI primarily stresses the disk space and partially stresses the Disk IO
+and CPU. The stress scales essentially linearly with the number of
+queries per day.
+We use a baseline recommendation +1.25 GB per 1000 queries/day. So for
+example if the customer wants to ingest 10M queries per day we recommend
+10M / 1k x 1.25 GB = 10 TB.
+
+The idea here was to get a disk size that could store all the queries
+ingested fora few years.
+
+This is a conservative estimate based on a high average query text size.
+Customers can configure the query retention period.
+
+Customers that are willing to monitor disk space and quickly add on
+later could start with a much lower size. QLI should fill up space in a
+linearly increasing way, so it should be easy to watch the graph over
+time and predict when you need to add more.
+
+Amount of Compose Usage
+~~~~~~~~~~~~~~~~~~~~~~~
+
+You can roughly approximate the disk space needed for Compose as:
+
+    - Average query result size x Queries per day x 7
+
+If you have 100 daily users and they query 100 times, you could estimate an upper bound of 4 MB x 100 users x 100 queries x 7 days = 280 GB. This calculation is based on 4 MB for average query result size as a reasonable guess. You can start with a smaller estimate and monitor. You may need to add space if required.
+
+Alation stores query results from user queries. For each result, it will only store 16 MB by default. However, the Server Admin can increase this value to up to 100 MB. Query Result Size is configurable in **Admin Settings** > **Compose Settings**. For more information on how to
+configure the value of Query Result Size, see :doc:`Configuring Query Result Size <../../analyst/WorkwithQueryResults/ConfigureQueryResults/ConfigureQueryResultSize>`.
+
+From 2021.4, the default value of the **alation_conf** parameter ``alation.query_exec.results_auto_persist_bytes`` defaults to zero. This means that query results of any size that have not been explicitly saved by users are not stored longer than seven days (default) and that queries of any size are subject to the same seven-day retention period. Previously, the default value of this parameter was 1 MB, which could lead to small query results accumulation over time.
+
+Admins can use the ``alation_action purge_execution_results`` to reclaim space taken up by stored query results.
+
+Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation Analytics is a solution which provides a way for
+Alation Administrators to monitor feature usage in Alation. Alation
+Analytics sets up a replicated copy of Alation’s internal database which
+is available for querying in Compose by users with access.
+
+Alation Analytics was first released with V R3 (5.6.x), and then redesigned in 2020.3 as
+Alation Analytics V2. From release *2020.3.x*, all new installations of Alation should use **Alation Analytics V2**. Alation Analytics V1 is no longer available for new installations.
+
+Alation Analytics V2 can have a significant impact on disk space
+consumption. The current recommendation from Alation is to double the disk
+space estimates to account for the replicated database copy. However, if you are
+able to monitor your disk space usage and add more space easily, you can start with a smaller size.
+
+Since Alation Analytics V2 is almost a replica of the internal database Rosemeta, Alation
+recommends that you have at least ``((1.5~2)\* du -sh
+/var/lib/pgsql/13/)`` GB of disk space free before you enable Alation
+Analytics.
+
+Alation Analytics V2 can be installed on a remote host, separately from the Alation Catalog, which is a way recommended by Alation. Please find detailed system requirements for Alation Analytics V2 at :doc:`Enable and Install Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/EnableAlationAnalyticsV2>`.
+
+Open Connector Framework
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Available from 2020.4*
+
+Open Connector Framework is a solution which provides a way to support external connectors developed by partnering teams in order to add specific sources to the Catalog. Connectors created on the basis of OCF - or OCF connectors - are installed in addition to the Alation application and can be maintained separately from the Data Catalog.
+Alation recommends installing OCF components on the same host with the Alation application. For each BI connector to be installed, it is recommended to have 500 MB of disk space (a conservative estimate). Refer to :doc:`Install Alation Connector Manager <../../sources/OpenConnectorFramework/OCFInstallAlationConnectorManager>` for more details.
+
+Disk IO
+-------
+
+Alation uses a good amount of disk IO to do batch processing jobs, but
+it is generally not an issue. Usually a standard AWS EBS volume with
+250 MB/sec throughput is fine. Alation does not have precise throughput
+or IOPs recommendations.
+
+In rare cases, we have seen an impact on site users due to a disk IO
+bottleneck. A few times we have seen this happen when the disk IO gets
+artificially throttled by some virtualized storage system after Alation
+used some threshold amount.
+
+Using SSDs will markedly speed up batch jobs but it’s generally not
+necessary to get that speed up.
+
+Common Problems
+---------------
+
+Specific process runs out of memory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes the Connector (component that runs Compose queries) or Elasticsearch
+will run out of memory. These are JVM based process and they have a
+preset cap on how much memory they can use. This value is configurable.
+Increasing the overall instance size will not automatically allow these
+processes to use more memory. If you experience this problem you can
+usually increase this cap on the problem process.
+
+OS runs out of memory and terminates processes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The OS will stop a process using too much memory if it needs some. You
+will see a message in the system log about it. This can happen when a
+batch job spikes in memory usage. If the sizing guide was followed this
+is unlikely to happen. It may
+be some other issue is causing the job to use more memory than expected
+and the extra size won’t be needed long term.
+
+Specific job crashes
+~~~~~~~~~~~~~~~~~~~~
+
+If a job crashes but wasn’t killed by the OS it may be due to some other
+constraint in the job. For example, MDE failed when a certain number of
+columns were all in one schema. It processed per schema and at a certain
+size it reached a hard limit in Postgres.
+
+Specific page loads slow
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes a specific page or area of the product is slow but not others.
+It is unlikely that increasing system specs will help here. Usually
+that page does not scale well in a particular dimension. For example,
+the list of sources page in one instance got slow when the number
+of deleted data sources was high. Someone was testing adding and
+deleting constantly on it and had a huge DS count compared to usual.
+
+Intermittent slowness
+~~~~~~~~~~~~~~~~~~~~~
+
+These issues are the hardest to troubleshoot but there are a few most common
+problems:
+
+-  Compose: sometimes if Connector ran out of memory or stalled, the Compose web app gets stuck waiting to hear back from it and runs out of threads to handle new requests. A lot of Compose performance issues have been fixed in newer versions of Alation.
+
+-  High usage of the site, often during a mass training: usually, even
+   with 200 daily active users, the users do not actively use the UI at exactly the same moment. When there is a concentrated mass usage, the web app may run out of processes to handle the traffic. These processes can be increased to double or x4 the default of 10 and that often solves the problem. You need some spare memory to increase this count but they don’t take too much.
+
+-  Large batch jobs stressing disk IO: sometimes a backup job or some other
+   job is putting stress on the disk and slowing down the experience of users.
+
+-  High usage of bulk APIs: currently API usage is handled by the same
+   resource. Someone may write a script that tries to massively
+   parallelize some work and this can use up the resources. As a result, users
+   get a slower experience.
+
+Ran out of disk space
+~~~~~~~~~~~~~~~~~~~~~
+
+This is usually predictable if you have a graph of disk usage for your
+instances. Sometimes it might spike while performing a backup or some
+batch job (using a temp file). You should see those spikes in your graph
+though and they are regular and predictable then.
+
+The best way to clear space is usually to turn on QLI archival/deletion.
+Once processed we don’t need to keep ingested queries. You can set the
+retention period. It defaults to on and 6 months retention in most newer
+versions of Alation.
+
+Configurable Parameters
+-----------------------
+
+Alation has several parameters that can be configured in ``alation_conf``
+that will allow you to change the amount of memory associated with
+different aspects of the system.
+
+For *V R5 (5.9.x)*, the new configurable parameters
+are ``bulk_insert_SQL_str_length_limit`` and ``stewardship.curation_progress.ingestion.batch_size``. For more information on how to configure the values of these parameters,
+see  :doc:`Set bulk_insert_SQL_str_length_limit Parameter <../../admins/AdditionalConfiguration/Setbulk_insert_SQL_str_length_limitParameter>`  and :doc:`Set stewardship.curation_progress.ingestion.batch_size Parameter <../../admins/AdditionalConfiguration/SetStewardshipParameter>`.
+
+To change one of these parameters, enter the Alation shell and change
+the ``alation_conf`` value as in the following example.  After changing the
+configuration values, you will need to restart part or all of the
+Alation system.
+
+.. code-block:: Bash
+
+   sudo service alation shell
+   alation_confelasticsearch.env.es_heap_size -s 2g
+   alation_action restart_alation
+
+.. tabularcolumns:: |p{3cm}|p{2cm}|p{5cm}|p{5cm}|
+
+========================================== ================ ================= =======================
+Parameter                                   Default          Description       Guidance
+========================================== ================ ================= =======================
+``connector.ram``                           4g               RAM allocated     If you get OOM
+                                                             to the Compose    errors in
+                                                             Connector         ``connector_err.log``
+                                                             increase this.
+
+                                                             If you don't
+                                                             use Hive, the
+                                                             default 4 GB is
+                                                             nearly always
+                                                             enough.
+
+                                                             If you use Hive
+                                                             and have 64 GB+
+                                                             RAM, increase
+                                                             this to 8 GB and
+                                                             more if it
+                                                             OOMs. We found
+                                                             that Hive
+                                                             drivers are not
+                                                             as RAM
+                                                             efficient as
+                                                             other drivers.
+
+``taskserver.ram``                          4g               RAM allocated     If you get OOM
+                                                             to the Task       errors in
+                                                             Server (MDE,      ``taskserver_err.log``
+                                                             QLI, etc)         increase this.
+
+``elasticsearch.env.es_heap_size``          1g               RAM allocated     If you get OOM
+                                                             to the search     errors in
+                                                             engine            ``elasticsearch.log``
+                                                                               increase this.
+                                                                               If you have
+                                                                               over a million
+                                                                               objects in your
+                                                                               catalog
+                                                                               increase this
+                                                                               to 2 GB. If you
+                                                                               have >10
+                                                                               million
+                                                                               objects,
+                                                                               increase to 4 GB.
+
+``uwsgi.processes``                         10               Number of         If you have >
+                                                             processes         32 GB memory
+                                                             handling          increase to 20.
+                                                             requests from     You may not
+                                                             users of the      need it but it
+                                                             app               doesn't take
+                                                                               much additional
+                                                                               memory. Note
+                                                                               that each
+                                                                               process has 2
+                                                                               threads so 2x
+                                                                               uwsgi.processes
+                                                                               is the amount
+                                                                               of parallel
+                                                                               requests
+                                                                               supported
+========================================== ================ ================= =======================

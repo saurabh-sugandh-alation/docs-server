@@ -1,0 +1,89 @@
+Troubleshoot the OCF S3 Connector Configuration
+===================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Terraform Configuration
+--------------------------
+
+  1. AWS Error while executing a script:
+
+      - Make sure that you have provided a valid permission to the user which is used in the script
+
+  2. Bucket missing error:
+
+      - Make sure the buckets present in the source-bucket-list.json file exist in S3
+
+  3. Access denied error:
+
+      - Make sure you have required access while executing a script
+      - Make sure you have added a correct region
+
+  4. Cannot create a bucket error:
+
+      - Make sure you have given required permission and also a unique name to target_bucket_for_inventory
+
+  5. Cannot create a Lambda function error:
+
+      - Make sure you have given required permission and also a unique name to lambda_function_name
+
+Alation Configuration
+-------------------------
+
+1. Test connection issue:
+
+      - Make sure the AWS access key and secret key is correct
+
+      - Make sure you have provided the correct region
+
+      - Make sure the user has access as described in :ref:`Configure Access and Permissions <set-up-s3-auth>`.
+
+2. No inventory reports found:
+
+      - Make sure that the destination bucket is correct
+
+      - If the destination bucket is correct then wait 48 hours after setting up inventory for inventory generation and try again
+
+3. MDE or filter extraction failure due to access issue:
+
+      - Make sure the user has access to destination bucket
+
+4. Duplicate columns when column name contains special characters:
+
+      - After you upgrade the Amazon S3 OCF connector to version **3.8.6** or later, you may notice duplicate columns for columns with names containing special characters. To remove duplicates, enable **Remove Buckets from the catalog that are not captured by the lists below** before you run the next schema extraction.
+
+          .. note::
+
+              This will also remove all the buckets that are not part of the selective extraction list.
+
+5. MDE or bucket list error:
+
+      - **Error:**
+
+          - File is initialized without providing a ``rootPath``
+
+          - File path can't be null or empty
+
+      - **Troubleshooting:**
+
+          - Do not reuse buckets for the destination inventory bucket for this connector
+
+          - Ensure that all buckets in the destination bucket are named properly
+
+          - Verify the Inventory Configuration for each source bucket you are ingesting
+
+          - If there is already a bucket path that has a blank name or a forward slash ``/`` in the destination inventory bucket, remove it. Review the inventory configuration for each source bucket
+
+
+Lambda Function Logs
+-------------------------
+
+  1. Go to **Amazon S3 console > Lambda Functions** section.
+
+  2. Select the lambda function that you have created and go to the **Monitor** section.
+
+  3. Click **View Logs** in Cloudwatch. It will open in a new tab.
+
+  4. In Cloudwatch, search for a particular log based on a date or prefix.
+
+Also refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.

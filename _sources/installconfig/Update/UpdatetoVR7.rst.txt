@@ -1,0 +1,208 @@
+Updating Alation to V R7 (5.12.x)
+====================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Prepare for Update
+------------------------
+
+Step 1. Receive and upload a new V R7 license
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before updating to V R7, make sure your Alation instance is using the new type of Alation license. All licenses issued by Alation after February 19, 2020 are licenses of the new type which will work with V R7.
+
+If you have an older license, you need to get and upload the new license file for your Alation instance even though the existing license is not expiring. Work with your account manager for the new license to be issued, download it from the Alation Customer Portal and upload to your Alation instance before attempting the update to V R7. Note that if you update Alation to V R7 without providing the new V R7 license, all users, including Server Admins, will find themselves locked out of the Alation UI until the new license is provided.
+
+.. note::
+
+   V R7 introduces a new licensing model that adds new types of licenses and new roles. Note that the new license management model is not enforced yet, but requires the use of a new type of Alation license.
+
+   See :doc:`How to Update the License File <../../installconfig/ServerInstallation/UpdateaLicenseFile>` about how to upload a new license.
+
+Step 2. Evaluate available resources to allow for Elasticsearch upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+During update to V R7, the Elasticsearch component is upgraded from version 1.7 to version 7.4.
+
+After your instance is successfully updated to V R7, Alation will begin search index migration to Elasticsearch 7. During this process, Elasticsearch 1 and 7 will both be using an equivalent amount of memory, which may result in doubling memory usage by Elasticsearch on a temporary basis. This process will be happening in the background and is not expected to have any impact on Alation users. When it completes, Alation will automatically switch to fully using Elasticsearch 7 and memory usage by Elasticsearch will be back to normal.
+
+The instance should be sized to allow for equivalent memory usage for both Elasticsearch 1.4 and Elasticsearch 7.4 while migration is running.
+
+If the instance is close to its memory usage maximum and does not have any to spare, it is possible that the update to V R7 may cause an out of memory error on the Alation server after the update. If this happens, there may be a brief outage of search functionality while processes are restarted. The Elasticsearch migration will be initiated again on the weekend. If there is still not enough spare memory on the weekend, the Elasticsearch migration job will keep failing and manual intervention will eventually be required.
+
+See :doc:`Elasticsearch Upgrade to 7.4 FAQ and Troubleshooting </installconfig/Update/UpgradeElasticsearchVR7>`.
+
+V R7-Specific Information
+---------------------------------
+
+New Licensing and Roles Models
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In V R7, Alation is introducing a new licensing and roles system. Roles from previous releases will be migrated over to the new model and mapped onto the new roles and licensed seats. *Standard User* role will be migrated to one of the new roles: *Composer*, *Steward*, or *Source Admin*, depending on several conditions. *Server* and *Catalog Admin* roles will remain as is.
+
+The new roles are not enforced by default. Users will have access to the same functionality as before despite the new roles assignment.
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
++-------------------------------+------------------------+----------------------------------------------------------------------------+
+| Roles before V R7             | Role in V R7           | Notes                                                                      |
++===============================+========================+============================================================================+
+| Server Admin                  | Server Admin           | No changes                                                                 |
++-------------------------------+------------------------+----------------------------------------------------------------------------+
+| Catalog Admin                 | Catalog Admin          | No changes                                                                 |
++-------------------------------+------------------------+----------------------------------------------------------------------------+
+| Standard User                 | Source Admin           | **Standard User** -> **Source Admin** if this user has access to data      |
+|                               |                        | sources as a Data Source Admin                                             |
++-------------------------------+------------------------+----------------------------------------------------------------------------+
+| Standard User                 | Composer               | **Standard User** -> **Composer** if this user does NOT have access        |
+|                               |                        | to data sources as a Data Source Admin and if this user has created and/or |
+|                               |                        | run queries in Compose.                                                    |
++-------------------------------+------------------------+----------------------------------------------------------------------------+
+| Standard User                 | Steward                | **Standard User** -> **Steward** if this user does NOT have access to data |
+|                               |                        | sources as a Data Source Admin and if this user has never accessed Compose.|
++-------------------------------+------------------------+----------------------------------------------------------------------------+
+| N/A                           | Viewer                 | New role. Existing users will not be migrated to this role; however, when  |
+|                               |                        | a new user signs up for an Alation account in V R7, their initial role     |
+|                               |                        | will default to Viewer.                                                    |
+|                               |                        | The Viewer role is not enforced by default: Viewers will be able to access |
+|                               |                        | the same scope of functionality as users with the Steward role.            |
+|                               |                        | About new roles in V R7.                                                   |
+|                               |                        | :doc:`Roles Overview V R7 <../../welcome/CatalogBasics/RolesOverviewVR7>`  |
++-------------------------------+------------------------+----------------------------------------------------------------------------+
+
+PostgreSQL Upgrade to 9.6
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Alation strongly recommends that you plan for upgrading the internal PostgreSQL database to version 9.6. if this has not been done yet. Internal PostgreSQL can be upgraded on a separate schedule after you have updated Alation to V R7.
+
+Alation will stop using PostgreSQL 9.3 in the next release that will follow V R7 (currently planned for July 2020). Thus, upgrading PostgreSQL from 9.3 to 9.6 will become a requirement for moving to the next new release.
+
+See  :doc:`Upgrade Internal PostgreSQL Instances from 9.3 to 9.6 <../../installconfig/Update/UpgradeInternalPostgreSQLInstances>` for steps.
+
+Update Alation
+-------------------
+
+.. important::
+
+   Make sure your instance is using the new V R7 license. See `Step 1. Receive and upload a new V R7 license`_.
+
+
+The process of updating Alation to V R7 (5.12.x) from an older release depends on your current release number.
+
+If you want to update from versions:
+
+- V R5 (5.9.x) and V R6 (5.10.x) - see `V R5 and V R6 To V R7`_
+- V R2 (5.4.6-5.4.10), V R3 (5.6.x), V R4 (5.8.x) - see `V R2 (5.4.6-5.4.10), V R3, VR4 To V R7`_
+- V R2 (5.4.0-5.4.5), see `V R2 (5.4.0-5.4.5) To V R7`_
+- If you want to update from versions before V R2, and namely 4.8.x and V R1 (5.0.x) - read the information in `Updating From Before V R2 (5.4.x)`_.
+
+V R5 and V R6 To V R7
+~~~~~~~~~~~~~~~~~~~~~~~
+Update from V R5 (5.9.x) and V R6 (5.10.x) to V R7 (5.12.x) follows the `Regular Update Scenario`_.
+
+.. note::
+
+   If you haven’t performed PostgreSQL upgrade in V R6, Alation recommends that you do it after updating to V R7. See `PostgreSQL Upgrade to 9.6`_.
+
+V R2 (5.4.0-5.4.5) To V R7
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Updating from versions 5.4.0 - 5.4.5 to V R7 cannot happen directly due to the absence of several internal changes  introduced in patch 5.4.6 and are required for this update. Update to V R7 requires two stages. The options are:
+
+- First update to the latest V R2 patch (5.4.10) then update to V R7
+- First update to the latest patch of V R3, V R4, V R5, or V R6, upgrade to V R7.
+
+V R2 (5.4.6-5.4.10), V R3, VR4  To V R7
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Review the following information.
+
+MongoDB Migration
+^^^^^^^^^^^^^^^^^^^^
+
+In V R7 (5.12.x), Alation no longer includes the MongoDB component. In your release, migration from MongoDB to PostgreSQL was happening in the background and should have already been completed. Update to R7 following the `Regular Update Scenario`_. However, the V R7 updater might exit with the following error:
+
+`The installer will abort until migration job from MongoDB to Postgres has succeeded`
+
+This message indicates that MongoDB migration has not yet completed on your instance.
+
+Changes to Scheduled Queries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See :ref:`Scheduled Query Migration: V R6 Changes <Update_VR6-Scheduled_Query_Migration>`. This information applies to V R7 too.
+
+Regular Update Scenario
+-------------------------
+
+*Applies if you are updating from V R2, V R3, V R4, V R5, and V R6*
+
+Plan your update using the following information:
+
+#. General Alation update information: :doc:`Updating Alation <../../installconfig/Update/index>`
+
+#. Important :doc:`Update Safety Best Practice <../../installconfig/Update/UpdateSafetyBestPractice>`
+
+#. Update instructions depending on your instance type:
+
+      - :doc:`Manual Software Update - Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+      - :doc:`Update on HA Pair (4.7 and Above) <../../installconfig/Update/updateHAPair>`
+
+4. PostgreSQL upgrade from 9.3 to 9.6: :doc:`Upgrading Internal PostgreSQL Instances From 9.3 To 9.6 <../../installconfig/Update/UpgradeInternalPostgreSQLInstances>`.
+
+Updating From Before V R2 (5.4.x)
+-----------------------------------
+
+If your current release is between 4.8.x and V R1 (5.0.x), then updating to V R7 will have to be achieved in three steps.
+
+Step 1: Update to V R4 (latest patch version)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You will need to update to:
+
+- V R4 (latest available patch version)
+
+.. note::
+
+   In your Alation version, one of the internal components is MongoDB.  It is used for storing Alation server data, such as, for example, the results of Compose queries.
+   Starting with version *V R2 (5.4.x)*, Alation began to migrate the server data off MongoDB to a PostgreSQL database. This transition is happening in the background and is complete in *V R5 (5.9.x)* where the MongoDB component is no longer present in the Alation package.
+   This transition is a major architectural change in the Alation application, and, unfortunately, it does not allow us to support a seamless update from your version to V R7.
+   The intermediary stage is updating to V R4 (latest available patch), which is required for Alation to start and complete the transition from MongoDB to PostgreSQL as the internal server data repository.
+
+Plan your update to V R4 using the following information:
+
+#. General Alation update information: :doc:`Updating Alation <../../installconfig/Update/index>`
+
+#. Important :doc:`Update Safety Best Practice <../../installconfig/Update/UpdateSafetyBestPractice>`
+
+#. :doc:`Release-Specific Update Pre-checks <../../installconfig/Update/ReleaseUpdatePrechecks>`: this instruction does apply to your Alation instance. Perform the checks to prepare for the update.
+
+#. Update instructions depending on your instance type:
+
+        - :doc:`Manual Software Update - Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+        - :doc:`Update on HA Pair (4.7 and Above) <../../installconfig/Update/updateHAPair>`
+
+When you successfully update Alation to V R4, you can move to the next step.
+
+Step 2: Allow Time For MongoDB Transition to Complete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Let your updated R4 instance run over at least one weekend. In the background, Alation will start and complete the server data migration off MongoDB to PostgreSQL.
+
+After the Mongo migration is complete, you can go to the next stage and update to V R7.
+
+.. note::
+
+   On a Saturday after the update, Alation will automatically trigger the MongoDB migration script that copies the Alation server data from MongoDB to PostgreSQL. In a regular scenario, this migration should be completed over one weekend. If it requires a longer time, the process will be working until the migration is finished successfully.
+
+   You can check mongo-data-migration.log at ``/opt/alation/site/logs`` after the weekend to make sure that migration is complete.
+
+Step 3: Update to V R7
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Plan your update to V R7 using the information in Help Center then update your instance: `V R2 (5.4.6-5.4.10), V R3, VR4  To V R7`_.
+
+.. note::
+
+   During the update you might see the message:
+
+   **The installer will abort until migration job from MongoDB to Postgres has succeeded.**
+
+   This means the data migration may have completed with errors.

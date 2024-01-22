@@ -1,0 +1,190 @@
+Backup Configuration Parameters
+===================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+The information on this page is given for reference only. Do not modify the parameters listed in this table unless you follow specific instructions, for example:
+
+- :doc:`/installconfig/BackupandRestore/ConfigureBackups/ConfigureIncrementalBackups`
+- :doc:`/installconfig/BackupandRestore/ConfigureBackups/SetupCustomBackupSchedule`
+- :doc:`/installconfig/BackupandRestore/ConfigureBackups/DefineNumberOfBackupsToRetain` (Backup V1, Backup V2)
+
+.. note::
+
+    Modifying **alation_conf** parameters without specific instructions is not a safe action. For more information about **alation_conf**, see :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.
+
+Jump to the table for your current backup tool:
+
+    - `Backup V2 Configuration Parameters`_
+    - `Backup V1 Configuration Parameters`_
+
+
+
+Backup V2 Configuration Parameters
+----------------------------------------------------
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
++-------------------------------------------+-------------------+---------------------------------------------------+
+| Parameter                                 | Value             | Description                                       |
++===========================================+===================+===================================================+
+| ``alation.backup_v2.incr_backup``         | ``True`` or       | Enables incremental backups.                      |
+|                                           | ``False``         | No restart is required when the value is changed. |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup_v2.incr_backup_versions``| Number            | Sets the number of incremental backups per full   |
+|                                           |                   | backup.                                           |
+|                                           |                   | No restart is required when the value is changed. |
+|                                           |                   | Default = 0, which means *full backups*           |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.data_temp_dir``          | Path inside       | Default: **/data2/tmp/**                          |
+|                                           | the Alation       | Sets the working directory for the backup process.|
+|                                           | shell             | No restart is required when the value is changed. |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.data_dump_dir``          | Path inside       | Default: **/data2/backup/**                       |
+|                                           | the Alation       | Sets the backup storage directory on the Alation  |
+|                                           | shell             | host. Compressed backup files are created         |
+|                                           |                   | in this directory.                                |
+|                                           |                   | No restart is required when the value is changed. |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.data_dump_versions``     | Number            | Defines the number of backups to keep on the      |
+|                                           |                   | backup disk. Default: **5**.                      |
+|                                           |                   | No restart is required when the value is changed. |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.restore_file``           | Path inside       | Example: **/data2/backup/<file_name.tar>**        |
+|                                           | the Alation       | Path to the backup file to be used during the     |
+|                                           | shell             | restore.                                          |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.scheduled_minute``       | Number 0-60       | Default: ``0``                                    |
+|                                           | for minutes of    | Defines minutes for the backup schedule           |
+|                                           | of an hour        |                                                   |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.scheduled_hour``         | Number 0-23       | Defines hour for the backup schedule              |
+|                                           | for hours in      | Default: ``4``                                    |
+|                                           | a day             | Use 24-hour format                                |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.scheduled_day``          | Comma             | Defines days for the backup schedule.             |
+|                                           | separated         | Default: ``sun,mon,tue,wed,thu,fri,sat``          |
+|                                           | values for        |                                                   |
+|                                           | days of week      |                                                   |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.enabled``                | True              | Do not modify manually.                           |
+|                                           |                   | Stores the status of the backup process on an     |
+|                                           |                   | instance. If set to False, the Alation instance   |
+|                                           |                   | is not backed up, which is an unsafe practice.    |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup_v2.enabled``             | False             | Do not modify manually.                           |
+|                                           |                   | Stores the status of the Backup V2 feature on an  |
+|                                           |                   | instance. True means enabled.                     |
+|                                           |                   | False means disabled.                             |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``pgsql.config.backup_enabled``           | True              | Enables the backup for the PostgreSQL component   |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.post_script.enabled``    | True              | Defines whether or not to launch the post script  |
+|                                           |                   | after the backup creation                         |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.post_script.path``       | Path to the       | **/data1/site_data/s3_backup_sync.sh %f**         |
+|                                           | script            |                                                   |
+|                                           |                   | The post script is used to upload the backup .tar |
+|                                           |                   | file to Amazon S3. It is possible to use another  |
+|                                           |                   | cloud storage. Add a custom script and provide    |
+|                                           |                   | the path to this script.                          |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.chef_timeout``           | ``21600``         | Time in seconds.                                  |
+|                                           |                   | Defines how long Chef waits to run commands.      |
+|                                           |                   | Backups might fail if this is too short.          |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.io_nice``                | ``2``             | Defines what ionic value to use to not overload   |
+|                                           |                   | the disk.                                         |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup.site_data_exclusions``   | ``tmp``,          | Defines what content to exclude from the backup   |
+|                                           | ``kvstoredb``,    | of the **site_data** folder.                      |
+|                                           | ``logs``,         |                                                   |
+|                                           | ``django.cache``, |                                                   |
+|                                           | ``dumps``         |                                                   |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup_v2.backup_space``        | ``0.0``           | Uncompressed file space of backup file verified   |
+|                                           |                   | during restore. Set automatically and should      |
+|                                           |                   | not be modified manually.                         |
++-------------------------------------------+-------------------+---------------------------------------------------+
+| ``alation.backup_v2.incr_count``          | Number            | Number of incremental backups completed           |
+|                                           |                   | including the initial full backup.                |
+|                                           |                   | Should not be set manually.                       |
++-------------------------------------------+-------------------+---------------------------------------------------+
+
+
+Backup V1 Configuration Parameters
+----------------------------------------------------
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
++-------------------------------------------+-------------------+------------------------------------------------+
+| Attribute                                 | Value             | Description                                    |
++===========================================+===================+================================================+
+| ``alation.backup.pg_compress``            | ``True`` or       | Defines whether the backup will be             |
+|                                           | ``False``         | compressed.                                    |
+|                                           |                   |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.data_dump_versions``     | Number            | Defines the number of backups to keep          |
+|                                           |                   | on the backup disk.                            |
+|                                           |                   |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.site_data_exclusions``   | ``tmp``,          | Defines what not to backup in the              |
+|                                           | ``kvstoredb``,    | **site_data** folder.                          |
+|                                           | ``logs``,         |                                                |
+|                                           | ``django.cache``, |                                                |
+|                                           | ``dumps``         |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.restore_file``           | /path/to/backup   | Defines what backup file to use for restoring. |
+|                                           |                   |                                                |
+|                                           |                   |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.io_nice``                | ``0`` for none,   | Defines what ionic value is used.              |
+|                                           | ``1`` for         |                                                |
+|                                           | real-time, ``2``  |                                                |
+|                                           | for  best-effort, |                                                |
+|                                           | ``3`` for idle    |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.pg_compress_level``      | ``0`` to ``9``    | Defines the compression level for the          |
+|                                           |                   | pg_backup tool.                                |
+|                                           |                   |                                                |
+|                                           |                   |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.chef_timeout``           | Time in seconds.  | Defines how long chef waits to run             |
+|                                           |                   | commands. Backups may fail if this             |
+|                                           |                   | time is too short.                             |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.data_dump_dir``          | /path/to/dir      | Defines which directory the backups are        |
+|                                           |                   | saved too.                                     |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.data_temp_dir``          | /path/to/dir      | Defines the staging directory where backups    |
+|                                           |                   | are extracted.                                 |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.enabled``                | ``True`` or       | Defines if backups are enabled.                |
+|                                           | ``False``         |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``pgsql.config.wal_keep_segments``        | 3000 (48GB)       | Defines the number of WAL segments to retain.  |
+|                                           |                   | This is useful if Postgres compression is      |
+|                                           |                   | enabled.                                       |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.scheduled_minute``       | ``0`` to ``60``   | Defines minutes of the backup schedule.        |
+|                                           | for number of     |                                                |
+|                                           | minutes in        |                                                |
+|                                           | an hour           |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.scheduled_hour``         | ``0`` to ``23``   | Defines the hour for the backup schedule.      |
+|                                           | for hours in a    |                                                |
+|                                           | day               |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.scheduled_day``          | Comma-separated   | Defines the days for the backup schedule.      |
+|                                           | values for Sunday | Default: ``sun,mon,tue,wed,thu,fri,sat``.      |
+|                                           | to Saturday       |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.post_script.enabled``    | ``True`` or       | Defines wether or not to launch the            |
+|                                           | ``False``         | post backup script.                            |
++-------------------------------------------+-------------------+------------------------------------------------+
+| ``alation.backup.post_script.path``       | Path with ``%f``  | Defines the path to  the post backup script.   |
+|                                           | used as a         |                                                |
+|                                           | variable for the  |                                                |
+|                                           | current backup    |                                                |
+|                                           | file              |                                                |
++-------------------------------------------+-------------------+------------------------------------------------+

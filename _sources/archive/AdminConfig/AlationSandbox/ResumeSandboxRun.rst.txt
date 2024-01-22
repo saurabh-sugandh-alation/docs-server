@@ -1,0 +1,33 @@
+Resume Sandbox Run
+============================
+
+.. include:: /shared/SandboxDeprecated.rst
+
+*Available from Sandbox version 4.0.1.x*
+
+During its run, Sandbox creates progress checkpoints that are recorded to the file **/var/checkpoint/alation/alation-sandbox/checkpoint** on the Sandbox host. A checkpoint can be viewed as a logical mark which indicates that a specific stage was successfully passed and that the process can be resumed from this stage onward in case it is interrupted during the next stage.
+
+An admin can resume the Sandbox workflow from the latest available checkpoint instead of starting the whole process from the beginning if Sandbox issues an error and stops. The checkpoints are created after each of the following stages:
+
+    - Download Alation builds (if they are not present on the host)
+    - Install previous version
+    - Restore the backup
+    - Upgrade to the newer version
+    - Create a user login
+
+For example, if there is a backup restore error during the backup restore stage (corrupted backup), an admin can update the backup path to point to a valid backup and then resume the Sandbox workflow from the last checkpoint instead of completely reinstalling Alation.
+
+To resume the Sandbox run, use the flag ``--resume`` with the run command. When the resume flag is used, Sandbox automatically checks for the latest available checkpoint.
+
+To resume the Sandbox run:
+
+    .. code-block:: Bash
+
+        cd /opt/alation/alation-sandbox/
+        nohup sudo ./alation-sandbox run --resume &
+
+.. note::
+
+    When testing the update to version 2021.1, use a backup taken from an instance where key rotation has been successfully completed. Completing key rotation at least once is a prerequisite to updating Alation to 2021.1.
+
+    If you use a backup taken from an instance where key rotation has not been performed, the update to 2021.1 will fail. In this case, Sandbox run cannot be resumed, and has to be re-run from the start after providing a new backup. In this specific case, do not use the ``--resume`` flag. Instead, the ``run`` to repeat the Sandbox workflow from the beginning.

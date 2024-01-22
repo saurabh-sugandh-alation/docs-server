@@ -1,0 +1,415 @@
+Google BigQuery Prerequisites
+===============================
+
+Starting from version *V R6 (5.10.x)*, Alation uses a Google-authorized driver developed by Simba Technologies to connect to Google BigQuery data sources:
+**com.simba.googlebigquery.jdbc42.Driver.com.alation.drivers.simba.bigquery.0.1**.
+
+If you are updating to V R6 or a later release from before V R6, note that the built-in driver will be automatically changed to the new Simba®️ driver. The old driver will no longer appear in the list of drivers on the **General Settings** page of the data source. Your existing data source will remain fully functional after the update but will use the new driver.
+
+Required Information
+-----------------------
+
+To add a BigQuery data source in Alation, you need the following information:
+
+-  **Project ID** The Project ID of a project in Google BigQuery that you want to add as a data source in Alation. It should be provided in the **Database Name** field when adding the source.
+
+  .. important::
+
+      Make sure the Project is **billing-enabled**.
+      During MDE, QLI, and Profiling/Sampling Alation runs SELECT queries against Google BigQuery projects. These queries and all queries users run in Compose **will be billed by Google Cloud Platform (GCP) on this Project ID**.
+
+-  **BigQuery API** must be enabled for the Google Cloud Platform (GCP) Project.
+
+  .. note::
+
+      In GCP, go to **APIs & Services** > **Dashboard** for your Projects to check that the BigQuery API is enabled. If not, to enable it, click **ENABLE APIS AND SERVICES** and select **BigQuery API**.
+
+-  **Google BigQuery account(s) for authentication**:
+
+  Starting from *V R6 (5.10.x)*, you can authenticate with either a user account or a service account, or both. In releases before V R6, both user and service accounts are required to set up a GBQ data source. See `Authentication`_. These accounts must be assigned the required permissions
+
+- **Required roles with appropriate permissions** user and service accounts you are going to use for authentication in Alation must be assigned the required permissions described in `Assign Required Permissions`_.
+
+
+Authentication
+----------------
+
+Alation will authenticate against BigQuery every time any of the following is attempted: MDE, QLI, Profiling/Sampling, and use of Compose.
+
+Two authentication mechanisms are supported: a **user account** or/and a **service account**.
+
+
+Authentication with a **user account** allows you to use full
+functionality available for Google BigQuery data sources:
+
+  -  Metadata Extraction (MDE)
+  -  Query Log Ingestion (QLI)
+  -  Profiling and Sampling
+  -  Compose and Dynamic Profiling
+
+Note that when a user account is used for authentication in Alation, all Compose queries will be logged in the BigQuery query history as run by the user whose OAuth certificate is uploaded in the data source Settings even though Compose users establish connection to GBQ using their own Google credentials. A user account is associated with a specific user in Google, so all queries from Alation will be logged as run by this user in the GBQ query log. The Alation admin can analyze Compose usage by individual users in Alation, but not in the BigQuery query history.
+
+
+Authentication with a **service account** will allow you to do MDE,
+Profiling, and QLI in the Catalog but is not sufficient to query the
+projects in Compose. Compose requires user account-based authentication to connect to the source. You can create a service account in a CGP Project then assign permissions to that service account in the BigQuery Project hosting the data.
+
+Service accounts use JSON credential files ("keys") which will be stored (encrypted) on the Alation server. Using a service account does not require any further authentication.
+
+.. important::
+
+    Alation will fetch the datasets from all GCP Projects that the user account or service account used for authentication has access to in GCP. You will be able to select which of the schemas (datasets) to extract into your data source on the **Metadata Extraction** tab of the data source **Settings** page in Alation.
+
+For more details, see:
+
+    -  `User Account`_
+    -  `Service Account`_
+
+.. note::
+
+    From *version 2020.3*, User Account Certificates and Service Account Keys uploaded to Alation are encrypted and stored in the internal Alation database (rosemeta).
+
+
+Assign Required Permissions
+------------------------------
+
+Starting with *V R6 (5.10.x)*, Alation requires that you assign two roles to the accounts you use
+for authentication with several required permissions. These roles are:
+
+- The predefined role of **BigQuery Job User**
+
+- A custom role **AlationUser** that needs to be created
+
+For information about releases before V R6, see `V R5 (5.9.x) and below`_.
+
+To create the custom role **AlationUser**, in GCP console, go to **IAM & Admin** >
+**Roles**, create a new custom role naming it **AlationUser**.
+
+To create the custom role **AlationUser**, in the GCP console, go to **IAM & Admin > Roles**, create a new custom role naming it **AlationUser** and assign it the required permissions:
+
+Roles and Permissions
+~~~~~~~~~~~~~~~~~~~~~~~
+
++---------------------------+----------------------------------------+--------------------------------+----------------+
+| Role                      | Description                            |Permission                      | Resource Level |
++===========================+========================================+================================+================+
+| BigQuery Job User                                                                                                    |
++---------------------------+----------------------------------------+--------------------------------+----------------+
+| roles/bigquery.jobUser    | Provides permission to run jobs,       | bigquery.jobs.create           | Project        |
+|                           | including queries, in the project.     |                                |                |
+|                           | The jobUser role can enumerate their   | resourcemanager.projects.get   |                |
+|                           | own jobs and cancel their own jobs.    |                                |                |
+|                           |                                        | resourcemanager.projects.list  |                |
++---------------------------+----------------------------------------+--------------------------------+----------------+
+| AlationUser                                                                                                          |
++---------------------------+----------------------------------------+--------------------------------+----------------+
+| AlationUser (Custom Role) | Provides permission to run jobs,       | bigquery.datasets.get          | Project        |
+|                           | including queries, in the project.     | bigquery.datasets.getIamPolicy |                |
+|                           | The user role can enumerate their own  | bigquery.jobs.create           |                |
+|                           | jobs, cancel their own jobs.           | bigquery.jobs.list             |                |
+|                           |                                        | bigquery.jobs.listAll          |                |
+|                           | When applied at the project or         | bigquery.models.getData        |                |
+|                           | organization level, the metadataViewer | bigquery.models.getMetadata    |                |
+|                           | provides permissions to:               | bigquery.models.list           |                |
+|                           |                                        | bigquery.routines.get          |                |
+|                           | - List all datasets and read metadata  | bigquery.routines.list         |                |
+|                           |   of all datasets in a project;        | bigquery.savedqueries.get      |                |
+|                           | - List all tables and views and reads  | bigquery.savedqueries.list     |                |
+|                           |   metadata of all tables and views in  | bigquery.tables.get            |                |
+|                           |   a project;                           | bigquery.tables.getData        |                |
+|                           | - Read data from the tables of a       | bigquery.tables.list           |                |
+|                           |   dataset.                             | bigquery.transfers.get         |                |
+|                           |                                        |                                |                |
+|                           | From 2021.4:                           | From 2021.4, To extract        |                |
+|                           |                                        | external tables:               |                |
+|                           | - Storage buckets must have the Storage|                                |                |
+|                           |   Object Viewer permission to extract  | bigquery.readsessions.create   |                |
+|                           |   the external tables.                 |                                |                |
+|                           |                                        | For projects with Google       |                |
+|                           | - If a project has Google Storage API  | Storage API enabled:           |                |
+|                           |   enabled, you need to select          |                                |                |
+|                           |   additional permissions.              | bigquery.readsessions.create   |                |
+|                           |                                        | bigquery.readsessions.getData  |                |
+|                           |                                        | bigquery.readsessions.update   |                |
++---------------------------+----------------------------------------+--------------------------------+----------------+
+
+For the Project you want to extract and query, assign the roles **BigQuery Job User** and **AlationUser** to the accounts you are going to authenticate with in Alation.
+
+.. note::
+
+    If the account you are authenticating with has the **Owner** role on any of the GCP
+    projects, Alation will be able to fetch the datasets from these
+    projects without the additional assignment of the roles BigQuery Job User and AlationUser.
+
+    The roles BigQuery Job User and AlationUser are required for accounts which  do not have the
+    Owner role.
+
+Which Permissions Are Required for Which Data Job?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Data jobs in Alation use the following specific permissions:
+
++-----------------------------------------------------------+------------------------------+
+| Data Job                                                  | Permissions                  |
++===========================================================+==============================+
+| **MDE**                                                   | config.get                   |
+| Periodically fetches the metadata (schemas, tables,       | datasets.get                 |
+| columns, procedures, etc) to keep the catalog             | datasets.getIamPolicy        |
+| representation                                            | jobs.create                  |
+|                                                           | jobs.list                    |
+|                                                           | jobs.listAll                 |
+|                                                           | models.getData               |
+|                                                           | models.getMetadata           |
+|                                                           | models.list                  |
+|                                                           | routines.get                 |
+|                                                           | routines.list                |
+|                                                           | jobs.create                  |
+|                                                           | models.getData               |
+|                                                           | models.getMetadata           |
+|                                                           | transfers.get                |
+|                                                           |                              |
+|                                                           | From 2021.4, To extract      |
+|                                                           | external tables:             |
+|                                                           |                              |
+|                                                           | readsessions.create          |
++-----------------------------------------------------------+------------------------------+
+| **QLI**                                                   | savedqueries.get             |
+| Generates several valuable insights into the              | savedqueries.list            |
+| catalog data (popularity, lineage, top users, etc.)       | jobs.create                  |
+| by examining the query history of the database objects    | projects.get                 |
+|                                                           | projects.list                |
+|                                                           | jobs.list                    |
+|                                                           | jobs.listAll                 |
+|                                                           | jobs.create                  |
++-----------------------------------------------------------+------------------------------+
+| **Profiling/Sampling**                                    | tables.get                   |
+|                                                           | tables.getData               |
+|                                                           | tables.list                  |
+|                                                           | jobs.create                  |
++-----------------------------------------------------------+------------------------------+
+
+V R5 (5.9.x) and below
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+You must have the following IAM roles assigned to the service account at the Project Level or Organizational Level to perform metadata extraction and profiling:
+
+- roles/bigquery.dataViewer
+- roles/bigquery.user
+
+To perform Query Log Ingestion (QLI), you must assign the IAM role of *bigquery.user* to the service account at the Project Level or Organizational Level. The following permissions are required for *bigquery.user* to perform QLI:
+
+- bigquery.config.get
+- bigquery.datasets.create
+- bigquery.datasets.get
+- bigquery.datasets.getIamPolicy
+- bigquery.jobs.create
+- bigquery.jobs.list
+- bigquery.jobs.listAll
+- bigquery.readsessions.create
+- bigquery.savedqueries.get
+- bigquery.savedqueries.list
+- bigquery.tables.list
+- bigquery.transfers.get
+- resourcemanager.projects.get
+
+
+User Account
+----------------
+
+You can provide a user account that has access to your Google BigQuery Project(s) for authentication in Alation. To enable Alation to access this user account, the corresponding user account certificate has to be uploaded alongside the account information. See `Generate User Account Certificate`_.
+    
+.. note::
+
+    A user account can be added to the Project by the following types of Google Cloud Platform (GCP) users:
+
+       -  Database Administrator
+       -  User who has Owner access on the BigQuery project
+
+For MDE, QLI, and Profiling to work, make sure to
+assign this user account the required permissions: `Assign Required Permissions`_.
+
+.. _Google_BigQuery_Prerequisites-Generate_User_Account_Certificate:
+
+Generate User Account Certificate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To generate the user account certificate:
+
+#. Log in to GCP with the user account you are generating the certificate for.
+
+#. Open the Project for which you want to create a user account certificate. We recommend this is the Project ID of which you will use in Alation.
+
+#. In the GCP console, open **APIs & Services** > **OAuth consent screen**:
+
+    .. image:: ../../_static/Screen_Shot_2019-10-18_at_3.33.15_PM.png
+        :width: 300px
+        :align: center
+
+
+4. On the **OAuth consent screen**, enter the information in the following fields:
+
+       - **Application Type** If you use a private domain account (for
+         example, *private@company.com*) for the Project, set **Application
+         Type** to ``Internal`` or ``Public`` based on the requirements of the
+         company.
+       - **Application Name** set to ``Alation``. This field
+         indicates the name of the authorized application which will access the
+         Project.
+       - Do not alter the information for the following fields:
+
+              - Scopes for following APIs
+              - Authorized domains
+              - Application Homepage link
+              - Application Privacy Policy link
+              - Application Terms of Service link.
+
+5. Click **Save**.
+
+6. Open **APIs & Services >Credentials**.
+
+    .. image:: ../../_static/gbq-2.png
+        :width: 300px
+        :align: center
+
+7. In Credentials screen, Click **CREATE CREDENTIALS > OAuth client ID**:
+
+    .. image:: ../../_static/gbqnew_01.png
+        :width: 600px
+        :align: center
+
+8. Select **Web application**.
+
+    .. image:: ../../_static/gbq-1.png
+        :width: 5.5in
+        :align: center
+
+9. Select the **ADD URI** button in the **Authorized redirect URIs** section.
+
+10. Fill the field for the redirect URI. The value for the field must be using the schema of
+
+.. code-block:: Bash
+
+  https:// + (hostname of the Alation instance) + /gbq/oauth2_callback
+
+An example would be
+
+.. code-block:: Bash
+
+  https://busy-mite.alation-test.com/gbq/oauth2_callback
+
+.. note::
+
+    Google will block authorization attempts with the credentials provided if the redirect URI field is set incorrectly.
+
+Service Account
+----------------------
+
+`Google service accounts <https://cloud.google.com/iam/docs/understanding-service-accounts?hl%3Del&>`_  
+are special accounts that belong to your applications or virtual
+machines instead of individual end-users. An application uses
+the service account to call the Google API of a service, so that the
+users are not directly involved.
+
+You can authenticate with GBQ using a service account if you do not have a user
+account or when authenticating with a service account works better for
+your use case.
+
+REMINDER: Authenticating with a service account will not allow you to run Compose queries against the Projects you add to Alation.
+
+.. note::
+
+    There can be several types of service accounts in GCP.
+
+      - **API** After the creation of a new Cloud project using GCP console and if Compute Engine API is enabled for the project, a Compute Engine Service account is created by default and is identified by the following email: **PROJECT_NUMBER-compute@developer.gserviceaccount.com**
+      - **AppEngine** If the project has an App Engine application, the default App Engine service account is created in your project by default and is identified using:  **PROJECT_ID@appspot.gserviceaccount.com**
+      - **System outside Google** If a service account is created in the project, it is identified using: **SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com**
+
+
+Alation can use service accounts of the following types:
+
+  - **SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com**
+
+  - **PROJECT_NUMBER-compute@developer.gserviceaccount.com** (Compute Engine API service account)
+
+You can cross-reference the Projects with one service account by adding
+it as member on all the Projects you want to be extracted to Alation
+and assigning it the required permissions on all these Projects. Alation
+will fetch all schemas (datasets) from all Projects this service account
+has access to. You will need to use the Project ID of the main project
+(= the one on which this service account was created) as **Database
+Name** in Alation.
+
+.. note::
+
+   If using both Service and User Accounts, we recommend you use the service
+   account key and user account certificate from the same Project in Google
+   BigQuery.
+
+.. _Google_BigQuery_Prerequisites-Create_Service_Account_Key:
+
+Create a Service Account and Generate the Key
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each service account is associated with a key, which is managed by the Google Cloud Platform (GCP). It is used for service-to-service authentication in GCP.
+
+To create a service account for Alation,
+
+#. Go to **GCP console > Navigation Menu > IAM & admin > Service Accounts**.
+
+#. Click **+CREATE SERVICE ACCOUNT**.
+
+#. Enter the required information (name, ID, description) and click **Create**:
+
+  .. image:: ../../_static/gbq-3.png
+      :width: 600px
+      :align: center
+
+4. On the next screen, assign the service account roles **BigQuery Job User** and **AlationUser**. Click **Continue** and then click **Done**.
+
+  .. image:: ../../_static/gbq-4.png
+      :width: 400px
+      :align: center
+
+5. On the next screen, click **Actions>Manage Key**.
+
+  .. image:: ../../_static/gbqnew_02.png
+      :width: 600px
+      :align: center
+
+6. Click **Add Key > Create New Key**. Choose the key type **JSON** (recommended by Alation). Click **Create**:
+
+  .. image:: ../../_static/gbq-7.png
+      :width: 400px
+      :align: center
+
+7. Click **Close**. Your service account and key is created. Copy the name and location of the downloaded key file in your local machine.
+
+Generate Key for Existing Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also use the default **Compute Engine Service** account for authentication in Alation (if it exists for your project) and generate the service account key for this account.
+
+Or you can also generate the service account key for an already existing service account.
+
+To create the service account key for an existing project:
+
+#. In GCP console, open the project for which you want to create the key.
+#. Go to **IAM & admin** > **Service Accounts**.
+#. Under **Actions**, for an existing service account, click **Manage Keys**.
+
+    .. image:: ../../_static/gbqnew_02.png
+        :width: 600px
+        :align: center
+
+#. Click **Add Key > Create New Key**. The key is generated based on the choice of the format by the user. JSON is the recommended format.
+
+    .. image:: ../../_static/gbqnew_03.png
+        :width: 600px
+        :align: center
+
+#. Click **Create**. The service account key is generated. Note down the name and location of the file.
+
+Setup in Alation
+--------------------
+
+Continue to :doc:`Google BigQuery Setup in Alation <../../datasources/GBQ/GoogleBigQuerySetup>`.

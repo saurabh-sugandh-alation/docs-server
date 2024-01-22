@@ -1,0 +1,358 @@
+MariaDB
+===================
+
+*Applies from 2021.4*
+
+Alation has certified the MariaDB data source with the following CData driver:
+
+    - cdata.jdbc.mariadb.MariaDBDriver.cdata.jdbc.mariadb
+
+Alation can provide a license for the MariaDB CData driver. Refer to :doc:`How to get a CData Driver <../../datasources/CustomDB/CDataDrivers>` and use the scenario appropriate to your case.
+
+Scope of Support
+----------------------
+
+    - Supported as Custom DB with the CData Driver for MariaDB
+    - Metadata Extraction (MDE)
+
+          - Query based MDE
+
+    - Data Profiling
+    - Sampling
+    - Compose
+    - Lineage
+    - Query Log Ingestion
+
+          - Query based QLI
+
+Ports
+--------------
+
+Port **3306** must be open.
+
+Service Account
+----------------------
+
+Use the following query to create a service account and grant the required permissions:
+
+.. code-block:: sql
+
+      CREATE USER'alation_user_mysql'@'%' IDENTIFIED BY '<password>';
+      GRANT SHOW DATABASES ON .TO 'alation_user_mysql'@'%';
+      GRANT SELECT ON .TO 'alation_user_mysql'@'%';
+
+Required Information
+-------------------------
+
+    - JDBC URI for the MariaDB data source
+
+JDBC URI
+-------------
+
+When building the URI, include the following minimal list of required parameters:
+
+    - **Server** - The hostname or IP address of the server.
+    - **Port** - The port for the MariaDB server.
+    - **Database** - The name of the MariaDB database.
+    - **RTK Key** - when you purchase a CData driver from Alation, you are provided an RTK that needs to be included into the URI. If you purchased the driver from CData, you should have a license file that needs to be placed on the Alation server together with the driver .jar file.
+
+The following optional parameters can be either included in the URI:
+
+    - **ProxyServer** - The hostname or IP address of a proxy to route HTTP traffic through.
+    - **ProxyPort** (If proxy connection is used) - The TCP port the ProxyServer proxy is running on.
+    - **ProxySSLType** - The SSL type to use when connecting to the ProxyServer proxy.
+    - **SSLServerCert** - The certificate to be accepted from the server when connecting using TLS/SSL.
+
+Using these values, construct the URI according to the pattern given below and proceed to adding the data source.
+
+Use the following format for the JDBC URI:
+
+**Format:**
+
+.. code-block:: Bash
+
+      mariadb://<Server>:<Port_Number>;Database="<Database_Name>";RTK=<RTK_Key>;
+
+**Example:**
+
+.. code-block:: Bash
+
+      mariadb://localhost:3306;Database="sales";RTK=444752465641535552425641454E545042424D33323632390000000000000000000000000000414C5800005559475655474E4E464242370000
+
+Use the following format for the JDBC URI if proxy connection is used:
+
+**Format:**
+
+.. code-block:: Bash
+
+      mariadb://<Hostname>:<Port_Number>;Database="<Database_Name>";ProxyServer="localhost";ProxyPort="<Port_Number>";ProxySSLType="NEVER";SSLServerCert=*;RTK=<RTK_Key>;
+
+**Example:**
+
+.. code-block:: Bash
+
+      mariadb://localhost:3306;Database="sales";ProxyServer="localhost";ProxyPort="8866";ProxySSLType="NEVER";SSLServerCert=*;RTK=444752465641535552425641454E545042424D33323632390000000000000000000000000000414C5800005559475655474E4E464242370000
+
+Set Up in Alation
+-----------------------
+
+Step 1: Add the CData Driver for MariaDB to Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Depending on how you purchased the CData driver, from Alation or from CData, the driver installation process will be different. Refer to :doc:`Add the CData Driver into Alation Instance <../../datasources/CustomDB/CDataDrivers>` and use the scenario appropriate to your case.
+
+Step 2: Add a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a new Data Source on the **Sources** page.
+
+Step 3: Set up the Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ 1. On the **Add a Data Source screen** of the wizard, specify:
+
+      - **Database Type:** Custom DB
+      - **JDBC URI:** URI in the required format. See `JDBC URI`_.
+
+        **Example:**
+
+        .. code-block:: Bash
+
+              mariadb://localhost:3306;Database="sales";RTK=444752465641535552425641454E545042424D33323632390000000000000000000000000000414C5800005559475655474E4E464242370000
+
+      - **Select Driver:** select the JDBC driver for MariaDB from the **Select Driver** drop-down list:
+
+          **cdata.jdbc.mariadb.MariaDBDriver.cdata.jdbc.mariadb**
+
+      - Do not select the **Use Kerberos** checkbox
+
+ 2. Click **Save and Continue**. The next wizard screen - **Set Up a Service Account** - will open.
+
+      .. image:: ../../_static/MariaDB_01.png
+
+Step 4: Enter Service Account Credentials
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  1. Select **Yes**.
+  2. Provide the username and password of the service account created for Alation.
+  3. Click **Save and Continue**. The next wizard screen, **Configure Your Data Source**, will open.
+
+Step 5: Configure Your Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Click **Skip this Step**. After this step, you are navigated to the **Settings** page of your data source.
+
+Metadata Extraction
+--------------------------
+
+Configure and perform metadata extraction and verify the results:
+
+  - In **Settings > Custom Settings**, set the **Catalog Object Definition** to **Schema.Table**:
+
+    .. image:: ../../_static/MariaDB_02.png
+
+Query Based MDE
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Select the **Enable custom query based extraction** checkbox in the **Metadata Extraction** tab to perform the query-based extraction.
+
+Schema, Tables, and Columns are enabled by default at the backend and users cannot disable them. The following additional metadata types can be enabled:
+
+  -  View
+  -  Primary Key
+  -  Foreign Key
+  -  Index
+  -  Partition
+  -  Function
+
+To use this feature, you will need to write custom queries to extract the metadata. Alation expects that these queries conform to a specific structure and use the expected reserved identifiers. Find examples of queries below:
+
+Schema
+^^^^^^^^^^
+
+.. code-block:: sql
+
+      SELECT '' AS `CATALOG`,
+            SCHEMA_NAME AS `SCHEMA`
+      FROM INFORMATION_SCHEMA.SCHEMATA
+
+Table
+^^^^^^^^^^
+
+.. code-block:: sql
+
+      SELECT '' AS 'CATALOG', 
+            table_schemaAS 'SCHEMA', 
+            TABLE_NAME AS 'TABLE',
+            CASE WHEN TABLE_TYPE = 'BASE TABLE' THEN 'TABLE' ELSE 'VIEW' END AS 'TABLE_TYPE', 
+            TABLE_COMMENT AS REMARKS
+      FROM INFORMATION_SCHEMA.TABLES
+
+Column
+^^^^^^^^^^
+
+.. code-block:: sql
+
+      SELECT '' AS 'CATALOG',
+            c.TABLE_SCHEMA AS 'SCHEMA',
+            c.TABLE_NAME AS 'TABLE',
+            c.COLUMN_NAME AS 'COLUMN',
+            c.DATA_TYPE AS 'DATA_TYPE',
+            c.COLUMN_TYPE AS 'TYPE_NAME',
+            c.IS_NULLABLE AS 'IS_NULLABLE',
+            c.ORDINAL_POSITION AS 'ORDINAL_POSITION',
+            c.COLUMN_DEFAULT AS 'COLUMN_DEF',
+            c.COLUMN_COMMENT AS REMARKS
+      FROM INFORMATION_SCHEMA.COLUMNSAS c, INFORMATION_SCHEMA.TABLES AS t
+      WHERE c.TABLE_SCHEMA = t.TABLE_SCHEMA AND c.TABLE_NAME = t.TABLE_NAME
+
+View
+^^^^^^^^^^^
+
+.. code-block:: sql
+
+      SELECT '' AS `CATALOG`,
+            TABLE_SCHEMA AS `SCHEMA`,
+            TABLE_NAME AS `VIEW_NAME`,
+            VIEW_DEFINITION AS `VIEW_CREATE_STATEMENT`
+      FROM INFORMATION_SCHEMA.VIEWS
+      WHERE TABLE_SCHEMA = 'test'
+
+Primary Key
+^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+      SELECT '' AS `CATALOG`,
+            TABLE_SCHEMA AS `SCHEMA`,
+            TABLE_NAME AS `TABLE`,
+            CONSTRAINT_NAME AS `PK_NAME`,
+            COLUMN_NAME AS `PK_COLUMN`,
+            ORDINAL_POSITION
+      FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+      WHERE TABLE_SCHEMA='TestCol' and CONSTRAINT_NAME='PRIMARY'
+
+Foreign Key
+^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+      SELECT '' AS `CATALOG`,
+            FK.CONSTRAINT_SCHEMA AS `SCHEMA`,
+            FK.TABLE_NAME AS `TABLE`,
+            FK.CONSTRAINT_NAME AS `FK_NAME`,
+            FKCOL.REFERENCED_COLUMN_NAME AS `FK_COLUMN`,
+            '' AS `PK_CATALOG`,
+            FK.UNIQUE_CONSTRAINT_SCHEMA AS `PK_SCHEMA`,
+            FK.REFERENCED_TABLE_NAME AS `PK_TABLE`,
+            FK.UNIQUE_CONSTRAINT_NAME AS `PK_NAME`,
+            PKCOL.COLUMN_NAME AS `PK_COLUMN`
+      FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS FK
+      INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE FKCOL ON FK.CONSTRAINT_SCHEMA = FKCOL.TABLE_SCHEMA
+      AND FK.TABLE_NAME = FKCOL.TABLE_NAME AND FK.CONSTRAINT_NAME = FKCOL.CONSTRAINT_NAME
+      INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE PKCOL ON FK.UNIQUE_CONSTRAINT_SCHEMA = PKCOL.TABLE_SCHEMA
+      AND FK.REFERENCED_TABLE_NAME = PKCOL.TABLE_NAME
+      AND FK.UNIQUE_CONSTRAINT_NAME = PKCOL.CONSTRAINT_NAME
+
+Index
+^^^^^^^^^
+
+.. code-block:: sql
+
+      SELECT '' AS `CATALOG`,
+            SI.TABLE_SCHEMA AS `SCHEMA`,
+            SI.TABLE_NAME AS `TABLE`,
+            SI.INDEX_NAME,INDEX_TYPE AS `TYPE`,
+            COLUMN_NAME AS `COLUMN`,
+            '' AS `FILTER_CONDITION`,
+            SEQ_IN_INDEX AS `ORDINAL_POSITION`,
+            CARDINALITY AS `ASC_OR_DESC`
+      FROM information_schema.STATISTICS SI
+      INNER JOIN information_schema.INDEX_STATISTICS SIC ON SI.INDEX_NAME = SIC.INDEX_NAME
+      AND SI.TABLE_SCHEMA = SIC.TABLE_SCHEMA
+
+Partition
+^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+      SELECT '' AS `CATALOG`,
+            TABLE_SCHEMA AS `SCHEMA`,
+            TABLE_NAME AS `TABLE`,PARTITION_NAME,PARTITION_ORDINAL_POSITION,PARTITION_DESCRIPTION
+      FROM INFORMATION_SCHEMA.PARTITIONS
+
+Function
+^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+      SELECT '' AS `CATALOG`,
+            SRP.ROUTINE_SCHEMA AS `SCHEMA`,
+            SRP.ROUTINE_TYPE AS `FUNCTION_TYPE`,
+            SRP.ROUTINE_NAME AS `FUNCTION_NAME`,
+            SRP.SPECIFIC_NAME AS SPECIFIC_NAME,
+            SRP.TYPE_NAME AS `COLUMN_TYPE`,
+            SRP.PARAMETER_NAME AS `COLUMN_NAME`,
+            SRP.ROW_TYPE AS `ROW_TYPE`,R.TEXT AS `REMARKS`
+      FROM INFORMATION_SCHEMA.PARAMETERS SRP
+      INNER JOIN INFORMATION_SCHEMA.ROUTINES R ON SRP.ROUTINE_SCHEMA = R.ROUTINESCHEMA
+      AND SRP.ROUTINE_NAME = R.ROUTINE_NAME
+      AND SRP.ROUTINE_TYPE = R.ROUTINE_TYPE
+
+Profiling
+---------------
+
+Configure and perform :doc:`Profiling <../../datasources/CustomDB/ProfilingForCustomDB>` :
+
+    - Users can run a sample for an individual table on the **Samples** tab of the Table Catalog page or profile an individual column on the **Overview** tab of the Column page.
+    - Automatic full and selective Profiling is supported.
+    - Use the **Per-Object Parameters** tab of the Settings to specify which objects to profile.
+
+      .. note::
+
+          Make sure that the **Skip Views** checkbox of the respective schemas is unchecked to perform the Profiling.
+
+    - Custom query-based Sampling is supported. :ref:`Custom Query-Based Sampling <Sampling_Profiling-Custom_Query_Based_Sampling_for_Tables>` allows you to provide a custom query for profiling each specific table.
+    - Deep Column Profiling (:ref:`Profiling V2 <profilingV2-label>` ) is supported.
+
+Sampling
+--------------
+
+Perform Sampling: refer to :ref:`Sampling <Sampling_Profiling-Sampling>`.
+
+Query Log Ingestion
+-------------------------
+
+Perform the following steps to ingest the queries into Alation:
+
+  1. In the **Query Log Ingestion** tab, enable the **Enable table based query log ingestion** check box.
+
+  2. In the **Query to Execute** field, execute the following query to perform the QLI:
+
+     .. code-block:: sql
+
+          SELECT
+          user_host as userName,
+          thread_id as sessionId,
+          argument as queryString
+          FROM
+          mysql.general_log;
+
+  3. Click **Save**.
+
+  4. Click **Import** to ingest the queries.
+
+    .. image:: ../../_static/MariaDB_03.png
+
+Compose
+-----------
+
+Log into Compose:
+
+    - Authenticate in Compose with your MariaDB credentials.
+    - Use **Schema.Table** format for writing queries.
+
+Troubleshooting
+-----------------
+
+Refer to :doc:`Troubleshooting for CData Data Sources <../../datasources/CustomDB/ToubleshootingForCDataDataSources>`.

@@ -1,0 +1,36 @@
+Hive Tez Query Log Ingestion Setup
+==================================
+
+By default, Tez Query Log Ingestion (QLI) is disabled when Alation is
+installed. This article provides the steps for enabling Tez QLI.
+
+The Tez execution engine generates its logs specified by the YARN
+timeline server properties
+(yarn.timeline-service.entity-group-fs-store.done-dir). Usually, this
+log can be found at  **/ats/done**.
+
+
+Enabling Tez Query Log Ingestion
+--------------------------------
+
+To enable Tez Query Log Ingestion on Alation:
+
+#. From the Alation server, run:
+
+   .. code-block:: bash
+
+        sudo/etc/init.d/alation shell
+        alation_conf alation.hive_qli.use_standard_qli -s True
+
+   Wait for a minute for the settings to reflect.
+
+2. Go to the Hive data source **Settings** > **Query Log Ingestion** > **Tez Folder HDFS Path**.
+#. Set the path to  **/ats/done** (or whatever path you have set in your YARN timeline server properties)
+#. Click **Import**. This should start fetching the log files present in the HDFS path (**/ats/done**)
+
+The import may take a few minutes, depending on the number of query logs present in the HDFS directory.
+
+Verification
+------------
+
+After the import is done, the query logs can be found in the Hive data source page > Schema > Queries tab > History.

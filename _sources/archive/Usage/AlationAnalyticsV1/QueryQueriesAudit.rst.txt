@@ -1,0 +1,168 @@
+Queries Audit
+=============
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query provides a detailed report on every query and some of their operational properties.
+
+.. code-block:: sql
+
+    WITH query_info AS (
+      SELECT
+        AO.*,
+        FV_discarded.boolean_value AS discarded,
+        FV_private.boolean_value AS private,
+        FV_published.boolean_value AS published,
+        FV_saved.boolean_value AS saved,
+        FV_imported.boolean_value AS imported,
+        FV_ds_id.integer_value AS ds_id,
+        FV_execution_tally.integer_value AS execution_tally,
+        FV_num_clones.integer_value AS num_clones,
+        FV_ts_created.datetime_value AS ts_created,
+        FV_ts_updated.datetime_value AS ts_updated,
+        FV_author_id.integer_value AS author_id
+      FROM
+        public.alation_object AS AO
+        -- Get discarded for the query
+        JOIN public.object_field_value AS OFV_discarded ON AO.object_uuid = OFV_discarded.object_uuid
+        AND AO.object_type_id = OFV_discarded.object_type_id
+        JOIN public.field_value AS FV_discarded ON OFV_discarded.value_fp = FV_discarded.value_fp
+        -- Get private for the query
+        JOIN public.object_field_value AS OFV_private ON AO.object_uuid = OFV_private.object_uuid
+        AND AO.object_type_id = OFV_private.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_private ON OFV_private.value_fp = FV_private.value_fp
+        -- Get published for the query
+        JOIN public.object_field_value AS OFV_published ON AO.object_uuid = OFV_published.object_uuid
+        AND AO.object_type_id = OFV_published.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_published ON OFV_published.value_fp = FV_published.value_fp
+        -- Get saved for the query
+        JOIN public.object_field_value AS OFV_saved ON AO.object_uuid = OFV_saved.object_uuid
+        AND AO.object_type_id = OFV_saved.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_saved ON OFV_saved.value_fp = FV_saved.value_fp
+        -- Get imported for the query
+        JOIN public.object_field_value AS OFV_imported ON AO.object_uuid = OFV_imported.object_uuid
+        AND AO.object_type_id = OFV_imported.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_imported ON OFV_imported.value_fp = FV_imported.value_fp
+        -- Get ds_id for the query
+        JOIN public.object_field_value AS OFV_ds_id ON AO.object_uuid = OFV_ds_id.object_uuid
+        AND AO.object_type_id = OFV_ds_id.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_ds_id ON OFV_ds_id.value_fp = FV_ds_id.value_fp
+        -- Get execution_tally for the query
+        JOIN public.object_field_value AS OFV_execution_tally ON AO.object_uuid = OFV_execution_tally.object_uuid
+        AND AO.object_type_id = OFV_execution_tally.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_execution_tally ON OFV_execution_tally.value_fp = FV_execution_tally.value_fp
+        -- Get num_clones for the query
+        JOIN public.object_field_value AS OFV_num_clones ON AO.object_uuid = OFV_num_clones.object_uuid
+        AND AO.object_type_id = OFV_num_clones.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_num_clones ON OFV_num_clones.value_fp = FV_num_clones.value_fp
+        -- Get ts_created for the query
+        JOIN public.object_field_value AS OFV_ts_created ON AO.object_uuid = OFV_ts_created.object_uuid
+        AND AO.object_type_id = OFV_ts_created.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_ts_created ON OFV_ts_created.value_fp = FV_ts_created.value_fp
+        -- Get ts_updated for the query
+        JOIN public.object_field_value AS OFV_ts_updated ON AO.object_uuid = OFV_ts_updated.object_uuid
+        AND AO.object_type_id = OFV_ts_updated.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_ts_updated ON OFV_ts_updated.value_fp = FV_ts_updated.value_fp
+        -- Get author_id for the query
+        JOIN public.object_field_value AS OFV_author_id ON AO.object_uuid = OFV_author_id.object_uuid
+        AND AO.object_type_id = OFV_author_id.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_author_id ON OFV_author_id.value_fp = FV_author_id.value_fp
+      WHERE
+        AO.object_type_id = 16
+        AND
+        -- get only field_id = 3092, discarded
+        OFV_discarded.field_id = 3092
+        AND
+        -- get only field_id = 3255, private
+        OFV_private.field_id = 3255
+        AND
+        -- get only field_id = 3260, published
+        OFV_published.field_id = 3260
+        AND
+        -- get only field_id = 3281, saved
+        OFV_saved.field_id = 3281
+        AND
+        -- get only field_id = 3151, imported
+        OFV_imported.field_id = 3151
+        AND
+        - get only field_id = 3094, ds_id
+        OFV_ds_id.field_id = 3094
+        AND
+        -- get only field_id = 3106, execution_tally
+        OFV_execution_tally.field_id = 3106
+        AND
+        -- get only field_id = 3202, num_clones
+        OFV_num_clones.field_id = 3202
+        AND
+        -- get only field_id = 3355, ts_created
+        OFV_ts_created.field_id = 3355
+        AND
+        -- get only field_id = 3360, ts_updated
+        OFV_ts_updated.field_id = 3360
+        AND
+        -- get only field_id = 3014, author_id
+        OFV_author_id.field_id = 3014
+    ),
+    data_info AS (
+      SELECT
+        FV_ds_id.integer_value AS ds_id,
+        FV_ds_deleted.boolean_value AS ds_deleted,
+        FV_ds_private.boolean_value AS ds_private,
+        FV_ds_title.text_value AS ds_title
+      FROM
+        public.alation_object AS AO
+        -- Get ds_id for the datasource
+        JOIN public.object_field_value AS OFV_ds_id ON AO.object_uuid = OFV_ds_id.object_uuid
+        AND AO.object_type_id = OFV_ds_id.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_ds_id ON OFV_ds_id.value_fp = FV_ds_id.value_fp
+        -- Get ds_deleted for the datasource
+        JOIN public.object_field_value AS OFV_ds_deleted ON AO.object_uuid = OFV_ds_deleted.object_uuid
+        AND AO.object_type_id = OFV_ds_deleted.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_ds_deleted ON OFV_ds_deleted.value_fp = FV_ds_deleted.value_fp
+        -- Get ds_private for the datasource
+        JOIN public.object_field_value AS OFV_ds_private ON AO.object_uuid = OFV_ds_private.object_uuid
+        AND AO.object_type_id = OFV_ds_private.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_ds_private ON OFV_ds_private.value_fp = FV_ds_private.value_fp
+        -- Get ds_title for the datasource
+        JOIN public.object_field_value AS OFV_ds_title ON AO.object_uuid = OFV_ds_title.object_uuid
+        AND AO.object_type_id = OFV_ds_title.object_type_id
+        -- Get field value
+        JOIN public.field_value AS FV_ds_title ON OFV_ds_title.value_fp = FV_ds_title.value_fp
+      WHERE
+        AO.object_type_id = 7
+        AND
+        -- get only field_id = 3147, ds_id
+        OFV_ds_id.field_id = 3147
+        AND
+        -- get only field_id = 3083, ds_deleted
+        OFV_ds_deleted.field_id = 3083
+        AND
+        -- get only field_id = 3255, ds_private
+        OFV_ds_private.field_id = 3255
+        AND
+        -- get only field_id = 3, ds_title
+        OFV_ds_title.field_id = 3
+    )
+    SELECT
+      QI.*,
+      AU.display_name AS author_display_name,
+      DI.*
+    FROM
+      query_info AS QI
+      JOIN public.alation_user AS AU ON QI.author_id = AU.user_id
+      JOIN data_info AS DI ON QI.ds_id = DI.ds_id;

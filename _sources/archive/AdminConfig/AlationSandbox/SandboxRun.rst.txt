@@ -1,0 +1,139 @@
+Run the Sandbox Executable
+==============================
+
+.. include:: /shared/SandboxDeprecated.rst
+
+After you have configured Sandbox and validated the configuration, you can run the upgrade and test the Sandbox instance. During the run time:
+
+**Connected** mode:
+
+    - Sandbox connects to Production on port 2022, fetches the Alation version number, and downloads the backup.
+    - Sandbox connects to the Alation Customer Portal and downloads the version to be installed and the newer version for upgrade if the builds have not been provided on the host and are not present in the **/backup/install** directory.
+    - Sandbox installs Alation of the same version as the main instance.
+    - Sandbox restores the backup.
+    - Sandbox upgrades Alation from current version to the newer version.
+    - If you have allowed uploading of the Sandbox logs to the Alation Cloud, Sandbox uploads the logs.
+    - If you have enabled the post-upgrade actions, Sandbox performs those actions.
+
+
+**Standalone** mode:
+
+  - Sandbox connects to the Alation Customer Portal and downloads the version to be installed and the newer version for upgrade if the builds are not present in the **/backup/install** directory on the Sandbox host. The versions to download are taken from the Sandbox configuration file.
+  - Sandbox installs the current version using.
+  - Sandbox restores from the pre-downloaded backup that is located on the Sandbox host.
+  - Sandbox upgrades Alation from current version to the newer version.
+  - If you have allowed uploading of the Sandbox logs to the Alation Cloud, Sandbox uploads the logs.
+  - If you have enabled the post-upgrade actions, Sandbox performs those actions.
+
+
+.. note:: Run the commands described below with ``sudo``.
+
+To Run the Sandbox command:
+
+1. Run the Sandbox executable:
+
+    .. code-block:: Bash
+
+        cd /opt/alation/alation-sandbox/
+        nohup sudo ./alation-sandbox run &
+
+2. To tail the logs:
+
+    .. code-block:: Bash
+
+        tail -f /var/log/alation/alation-sandbox/alation-sandbox.log
+        tail -f /opt/alation/alation-sandbox/nohup.out
+
+3. At the end of a successful run you will see the message: "Alation Sandbox ran successfully":
+
+    .. image:: /_static/Sandbox_07.png
+        :width: 400px
+
+
+After the Sandbox run (successful or unsuccessful), the Sandbox logs are copied to the **/data1/site_data/logs** directory as **alation-sandbox-{timestamp}.tar.gz** (path inside the Alation shell). After that, Sandbox creates another tarball compressing the Alation logs and the Sandbox logs together as **alation-{timestamp}.tar.gz**. If upload to the Alation Cloud is allowed in the configuration file, the logs tarball is auto-uploaded to the Alation Cloud via the Spectrum service. As the old logs will be lost during the next Sandbox run, the current logs tarball is copied to the **/backup/logarchive** directory and stored there.
+
+Resume Sandbox Run
+-------------------------
+
+From Sandbox version 4.0.1.x, you can resume the Sandbox workflow in case it is interrupted. See :doc:`Resume Sandbox Run </archive/AdminConfig/AlationSandbox/ResumeSandboxRun>` for details.
+
+Alation Sandbox Data Collection
+---------------------------------
+
+Alation Sandbox collects some information during its execution. Here is a list of all data items that Alation Sandbox collects:
+
+- The output of the ``rpm`` or ``dpkg`` command  during the Alation package installation and upgrade;
+- The output of the command ``destructive_restore_all`` during the backup restoration process;
+- The output of commands run inside the Alation Chroot to facilitate the installation, restore, and upgrade using automated methods;
+- The output of performance metrics calculated during Alation Sandbox run time (if parameter ``enabled`` under ``monitor`` is set to ``true``):
+
+    - IO counters
+    - Virtual memory
+    - Disk Usage
+    - CPU Usage
+
+The data that is collected can be found in logs at: **/data1/site_data/alation-sandbox-{timestamp}.tar.gz** on the Sandbox instance.
+
+If you have enabled logs upload (``offline`` = ``false`` in configuration),  the logs bundle is automatically sent to the Alation Cloud.
+
+Log in to the Sandbox Instance
+----------------------------------
+
+You can log in to the Sandbox instance UI after a successful Sandbox run.
+
+Sandbox does not use real users whose accounts exist in the instance. To log in to the Alation Sandbox UI, generate user credentials using the following command:
+
+    .. code-block:: Bash
+
+        cd /opt/alation/alation-sandbox
+        sudo ./alation-sandbox get local-user
+
+You will receive an output with username and password (*Server Admin* role).
+
+    .. note::
+
+        This command can only be run after the Sandbox run is completed. When you try to execute this command while the Alation Sandbox executable is still running, you will see a warning asking you to wait till the Sandbox run is complete.
+
+To log in, open a browser window and type in:
+
+  - For the HTTP connection: the IP of the Sandbox instance in the following format: ``<ip>/login/``. For example: **10.13.18.75/login/**
+
+  - For the HTTPS connection: the DNS name or hostname of the Sandbox instance: ``https://<DNS_name>/login/``
+
+Testing in Sandbox
+----------------------
+
+After successfully updating Alation on the Sandbox instance, log in and check the connection to the sources that need to be tested by users. The Alation Sandbox host may need the required ports to be open to establish connection to sources. For information about ports for specific sources, see the respective sections in the Data Sources section.
+
+1. Perform the testing you have planned for the upgraded build.
+2. Optionally, you can trigger an automatic test with the following command:
+
+    .. code-block:: Bash
+
+       cd /opt/alation/alation-sandbox
+       sudo ./alation-sandbox run-tests api-tests
+
+The test runs the alation public API tests that are included into the Alation Sandbox code and cover the areas listed below. The tests validate that the APIs work and that data can be retrieved from the Catalog:
+
+    - article create/update/read
+    - add new tag to article
+    - create virtual data source
+    - flag (deprecate and endorse) the created virtual data source
+    - data source configuration checks:
+
+        - network connection and service
+        - account authentication for datasources that have active network connection.
+
+    - access to relational database data objects: retrieve a random column and do a GET on the table and schema the column belongs to.
+
+The test reports are available at **var/log/alation/alation-sandbox-tests**.
+
+Provide Feedback
+---------------------
+
+Based on the testing, provide feedback to Alation.
+
+Terminate the Sandbox Environment
+---------------------------------------
+
+The Sandbox environment can be terminated or destroyed on demand after the testing has been done and feedback provided.

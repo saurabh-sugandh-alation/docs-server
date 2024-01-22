@@ -1,0 +1,175 @@
+Amazon Redshift OCF Connector: Overview
+=============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Overview
+---------------
+
+The OCF connector for Amazon Redshift was developed by Alation and is available as a Zip file that can be uploaded and installed in the Alation catalog. 
+
+To download the Amazon Redshift OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+This connector should be used to catalog Amazon Redshift or Amazon Redshift Spectrum as a data source in Alation. The connector catalogs Amazon Redshift objects such as schemas tables, columns, views, primary keys, foreign keys, functions, and function definitions. It enables end-users to search and find the metadata objects from the Alation user interface.
+
+Team
+---------
+
+The following administrators are required to install this connector:
+
+  - Alation administrator:
+
+      - Installs the connector
+      - Creates and configures the Amazon Redshift data source in the catalog
+      - Installs Alation Connector Manager or ensures that it has been installed.
+
+  - Amazon Redshift administrator:
+
+      - Assists in configuring authentication
+      - Provides the JDBC URI to access metadata
+      - Provides information required for configuration on the Alation side.
+
+Scope
+----------
+
+The table below shows what features are covered by this connector.
+
+.. table::
+  :class: longtable
+  :widths: auto
+
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Feature               | Description           | Amazon Redshift       | Amazon Redshift       |
+  |                       |                       |                       | Spectrum              |
+  +=======================+=======================+=======================+=======================+
+  | **Authentication**                                                                            |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Basic authentication  | Authentication with a | |v|                   | |v|                   |
+  |                       | service account on    |                       |                       |
+  |                       | the database          |                       |                       |
+  |                       | (username and         |                       |                       |
+  |                       | password)             |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | SSL                   | Database connection   | |v|                   | |v|                   |
+  |                       | over SSL              |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Authentication with   | STS authentication    | |v|                   | |v|                   |
+  | IAM user and role     | with an IAM user      |                       |                       |
+  |                       | and IAM role          |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | LDAP                  | Authentication with   | |x|                   | |x|                   |
+  |                       | a database service    |                       |                       |
+  |                       | account that is an    |                       |                       |
+  |                       | LDAP account in an    |                       |                       |
+  |                       | organization's        |                       |                       |
+  |                       | network               |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | **Metadata extraction (MDE)**                                                                 |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Default MDE           | Extraction of metadata| |v|                   | |v|                   |
+  |                       | based on default      |                       |                       |
+  |                       | extraction queries    |                       |                       |
+  |                       | in the connector code |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Custom query-based    | Extraction of metadata| |v|                   | |v|                   |
+  | MDE                   | based on extraction   |                       |                       |
+  |                       | queries provided by   |                       |                       |
+  |                       | a user                |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | **Extracted metadata objects**                                                                |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Data source           | Data source object in | |v|                   | |v|                   |
+  |                       | Alation that is parent|                       |                       |
+  |                       | to extracted metadata |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Schemas               | List of schemas       | |v|                   | |v|                   |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Tables                | List of tables        | |v|                   | |v|                   |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Columns               | List of columns       | |v|                   | |v|                   |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Source comments       | Source comments       | |v|                   | |v|                   |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Primary keys          | Primary key           | |v|                   | |v|                   |
+  |                       | information for       |                       |                       |
+  |                       | extracted tables      |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Foreign keys          | Foreign key           | |v|                   | |v|                   |
+  |                       | information for       |                       |                       |
+  |                       | extracted tables      |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | **Sampling and profiling**                                                                    |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Table sampling        | Retrieval of data     | |v|                   | |v|                   |
+  |                       | samples from          |                       |                       |
+  |                       | extracted tables      |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Custom query-based    | Ability to use custom | |v|                   | |v|                   |
+  | table sampling        | queries for sampling  |                       |                       |
+  |                       | specific tables       |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Column sampling       | Retrieval of data     | |v|                   | |v|                   |
+  |                       | samples from          |                       |                       |
+  |                       | extracted column      |                       |                       |
+  |                       | based on default      |                       |                       |
+  |                       | queries               |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Custom query-based    | Ability to use custom | |v|                   | |v|                   |
+  | column sampling       | queries for profiling |                       |                       |
+  |                       | specific columns      |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Deep column profiling | Profiling of columns  | |v|                   | |v|                   |
+  |                       | with the calculation  |                       |                       |
+  |                       | of value distribution |                       |                       |
+  |                       | stats                 |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | **Query log ingestion**                                                                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Table-based QLI       | Ingestion of query    | |v|                   | |v|                   |
+  |                       | history based on a    |                       |                       |
+  |                       | table or view that    |                       |                       |
+  |                       | contains query        |                       |                       |
+  |                       | history data          |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Query-based QLI       | Ingestion of query    | |x|                   | |v|                   |
+  |                       | history based on a    |                       |                       |
+  |                       | custom query history  |                       |                       |
+  |                       | extraction query      |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | JOINs and filters     | Calculation of JOIN   | |v|                   | |v|                   |
+  |                       | and filter information|                       |                       |
+  |                       | based on ingested     |                       |                       |
+  |                       | query history         |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Predicates            | Ability to parse      | |v|                   | |v|                   |
+  |                       | predicates in         |                       |                       |
+  |                       | ingested queries      |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | **Lineage**                                                                                   |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Automatic lineage     | Auto-calculation of   | |v|                   | |v|                   |
+  | generation            | lineage based on query|                       |                       |
+  |                       | history ingested from |                       |                       |
+  |                       | QLI, MDE, and Compose |                       |                       |
+  |                       | queries               |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Column-level lineage  | Calculation of lineage| |v|                   | |v|                   |
+  |                       | data at the column    |                       |                       |
+  |                       | level                 |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | **Compose**                                                                                   |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | On-prem Alation       | Compose on on-prem    | |v|                   | |v|                   |
+  | instances             | Alation instances     |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | Alation Cloud Service | Compose on Alation    | |v|                   | |v|                   |
+  | instances             | Cloud Service         |                       |                       |
+  |                       | instances\*           |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+  | SSO for Compose       | Authentication with   | |v|                   | |v|                   |
+  |                       | an STS token for an   |                       |                       |
+  |                       | AWS IAM role through  |                       |                       |
+  |                       | the SSO login flow    |                       |                       |
+  +-----------------------+-----------------------+-----------------------+-----------------------+
+
+\* Compose with Agent is supported from connector version **1.1.0.3935**.

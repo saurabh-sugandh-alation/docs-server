@@ -1,0 +1,233 @@
+Upgrade Internal PostgreSQL Instances from 9.3 to 9.6
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Available from release V R6 (5.10.x)*
+
+Alation uses PostgreSQL databases as the internal server database and
+the database for Alation Analytics functionality. Starting with *V R6
+(5.10.x)*,  these internal PostgreSQL instances can be deployed on
+PostgreSQL version 9.6.
+
+.. note::
+
+   Releases before V R6 use PostgreSQL 9.3.
+
+New Alation installations of V R6 (5.10.x) will use PostgreSQL 9.6 by
+default.
+
+Existing Alation installations which update to V R6 from previous
+releases will continue to be fully operable on PostgreSQL 9.3; however,
+we strongly recommend upgrading your Alation PostgreSQL instances to
+version 9.6. after you update Alation to V R6.
+
+.. note::
+
+   PostreSQL version 9.3 is at end of life and no longer receives updates or bug fixes. For details on PostgreSQL versioning, refer to `PostgreSQL documentation <https://www.postgresql.org/support/versioning/>`_.
+
+
+Update Internal PostgreSQL Databases to Version 9.6
+-----------------------------------------------------
+
+.. note::
+
+   This instruction only applies to Alation instances updated to V R6 from previous releases and does not apply to new installations of V R6.
+
+Upgrade to 9.6 action will update the internal Alation database
+( *rosemeta* ) and the Alation Analytics database if it is enabled in
+your instance.
+
+Prerequisites
+~~~~~~~~~~~~~~~~
+
+-  ``sudo`` access to Alation shell
+-  A valid backup of your Alation instance or a full system image or
+   snapshot. For information on how to create a backup, see :doc:`/installconfig/BackupandRestore/CreateBackupsManually`.
+
+Standalone Instances
+~~~~~~~~~~~~~~~~~~~~~
+
+To upgrade:
+
+1. Enter the Alation shell:
+
+   .. code-block:: Bash
+
+      sudo /etc/init.d/alation shell
+
+2. Stop the Supervisor services:
+
+   .. code-block:: Bash
+
+      alation_supervisor stop all
+
+3. Set user as *alation*:
+
+   .. code-block:: Bash
+
+      sudo su alation
+
+4. Run the following script:
+
+   .. code-block:: Bash
+
+      alation_action upgrade_postgres
+
+   The upgrade will be performed in-place without copying any files and is expected to complete rather quickly.
+
+5. Start the Supervisor services:
+
+   .. code-block:: Bash
+
+      alation_supervisor start all
+
+6. To check the PostgreSQL version after upgrade, see  `Check PostgreSQL Version`_.
+
+7. Exit the shell
+
+   .. code-block:: console
+
+      exit
+
+   .. important::
+
+      After the upgrade, any remaining data in the 9.3 folders must NOT be deleted: you could suffer data loss if you delete it. Alation provides instructions on how to correctly clean up the leftover 9.3 data: :doc:`How to Clean up Postgres 9.3 Data <../../admins/How-tos/HowtoCleanUpPostgres9_3Data>`
+
+HA Instances
+~~~~~~~~~~~~~~~~~~~~~
+
+To upgrade PostgreSQL in an HA setup, perform the following steps.
+
+#. Make sure the `Prerequisites`_ are met.
+
+#. Revert the HA cluster to standalone mode. For details, see: :doc:`Reverting the High Availability Pair to Standalone Mode <../../installconfig/HighAvailability/RevertHAPairtoStandaloneMode>`.
+
+#. On the **Secondary** server, check that the scheduled queries are disabled: :doc:`/admins/AdditionalConfiguration/EnableOrDisableQueryScheduling`.
+
+#. On **Secondary**, if your instance has Alation Analytics enabled, set the Alation Analytics feature flag to ``False``:
+
+   -  On Secondary, enter the Alation shell and set
+      parameter ``alation.feature_flags.enable_alation_analytics`` to
+      False:
+
+      .. code-block:: Bash
+
+         sudo /etc/init.d/alation shell
+         alation_conf alation.feature_flags.enable_alation_analytics -s False
+
+   -  Don’t exit the shell yet. Do step 5.
+
+#. On **Secondary**, stop the supervisor:
+
+   .. code-block:: Bash
+
+        alation_supervisor stop all
+
+#. On **Primary**, if your instance has Alation Analytics enabled, set the Alation Analytics feature flag to False. If not, skip this step.
+
+   .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        alation_conf alation.feature_flags.enable_alation_analytics -s False
+
+#. On **Primary**, from the Alation shell, stop the Supervisor:
+
+   .. code-block:: Bash
+
+        # if not in the shell - enter the shell first
+        sudo /etc/init.d/alation shell
+        alation_supervisor stop all
+
+#. On **Primary**, run the PostgreSQL upgrade action:
+
+   Still in the shell, set user as *alation*:
+
+   .. code-block:: bash
+
+        sudo su alation
+
+   Run:
+
+   .. code-block:: bash
+
+        alation_action upgrade_postgres
+
+#. On **Secondary**, run the PostgreSQL upgrade action:
+
+   If not in the shell, enter the shell first:
+
+   .. code-block:: bash
+
+      sudo /etc/init.d/alation shell
+
+   Then:
+
+   .. code-block:: bash
+
+      sudo su alation
+      alation_action upgrade_postgres
+
+#. To check the PostgreSQL version after upgrade, see  `Check PostgreSQL Version`_.
+
+#. On Primary, if you previously disabled Alation Analytics, set it back to enabled from the Alation shell:
+
+   .. code-block:: bash
+
+      alation_conf alation.feature_flags.enable_alation_analytics -s True
+
+#. :doc:`Rebuild HA setup for Primary and Secondary instances <../../installconfig/HighAvailability/SetupHA>` starting from Step 3: "Placing the Primary server into master mode".
+
+#. If using ``Alation Analytics``, check that the Alation Analytics feature parameter is back to ``True`` on the ``Secondary`` instance (it should automatically return to True after the cluster is rebuilt):
+
+   .. code-block:: Bash
+
+        # if not in the shell - enter the shell first
+        sudo /etc/init.d/alation shell
+        alation_conf alation.feature_flags.enable_alation_analytics
+
+   Should be: ``alation_conf alation.feature_flags.enable_alation_analytics = True``
+
+#. On **Primary**, start the Supervisor:
+
+   .. code-block:: Bash
+
+        alation_supervisor start all
+
+   .. important::
+
+        After the upgrade, any remaining data in the 9.3 folders must NOT be deleted: you could suffer data loss if you delete it.
+
+Check PostgreSQL Version
+---------------------------
+
+After upgrade, you can check the PostgreSQL version in the following
+way. While in Alation shell, run:
+
+.. code-block:: Bash
+
+     alation_psql
+
+Look at the version in the output. You should see "9.6.x", for
+example:
+
+.. code-block:: Bash
+
+     psql (9.6.13)
+     Type "help" for help.
+
+To exit the Postgres shell and return to the Alation shell, type:
+
+.. code-block:: Bash
+
+   \q
+
+Restore from Backup with PostgreSQL 9.3 on V R6
+---------------------------------------------------
+
+It is possible to restore an Alation backup from an instance running on
+9.3 PostgreSQL to a clean installation of Alation V R6. Note that the
+data will not be automatically upgraded to the 9.6 format, but the VR6
+instance will switch to use PostgreSQL version 9.3. After completing the
+restore action, it will be possible to run the ``upgrade_postgres`` action
+to upgrade PostgreSQL to 9.6.

@@ -1,0 +1,353 @@
+Maintaining OCF Connectors
+================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+This information is intended for Alation admins maintaining OCF connectors on the Alation host.
+
+OCF CLI Tools
+-----------------
+
+An OCF BI connector consists of a manifest file and a Docker image.
+
+The manifest information is stored inside Alation, while the Docker images are installed outside of the Alation shell and managed by Alation Connector Manager. Alation Connector Manager has a command line tool **Kratos** for directly working with Alation Connector Manager agent. Every command and sub-command of Kratos comes with built-in help documentation.
+
+To print **Kratos** help to the console:
+
+1. SSH to the Alation host.
+2. Run:
+
+    .. code-block:: Bash
+
+        kratos --help
+
+The Alation server has another CLI tool that serves as a wrapper around the OCF components of the Alation application and Alation Connector Manager: **Ypireti**. Ypireti can be used to call Kratos commands from the Alation shell and to install and manage OCF connectors.
+
+    .. important::
+
+        Ypireti commands must be run from the Alation shell as user ``alation``.
+
+
+To print **alation_ypireti** help to the console:
+
+1. On the Alation host, enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+2. Change user to ``alation``:
+
+    .. code-block:: Bash
+
+        sudo su alation
+
+3. Run:
+
+    .. code-block:: Bash
+
+        alation_ypireti --help
+
+Start, Stop, Restart Alation Connector Manager
+--------------------------------------------------
+
+Run these commands on the Alation host **outside of the Alation shell**.
+
+To start Alation Connector Manager:
+
+    .. code-block:: Bash
+
+        sudo service hydra start
+
+To stop Alation Connector Manager:
+
+    .. code-block:: Bash
+
+        sudo service hydra stop
+
+To restart Alation Connector Manager:
+
+    .. code-block:: Bash
+
+        sudo service hydra restart
+
+Check Which Docker Containers Are Running
+------------------------------------------------
+
+Run this command on the Alation host **outside of the Alation shell**.
+
+    .. code-block:: Bash
+
+        sudo docker ps
+
+
+    .. image:: ../../_static/OCF_ManageConnectors12.png
+        :width: 500px
+
+Check Alation Connector Manager Version
+------------------------------------------
+
+From the Alation shell, run:
+
+    .. code-block:: Bash
+
+        kratos --version
+
+The command outputs the currently installed version of Alation Connector Manager:
+
+.. image:: ../../_static/OCF_ManageConnectors05.png
+    :width: 500px
+
+Alation Connector Manager Warning Message
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You may receive the following warning message in the console output of some Kratos or Ypireti commands:
+
+    .. code-block:: Bash
+
+        WARNING: Failed to read a configuration file. Continuing with a default configuration.
+        If configuration overrides were not provided via the CLI then operations may not succeed.
+        Message: No such file or directory (os error 2)
+
+By default, Kratos expects a ``hydra.toml`` configuration file, but ``alation_ypireti`` passes all the arguments to Kratos using command line arguments. Kratos issues a warning that it did not find the configuration file and will use the default values. You can disregard this warning message.
+
+.. _OCF_Maintain_Connectors-List_Connectors_Properties:
+
+List OCF Connectors and Their Properties
+------------------------------------------
+
+.. note::
+
+    ``alation_ypireti`` commands must be run from the Alation shell as user ``alation``.
+
+List All Installed OCF Connectors and Their Full Metadata
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+      alation_ypireti list
+
+List Metadata for a Connector with a Specific ID
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+      alation_ypireti list --id <ID>
+
+.. image:: ../../_static/OCF_ManageConnectors01.png
+    :width: 500px
+
+List Specific Metadata Fields of All Installed Connectors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    alation_ypireti list --fields <field1_name> <field2_name>
+
+**Example**: ``alation_ypireti list --fields id name description``
+
+.. image:: ../../_static/OCF_ManageConnectors02.png
+    :width: 500px
+
+List Specific Metadata Fields of a Specific Installed Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    alation_ypireti list --id <ID> --fields <field1_name> <field2_name>
+
+**Example**: ``alation_ypireti list --id 2 --fields name description``
+
+.. image:: ../../_static/OCF_ManageConnectors03.png
+    :width: 500px
+
+List Connector ID and Respective Container ID
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This command outputs the ``hydra`` field metadata for OCF connectors:
+
+.. code-block:: Bash
+
+    alation_ypireti kratos --subcommand list
+
+.. image:: ../../_static/OCF_ManageConnectors09.png
+    :width: 500px
+
+.. _OCF_Maintain_Connectors-Update:
+
+Update a Connector
+-----------------------
+
+Use the command below to update an installed OCF connector with a newer connector version. This command will update:
+
+    - the connector metadata
+    - the connector Docker image on Alation Connector Manager
+    - point Alation data sources to using the updated connector
+
+.. code-block:: Bash
+
+    alation_ypireti update --path <path_to_file> --id <ID>
+
+where:
+
+- ``--path``: The path to the newer connector version, that we want to install
+- ``--id``: The ID of the connector that is being updated. The ID can be found using the ``list`` command.
+
+.. image:: ../../_static/OCF_ManageConnectors06.png
+    :width: 500px
+
+After updating the connector, open the Settings page of the Alation source that uses this connector and verify that all the required parameters are filled in and test connection.
+
+.. important::
+
+      OCF connectors that are installed or updated on Alation version 2021.2 or newer are copied to the backup path at **/opt/alation/site/site_data/ocf/connectors/** (path inside the shell) and backed up by the Alation backup process.
+
+Synchronize Connectors
+-----------------------------
+
+*Available from release 2021.2*
+
+The goal of the "synchronize" command is to ensure that the Alation application and Alation Connector Manager have exactly the same set of connectors and are synchronized:
+
+    .. code-block:: Bash
+
+        alation_ypireti sync
+
+ This command should be used for restoring the OCF system after a backup or after failover on HA Pair:
+
+    - :doc:`/installconfig/BackupandRestore/RestoreFromBackup/RestoreOCFComponents`
+
+Starting with release 2021.2, when an OCF connector is installed or updated, its source file is added to the backup path at **/opt/alation/site/site_data/ocf/connectors/** (path inside the shell). The **alation_ypireti sync** command uses the files in this directory to restore the connectors on an Alation instance. It will first delete all connector records on Alation Connector Manager and then install the connectors from the backup source files, ensuring that the Alation Server and the Alation Connector Manager agent have the same set of connectors.
+
+Delete a Connector
+------------------------
+
+It is possible to delete an OCF connector, which uninstalls the corresponding Docker image and removes it from the connector registry on Alation Connector Manager.
+
+.. note::
+
+    If the same connector, is installed again later, it will be considered a new connector by Alation Connector Manager and will be given a new ID.
+
+If there are Alation sources using this connector, use the ``--force`` flag with the delete command:
+
+.. code-block:: Bash
+
+    alation_ypireti delete [--force] --id <ID>
+
+where:
+
+- ``--id``: The ID of the connector that is being deleted. The ID can be found using the ``list`` command.
+
+**Example 1**: to delete a connector that is not used by any Alation source: ``alation_ypireti delete --id 6``
+
+.. image:: ../../_static/OCF_ManageConnectors07.png
+    :width: 500px
+
+**Example 2**: to delete a connector used by an Alation source: ``alation_ypireti delete --force --id 2``
+
+.. image:: ../../_static/OCF_ManageConnectors08.png
+    :width: 500px
+
+
+OCF Logs
+-----------------------
+
+Alation Connector Manager Logs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Agent logs can be retrieved using Docker commands:
+
+    .. code-block:: Bash
+
+        # tail logs
+        docker logs -f agent
+        # save logs to a file
+        docker logs agent >& agent.logs
+
+To view Alation Connector Manager error messages using ``systemctl``:
+
+    .. code-block:: Bash
+
+        # run this command as root user
+        systemctl status hydra.service
+
+.. image:: ../../_static/OCF_ManageConnectors11.png
+    :width: 500px
+
+Alation Connector Manager NGINX logs can be found at **/opt/hydra/agent/logs**.
+
+OCF Connector Logs
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Applies from release 2020.4*
+
+Logs from the Ypireti operations are printed to the console. You can also use the commands give below to work with the logs.
+
+.. code-block:: Bash
+
+    # Tail logs
+    alation_ypireti kratos --subcommand tail <ID>
+    # Get full logs
+    alation_ypireti kratos --subcommand logs <ID>
+    alation_ypireti kratos --subcommand logs --since 2020-08-15 <ID>
+    # Redirect logs to a file
+    alation_ypireti kratos --subcommand logs <ID> > connector_3.log 2>&1
+
+where <ID> is the specific connector ID.
+
+Metadata Extraction Logs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Metadata extraction logs are written to **/opt/alation/site/logs/celery-default_error.log** (path inside the Alation shell).
+
+Uninstall OCF
+----------------------
+
+Use these steps to completely uninstall all OCF components from the Alation host.
+
+1. On the Alation host, outside of the Alation shell, stop Alation Connector Manager:
+
+    .. code-block:: Bash
+
+        systemctl stop hydra
+
+2. Uninstall Alation Connector Manager using the appropriate YUM or APT command:
+
+    .. code-block:: Bash
+
+        yum remove alation-hydra
+
+    .. code-block:: Bash
+
+        apt remove alation-hydra
+
+    .. note::
+
+        This command will not remove the Alation Connector Manager configuration files from **/etc/hydra**. If you wish to delete the configuration files too, remove them separately after uninstalling OCF.
+
+3. Delete all containers and images:
+
+    .. code-block:: Bash
+
+        docker ps -a --filter "name=connector" --format "{{.ID}}" | xargs docker rm
+
+        docker images --format="{{.Repository}}" | grep connector_ | xargs docker rmi
+
+        docker rm agent
+
+        docker rmi agent
+
+4. Delete the Alation Connector Manager directory at **/opt**:
+
+    .. code-block:: Bash
+
+        rm -rf /opt/hydra
+
+    .. image:: ../../_static/OCF_ManageConnectors10.png
+        :width: 500px
+
+5. If you wish to remove configuration files too, delete the configuration files:
+
+    .. code-block:: Bash
+
+        rm -rf /etc/hydra

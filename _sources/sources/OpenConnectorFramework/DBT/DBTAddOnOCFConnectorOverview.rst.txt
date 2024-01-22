@@ -1,0 +1,187 @@
+Add-On OCF Connector for dbt: Overview
+============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The dbt OCF connector was developed by Alation and is available as a Zip file that can be uploaded and installed in the Alation application.
+
+The dbt add-on is compatible with Alation release **2022.4.3 and later**.
+
+To download the dbt OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+The dbt connector can be used as an add-on connector with a primary OCF connector to extract and catalog descriptions and lineage from dbt models, sources, and columns in dbt Core or dbt Cloud.
+
+.. note::
+
+      Lineage is available from dbt add-on OCF connector version **2.0.0 or later** and  Alation version **2023.1 or later**.
+
+The dbt add-on cannot be used as a stand-alone connector as it works only with primary connectors that support it and shares the user interface of primary connectors. When the dbt add-on is configured for a primary connector, MDE will extract  descriptions from dbt along with the metadata from the primary data source.
+
+**dbt Core:**
+
+    - The manifest.json file contains description and lineage for all dbt models that was included in the execution of the dbt job.
+
+    - The following storage locations are supported to store the manifest.json files:
+
+          - GitHub
+          - Amazon S3
+
+    - Alation supports multiple manifest files, but these need to be from dbt projects all related to the same dbt environment (Alation data source type). Only one most recent manifest file for each dbt project must be stored in a folder.
+
+    - For Snowflake, the column names in dbt must be the same as in Snowflake tables.
+
+**dbt Cloud:**
+
+    - A dbt account has projects of different target environments like Snowflake, Postgres, and more. If the project names are not specified in Alation as part of extraction configuration, all projects for a data source type will be fetched.
+
+    - If different projects have the same table signature (catalog_name.schema_Name.table_Name /catalog_name.schema_Name.table_Name.column_Name) then the latest fetch of the table/column description will be updated.
+
+    - The connector will retrieve the manifest.json file from each project's latest successful run to obtain the metadata from dbt Cloud.
+
+
+See `Supported Data Sources`_ list for the data source types that support the add-on OCF Connector for dbt.
+
+Team
+------------
+
+You may need the assistance of your dbt administrator to configure the dbt add-on connector:
+
+  - Alation Server Admin:
+
+      - Installs the connector.
+      - Configures the dbt add-on in the primary data source settings.
+
+  - dbt Administrator:
+
+      - dbt Core
+
+            - Ensures the latest mainfest.json files are saved to the supported locations (GitHub or S3)
+
+      - dbt Cloud
+
+            - Provides dbt Account ID required for the API URL
+            - Provide Access Token for use with dbt APIs
+            - Provide the list of dbt Project Names for processing
+
+Scope
+-----------
+
+The table below shows which metadata objects are extracted by this connector and which operations are supported.
+
++----------------------------+---------------------------------------------------------------+-------------+
+| **Feature**                | **Scope**                                                     | Availability|
++============================+===============================================================+=============+
+|                                   **Authentication**                                                     |
++----------------------------+---------------------------------------------------------------+-------------+
+| GitHub personal access     | Authenticate on the GitHub storage using a personal access    | Yes         |
+| token                      | token                                                         |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Basic (AWS access key and  | Authentication with AWS access key and secret key             | Yes         |
+| secret key)                |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| AWS STS authentication     | Authentication with an AWS STS  access key and secret key     | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+|                                   **Metadata Extraction (MDE)**                                          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Default MDE                | Extraction of  metadata based on default extraction queries   | Yes         |
+|                            | in the connector code                                         |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based MDE     | Extraction of metadata based on extraction queries provided by| No          |
+|                            | user                                                          |             |
++----------------------------+---------------------------------------------------------------+-------------+
+|                                   **Extracted metadata objects**                                         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Table descriptions         | Description of the dbt target table descriptions              | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Views descriptions         | Descriptions of the views                                     | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column descriptions        | Description of the columns                                    | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+|                                   **Catalog Features**                                                   |
++----------------------------+---------------------------------------------------------------+-------------+
+| Sampling and profiling     | Not applicable                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+| QLI                        | Not applicable                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+| Compose                    | Not applicable                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+|                                   **Lineage**                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| Jinja code extraction      | Extraction of Jinja code from dbt into dataflow content       | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Automatic lineage          | Auto-calculation of lineage based on query history ingested   | Yes\*       |
+| generation                 | from QLI and MDE                                              |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column-level lineage       | Calculation of lineage data at the column level. Column-level | Not         |
+|                            | lineage is not applicable to the dbt connector, however, it   | applicable  |
+|                            | can be viewed if CLL is supported by the primary data source. |             |
++----------------------------+---------------------------------------------------------------+-------------+
+
+Supported Data Sources
+-------------------------------
+
+The table below lists data sources that support the dbt add-on connector.
+
++----------------------------+----------------------------------+------------------------------+
+| **Data Source**            | **dbt type**                     | **dbt OCF Connector Version**|
++============================+==================================+==============================+
+| Snowflake                  | dbt Core                         | 1.0.0                        |
++                            +----------------------------------+------------------------------+
+|                            | dbt Cloud                        | 2.0.0                        |
++----------------------------+----------------------------------+------------------------------+
+| PostgreSQL                 | dbt Core                         | 1.0.0                        |
++                            +----------------------------------+------------------------------+
+|                            | dbt Cloud                        | 2.0.0                        |
++----------------------------+----------------------------------+------------------------------+
+| Amazon Redshift            | dbt Core                         | 1.0.0                        |
++                            +----------------------------------+------------------------------+
+|                            | dbt Cloud                        | 2.0.0                        |
++----------------------------+----------------------------------+------------------------------+
+| Google BigQuery            | dbt Core, dbt Cloud              | 2.1.0                        |
++----------------------------+----------------------------------+------------------------------+
+| AWS Databricks             | dbt Core, dbt Cloud              | 2.1.0                        |
++----------------------------+----------------------------------+------------------------------+
+| Azure Databricks           | dbt Core, dbt Cloud              | 2.1.0                        |
++----------------------------+----------------------------------+------------------------------+
+| GCP Databricks             | dbt Core, dbt Cloud              | 2.1.0                        |
++----------------------------+----------------------------------+------------------------------+
+
+Lineage
+-------------
+
+This table has the types of materializations (built into dbt) supported by each data source.
+
++-------------------+-----------+---------+--------------+----------------+
+| **Data Source**   | **Table** | **View**| **Ephemeral**| **Incremental**|
++===================+===========+=========+==============+================+
+| Snowflake         | Yes       | Yes     | Yes          | Yes\*          |
++-------------------+-----------+---------+--------------+----------------+
+| PostgreSQL        | No        | Yes     | No           | No             |
++-------------------+-----------+---------+--------------+----------------+
+| Amazon Redshift   | No        | Yes     | No           | No             |
++-------------------+-----------+---------+--------------+----------------+
+| Google BigQuery   | Yes       | Yes     | Yes          | Yes\*          |
++-------------------+-----------+---------+--------------+----------------+
+| AWS Databricks    | Yes       | Yes     | Yes          | Yes\*          |
++-------------------+-----------+---------+--------------+----------------+
+| Azure Databricks  | Yes       | Yes     | Yes          | Yes\*          |
++-------------------+-----------+---------+--------------+----------------+
+| GCP Databricks    | No        | No      | No           | No             |
++-------------------+-----------+---------+--------------+----------------+
+
+\* The dbt lineage is available for incremental materialization if QLI returns a query for the first run of the incremental model. For subsequent incremental model runs, dbt inserts data from a temporary table to the actual table. Due to this solution in dbt, lineage is not generated between the source and the target.
+
+Object Mapping
+------------------
+
+The following table shows the supported dbt objects and how they are cataloged in Alation:
+
++----------------------------+----------------------------------+
+| **dbt Objects**            | **Alation**                      |
++============================+==================================+
+| Table description          | Table source comments            |
++----------------------------+----------------------------------+
+| View description           | View source comments             |
++----------------------------+----------------------------------+
+| Column description         | Column source comments           |
++----------------------------+----------------------------------+

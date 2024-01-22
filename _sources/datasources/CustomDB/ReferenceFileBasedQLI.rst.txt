@@ -1,0 +1,347 @@
+Example JSONs for File-Based QLI
+==================================
+
+Databricks
+--------------
+
+Example 1
+~~~~~~~~~~~~~
+
+.. code-block:: json
+
+      {
+        "folderPath":"/test/",
+        "nThread":"9",
+        "threadTimeOut":"300",
+        "parserType":"LOG4J",
+        "log4jConversionPattern":"TIMESTAMP LEVEL THREAD LOGGER MESSAGE",
+        "log4jTimeFormat":"yy/MM/dd HH:mm:ss",
+        "requiredExtraction": [
+            {
+                "fieldName": "extractSqlQuery",
+                "keyValuePair":
+                  {
+                    "loggerName": "SparkSqlParser",
+                    "regex": "Parsing command:(?<queryString>[\\w\\W]*)"
+                    }
+                  },
+
+        {
+            "fieldName": "extractUserInfo",
+            "keyValuePair":
+            {
+            "loggerName": "audit",
+            "regex": "ugi=(?:\\(Basic token\\))?(?<userName>[\\S]+)"
+            }
+        },
+
+          {
+          "fieldName": "extractTimeTaken",
+          "keyValuePair":
+            {
+            "loggerName": "Retrieve",
+            "regex": "Execution Time = (?<milliSeconds>[\\d]+)"
+              }
+          }
+        ]
+      }
+
+
+Example 2
+~~~~~~~~~~~~~~
+.. code-block:: json
+
+      {
+        "folderPath":"/alation-databricks-logs/test/manish.ranjan/al-37403",
+        "nThread":"10",
+        "threadTimeOut":"2000",
+        "parserType":"LOG4J",
+        "log4jConversionPattern":"TIMESTAMP [THREAD] LEVEL LOGGER MESSAGE",
+        "log4jTimeFormat":"yy/MM/dd HH:mm:ss",
+        "requiredExtraction":
+        [
+          {
+          "fieldName": "extractSqlQuery",
+          "keyValuePair":
+            {
+              "loggerName": "SparkSqlParser",
+              "regex": "Parsing command:(?<queryString>[\\w\\W]*)"
+            }
+           },
+
+          {
+          "fieldName": "extractUserInfo",
+          "keyValuePair":
+            {
+              "loggerName": "audit",
+              "regex": "ugi=(?:\\(Basic token\\))?(?<userName>[\\S]+)"
+            }
+          },
+
+          {
+          "fieldName": "extractTimeTaken",
+          "keyValuePair":
+            {
+              "loggerName": "Retrieve",
+              "regex": "Execution Time = (?<milliSeconds>[\\d]+)"
+            }
+          }
+        ]
+      }
+
+
+Tez with Hive
+----------------
+
+.. code-block:: json
+
+    {
+      "folderPath":"/tezLog/",
+      "nThread":"1",
+      "threadTimeOut":"300",
+      "parserType":"LOG4J",
+      "log4jConversionPattern":"TIMESTAMP [THREAD] LEVEL LOGGER MESSAGE",
+      "log4jTimeFormat":"yy/MM/dd HH:mm:ss",
+      "requiredExtraction":
+          [
+              {
+                "fieldName": "extractUserInfo",
+                "keyValuePair":
+                    {
+                      "loggerName": "TezSessionState",
+                      "regex": "User of session id [\\S]+ is (?<userName>[\\w]+)"
+                    }
+                },
+                {
+                  "fieldName": "extractSqlQuery",
+                  "keyValuePair":
+                    {
+                        "loggerName": "ParseDriver",
+                        "regex": "Parsing command:(?<queryString>[\\w\\W]*)"
+                      }
+                  },
+              {
+                "fieldName": "extractTimeTaken",
+                "keyValuePair":
+                  {
+                    "loggerName": "CliDriver",
+                    "regex": "Time taken: (?<milliSeconds>[\\d]*.[\\d]*)"
+                    }
+                  }
+                ]
+              }
+
+
+Hive on HDP with Tez
+-------------------------
+
+.. code-block:: json
+
+      {
+        "folderPath":"/tf-test-al-33492-manish-ranjan/",
+        "nThread":"10",
+        "threadTimeOut":"2000",
+        "isModificationTimeInclude":"false",
+        "fileNameNegativeRegex":"hive.log",
+        "parserType":"LOG4J",
+        "log4jConversionPattern":"TIMESTAMP LEVEL LOGGER MESSAGE",
+        "log4jTimeFormat":"yyyy-MM-dd HH:mm:ss,SSS",
+        "requiredExtraction":
+          [
+            {
+              "fieldName": "extractSqlQuery",
+              "keyValuePair":
+                {
+                  "loggerName": "",
+                  "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) [\\w\\W].*\\):(?<queryString>[\\w\\W]*)"
+                }
+              },
+            {
+              "fieldName": "extractUserInfo",
+              "keyValuePair":
+                {
+                  "loggerName": "",
+                  "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) - Starting command\\(queryId=(?<userName>(\\S[^_]+))"
+                  }
+                },
+                {
+                  "fieldName": "extractTimeTaken",
+                  "keyValuePair":
+                    {
+                      "loggerName": "",
+                      "regex": "CliDriver \\(SessionState.java:printInfo\\(\\d+\\)\\) - Time taken: (?<milliSeconds>[\\d]*.[\\d]*)"
+                      }
+                    }
+                  ]
+                }
+
+
+Hive on CDH with Spark
+----------------------
+
+.. code-block:: json
+
+      {
+        "folderPath":"/tf-test-al-33492-manish-ranjan/",
+        "nThread":"10",
+        "threadTimeOut":"2000",
+        "isModificationTimeInclude":"false",
+        "parserType":"LOG4J",
+        "log4jConversionPattern":"TIMESTAMP LEVEL LOGGER MESSAGE",
+        "log4jTimeFormat":"yyyy-MM-dd HH:mm:ss,SSS",
+        "requiredExtraction":
+          [
+            {
+            "fieldName": "extractSqlQuery",
+            "keyValuePair":
+              {
+                "loggerName": "",
+                "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) [\\w\\W].*\\):(?<queryString>[\\w\\W]*)"
+                }
+              },
+              {
+              "fieldName": "extractUserInfo",
+              "keyValuePair":
+                {
+                  "loggerName": "",
+                  "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) - Executing command\\(queryId=(?<userName>(\\S[^_]+))"
+                  }
+                },
+              {
+              "fieldName": "extractTimeTaken",
+              "keyValuePair":
+                {
+                  "loggerName": "",
+                  "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) [\\w\\W]+\\); Time taken: (?<milliSeconds>[\\d]*.[\\d]*)"
+                  }
+                }
+                ]
+              }
+
+
+Hive on EMR with Spark
+-------------------------
+
+.. code-block:: json
+
+    {
+      "folderPath":"/tf-test-al-33492-manish-ranjan/",
+      "nThread":"10",
+      "threadTimeOut":"2000",
+      "isModificationTimeInclude":"false",
+      "parserType":"LOG4J",
+      "log4jConversionPattern":"TIMESTAMP LEVEL LOGGER MESSAGE",
+      "log4jTimeFormat":"yyyy-MM-ddTHH:mm:ss,SSS",
+      "requiredExtraction":
+          [
+            {
+            "fieldName": "extractSqlQuery",
+            "keyValuePair":
+              {
+                "loggerName": "",
+                "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) [\\w\\W].*\\):(?<queryString>[\\w\\W]*)"
+                }
+              },
+              {
+              "fieldName": "extractUserInfo",
+              "keyValuePair":
+                {
+                  "loggerName": "",
+                  "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) - Executing command\\(queryId=(?<userName>(\\S[^_]+))"
+                  }
+                },
+                {
+                "fieldName": "extractTimeTaken",
+                "keyValuePair":
+                  {
+                    "loggerName": "",
+                    "regex": "ql.Driver \\(Driver.java:execute\\([\\d]+\\)\\) [\\w\\W]+\\); Time taken: (?<milliSeconds>[\\d]*.[\\d]*)"
+                    }
+                  }
+                ]
+            }
+
+
+Hive on MapR with Spark
+--------------------------
+
+.. code-block:: json
+
+      {
+        "folderPath":"/tf-test-al-33492-manish-ranjan/mapr.logs/",
+        "nThread":"10",
+        "threadTimeOut":"2000",
+        "isModificationTimeInclude":"false",
+        "parserType":"LOG4J",
+        "log4jConversionPattern":"TIMESTAMP LEVEL LOGGER MESSAGE",
+        "log4jTimeFormat":"yyyy-MM-ddTHH:mm:ss,SSS",
+        "requiredExtraction":
+            [
+              {
+              "fieldName": "extractSqlQuery",
+              "keyValuePair":
+                {
+                  "loggerName": "",
+                  "regex": "ql.Driver: Executing command\\([\\w\\W].*\\):(?<queryString>[\\w\\W]*)"
+                  }
+                },
+              {
+              "fieldName": "extractUserInfo",
+              "keyValuePair":
+                {
+                  "loggerName": "",
+                  "regex": "ql.Driver: Executing command\\(queryId=(?<userName>(\\S[^_]+))"
+                  }
+                },
+                {
+                "fieldName": "extractTimeTaken",
+                "keyValuePair":
+                  {
+                    "loggerName": "",
+                    "regex": "ql.Driver: Completed executing command\\([\\w\\W].*\\); Time taken: (?<milliSeconds>[\\d]*.[\\d]*)"
+                    }
+                  }
+                ]
+              }
+
+
+Hive with Tez on HD Insights 3.6
+-----------------------------------
+
+.. code-block:: json
+
+      {
+        "folderPath":"/hd_insights_log/",
+        "nThread":"10",
+        "threadTimeOut":"10000",
+        "parserType":"LOG4J",
+        "log4jConversionPattern":"TIMESTAMP LEVEL LOGGER MESSAGE",
+        "log4jTimeFormat":"yyyy-MM-dd HH:mm:ss,SSS",
+        "requiredExtraction":
+            [
+              {
+              "fieldName": "extractSqlQuery",
+              "keyValuePair":
+                {
+                  "loggerName": "",
+                  "regex": "parse.ParseDriver: Parsing command: (?<queryString>[\\w\\W]*)"
+                  }
+                },
+                {
+                "fieldName": "extractUserInfo",
+                "keyValuePair":
+                  {
+                    "loggerName": "",
+                    "regex": "ql.Driver: Starting command\\(queryId=(?<userName>(\\S[^_]+))"
+                    }
+                  },
+                  {
+                  "fieldName": "extractTimeTaken",
+                  "keyValuePair":
+                    {
+                    "loggerName": "",
+                    "regex": "CliDriver: Time taken: (?<milliSeconds>[\\d]*.[\\d]*)"
+                    }
+                  }
+                ]
+              }

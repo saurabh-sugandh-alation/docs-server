@@ -1,0 +1,180 @@
+Embed External Visualizations
+==========================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from release 2021.2*
+
+Overview
+-----------------
+
+It is possible to display custom visualizations from Tableau on the **Custom** tab of the Alation Analytics V2 Dashboard. A *Server Admin* can configure the contents of the **Custom** tab on the Alation Analytics V2 Settings page. A number of steps will also need to be performed on the Tableau server. If the Tableau server uses SSO, then additional configuration may be required on the IdP side too.
+
+To see embedded views on the Alation Analytics V2 Dashboard, a user must have a Tableau Server account in order to authenticate to the Tableau server from Alation.
+
+.. note::
+
+   If you wish to connect to Alation Analytics V2 from Tableau and create custom visualizations, see :doc:`/installconfig/AlationAnalyticsV2/Connect3rdPartyBIToolsToAAV2` for more details.
+
+Configuration
+---------------------
+
+Prerequisites
+~~~~~~~~~~~~~~~~~~~~~~
+
+Secure Server Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Embedding visualizations into Alation requires SSL connections to the Tableau server and to the Alation server. Embedded visualizations will only load if both servers use secure connections.
+
+Chrome Security Settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*Applies if users are using Chrome to access Alation*
+
+For the Chrome browser to load embedded views, the Tableau server version must support the login cookie property **SameSite=None; Secure**. Note that older versions of Tableau do not support **SameSate=None; Secure**, and you may need to either upgrade to the newer Tableau version or change the corresponding Chrome settings in order to use this feature. For Tableau versions 2019.4.1 and older, see the following recommendations on Chrome configuration: `Embedded Views Fail to Load After Updating to Chrome 80+ <https://kb.tableau.com/articles/issue/embedded-views-fail-to-load-after-updating-to-chrome-80>`_.
+
+Allow 3rd Party Cookies in Your Browser
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the browser settings, users need to make sure that 3rd party cookies are allowed: `Cookie Restriction Error <https://help.tableau.com/current/server/en-us/trusted_auth_trouble_cookie.htm>`_.
+
+IdP May Require Additional Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*Applies if your Tableau server uses SSO*
+
+To view the embedded reports, users must authenticate on the Tableau server from Alation.
+If your Tableau server uses SSO authentication, you may need to configure your IdP to allow logins from an embedded iFrame:
+
+    - Okta example:  `Okta in IFrame is not working <https://support.okta.com/help/s/article/Okta-in-IFrame-is-not-working?language=en_US>`_
+
+Step 1: Copy Embed Links for Visualizations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On the Tableau server, find the shareable link for the View you want to embed to the Alation Analytics V2 Dashboard. The **Share** button at the top of each View opens a dialog from which you can copy the embed link.
+
+Copy the shareable links of the views you want to embed and note them down:
+
+.. image:: ../../_static/AAV2_Embed_01.png
+
+Step 2: Configure the Embed Link
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you copy the shareable link, Tableau adds a number of parameters to this link. The link you copy will look similar to:
+
+**https://10.15.13.154/views/Superstore/Customers?:showAppBanner=false&:display_count=n&:showVizHome=n&:origin=viz_share_link**
+
+You can modify the shareable link by applying additional parameters and/or deleting the parameters that were added automatically. For details on what each parameter means, refer to `Parameters For Embed Code <https://help.tableau.com/current/pro/desktop/en-us/embed_list.htm?_gl=1*kmipqk*_ga*MTA0OTI0MDExMi4xNjE4MjY4MTI3*_ga_8YLN0SNXVS*MTYyMjA4MDM1NS4xNS4xLjE2MjIwODA2MDcuMA..>`_ in Tableau documentation for your Tableau version.
+
+    .. important::
+
+        Alation does not support JavaScript tags in embedded links. When configuring the embed link, use only the URL parameters for iframe tags.
+
+Step 3: Check That the Embed Link Includes the Embed Parameter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Check that the embed link you have formed includes the parameter embed=yes. If not, add it. This is to allow embedding when `clickjack protection <https://help.tableau.com/current/server/en-us/clickjack_protection.htm>`_ is enabled on the Tableau server.
+
+Example:
+
+**https://10.15.13.154/views/Date-Time/DateCalcs?:embed=yes**
+
+Step 4: Configure the Custom Tab
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Sign in to Alation and go to **Admin Settings > Alation Analytics**:
+
+    .. image:: ../../_static/AAV2_Embed_02.png
+
+2. On the Alation Analytics Settings page, locate section **Custom Visualizations**:
+
+    .. image:: ../../_static/AAV2_Embed_03.png
+
+3. Click **+ Add Custom Visualization**.
+
+4. Specify a name in the **Name** field. It will appear on the Alation Analytics V2 Dashboard as the name of the embedded view.
+
+    .. image:: ../../_static/AAV2_Embed_04.png
+
+5. In the field **Link to View Visualization**, paste the URL of the view on the Tableau server. This link will be tied to the **Open In Source** button that will appear for this embedded view on the Alation Analytics V2 Dashboard and will allow users to navigate to this view on the Tableau server.
+
+6. There are two ways to embed visualizations: using the embed links or using the embed code. To use the embed link, in the **Embed Link** field, paste the shareable link you have prepared. See `Use Embed Code Instead`_ below for information about how to use the Embed Code field.
+
+    .. image:: ../../_static/AAV2_Embed_05.png
+        :width: 450px
+
+7. You can click **Preview** on the top right of the dialog to preview the visualization:
+
+    .. image:: ../../_static/AAV2_Embed_06.png
+
+
+8. To return back to the form, click **Form**.
+
+9. Click **Save**. The name of the visualization you added will be listed under Custom Visualizations:
+
+    .. image:: ../../_static/AAV2_Embed_07.png
+
+    .. note::
+
+        Added visualizations cannot be sorted. They will appear in the order you add them, newly added visualization on top.
+
+10. Go to the Alation Analytics V2 Dashboard and click the **Custom** tab. If your configuration is correct, the embedded visualization will be displayed under **Custom** with ability to sign in to the Tableau server:
+
+    .. image:: ../../_static/AAV2_Embed_08.png
+
+
+11. Sign in to Tableau, authenticating with your Tableau credentials. After sign-in, the embedded visualization will load to the dashboard.
+
+    .. Note::
+
+        If the Tableau server uses SSO, you should be redirected to the login page of the IdP to provide your credentials when authenticating.
+
+Use Embed Code Instead
+--------------------------
+
+When configuring embedded visualizations, you have an option to use embed code. It allows users to insert their own custom iframe code. This field accepts arbitrary text content and only the <iframe /> elements:
+
+    .. image:: ../../_static/AAV2_Embed_09.png
+
+Select the **Use embed code instead** option if you would like to apply custom height or width to the iframe or enable other iframe attributes.
+
+For example, if after using the embed link you discover that a visualization is not displayed properly on the screen and needs adjusting, use embed code instead and adjust the display using the <iframe/> attributes.
+
+    .. note::
+
+        If you copy the embed code from the **Share** dialog on the Tableau server and paste it to the **Use embed code instead** field, this code will not work in Alation. Alation only supports the <iframe/> code for adjusting the display of embedded visualizations.
+
+Edit or Remove Embedded Visualizations
+-----------------------------------------
+
+To edit or remove an embedded visualization,
+
+1. Click the Pencil icon next to this visualization under Custom Visualizations:
+
+    .. image:: ../../_static/AAV2_Embed_10.png
+
+2. In the Visualization editor that opens, you can edit its properties or remove it by clicking the **Delete Visualization** button.
+
+Troubleshooting Embedded Visualizations
+-----------------------------------------------
+
+<servername> refused to connect
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    .. image:: ../../_static/AAV2_Embed_11.png
+
+Any third party web page (Tableau) to be embedded into an application (Alation) needs to have its server settings configured so that it allows certain pages to be embedded in others.
+
+If you encounter the **<servername> refused to connect** error, check the following:
+
+    - X-Frame-Options
+
+        When the X-Frame-Options on the Tableau server are set to ``same-origin`` or ``deny``, the visualization will not load and you will see the ``<servername> refused to connect`` error when previewing embedded visualizations or when trying to view them on the Alation Analytics V2 Dashboard. See, for example, `recommendations from Tableau concerning Chrome 80+ <https://kb.tableau.com/articles/Issue/embedded-views-fail-to-load-after-updating-to-chrome-80?_gl=1*1n5a135*_ga*MTA0OTI0MDExMi4xNjE4MjY4MTI3*_ga_8YLN0SNXVS*MTYyMjA3MDcxOC4xNC4xLjE2MjIwNzA4MDMuMA..&_ga=2.82777750.1070592303.1622070719-1049240112.1618268127>`_
+
+
+    - Clickjack protection settings on the Tableau server: `Clickjack Protection <https://help.tableau.com/current/server/en-us/clickjack_protection.htm>`_
+
+    - Make sure that the embedded link is configured correctly: it should be allowed to be viewed in a 3rd party context. See `Step 3: Check that the Embed Link Includes the Embed Parameter`_
+
+    - If your Tableau server uses SSO, check that the IdP allows logins from embedded iframes.

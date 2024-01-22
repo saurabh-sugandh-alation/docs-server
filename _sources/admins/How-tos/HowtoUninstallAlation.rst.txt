@@ -1,0 +1,135 @@
+How to Uninstall Alation
+==========================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+This process is to be followed to completely uninstall Alation.
+
+.. important::
+
+      Doing anything described below will result in permanent loss of catalog data.
+
+**All these commands are to be run as "root" or SUDO, outside of Alation shell**.
+
+Prerequisite
+---------------
+
+Before you uninstall, take note of the paths to your data and backup files. They are needed for one of the commands you will issue as part of the uninstall. The disks mounted on **/opt/alation/alation-XXXX/data1** and **/opt/alation/alation-XXXX/data2** are your data and backup disks (**XXXX** stands for your Alation version, for example: **alation-5.10.1.89638**).
+
+You can run the following command to find out the paths:
+
+.. code-block:: Bash
+
+    tail /opt/alation/alation/.disk*
+
+To uninstall,
+
+1. Stop Alation:
+
+    .. code-block:: Bash
+
+        /etc/init.d/alation stop
+
+2. Verify that everything is unmounted from chroot:
+
+    .. code-block:: Bash
+
+        mount | grep alation
+
+3. If anything is still mounted, unmount any remaining stubborn mounts (**XXXX** stands for the Alation version):
+
+    .. code-block:: Bash
+
+        umount /opt/alation/alation-XXXX/data1
+        umount /opt/alation/alation-XXXX/data2
+        umount /opt/alation/alation-XXXX/proc
+        umount /opt/alation/alation-XXXX/dev
+
+4. Verify that everything is unmounted from Chroot:
+
+    .. code-block:: Bash
+
+        mount | grep alation
+
+5. Unistall Alation. On RHEL/CENTOS, do graceful uninstall first, and only if it fails, perform ungraceful uninstall.
+
+  **RHEL/CENTOS RPM graceful uninstall**:
+
+    .. code-block:: Bash
+
+        rpm -qa | grep alation
+        rpm -e alation-XXXX
+
+  **RPM ungraceful uninstall**:
+
+    .. code-block:: Bash
+
+      rpm -qa | grep alation
+      rpm -e alation-XXXX --justdb
+
+  **Remove startup**:
+
+    .. code-block:: Bash
+
+        chkconfig alation off
+        chkconfig --del alation
+
+  **Debian/Ubuntu DEB graceful uninstall**:
+
+    .. code-block:: Bash
+
+        dpkg -l | grep alation
+        sudo apt-get --purge remove alation-XXXX
+
+  **Remove startup**:
+
+    .. code-block:: Bash
+
+        update-rc.d alation disable
+
+6. Remove the ``etc/init.d`` script:
+
+    .. code-block:: Bash
+
+        rm -f /etc/init.d/alation
+
+7. Remove any lingering install files:
+
+    .. code-block:: Bash
+
+        rm -rf /usr/local/alation_legacy
+        rm -rf /usr/local/alation/*
+        rm -rf /opt/alation/*
+
+8. Remove alternatives:
+
+    - Run the following command, outside of the Alation shell, to list all the packages:
+
+          .. code-block:: Bash
+
+              update-alternatives --display alation
+
+    - For each Alation package, run the following to remove (**XXXX** stands for the Alation version):
+
+         .. code-block:: Bash
+
+             update-alternatives --remove alation /opt/alation/alation-XXXX
+
+    - Then run the following command again to verify there are no remaining packages:
+
+        .. code-block:: Bash
+
+            update-alternatives --display alation
+
+9. Remove data.
+
+    .. important::
+
+          You will NOT be able to recover any data after this step is run.
+
+    .. code-block:: Bash
+
+        rm -rf <path to data>/*
+        rm -rf <path to backup>/*
+
+Now, you have uninstalled Alation.

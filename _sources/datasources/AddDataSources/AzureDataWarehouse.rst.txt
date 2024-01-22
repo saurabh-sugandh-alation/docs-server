@@ -1,0 +1,74 @@
+Azure Data Warehouse
+====================
+
+Required Information
+------------------------
+
+To configure Azure SQL Data Warehouse in Alation, you will need the
+following information:
+
+-  Hostname or IP address of your server
+-  Port number
+-  Database name - Optional
+-  Instance name - Optional
+-  Authentication: Windows AD or Local Account
+-  AD Realm  if not using a Local Account
+-  Service account (AD Account) with privileges listed below
+
+.. image:: ../../_static/DS_AzureDW01.png
+    :width: 3.5in
+    :align: center
+
+Authentication
+----------------
+
+-  SQL authentication
+-  Azure Active Directory (AAD) authentication
+
+Connectivity
+--------------
+
+Firewall Configuration:
+
+-  Open outbound TCP port **1433** to Azure SQL Data Warehouse.
+
+Service Account
+---------------
+
+.. code-block:: sql
+
+    CREATE LOGIN [login_value] WITH PASSWORD = [password];
+    CREATE USER [service_account] FOR LOGIN [login_value];
+
+Careful with password restrictions.  Follow official documentation rules.
+
+Metadata Extraction
+-------------------
+
+GRANT SELECT or VIEW DEFINITION at Database or Schema level to <service_account>.
+
+Example:
+
+.. code-block:: sql
+
+    GRANT [SELECT/VIEW DEFINITION] on SCHEMA::[schema_name] to [service_account]
+
+Ensure that service_account also has SELECT access on the below SYS tables to extract Table Size:
+
+- ``sys.pdw_table_mappings``
+- ``sys.pdw_nodes_tables``
+- ``sys.dm_pdw_nodes``
+- ``sys.pdw_distributions``
+- ``sys.dm_pdw_nodes_db_partition_stats``
+
+Profiling/Sampling
+------------------
+
+.. code-block:: sql
+
+    GRANT SELECT or VIEW DEFINITION at Database or Schema level to <service_account>.
+
+Query Log Ingestion Setup
+-------------------------
+
+Not yet supported.

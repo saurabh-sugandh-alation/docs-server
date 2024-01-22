@@ -1,0 +1,1272 @@
+Snowflake OCF Connector Extraction Queries 
+=========================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+
+The default extraction queries for Snowflake OCF data sources are listed below. You can customize them to better suit your extraction requirements. Custom queries can be provided on the **Metadata Extraction** tab of the data source Settings page under **Metadata Extraction Queries**.
+
+You can customize all or some of the queries.
+
+If specified, custom extraction queries will take precedence over the default MDE queries.
+
+  .. important::
+
+      The database name may or may not be present in the JDBC URI. In this case the default queries will differ in the operator of the WHERE filter:
+
+        - If the database name is present, the WHERE filter will equal ``CATALOG_NAME`` to the database name.
+        - If the database name is not present, the WHERE filter will in most cases use the IN operator and a list of database names that the service account has access to.
+
+Catalog
+------------------
+
+Make sure that your query has a column labeled as ``CATALOG`` in the SELECT statement.
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+            .. code-block:: sql
+
+                SELECT 
+                    DATABASE_NAME AS CATALOG
+                FROM 
+                    SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+                WHERE 
+                    DELETED IS NULL
+                AND DATABASE_NAME = '<database_name>';
+
+    .. tab:: Versions Before 2.0.0
+
+        
+            .. code-block:: sql
+
+                SELECT
+                    DATABASE_NAME AS CATALOG
+                FROM
+                    SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+                WHERE
+                    DELETED IS NULL AND DATABASE_NAME = '<database_name>'
+                ORDER BY
+                    DATABASE_NAME;
+             
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+            .. code-block:: sql
+
+                SELECT 
+                    DATABASE_NAME AS CATALOG
+                FROM 
+                    SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+                WHERE 
+                    DELETED IS NULL;
+
+    .. tab:: Versions Before 2.0.0
+
+        
+            .. code-block:: sql
+
+                SELECT
+                    DATABASE_NAME AS CATALOG
+                FROM
+                    SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+                WHERE
+                    DELETED IS NULL
+                    AND DATABASE_NAME IN ('<database_name1>', '<database_name2>')
+                ORDER BY
+                    DATABASE_NAME;
+             
+Schema
+---------------
+
+Make sure that your query has a column labeled as ``CATALOG``, ``SCHEMA`` in the SELECT statement.
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+            .. code-block:: sql
+
+                SELECT
+                    CATALOG_NAME AS CATALOG,
+                    SCHEMA_NAME AS SCHEMA,
+                    COMMENT AS REMARKS
+                FROM 
+                    SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+                WHERE 
+                    DELETED IS NULL
+                    AND SCHEMA_NAME IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>')
+                    AND CATALOG_NAME = '<database_name>'
+                    AND TRIM(SCHEMA_NAME) !='';
+
+    .. tab:: Versions Before 2.0.0
+
+        
+            .. code-block:: sql
+
+                SELECT
+                    CATALOG_NAME AS CATALOG,
+                    SCHEMA_NAME AS SCHEMA,
+                    COMMENT AS REMARKS
+                FROM
+                    SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+                WHERE
+                    DELETED IS NULL
+                    AND CONCAT(CATALOG_NAME,'.',SCHEMA_NAME) IN ('<database_name>.<schema_name>')
+                    AND CATALOG_NAME = '<database_name>'
+                ORDER BY
+                    DATABASE_NAME;
+             
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+        .. code-block:: sql
+
+                SELECT
+                    CATALOG_NAME AS CATALOG,
+                    SCHEMA_NAME AS SCHEMA,
+                    COMMENT AS REMARKS
+                FROM
+                    SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+                WHERE 
+                    DELETED IS NULL
+                    AND SCHEMA_NAME IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>')
+                    AND CATALOG_NAME IN ('<database_name_1>, <database_name_2>')
+                    AND TRIM(SCHEMA_NAME) !='';
+
+    .. tab:: Versions Before 2.0.0
+        
+            .. code-block:: sql
+
+                SELECT
+                    CATALOG_NAME AS CATALOG,
+                    SCHEMA_NAME AS SCHEMA
+                    COMMENT AS REMARKS
+                FROM
+                    SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+                WHERE
+                    DELETED IS NULL
+                    AND CONCAT(CATALOG_NAME,'.',SCHEMA_NAME) IN ('<database_name>.<schema_name>')
+                    AND CATALOG_NAME IN ('<database_name1>', '<database_name2>')
+                ORDER BY
+                    DATABASE_NAME;
+
+Table
+-------------------
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TABLE_TYPE``, and ``REMARKS`` in the SELECT statement.
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME,
+                'TABLE' AS TABLE_TYPE,
+                COMMENT AS  REMARKS
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.TABLES
+            WHERE 
+                DELETED IS NULL
+                AND TABLE_TYPE = 'BASE TABLE'
+                AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+                AND TABLE_CATALOG = '<database_name>'
+                AND TRIM(TABLE_NAME) !='';
+
+    .. tab:: Versions Before 2.0.0
+        
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME,
+                TABLE_TYPE,
+                COMMENT AS REMARKS
+            FROM
+                SNOWFLAKE.ACCOUNT_USAGE.TABLES
+            WHERE
+                DELETED IS NULL
+                AND TABLE_TYPE = 'BASE TABLE'
+                AND CONCAT(TABLE_CATALOG,'.',TABLE_SCHEMA) IN ('<database_name>.<schema_name>')
+                AND TABLE_CATALOG = '<database_name>'
+                AND TRIM(TABLE_NAME) !=''
+            ORDER BY
+                TABLE_CATALOG;
+
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME,
+                'TABLE' AS TABLE_TYPE,
+                COMMENT AS REMARKS
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.TABLES
+            WHERE 
+                DELETED IS NULL
+                AND TABLE_TYPE = 'BASE TABLE'
+                AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+                AND TABLE_CATALOG IN ('<database_name_1>, <database_name_2>')
+                AND TRIM(TABLE_NAME) !='';
+
+    .. tab:: Versions Before 2.0.0
+        
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME,
+                TABLE_TYPE,
+                COMMENT AS REMARKS
+            FROM
+                SNOWFLAKE.ACCOUNT_USAGE.TABLES
+            WHERE
+                DELETED IS NULL
+                AND TABLE_TYPE = 'BASE TABLE'
+                AND CONCAT(TABLE_CATALOG,'.',TABLE_SCHEMA) IN ('<database_name>.<schema_name>')
+                AND TABLE_CATALOG IN ('<database_name1>', '<database_name2>')
+                AND TRIM(TABLE_NAME) !=''
+            ORDER BY
+                TABLE_CATALOG;
+
+External Table
+----------------
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    -- get stages from database using INFORMATION_SCHEMA
+    SELECT
+        STAGE_URL,
+        CONCAT('@',TRIM(STAGE_CATALOG),'.',TRIM(STAGE_SCHEMA),'.',TRIM(STAGE_NAME),'/') AS LOCATION
+    FROM "<database_name>".INFORMATION_SCHEMA.STAGES
+
+    -- get external tables from database using INFORMATION_SCHEMA
+    SELECT
+        ET.TABLE_CATALOG AS CATALOG,
+        ET.TABLE_SCHEMA AS SCHEMA,
+        ET.TABLE_NAME,
+        'TABLE' AS TABLE_TYPE,
+        ET.COMMENT AS REMARKS,
+        ET.LOCATION AS DATA_LOCATION
+    FROM "<database_name>".INFORMATION_SCHEMA.EXTERNAL_TABLES ET
+    WHERE
+        ET.TABLE_SCHEMA
+        IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>');
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    -- get stages from all databases using INFORMATION_SCHEMA
+    SELECT
+        STAGE_URL,
+        CONCAT('@',TRIM(STAGE_CATALOG),'.',TRIM(STAGE_SCHEMA),'.',TRIM(STAGE_NAME),'/') AS LOCATION
+    FROM "<database_name>".INFORMATION_SCHEMA.STAGES
+
+    -- get external tables from all databases using INFORMATION_SCHEMA
+    SELECT
+        ET.TABLE_CATALOG AS CATALOG,
+        ET.TABLE_SCHEMA AS SCHEMA,
+        ET.TABLE_NAME,
+        'TABLE' AS TABLE_TYPE,
+        ET.COMMENT AS REMARKS,
+        ET.LOCATION AS DATA_LOCATION
+    FROM "<database_name>".INFORMATION_SCHEMA.EXTERNAL_TABLES ET
+    WHERE ET.TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>');
+
+
+View
+--------------
+
+Make sure that your query has columns labeled as ``DATABASE_NAME``, ``SCHEMA_NAME``, ``NAME``, ``TEXT``, ``IS_MATERIALIZED``, and ``COMMENT`` in the SELECT statement.
+
+.. note::
+
+    The default view extraction query does not filter out temporary views. If you don't want the temporary views to appear in the catalog, uncomment the condition ``AND VIEW_DEFINITION not ILIKE '%create or replace temporary view%'``  in the WHERE filter.
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME AS VIEW_NAME,
+                VIEW_DEFINITION AS VIEW_CREATE_STATEMENT,
+                'VIEW' AS VIEW_TYPE,
+                COMMENT AS REMARKS
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.VIEWS
+            WHERE 
+                DELETED IS NULL
+                AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+                AND TABLE_CATALOG = '<database_name>'
+                AND TRIM(TABLE_NAME) != ''
+                -- Uncomment the next line to filter out temporary views
+                -- AND VIEW_DEFINITION not ILIKE '%create or replace temporary view%';
+
+    .. tab:: Versions Before 2.0.0
+        
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME AS VIEW_NAME,
+                VIEW_DEFINITION AS VIEW_CREATE_STATEMENT,
+                'VIEW' AS VIEW_TYPE,
+                COMMENT AS REMARKS
+            FROM
+                SNOWFLAKE.ACCOUNT_USAGE.VIEWS
+            WHERE
+                DELETED IS NULL
+                AND CONCAT(TABLE_CATALOG,'.',TABLE_SCHEMA) IN ('<database_name>.<schema_name>')
+                AND TABLE_CATALOG = '<database_name>'
+                -- Uncomment the next line to filter out temporary views
+                -- AND VIEW_DEFINITION not ILIKE '%create or replace temporary view%'
+            ORDER BY
+                TABLE_CATALOG;
+
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME AS VIEW_NAME,
+                VIEW_DEFINITION AS VIEW_CREATE_STATEMENT,
+                'VIEW' AS VIEW_TYPE,
+                COMMENT AS REMARKS
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.VIEWS
+            WHERE 
+                DELETED IS NULL
+                AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+                AND TABLE_CATALOG IN ('<database_name_1>, <database_name_2>')
+                AND TRIM(TABLE_NAME) != ''
+                -- Uncomment the next line to filter out temporary views
+                -- AND VIEW_DEFINITION not ILIKE '%create or replace temporary view%';
+
+    .. tab:: Versions Before 2.0.0
+        
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME AS VIEW_NAME,
+                VIEW_DEFINITION AS VIEW_CREATE_STATEMENT,
+                'VIEW' AS VIEW_TYPE,
+                COMMENT AS REMARKS
+            FROM
+                SNOWFLAKE.ACCOUNT_USAGE.VIEWS
+            WHERE
+                DELETED IS NULL
+                AND CONCAT(TABLE_CATALOG,'.',TABLE_SCHEMA) IN ('<database_name>.<schema_name>')
+                AND TABLE_CATALOG IN ('<database_name1>', '<database_name2>')
+                -- Uncomment the next line if to filter out temporary views
+                -- AND VIEW_DEFINITION not ILIKE '%create or replace temporary view%'
+            ORDER BY
+                TABLE_CATALOG;
+
+
+Column
+-------------
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, and ``COLUMN_DEFAULT`` in the SELECT statement.
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME,
+                DECODE(DATA_TYPE,'TEXT','VARCHAR' || '(' || CHARACTER_MAXIMUM_LENGTH || ')','NUMBER',DATA_TYPE || '(' || NUMERIC_PRECISION ||','|| NUMERIC_SCALE || ')', DATA_TYPE) AS TYPE_NAME,
+                DATA_TYPE,
+                COLUMN_NAME,
+                ORDINAL_POSITION,
+                IS_NULLABLE,
+                COMMENT AS REMARKS,
+                COLUMN_DEFAULT
+            FROM
+                SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
+            WHERE 
+                DELETED IS NULL
+                AND TABLE_SCHEMA IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>')
+                AND TABLE_CATALOG = '<database_name>'
+                AND TRIM(COLUMN_NAME) NOT IN ('','SYS_MV_SOURCE_PARTITION','METADATA$ROW_VERSION')
+                AND TRIM(TABLE_NAME) !='';
+
+    
+    .. tab:: Versions Before 2.0.0
+        
+        .. code-block:: sql
+
+            .. code-block:: sql
+
+                SELECT
+                    TABLE_CATALOG AS CATALOG,
+                    TABLE_SCHEMA AS SCHEMA,
+                    TABLE_NAME,
+                    DECODE(DATA_TYPE,'TEXT','VARCHAR' || '(' || CHARACTER_MAXIMUM_LENGTH || ')','NUMBER',DATA_TYPE || '(' || NUMERIC_PRECISION ||','|| NUMERIC_SCALE || ')', DATA_TYPE) AS TYPE_NAME,
+                    DATA_TYPE,
+                    COLUMN_NAME,
+                    ORDINAL_POSITION,
+                    IS_NULLABLE,
+                    COMMENT AS REMARKS,
+                    COLUMN_DEFAULT
+                FROM
+                    SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
+                WHERE
+                    DELETED IS NULL
+                    AND CONCAT(TABLE_CATALOG,'.',TABLE_SCHEMA) IN ('<database_name>.<schema_name>')
+                    AND TABLE_CATALOG = '<database_name>'
+                    AND TRIM(COLUMN_NAME) NOT IN ('','SYS_MV_SOURCE_PARTITION')
+                    AND TRIM(TABLE_NAME) !=''
+                ORDER BY
+                    TABLE_CATALOG;
+
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME,
+                DECODE(DATA_TYPE,'TEXT','VARCHAR' || '(' || CHARACTER_MAXIMUM_LENGTH || ')',
+                    'NUMBER',DATA_TYPE || '(' || NUMERIC_PRECISION ||','|| NUMERIC_SCALE || ')', DATA_TYPE) AS TYPE_NAME,
+                DATA_TYPE,
+                COLUMN_NAME,
+                ORDINAL_POSITION,
+                IS_NULLABLE,
+                COMMENT AS REMARKS,
+                COLUMN_DEFAULT
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
+            WHERE 
+                DELETED IS NULL
+                AND TABLE_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+                AND TABLE_CATALOG IN ('<database_name_1>, <database_name_2>')
+                AND TRIM(COLUMN_NAME) NOT IN ('','SYS_MV_SOURCE_PARTITION','METADATA$ROW_VERSION')
+                AND TRIM(TABLE_NAME) !='';
+
+    
+    .. tab:: Versions Before 2.0.0
+        
+        .. code-block:: sql
+
+            SELECT
+                TABLE_CATALOG AS CATALOG,
+                TABLE_SCHEMA AS SCHEMA,
+                TABLE_NAME,
+                DECODE(DATA_TYPE,'TEXT','VARCHAR' || '(' || CHARACTER_MAXIMUM_LENGTH || ')','NUMBER',DATA_TYPE || '(' || NUMERIC_PRECISION ||','|| NUMERIC_SCALE || ')', DATA_TYPE) AS TYPE_NAME,
+                DATA_TYPE,
+                COLUMN_NAME,
+                ORDINAL_POSITION,
+                IS_NULLABLE,
+                COMMENT AS REMARKS,
+                COLUMN_DEFAULT
+            FROM
+                SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
+            WHERE
+                DELETED IS NULL
+                AND CONCAT(TABLE_CATALOG,'.',TABLE_SCHEMA) IN ('<database_name>.<schema_name>')
+                AND TABLE_CATALOG  IN ('<database_name1>', '<database_name2>')
+                AND TRIM(COLUMN_NAME) NOT IN ('','SYS_MV_SOURCE_PARTITION')
+                AND TRIM(TABLE_NAME) !=''
+            ORDER BY
+                TABLE_CATALOG;
+
+
+Primary and Foreign Keys
+---------------------------
+
+If the database name is specified in the JDBC URI, then we use queries ``SHOW PRIMARY KEYS IN DATABASE <database_name>`` and ``SHOW EXPORTED KEYS IN DATABASE <database_name>``.
+
+If the database name is not specified, then we use queries ``SHOW PRIMARY KEYS IN ACCOUNT`` and ``SHOW EXPORTED KEYS IN ACCOUNT``.
+
+Function
+------------------
+
+Make sure that your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``FUNCTION_NAME``, and ``REMARKS`` in the SELECT statement.
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+        .. code-block:: sql
+
+            -- get function arguments
+            WITH FUNCTION_COLUMNS AS (
+            SELECT
+                FUNCTION_CATALOG,
+                FUNCTION_ID,
+                FUNCTION_SCHEMA,
+                FUNCTION_NAME,
+                DATA_TYPE AS ARG_TYPE,
+                TRIM(REGEXP_REPLACE(ARGUMENT_SIGNATURE,'(\\()|(\\))')) AS ARGS,
+                ARGUMENT_SIGNATURE
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS WHERE DELETED IS NULL)
+            SELECT
+                FUNCTION_CATALOG AS CATALOG,
+                FUNCTION_SCHEMA AS SCHEMA,
+                FUNCTION_NAME,
+                ARG_TYPE,
+                SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 0) AS ARG_NAME,
+                SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 2) AS TYPE_NAME,
+                FUNCTION_ID
+            FROM 
+                FUNCTION_COLUMNS, LATERAL FLATTEN(INPUT=>SPLIT(ARGS, ',')) FUNCTION_COLUMNS_FLATTENED
+            WHERE 
+                FUNCTION_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+                AND FUNCTION_CATALOG = '<database_name>'
+
+            -- get function
+            SELECT FUNCTION_CATALOG AS CATALOG,
+                FUNCTION_SCHEMA AS SCHEMA,
+                FUNCTION_NAME,
+                COMMENT AS REMARKS,
+                '' AS FUNCTION_DEFINITION,
+                ARGUMENT_SIGNATURE,
+                FUNCTION_ID
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+            WHERE 
+                DELETED IS NULL
+                AND FUNCTION_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+                AND FUNCTION_CATALOG = '<database_name>';
+            
+    .. tab:: Versions Before 2.0.0
+                
+        .. code-block:: sql
+
+            SELECT
+                FUNCTION_CATALOG AS CATALOG,
+                FUNCTION_SCHEMA AS SCHEMA,
+                FUNCTION_NAME,
+                COMMENT AS REMARKS,
+                '' AS FUNCTION_DEFINITION,
+                ARGUMENT_SIGNATURE,
+                FUNCTION_ID
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+            WHERE 
+                DELETED IS NULL
+                AND CONCAT(FUNCTION_CATALOG,'.',FUNCTION_SCHEMA) IN ('<database_name>.<schema_name>')
+                AND FUNCTION_CATALOG = '<database_name>'
+            ORDER BY
+                FUNCTION_CATALOG;
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Version 2.0.0 and Newer
+
+        .. code-block:: sql
+
+            -- get function arguments
+            WITH FUNCTION_COLUMNS AS (
+            SELECT
+                FUNCTION_CATALOG,
+                FUNCTION_ID,
+                FUNCTION_SCHEMA,
+                FUNCTION_NAME,
+                DATA_TYPE AS ARG_TYPE,
+                TRIM(REGEXP_REPLACE(ARGUMENT_SIGNATURE,'(\\()|(\\))')) AS ARGS,
+                ARGUMENT_SIGNATURE
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS WHERE DELETED IS NULL)
+            SELECT
+                FUNCTION_CATALOG AS CATALOG,
+                FUNCTION_SCHEMA AS SCHEMA,
+                FUNCTION_NAME,
+                ARG_TYPE,
+                SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 0) AS ARG_NAME,
+                SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 2) AS TYPE_NAME,
+                FUNCTION_ID
+            FROM 
+                FUNCTION_COLUMNS, LATERAL FLATTEN(INPUT=>SPLIT(ARGS, ',')) FUNCTION_COLUMNS_FLATTENED
+            WHERE
+                FUNCTION_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+                AND FUNCTION_CATALOG IN ('<database_name_1>, <database_name_2>');
+
+            -- get functions
+            SELECT
+                FUNCTION_CATALOG AS CATALOG,
+                FUNCTION_SCHEMA AS SCHEMA,
+                FUNCTION_NAME,
+                COMMENT AS REMARKS,
+                '' AS FUNCTION_DEFINITION,
+                ARGUMENT_SIGNATURE,
+                FUNCTION_ID
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+            WHERE 
+                DELETED IS NULL
+                AND FUNCTION_SCHEMA IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+                AND FUNCTION_CATALOG IN ('<database_name_1>, <database_name_2>');
+
+    .. tab:: Versions Before 2.0.0
+                
+        .. code-block:: sql
+
+            SELECT
+                FUNCTION_CATALOG AS CATALOG,
+                FUNCTION_SCHEMA AS SCHEMA,
+                FUNCTION_NAME,
+                COMMENT AS REMARKS,
+                '' AS FUNCTION_DEFINITION,
+                ARGUMENT_SIGNATURE,
+                FUNCTION_ID
+            FROM 
+                SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+            WHERE 
+                DELETED IS NULL
+                AND CONCAT(FUNCTION_CATALOG,'.',FUNCTION_SCHEMA) IN ('<database_name>.<schema_name>')
+                AND FUNCTION_CATALOG IN ('database_name1', 'database_name2')
+            ORDER BY
+                FUNCTION_CATALOG;
+
+
+Function Definition: Version 2.0.0 and Newer
+----------------------------------------------
+
+
+.. code-block:: sql
+
+    SELECT get_ddl('FUNCTION','"<database_name>"."<schema_name>"."<function_name>"(FLOAT,FLOAT)') AS SQL_VIEW_TEXT;
+
+Function Definition: Versions Before 2.0.0
+----------------------------------------------
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    WITH FUNCTION_COLUMNS AS
+    (
+    SELECT
+      FUNCTION_CATALOG,
+      FUNCTION_SCHEMA,
+      FUNCTION_NAME,
+      DATA_TYPE AS TYPE_NAME,
+      TRIM(REGEXP_REPLACE(ARGUMENT_SIGNATURE,'(\\\\()|(\\\\))')) AS ARGS,
+      ARGUMENT_SIGNATURE
+    FROM SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+    WHERE DELETED IS NULL)
+    SELECT
+      FUNCTION_CATALOG AS CATALOG,
+      FUNCTION_SCHEMA AS SCHEMA,
+      FUNCTION_NAME,
+      TYPE_NAME,
+      SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 0) AS ARG_NAME,
+      SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 2) AS ARG_TYPE
+    FROM
+      FUNCTION_COLUMNS,
+      LATERAL FLATTEN(INPUT=>SPLIT(ARGS, ',')) FUNCTION_COLUMNS_FLATTENED
+    WHERE
+      CONCAT(FUNCTION_CATALOG,'.',FUNCTION_SCHEMA) IN ('<database_name>.<schema_name>')
+      AND FUNCTION_CATALOG = '<database_name>'
+    ORDER BY FUNCTION_CATALOG;
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    WITH FUNCTION_COLUMNS AS
+    (
+    SELECT
+      FUNCTION_CATALOG,
+      FUNCTION_SCHEMA,
+      FUNCTION_NAME,
+      DATA_TYPE AS TYPE_NAME,
+      TRIM(REGEXP_REPLACE(ARGUMENT_SIGNATURE,'(\\\\()|(\\\\))')) AS ARGS,
+      ARGUMENT_SIGNATURE
+    FROM SNOWFLAKE.ACCOUNT_USAGE.FUNCTIONS
+    WHERE DELETED IS NULL)
+    SELECT
+      FUNCTION_CATALOG AS CATALOG,
+      FUNCTION_SCHEMA AS SCHEMA,
+      FUNCTION_NAME,
+      TYPE_NAME,
+      SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 0) AS ARG_NAME,
+      SPLIT_PART(TRIM(FUNCTION_COLUMNS_FLATTENED.VALUE::STRING),' ', 2) AS ARG_TYPE
+    FROM
+      FUNCTION_COLUMNS,
+      LATERAL FLATTEN(INPUT=>SPLIT(ARGS, ',')) FUNCTION_COLUMNS_FLATTENED
+    WHERE
+      CONCAT(FUNCTION_CATALOG,'.',FUNCTION_SCHEMA) IN ('<database_name>.<schema_name>')
+      AND FUNCTION_CATALOG IN ('database_name1', 'database_name2')
+      ORDER BY FUNCTION_CATALOG;
+
+
+Tags and Tag Links: Version 2.0.0 and Newer
+-----------------------------------------------
+With tag extraction enabled, the Snowflake OCF connector extracts both user-created tags and system tags. You can only customize the queries for user-created tags that are extracted from the ``SNOWFLAKE.ACCOUNT_USAGE`` schema. The default queries for such tags and tag links are given below.
+
+System tags are extracted from the ``SNOWFLAKE.CORE`` schema. Customization of the system tags query is currently not supported.
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ensure your query has columns labeled as ``TAG_DATABASE``, ``TAG_SCHEMA``, ``TAG_NAME``, ``TAG_OWNER``, ``CREATED``, ``TAG_COMMENT``, ``TAG_ID``, ``DELETED``, ``TAG_ID``, ``SCHEMA``, ``TAG_OWNER``, ``CATALOG``, ``TAG_NAME``, ``CREATED``, ``TAG_ID``, ``TAG_COMMENT``, ``ALLOWED_VALUES`` in the SELECT statement.
+
+.. note::
+
+      Starting Snowflake OCF connector version 2.2.9, to extract all the tag values associated with the "ALLOWED_VALUES" parameter from the Snowflake data source, Alation recommends that you add ALLOWED_VALUES in the SELECT statement in custom query.
+      If you do not add ALLOWED_VALUES, Alation will not display all the values associated with this tag.
+
+Tags
+^^^^^^^^^^^
+
+.. code-block:: sql
+
+    -- Tags
+    WITH TAG_QUERIES AS
+        (
+        SELECT
+            TAG_DATABASE,
+            TAG_SCHEMA,
+            TAG_NAME,
+            TAG_OWNER,
+            CREATED,
+            TAG_COMMENT,
+            TAG_ID,
+            DELETED,
+            ALLOWED_VALUES
+        FROM SNOWFLAKE.ACCOUNT_USAGE.TAGS
+        WHERE DELETED IS NULL
+          AND TRIM(TAG_NAME) != ''
+          AND (TAG_ID IN
+              (SELECT TAG_ID
+              FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+              WHERE OBJECT_DATABASE = '<database_name>') OR TAG_DATABASE IN ('<database_name>'))
+        )
+    SELECT
+        LISTAGG(TAG_OWNER, ', ') AS TAG_OWNER,
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        CREATED,
+        TAG_ID,
+        TAG_COMMENT,
+        ALLOWED_VALUES
+    FROM TAG_QUERIES
+    GROUP BY
+        CATALOG,
+        SCHEMA,
+        TAG_NAME,
+        TAG_ID,
+        CREATED,
+        TAG_COMMENT,
+        ALLOWED_VALUES;
+
+Tag Links
+^^^^^^^^^^^^^^^^
+
+Ensure your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TAG_NAME``, ``TAG_VALUE``, ``TAG_ID``, ``OBJECT_DATABASE``, ``OBJECT_SCHEMA``, ``OBJECT_NAME``, ``DOMAIN``, ``COLUMN_NAME`` in the SELECT statement.
+
+.. code-block:: sql
+
+    SELECT
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        TAG_VALUE,
+        TAG_ID,
+        OBJECT_DATABASE,
+        OBJECT_SCHEMA,
+        OBJECT_NAME,
+        DOMAIN,
+        COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+        AND DOMAIN IN ('SCHEMA')
+        AND OBJECT_DATABASE = '<database_name>'
+    UNION
+    SELECT
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        TAG_VALUE,
+        TAG_ID,
+        OBJECT_DATABASE,
+        OBJECT_SCHEMA,
+        OBJECT_NAME,
+        DOMAIN,
+        COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+        AND DOMAIN IN ('TABLE', 'COLUMN')
+        AND OBJECT_DATABASE = '<database_name>'
+        AND OBJECT_SCHEMA IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>';
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tags
+^^^^^^^^^^
+
+.. code-block:: sql
+
+    -- Tags
+    WITH TAG_QUERIES AS
+      (
+	     SELECT
+          TAG_DATABASE,
+          TAG_SCHEMA,
+          TAG_NAME,
+          TAG_OWNER,
+          CREATED,
+          TAG_COMMENT,
+          TAG_ID,
+          DELETED,
+          ALLOWED_VALUES
+      FROM SNOWFLAKE.ACCOUNT_USAGE.TAGS
+      WHERE DELETED IS NULL
+          AND TRIM(TAG_NAME) != ''
+      )
+    SELECT
+        LISTAGG(TAG_OWNER, ', ') AS TAG_OWNER,
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        CREATED,
+        TAG_ID,
+        TAG_COMMENT,
+        ALLOWED_VALUES
+    FROM TAG_QUERIES
+    GROUP BY
+        CATALOG,
+        SCHEMA,
+        TAG_NAME,
+        TAG_ID,
+        CREATED,
+        TAG_COMMENT,
+        ALLOWED_VALUES;
+
+Tag Links
+^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+    SELECT
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        TAG_VALUE,
+        TAG_ID,
+        OBJECT_DATABASE,
+        OBJECT_SCHEMA,
+        OBJECT_NAME,
+        DOMAIN,
+        COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+        AND DOMAIN IN ('SCHEMA')
+        AND OBJECT_DATABASE IN ('<database_name_1>', '<database_name_2')
+        AND OBJECT_NAME IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+    UNION
+    SELECT
+        TAG_DATABASE AS CATALOG,
+        TAG_SCHEMA AS SCHEMA,
+        TAG_NAME,
+        TAG_VALUE,
+        TAG_ID,
+        OBJECT_DATABASE,
+        OBJECT_SCHEMA,
+        OBJECT_NAME,
+        DOMAIN,
+        COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+        AND DOMAIN IN ('TABLE', 'COLUMN')
+        AND OBJECT_DATABASE IN ('<database_name_1>', '<database_name_2')
+        AND OBJECT_SCHEMA IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>');
+
+
+Tags and Tag Links: Versions Before 2.0.0
+---------------------------------------------
+
+  .. note::
+
+      Tag and tag link extraction using a custom query is available from connector version **1.2.0.5882**.
+
+Tags
+~~~~~~~~~~~
+
+Ensure your query has columns labeled as ``TAG_DATABASE``, ``TAG_SCHEMA``, ``TAG_NAME``, ``TAG_OWNER``, ``CREATED``, ``TAG_COMMENT``, ``TAG_ID``, ``DELETED``, ``TAG_ID``, ``SCHEMA``, ``TAG_OWNER``, ``CATALOG``, ``TAG_NAME``, ``CREATED``, ``TAG_ID``, ``TAG_COMMENT`` in the SELECT statement.
+
+.. code-block:: sql
+
+    WITH TAG_QUERIES AS
+    (
+    SELECT
+      TAG_DATABASE,
+      TAG_SCHEMA,
+      TAG_NAME,
+      TAG_OWNER,
+      CREATED,
+      TAG_COMMENT,
+      TAG_ID,
+      DELETED
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAGS
+    WHERE DELETED IS NULL
+      AND TRIM(TAG_NAME) != ''
+      AND (TAG_ID IN
+              (SELECT TAG_ID
+              FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+              WHERE OBJECT_DATABASE = '<database_name>') OR TAG_DATABASE IN ('<database_name>'))
+    ORDER BY TAG_DATABASE,
+      TAG_SCHEMA,
+      TAG_NAME
+    )
+    SELECT
+      LISTAGG(TAG_OWNER, ', ') AS TAG_OWNER,
+      TAG_DATABASE AS CATALOG,
+      TAG_SCHEMA AS SCHEMA,
+      TAG_NAME,
+      CREATED,
+      TAG_ID,
+      TAG_COMMENT
+    FROM TAG_QUERIES
+    GROUP BY
+      CATALOG,
+      SCHEMA,
+      TAG_NAME,
+      TAG_ID,
+      CREATED,
+      TAG_COMMENT
+    ORDER BY
+      CATALOG,
+      SCHEMA,
+      TAG_NAME;
+
+Tag Links
+~~~~~~~~~~~~~~
+
+Ensure your query has columns labeled as ``CATALOG``, ``SCHEMA``, ``TAG_NAME``, ``TAG_VALUE``, ``TAG_ID``, ``OBJECT_DATABASE``, ``OBJECT_SCHEMA``, ``OBJECT_NAME``, ``DOMAIN``, ``COLUMN_NAME`` in the SELECT statement.
+
+.. code-block:: sql
+
+    (
+    SELECT
+      TAG_DATABASE AS CATALOG,
+      TAG_SCHEMA AS SCHEMA,
+      TAG_NAME,
+      TAG_VALUE,
+      TAG_ID,
+      OBJECT_DATABASE,
+      OBJECT_SCHEMA,
+      OBJECT_NAME,
+      DOMAIN,
+      COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+      AND DOMAIN IN ('SCHEMA')
+      AND OBJECT_DATABASE = '<database_name>'
+    UNION
+    SELECT
+      TAG_DATABASE AS CATALOG,
+      TAG_SCHEMA AS SCHEMA,
+      TAG_NAME,
+      TAG_VALUE,
+      TAG_ID,
+      OBJECT_DATABASE,
+      OBJECT_SCHEMA,
+      OBJECT_NAME,
+      DOMAIN,
+      COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_DELETED IS NULL
+      AND DOMAIN IN ('TABLE', 'COLUMN')
+      AND OBJECT_DATABASE = '<database_name>'
+    )
+    ORDER BY
+      CATALOG,
+      SCHEMA,
+      TAG_NAME;
+
+Extracting Tags and Tag Links for Multiple Databases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To extract tags and tag links for multiple databases, use the IN operator in the WHERE filter, similar to the following examples:
+
+    - tags:
+
+      ``WHERE OBJECT_DATABASE IN ('<database_name1>', '<database_name2>') OR TAG_DATABASE IN (<database_name1>', '<database_name2>')``
+
+    - tag links:
+
+      ``WHERE OBJECT_DELETED IS NULL AND DOMAIN IN ('SCHEMA') AND OBJECT_DATABASE IN (<database_name1>', '<database_name2>')``
+
+
+Policies and Policy Links
+--------------------------------
+
+Database Name Is Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Policies
+^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+        WITH POLICIES_QUERIES AS
+          (
+          SELECT * FROM
+            (
+            SELECT
+                POLICY_CATALOG,
+                POLICY_SCHEMA,
+                POLICY_NAME,
+                POLICY_OWNER,
+                'ROW_ACCESS' AS POLICY_TYPE,
+                POLICY_SIGNATURE,
+                POLICY_BODY,
+                POLICY_RETURN_TYPE,
+                CREATED,
+                POLICY_COMMENT,
+                POLICY_ID,
+                DELETED
+            FROM SNOWFLAKE.ACCOUNT_USAGE.ROW_ACCESS_POLICIES
+            WHERE DELETED IS NULL
+            UNION
+            SELECT
+                POLICY_CATALOG,
+                POLICY_SCHEMA,
+                POLICY_NAME,
+                POLICY_OWNER,
+                'DATA_MASK' AS POLICY_TYPE,
+                POLICY_SIGNATURE,
+                POLICY_BODY,
+                POLICY_RETURN_TYPE,
+                CREATED,
+                POLICY_COMMENT,
+                POLICY_ID,
+                DELETED
+            FROM SNOWFLAKE.ACCOUNT_USAGE.MASKING_POLICIES
+            WHERE DELETED IS NULL
+            ) ALL_POLICIES
+          WHERE POLICY_ID IN
+               (SELECT POLICY_ID
+               FROM SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES
+               WHERE REF_DATABASE_NAME = '<database_name>')
+               OR POLICY_CATALOG IN ('<database_name>')
+          )
+        SELECT
+            LISTAGG(POLICY_OWNER, ', ') AS POLICY_OWNER,
+            POLICY_CATALOG AS CATALOG,
+            POLICY_SCHEMA AS SCHEMA,
+            POLICY_NAME,
+            POLICY_TYPE,
+            POLICY_SIGNATURE,
+            POLICY_BODY,
+            POLICY_RETURN_TYPE,
+            CREATED,
+            POLICY_COMMENT
+        FROM POLICIES_QUERIES
+        GROUP BY
+            POLICY_CATALOG,
+            POLICY_SCHEMA,
+            POLICY_NAME,
+            POLICY_TYPE,
+            POLICY_SIGNATURE,
+            POLICY_BODY,
+            POLICY_RETURN_TYPE,
+            CREATED,
+            POLICY_COMMENT;
+
+
+Policy Links
+^^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+    SELECT
+        POLICY_DB AS CATALOG,
+        POLICY_SCHEMA AS SCHEMA,
+        POLICY_NAME,
+        CASE
+          WHEN POLICY_KIND = 'MASKING_POLICY' THEN 'DATA_MASK'
+          WHEN POLICY_KIND = 'ROW_ACCESS_POLICY' THEN 'ROW_ACCESS'
+          END AS POLICY_TYPE,
+        REF_DATABASE_NAME,
+        REF_SCHEMA_NAME,
+        REF_ENTITY_NAME,
+        REF_ENTITY_DOMAIN,
+        REF_COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES
+    WHERE POLICY_KIND IN ('MASKING_POLICY', 'ROW_ACCESS_POLICY')
+      AND REF_ENTITY_DOMAIN IN ('TABLE', 'VIEW', 'COLUMN', 'EXTERNAL TABLE')
+      AND REF_SCHEMA_NAME IN ('<schema_name_1>' , '<schema_name_2>' , '<schema_name_3>')
+      AND REF_DATABASE_NAME = '<database_name>';
+
+Database Name Is Not Provided in JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Policies
+^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+    WITH POLICIES_QUERIES AS
+    (
+    SELECT * FROM
+        (
+        SELECT
+            POLICY_CATALOG,
+            POLICY_SCHEMA,
+            POLICY_NAME,
+            POLICY_OWNER,
+            'ROW_ACCESS' AS POLICY_TYPE,
+            POLICY_SIGNATURE,
+            POLICY_BODY,
+            POLICY_RETURN_TYPE,
+            CREATED,
+            POLICY_COMMENT,
+            POLICY_ID,
+            DELETED
+        FROM SNOWFLAKE.ACCOUNT_USAGE.ROW_ACCESS_POLICIES
+        WHERE DELETED IS NULL
+        UNION
+        SELECT
+            POLICY_CATALOG,
+            POLICY_SCHEMA,
+            POLICY_NAME,
+            POLICY_OWNER,
+            'DATA_MASK' AS POLICY_TYPE,
+            POLICY_SIGNATURE,
+            POLICY_BODY,
+            POLICY_RETURN_TYPE,
+            CREATED,
+            POLICY_COMMENT,
+            POLICY_ID,
+            DELETED
+        FROM SNOWFLAKE.ACCOUNT_USAGE.MASKING_POLICIES
+        WHERE
+            DELETED IS NULL
+        )
+        ALL_POLICIES
+    )
+    SELECT
+        LISTAGG(POLICY_OWNER, ', ') AS POLICY_OWNER,
+        POLICY_CATALOG AS CATALOG,
+        POLICY_SCHEMA AS SCHEMA,
+        POLICY_NAME,
+        POLICY_TYPE,
+        POLICY_SIGNATURE,
+        POLICY_BODY,
+        POLICY_RETURN_TYPE,
+        CREATED,
+        POLICY_COMMENT
+    FROM POLICIES_QUERIES
+    GROUP BY
+        POLICY_CATALOG,
+        POLICY_SCHEMA,
+        POLICY_NAME,
+        POLICY_TYPE,
+        POLICY_SIGNATURE,
+        POLICY_BODY,
+        POLICY_RETURN_TYPE,
+        CREATED,
+        POLICY_COMMENT;
+
+
+Policy Links
+^^^^^^^^^^^^^^^^^^
+
+.. code-block:: sql
+
+    SELECT
+        POLICY_DB AS CATALOG,
+        POLICY_SCHEMA AS SCHEMA,
+        POLICY_NAME,
+        CASE
+            WHEN POLICY_KIND = 'MASKING_POLICY' THEN 'DATA_MASK'
+            WHEN POLICY_KIND = 'ROW_ACCESS_POLICY' THEN 'ROW_ACCESS'
+        END AS POLICY_TYPE,
+        REF_DATABASE_NAME,
+        REF_SCHEMA_NAME,
+        REF_ENTITY_NAME,
+        REF_ENTITY_DOMAIN,
+        REF_COLUMN_NAME
+    FROM SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES
+    WHERE
+        POLICY_KIND IN ('MASKING_POLICY', 'ROW_ACCESS_POLICY')
+        AND REF_ENTITY_DOMAIN IN ('TABLE', 'VIEW', 'COLUMN', 'EXTERNAL TABLE')
+        AND REF_SCHEMA_NAME IN ('<schema_name_1>', '<schema_name_2>', '<schema_name_3>')
+        AND REF_DATABASE_NAME IN ('<database_name_1>', '<database_name_2');

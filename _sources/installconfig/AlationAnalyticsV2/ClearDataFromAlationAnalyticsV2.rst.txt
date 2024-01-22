@@ -1,0 +1,43 @@
+Clear the Data from the Alation Analytics V2 Database
+========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from version 2020.3*
+
+You can re-initialize the Alation Analytics V2 database if at any time the data becomes corrupted. This action wipes out all current data and returns the database to the initial state where the schema is empty.
+
+This action can be performed when there are no ETL jobs in progress.
+
+Check the ETL Status Before Clearing Data
+------------------------------------------------
+
+To check on the ETL status,
+
+Use Alation Compose to run this query on Alation Analytics V2. The results will show the state of all Transform jobs for the latest ETL run:
+
+  .. code-block:: sql
+
+        SELECT job_name,
+          CASE
+            WHEN job_status = 1  THEN 'STARTED'
+            WHEN job_status = 2  THEN 'SUCCESS'
+            WHEN job_status = 3  THEN 'FAILURE'
+            WHEN job_status = 4  THEN 'PARTIAL_SUCCESS'
+          END as status
+        FROM etl_job_event_log
+        WHERE load_id  = (SELECT MAX(load_id) FROM etl_job_event_log)
+        ORDER BY job_name;
+
+Re-initialize Alation Analytics V2
+-----------------------------------
+
+To reinitialize Alation Analytics V2,
+
+1. Go to Admin Settings > **Alation Analytics Settings**.
+2. Locate section **Clear Data** at the bottom of the page:
+
+      .. image:: ../../_static/AAV2_07.png
+          :width: 500px
+
+3. Click the **Clear Analytics Data** button.

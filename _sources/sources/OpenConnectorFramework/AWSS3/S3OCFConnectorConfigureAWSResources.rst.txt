@@ -1,0 +1,273 @@
+Configure AWS Resources for the Amazon S3 OCF Connector
+=========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Metadata extraction from an Amazon S3 file system source uses *inventory reports* of Amazon S3 buckets. The inventory reports are stored in a dedicated S3 bucket used for the inventory only. During metadata extraction, Alation will extract the inventory reports stored in the inventory bucket and stream the metadata to the catalog.
+
+.. note::
+
+    To have metadata from the inventory extracted properly into Alation, you'll need to put the inventory into a separate bucket.
+
+We'll refer to the buckets to be cataloged as the **source buckets** and to the inventory bucket that stores the inventory reports as the **destination bucket**.
+
+Inventories from many source buckets can be delivered to a single destination bucket.
+
+    .. image:: ../../../_static/S3OCF_01.png
+        :width: 5.5in
+        :align: center
+        :class: with-border
+
+Workflow
+-------------
+
+Prior to configuring and using the connector in Alation, you must configure the inventory for the S3 buckets that you want to catalog, provide access to Alation, and perform some other configurations in AWS, depending on your use case:
+
+      - `Configure the Inventory`_—Create the destination bucket to store the inventory reports.
+
+            - Additionally, consider the recommendations in :doc:`/sources/OpenConnectorFramework/AWSS3/ScaleS3Connector` when configuring the inventory.
+
+      - `Configure Access and Permissions`_—Give Alation access and collect the authentication information.
+
+      - `Configure Server-Side Encryption`_—Perform additional configuration if you are using an encryption type other than SSE-S3 (default).
+
+      - `Set Up Incremental MDE`_ (optional)—Configure incremental MDE using a Lambda function. Each consecutive incremental MDE job will only extract new metadata and metadata updates, but not all accessible metadata.
+
+.. _s3-configure-inventory:
+
+Configure the Inventory
+--------------------------
+
+The destination bucket for storing inventory reports can either be created manually using the steps provided below or using a Terraform script.
+
+- `Configure the Inventory Manually`_
+- `Scaling the Amazon S3 Connector`_
+- `Configure Inventory with a Terraform Script`_
+
+Configure the Inventory Manually
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You require the privileges of an AWS administrator to create new buckets and configure inventory for buckets with data.
+
+    - Step 1: `Create an S3 Bucket to Store Inventory Reports`_
+    - Step 2: `Configure the S3 Inventory`_
+
+.. note::
+
+    It may take AWS up to 48 hours to deliver the first report into the destination bucket. You will need to ensure that all the inventory reports that you want ingested into Alation have been delivered to your destination bucket before you are able to extract the metadata.
+
+.. _create-inventory-bucket:
+
+Create an S3 Bucket to Store Inventory Reports
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To create a bucket:
+
+1. Create a dedicated bucket to be used as the destination bucket for the S3 bucket inventory reports that you want to ingest into Alation. Create this bucket in the same AWS region as your source buckets. The destination bucket should not be used for any other purpose or storing any other content. Alation expects that the destination bucket only stores the inventory reports.
+
+    **Example**:
+
+    ``alation-destination-bucket``
+
+2. Create a folder called ``inventory`` inside the destination bucket.
+
+
+Configure the S3 Inventory
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the steps below for a basic configuration. Refer to `Configuring inventory using the S3 console <https://docs.aws.amazon.com/AmazonS3/latest/userguide/configure-inventory.html>`_ in AWS documentation for more configuration options that may be needed for your specific use case.
+
+    .. important::
+
+        The S3 inventory must be configured for every source bucket that you want ingested into the catalog.
+
+To configure the inventory:
+
+1. Go to the S3 service in the AWS management console.
+2. In the left navigation pane, choose **Buckets**.
+3. In the Buckets list, choose the name of the bucket that you want to configure the inventory for.
+4. Choose the **Management** tab.
+5. Under **Inventory configurations**, choose **Create inventory configuration**.
+6. Enter an inventory configuration name.
+7. Under **Report details**, set **Destination** to your destination bucket with the inventory folder path in the format ``s3://<Destination_Bucket_Name>/inventory``.
+
+    .. note::
+
+        Make sure there is no trailing slash ``/`` symbol at the end of the path.
+
+8. Set **Frequency** to **Daily** or **Weekly**. Frequency must match the metadata extraction schedule you will set in Alation.
+
+9. Set **Output Format** as **CSV**.
+
+10. Set Status as **Enable**.
+
+11. Optionally, populate additional fields:
+
+      - Size
+      - Last modified
+
+      .. note::
+
+          MDE will succeed even if additional fields are not configured.
+
+12. It may take AWS up to 48 hours to deliver the first report into the destination bucket. Before extracting the metadata, ensure that all the inventory reports that you want ingested into Alation have been delivered to your destination bucket.
+
+Scaling the Amazon S3 Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can use various approaches to scale the Amazon S3 OCF connector while setting up the inventory and later configuring the connector in Alation. For example, you can create prefixes. Find more information in :doc:`/sources/OpenConnectorFramework/AWSS3/ScaleS3Connector`.
+
+Configure Inventory with a Terraform Script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation can provide a Terraform script that can be used to configure the necessary AWS resources such as a destination bucket for inventory reports and a Lambda function for incremental extraction. Find the information about it in :doc:`/sources/OpenConnectorFramework/AWSS3/TerraformConfiguration`.
+
+.. _set-up-s3-auth:
+
+Configure Access and Permissions
+-------------------------------------
+
+The OCF connector for Amazon S3 supports several authentication methods:
+
+    - :ref:`Basic Authentication <s3-basic-auth>`
+    - :ref:`STS Authentication with an IAM User <s3-sts-auth-user>`
+    - :ref:`STS Authentication with an IAM Role <s3-sts-auth-role>`
+
+.. _s3-basic-auth:
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Basic authentication requires an AWS IAM user and the access key ID and secret access key for this user.
+
+To use basic authentication, create an AWS IAM user account for Alation and save the values of the access key and secret access key to a secure location.
+
+Grant the IAM user the required permissions (see `Permissions for IAM User Account`_ below).
+
+Permissions for IAM User Account
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user account requires read-only access to the source and destination buckets:
+
+      - If you only intend to extract folder and file metadata, read-only access to the destination bucket is enough.
+
+      - If you intend to perform schema extraction and/or incremental extraction, grant read-only access to the source and destination buckets.
+
+Below, find an example of an IAM policy allowing the required actions for all S3 buckets in an account. You can adjust this example to include only the necessary resources: the destination and source buckets. Refer to `Allowing an IAM user access to one of your buckets <https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-policies-s3.html#iam-policy-ex0>`_ in AWS documentation for more information.
+
+**Example**:
+
+.. code-block:: Bash
+
+        {
+            "Version": "2012-10-17",
+            "Statement":
+            [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:Get*",
+                        "s3:List*"
+                    ],
+                    "Resource": "*"
+                }
+            ]
+        }
+
+.. _s3-sts-auth-user:
+
+STS Authentication with an IAM User
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+STS authentication with an IAM user requires an IAM user and role.
+
+.. note::
+
+      File sampling is not supported with STS authentication.
+
+To configure STS authentication with an IAM user:
+
+    1. Create an AWS IAM role.
+
+    2. To this role, assign a policy with the access to the following:
+
+          - Read-only access to the destination bucket.
+
+          - Read-only access to the source buckets.
+
+          .. note::
+
+              If you don't intend to perform schema extraction or incremental MDE, you can provide read-only access to the destination bucket only.
+
+    3. Note down the ARN of the role.
+
+    4. Create a user in AWS IAM with the following policy:
+
+        .. code-block:: Bash
+
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                    "Effect": "Allow",
+                    },
+                    "Action": "sts:AssumeRole",
+                    "Resource": "{ARN_OF_THE_ROLE}"
+                ]
+            }
+
+      5. Note down the ARN of the user.
+
+      6. Open the properties of the role you created in step 2 and go to the **Trust Relationship** section. Add trusted entities as shown below:
+
+        .. code-block:: Bash
+
+              {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                      {
+                          "Effect": "Allow",
+                          "Principal": {
+                              "AWS": "{ARN_OF_THE_USER}"
+                          },
+                          "Action": "sts:AssumeRole"
+                      }
+                  ]
+              }
+
+.. _s3-sts-auth-role:
+
+STS Authentication with an AWS IAM Role
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+STS authentication with an AWS IAM role uses an instance profile that assumes a role allowing access to Amazon resources. This authentication method works for authenticating across AWS accounts.
+
+    .. note::
+
+        STS Authentication with an AWS IAM role is available with connector version **3.8.5.6552** or newer.
+
+.. include:: ../../../shared/OCF/OCF_STS_Auth_with_Amazon_sources.rst
+      :start-after: .. start-reference-main-doc
+      :end-before: .. end-reference-main-doc
+
+Configure Server-Side Encryption
+-----------------------------------
+
+Alation supports the SSE-S3 (default) and SSE-KMS encryption types:
+
+    - SSE-S3 does not require any additional configuration.
+    - SSE-KMS requires additional permission configuration. See :doc:`/sources/OpenConnectorFramework/AWSS3/ServerSideEncryption`.
+
+Set Up Incremental MDE
+-----------------------------------
+
+Incremental MDE is set up using a Lambda function. Incremental MDE is optional. Set it up if its capabilities match your use case.
+
+Refer to :doc:`/sources/OpenConnectorFramework/AWSS3/S3OCFConnectorSetUpIncrementalMDE` for details.
+
+.. note::
+
+    If you are using Alation's Terraform script to configure the inventory, the same script can be used to set up incremental MDE.
+
+
+Read next: :doc:`/sources/OpenConnectorFramework/AWSS3/S3OCFConnectorInstall`

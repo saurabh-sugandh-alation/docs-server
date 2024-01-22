@@ -1,0 +1,96 @@
+Monitor Component Health
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Alation monitors the health of its components to determine whether they
+are running and working correctly. The status of these functional checks
+is available to Server Admins in the Monitor section of
+the Admin Settings page.
+
+.. _Monitor_Component_Health-Enabling-Health-Checks:
+
+Enable Health Checks
+----------------------
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+To enable health checks, you need sudo access to the host server.
+
+.. include:: /shared/AccessingAlationShell.rst
+
+#. Set the feature flag by running the following command:
+
+    .. code-block:: bash
+
+       /opt/alation/ops/actions/alationadmin/enable_datadog
+
+This configuration will make the **Health Checks** tab visible in Alation.
+
+View Alation Health Status
+-----------------------------
+
+To check on the health of your Alation instance:
+
+#. Sign in to Alation as a Server Admin, and in the upper-right corner of the main toolbar, click the Admin Settings icon. The Admin Settings page will open.
+#. In the **Monitor** section, click **Health Checks**. The **Health Checks** tab will open.
+
+Components Monitored
+----------------------
+
+Alation monitors the performance of the following components:
+
+.. tabularcolumns:: |p{4cm}|p{4cm}|p{7cm}|
+    
++--------------------+-----------------------+--------------------------------------------------------+
+| Component          | Health Check          | Description                                            |
++====================+=======================+========================================================+
+| Alation Analytics  | Postgres Connection*  |  Checks if a connection to Alation Analytics' internal |
+| V2 (if enabled)    |                       |  Postgres database can be established.                 |
+|                    +-----------------------+--------------------------------------------------------+
+|                    | RabbitMQ Connection   | Checks if a connection to Alation Analytics' RabbitMQ  |
+|                    |                       | component can be established.                          |
++--------------------+-----------------------+--------------------------------------------------------+
+| Connector          | Response              | Checks if Compose Connector is responding to requests. |
++--------------------+-----------------------+--------------------------------------------------------+
+| Elasticsearch      | Shards                | Checks if all Shards are active in Elasticsearch       |
+|                    +-----------------------+--------------------------------------------------------+
+|                    |  Connection           |  Checks if the agent can connect to Elasticsearch to   |
+|                    |                       |  collect metrics.                                      |
++--------------------+-----------------------+--------------------------------------------------------+
+|  Postgres          |  Query Period         |  Checks the running time of queries (threshold:        |
+|                    |                       |  60 min). It is unhealthy for a query to run           |
+|                    |                       |  longer than 60 min and may be indicative of a         |
+|                    |                       |  problem. If the threshold of 60 min is exceeded,      |
+|                    |                       |  the check will throw a warning.                       |
+|                    +-----------------------+--------------------------------------------------------+
+|                    | Connection            | Checks if connection to Postgres is successful.        |
++--------------------+-----------------------+--------------------------------------------------------+
+| TaskServer         | Alive                 | Checks if connection to TaskServer is alive.           |
++--------------------+-----------------------+--------------------------------------------------------+
+| Redis              | Connection            | Checks if connection to Redis can be established.      |
++--------------------+-----------------------+--------------------------------------------------------+
+
+\* Alation Cloud Service instances on our cloud-native architecture don't include the Alation Anaytics Postgres health status, because in these instances Postgres is a fully managed relational database service.
+
+For more details on Alation components, see :doc:`/admins/RunbookForAdministrators/AlationArchitecture`.
+
+Statuses
+-----------
+
+The Health Check tab will display one of the three statuses on each of the checks and a clarifying status message:
+
+-  **Success**---The component is performing correctly.
+
+    .. image:: ../../_static/MonitorSuccess.png
+        :width: 100px
+
+-  **Warning**---The component is running with issues. Refer to the warning message for details.
+
+    .. image:: ../../_static/MonitorWarning.png
+        :width: 100px
+
+-  **Failure**---There are errors in performance of the component. Refer to the error message for details and troubleshooting clues.
+
+    .. image:: ../../_static/MonitorFailure.png
+        :width: 100px

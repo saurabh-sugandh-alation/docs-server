@@ -1,0 +1,268 @@
+Release Notes 4.10.X
+====================
+
+Release 4.10.0
+---------------
+
+New Features
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  License Warnings - We have added warnings when your license is going
+   to expire for both admins and other users, and improved the ability
+   to install an updated license file.
+
+Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Updated Catalog pages for Business Intelligence Tools - Catalog pages
+   for Business Intelligence tools have been updated to the latest
+   components from our design system. This improves consistency and
+   readability.
+-  Enhancing LDAP User Information with Departments - With LDAP
+   authentication, we now are extracting the user's department from LDAP
+   in addition to email, title, photo, and more. The attribute is
+   configurable under the authentication page. If the information is
+   pulled successfully (i.e., there is a department info in LDAP), the
+   department of each user should show up in the user profile page,
+   right after the title. Otherwise, nothing will change.
+-  Streamlining the Statement Template Catalog Page - On the Run details
+   of a statement Template Catalog page, we now only list statements
+   with execution statistics.
+-  All Compose Sidebars Reload on Refresh - Compose should load a little
+   more quickly and take a little less memory when many query tabs are
+   open. More improvements to come!
+-  View SQL Now Captured for a MySQL View - Added support for view
+   definition SQL for MySQL data sources. This also enables lineage for
+   MySQL views.
+-  Comments in Excel Live and Scheduled Queries - Previously, Alation
+   ran the entire query, including comments, so if a comment preceded
+   the SQL statement users might not get their actual results. Now,
+   Excel live reports and scheduled query execution skip comments in the
+   SQL to streamline your results.
+-  Relevant Articles - @-mentions from custom text fields on Articles
+   now cause the Article to be included in the Relevant Articles section
+   of the mentioned object. Previously, this functionality was only
+   available for mentions in the body of an Article. 
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Default Hat Needs Page Reload - When default hat is set to a particular
+value, new users in Alation will see articles on the home page that is
+targeting the correct hat on first page load, not requiring a refresh.
+
+Custom Field Permissions Not Respected in Search - Previously during
+search, we were showing values in custom field facets that the user may
+not have permission to see. Now, we exclude custom field values from
+search faceting if there is any view restriction at all (even though the
+individual user who is querying may have permission).
+
+@-Mention Notifications - Previously, the notification of @-mention in
+an article used to say the @-mention was done by the original author.
+Now, it correctly says the @-mention was done by the editor of the
+change.
+
+@-Mention in Articles - @-mentions on UK (and other) keyboards now show
+icons for all BI servers, conversations, groups, and glossaries, and
+produces the dropdown in Articles.
+
+Image Formatting in Articles - Previously, images aligned center or
+aligned right in the rich text editor were always aligned left in the
+view mode. Now they will be displayed with the alignment set in the
+editor. Furthermore, now, when you scroll down on a long rich text field
+(enough that the header sticks to the top of the screen) the insert
+menus in the toolbar will continue to work properly.
+
+Tables Not Loading Completely - Fixed an issue that prevented sample
+column from rendering when it contains an uploaded description.
+
+Title History in Query Search Opens Catalog Page - Now, clicking on the
+title history button in query search properly opens the title history
+modal.
+
+Updated Catalog Child Tables - We updated the user interface (UI) for
+schemas in a data source and tables in a schema. The new UI has slightly
+reduced functionality, but much higher reliability. While this first
+iteration does not offer highlighting of filter matches, exporting, or
+expanding functionality, it does fix frustrating bugs:
+
+-  Edits on the second or later pages of the results take effect
+   immediately
+-  Sorting after an edit works reliably and doesn't revert to the
+   pre-edited data
+
+Copy/pasting schema.tablename from Table Catalog Page - Now, copying and
+pasting schema.table from the breadcrumbs on catalog pages will include
+the ".”
+
+Incomplete Stewards Lists - Previously, lists of stewards would
+sometimes be incomplete if they included a group and a user with the
+same ID. Now, all stewards lists are complete.
+
+Un-Parseable Compose Queries Cause Crashes - It is no longer possible
+for queries that take a long time to parse to cause a service outage.
+Previously, certain queries could take a very long time to parse.
+Computing warnings on compose queries requires parsing the query and
+would hold some web server resources while waiting. If this happened
+enough, it would lead to a temporary service outage until the parsing
+finished or timed out. Now, the web server only waits a few seconds for
+parsing and then gives up without parsing the query so it should not
+lead to any service outages. 
+
+Large Exports Get Cut Off - Previously, when a user clicks "Export" in
+Compose and their connection to the Alation server is slow, the export
+would sometimes cut out prematurely without any error message.
+
+Admin Release Notes
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+New Features
+^^^^^^^^^^^^^^^
+
+Now you can control which sites and projects Alation should index during
+Tableau metadata extraction. We added site/project picker to Tableau
+Settings Page (similar to schema picker for data source metadata
+extraction). This feature was introduced
+in :doc:`Release Notes 4.7.1 </archive/ReleaseNotes/ReleaseNotesVersion4/ReleaseNotes4.7.X>` as
+a beta feature and is now available to all. Furthermore, this version
+includes updated:
+
+-  Extractions: This release includes several improvements to
+   extraction of Tableau metadata, both improving speed and reliability
+   as well as fixing issues we noticed with beta customers;
+-  Permissions: We improved the mirroring of Tableau permissions on
+   Alation. Now Alation respects more detailed permission model, that
+   includes server/site admin privileges, deny privileges and other
+   types. To use this feature, Alation must use the same authentication
+   mechanism as Tableau (e.g. LDAP) and Alation service account needs
+   additional privileges.
+
+Admins will now see a redesigned the user management interface
+including:
+
+-  More consistent and readable UI components;
+
+-  Ability to distinguish between pending users and suspended users;
+
+-  UI updates without a refresh when you make changes;
+
+-  Usernames and email addresses for users;
+
+-  Ability to filter users by name, username, and email;
+
+-  Ability to sort users by last login time;
+
+-  One-click approve all pending users;
+
+-  Ability to reject pending users and remove them from the list;
+
+Restore Fails if Alation Not Started - Previously, attempting to restore
+a backup of Alation while the Alation instance was not running would
+fail. Now the restore script starts all necessary processes before
+attempting to restore data.
+
+[BETA] Surfacing Top Departments - Alation already lists the individual
+users who’ve most often queried a data object under Top Users. With this
+extension, we look at LDAP information about departments (if present) to
+summarize which departments most often query the data. So if the top
+users are all in Finance or Operations, that will be surfaced. This can
+turn a list of individuals’ names that a given viewer might not
+recognize into actionable insight about the use-cases for a data set.
+With the feature flag enable_top_departments, we offer functionality to:
+
+-  disable adding/removing top users; thereby separating the
+   manually-curated content on the page from the behavioral information
+   gleaned directly from logs;
+-  enable hiding top users and departments; 
+
+Improvements
+^^^^^^^^^^^^^
+
+-  Increased Security - We modified a Flash Parameter,
+   AllowScriptAccess, to prevent a SWF file hosted from one domain from
+   accessing a script in an HTML page in another domain.
+-  Microsoft Exchange Email Compatibility - Reply-by-email can now be
+   configured with a Microsoft Exchange Email account.  Choose the
+   recommended “Intent Tracking Mode” under “Email Interactions” in the
+   “Email Server” tab of Admin Settings.
+-  Shorter Log Level for Long Statements - Alation no longer logs every
+   single ingested query event that was skipped because it was too long.
+   The Query Ingestion settings page will continue to show the total
+   number of skipped events for each ingestion to streamline your
+   results. Previously, the log would show one line for each query that
+   was too long and also send an error report.
+
+Release 4.10.1
+------------------------
+
+In this update, we fixed bugs that we discovered in 4.10.0.
+
+Bug Fixes for Admins
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Upgrade Failure - Upgrades to 4.10 sometimes failed because of a new
+   feature, that failure has been fixed.
+-  Tableau Extraction - Fixed a bug regarding failure in Tableau
+   extraction.
+-  Tableau Setting Page Password - We fixed a bug where the Tableau
+   setting page dropped the first character in password.
+
+ 
+
+Release 4.10.2
+------------------------
+
+In this update, we fixed bugs discovered in 4.10.1.
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  403 Errors When Using IE - Fixed a 403 error that was seen on many
+   pages when using Internet Explorer. Now, Internet Explorer works
+   again.
+-  'Download Excel Live Report' Option in Share Dropdown Not Working -
+   Previously, clicking on 'Download Excel Live Report' option in share
+   dropdown did not show the Download Excel Live Report modal box. Now,
+   the modal box shows.
+-  License Lockout Screen Shown Incorrectly - Users were redirected to
+   lockout screen when their browser became disconnected from the server
+   even though the server had a valid license (see 4.10.1 for more on
+   Licenses).  This no longer happens.
+-  [Admins] Tableau Fix: New users created if not present on Alation -
+   Previously, we created users for each of the Tableau workbook owners
+   if they were not a user on Alation yet, but these accounts were often
+   not desired as Alation accounts.  Now, user accounts are no longer
+   created during Tableau extraction.
+
+Release 4.10.3
+------------------------
+
+Bug Fixes for Everyone
+~~~~~~~~~~~~~~~~~~~~~~~
+
+You can now set Excel export options for specific environments (for
+instance, to optimize for Mac or Windows) in the "Other" tab in your
+User Preferences.
+
+The list of projects on the Tableau settings page now lists all
+projects, rather than a partial list.
+
+On some versions of Internet Explorer …
+
+-  …typing into many text boxes on the site did not work; now all text
+   input boxes should work.
+-  …placeholder text was difficult to distinguish from inputted text.
+   Now filled-in fields and placeholder text are easily
+   distinguishable.
+-  … Catalog page content would sometimes overflow the boundaries of
+   the page. Now that overflow should no longer occur.
+-  … some pages did not load properly. Now they do.
+
+Bug Fixes for Admins
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Now an upgrade will work even if the dumps directory is absent.
+   Previously upgrades would fail if that folder could not be found.
+-  Now if a license file can't be found during an attempted upgrade,
+   Alation will display a clear, actionable error message. The earlier
+   message was confusing.

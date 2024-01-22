@@ -1,0 +1,190 @@
+Update Alation to V R5 (5.9.x)
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+The process of updating Alation to V R5 from an older release depends on
+your current release number.
+
+If you want to update from versions before V R2 (5.4.x), and namely:
+
+-  4.8.x
+-  V R1 (5.0.x)
+
+Read the information in `Updating from Before V R2`_.
+
+If you want to update from versions:
+
+-  V R2 (5.4.x)
+-  V R3 (5.6.x)
+-  V R4 (5.8.x)
+
+then refer to `Updating from V R2, V R3 and V R4`_.
+
+Updating from Before V R2
+-------------------------
+
+If your current release is 4.8.x or V R1 (5.0.x),then updating to V R5
+will have to be performed in three steps.
+
+Step 1: Update to V R4 (latest available patch version)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+First, you will need to update to:
+
+-  **V R4 (latest available patch version)**
+
+.. note::
+
+   In your Alation version, one of the internal components is *MongoDB* .  It is used for storing Alation server data, such as, for example, the results of Compose queries.
+
+   Starting with version  *V R2 (5.4.x)*, Alation began to migrate the
+   server data off MongoDB to a PostgreSQL database. This transition has
+   been happening in the background and is complete in *V R5 (5.9.x)*. In
+   V R5, the MongoDB component is entirely removed from the
+   Alation package.
+
+   This transition is a major architectural change in the Alation
+   application, and, unfortunately, it does not allow us to support a
+   seamless update from your version to V R5.
+
+   The intermediary stage of updating to V R4 (latest available patch)
+   is required for Alation to start and complete the transition from
+   MongoDB to PostgreSQL as the internal server database.
+
+
+Plan your update to V R4 using the following information in Help Center:
+
+- General Alation update information: :doc:`Update Alation <../../installconfig/Update/index>`.
+- :doc:`Release-Specific Update Pre-checks <../../installconfig/Update/ReleaseUpdatePrechecks>` : this instruction does apply to your Alation instance, follow those checks to prepare for the update.
+- The update instructions for your instance type:
+
+      -  :doc:`Manual Software Update - Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+      -  :doc:`Update on HA Pair (4.7 and Above) <../../installconfig/Update/updateHAPair>`
+
+- Important :doc:`Update Safety Best Practice <../../installconfig/Update/UpdateSafetyBestPractice>`
+
+When you successfully update Alation, you can move to the next step.
+
+Step 2: Allow Time For MongoDB Transition to Complete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use your updated R4 instance over at least one weekend. In the
+background, Alation will start and complete the server data migration
+off MongoDB to PostgreSQL.
+
+After the migration is complete, you can go to the next stage and update
+to V R5.
+
+.. note::
+
+   V R4 comes with the ``replace_mongo_with_postgres`` parameter in ``alation_conf`` that is set to ``True`` by default. On a Saturday after the update, Alation should automatically trigger the MongoDB migration script that copies the Alation server data from MongoDB to PostgreSQL. In a regular scenario, this migration should be completed over one weekend. If it requires a longer time, the process will be working until the migration is finished successfully.
+
+   You can check *mongo-data-migration.log* at **/opt/alation/site/logs** to
+   make sure that migration is complete.
+
+Step 3: Update to V R5
+~~~~~~~~~~~~~~~~~~~~~~
+
+Plan your update to V R5 using the information in Help Center and
+then update your instance:
+
+- General Alation update information: :doc:`Update Alation <../../installconfig/Update/index>`
+
+- The update instructions for your instance type:
+
+    -  :doc:`Manual Software Update - Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+    -  :doc:`Update on HA Pair <../../installconfig/Update/updateHAPair>`
+
+- Important :doc:`Update Safety Best Practice <../../installconfig/Update/UpdateSafetyBestPractice>`
+
+.. important::
+
+    You might see the following message:
+
+    ``The installer will abort until migration job from MongoDB to Postgres has succeeded.``
+
+    This means the data migration has not been completed yet or completed
+    with errors.
+
+Updating from V R2, V R3 and V R4
+----------------------------------
+
+In *V R5 (5.9.x)*, the MongoDB component is entirely removed from the Alation package.
+
+Regular Scenario: MongoDB Migration is Complete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In releases V R2 (5.4.x), V R3 (5.6.x), and R4 (5.8.x), migration off
+MongoDB has happened in the background if in your instance
+the ``replace_mongo_with_postgres`` parameter
+in ``alation_conf`` was set to ``True`` (default setting). On a
+Saturday after the installation of or update to any of these releases,
+Alation should have triggered the MongoDB migration script to copy the
+Alation server data from MongoDB to PostreSQL. In a regular scenario,
+the migration should are completed over one weekend. Even if it
+required a longer time, the process should are active until the
+migration has finished successfully.
+
+You can check *mongo-data-migration.log* at **/opt/alation/site/logs**,
+if it is available, to make sure that migration has finished. After
+that, Plan your update to V R5 using the information in Help
+Center then update your instance. There are no specific steps for
+the  update to V R5 if MongoDB migration is completed:
+
+- General Alation update information: :doc:`Update Alation <../../installconfig/Update/index>`
+- The update instructions for your instance type:
+-  :doc:`Manual Software Update - Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+-  :doc:`Update on HA Pair <../../installconfig/Update/updateHAPair>`
+- Important :doc:`Update Safety Best Practice <../../installconfig/Update/UpdateSafetyBestPractice>`
+
+Irregular Scenario: MongoDB Migration is Not Complete or You Are Not Sure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the ``replace_mongo_with_postgres`` parameter was previously reset
+to ``False`` in your Alation instance, the migration process may not
+are completed.
+
+To check on the current parameter value,
+
+1. Enter the Alation shell:
+
+   .. code-block:: bash
+
+      sudo /etc/init.d/alation shell
+
+2. View the current parameter value in Alation conf:
+
+   .. code-block:: bash
+
+      alation_conf replace_mongo_with_postgres
+
+   If there is
+   no ``mongo-data-migration.log`` at ``/opt/alation/site/logs`` or it
+   does not have information that migration is completed, or you
+   are not sure if and when the ``replace_mongo_with_postgres
+   parameter``  value was changed, there is a chance that when you
+   try to update, the V R5 updater will exit with the following error:
+
+   ``The installer will abort until migration job from MongoDB to Postgres has succeeded.``
+
+   If this happens in your instance, you can:
+
+   - Set the parameter ``replace_mongo_with_postgres parameter`` to ``True``
+   - Let your instance work over the first weekend after this change and, probably, a little longer into the week.
+   - Check ``mongo-data-migration.log`` at ``/opt/alation/site/logs`` to confirm that the MongoDB migration has finished successfully.
+   - Attempt update to R5 in the next week. Plan your update to V R5 using the information in Help Center then update your instance.
+
+Referential Integrity Warnings During Update
+--------------------------------------------
+
+This applies to all releases. Note that during update to V
+R5, you may observe data integrity warnings in the ``installer.log``. For example:
+
+.. code-block:: console
+
+   WARNING SemiStructured object with path=[u'Collection Item'] does not have a corresponding DocSchema object
+
+.. note::
+
+  These warnings are not fatal, are caused by the R5 codebase and do not affect the update. You can ignore these warnings.

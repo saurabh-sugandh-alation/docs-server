@@ -1,0 +1,194 @@
+MongoDB Atlas
+================
+
+*Applies from 2021.1*
+
+Alation has certified the MongoDB Atlas with the following driver to accommodate additional features:
+
+    - cdata.jdbc.mongodb.MongoDBDriver.cdata.jdbc.mongodb
+
+Alation will provide the above mentioned CData driver license for MongoDB Atlas.
+
+Scope of Support
+------------------
+
+    - Supported as Custom DB with the CData Driver.
+    - Metadata Extraction (MDE)
+
+        - Automated MDE
+
+    - Compose
+    - Data Profiling
+    - Lineage
+
+Ports
+--------
+
+Port 27017 must be open.
+
+JDBC URI
+~~~~~~~~~~~
+
+When building the URI, include the following components:
+
+    - Primary Cluster IP - *Example:*
+
+      .. code-block:: Bash
+
+            tf-test-al53356-kalyanc-shard-00-02.oonyz.mongodb.net
+
+    - Server Address - *Example:*
+
+      .. code-block:: Bash
+
+            tf-test-al53356-kalyanc.oonyz.mongodb.net
+
+      .. note::
+
+            **replicaSet**  is optional. Users can include if they need **replicaset** support.
+
+    - RTK Key -  Use the RTK parameter only if you have the RTK provided by Alation. 
+
+Use the following format for the JDBC URI:
+
+.. code-block:: Bash
+
+      mongodb://<Primary_Cluster_IP>:?replicaSet=<Server_Address>&slaveOk=true&RTK=<RTK_Key>
+
+*Example:*
+
+.. code-block:: Bash
+
+      mongodb://tf-test-al59394-kalyanc-shard-00-00.oonyz.mongodb.net:?replicaSet=tf-test-al59394-kalyanc.oonyz.mongodb.net&slaveOk=true&RTK=4447524656415355524256414542424D3332363239000000000000000000000414C4154494F4E58000055595474E4E464242370000
+
+Limitation
+-------------
+
+Query Log Ingestion is not supported.
+
+Service Account
+-----------------
+
+Create the service account for MongoDB Atlas based on basic or Kerberos authentication:
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~
+
+See the following example for creating a MongoDB Atlas user:
+
+.. code-block:: Bash
+
+          db.createUser(
+          {
+          user: "mongouser",
+          roles: [ { role: "root", db: "admin" } ]
+          }
+          )
+
+    .. note::
+
+          As shown in the code snippet, if the DBA has the role of a root, access to all databases is automatically provided. If the role is other than the root, make sure that you have the listDatabases privilege.
+
+Set Up in Alation
+--------------------
+
+Step 1: Add the CData Driver for MongoDB to Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Refer to :doc:`Add the CData Driver into Alation Instance <../../datasources/CustomDB/CDataDrivers>`.
+
+STEP 2: Add a New Datasource
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a new Datasource on the Sources page.
+
+Step 3: Set up the Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      1. On the **Add a Data Source** screen of the wizard, specify:
+
+            - **Database Type:** Custom DB
+            - **JDBC URI:** URI in the required format. See `JDBC URI`_.
+
+            *Example:*
+
+            .. code-block:: Bash
+
+                  mongodb://tf-test-al59394-kalyanc-shard-00-00.oonyz.mongodb.net:?replicaSet=tf-test-al59394-kalyanc.oonyz.mongodb.net&slaveOk=true&RTK=4447524656415355524256414542424D3332363239000000000000000000000414C4154494F4E58000055595474E4E464242370000
+
+            - - **Select Driver:** select the JDBC driver for MongoDB Atlas from the **Select Driver** drop-down list:
+
+                    - **cdata.jdbc.mongodb.MongoDBDriver.cdata.jdbc.mongodb**
+
+           - Properties: Provide the properties as:
+
+                .. code-block:: json
+
+                      {"UseSSL":true,"AuthDatabase":"admin","SupportsCatalogsInTableDefinitions":"True","SupportsSchemasInTableDefinitions":"True"}
+
+
+      2. Click **Save and Continue**. The next wizard screen - **Set Up a Service Account** - will open.
+
+          .. note::
+
+              Do not select the Kerberos **‘Use Kerberos’** checkbox.
+
+        .. image:: ../../_static/MongoDBAtlas_01.png
+
+Step 4: Enter Service Account Credentials
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  1. Select **Yes**.
+
+  #. Provide the username and password of the service account created for Alation.
+
+  #. Click **Save and Continue**. The next wizard screen, **Configure Your Data Source**, will open.
+
+Step 5: Configure Your Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Click **Skip this Step**. After this step, you are navigated to the **Settings** page of your data source.
+
+Metadata Extraction
+----------------------
+
+Configure and perform metadata extraction and verify the results:
+
+      - In **Settings > Custom Settings**, set the **Catalog Object Definition** to **Schema.Table**:
+
+        .. image:: ../../_static/MongoDBAtlas_02.png
+
+      - In **Settings > Metadata Extraction**, set up and perform MDE. Refer to Metadata Extraction.
+
+Profiling
+------------
+
+Configure and perform :doc:`Sampling and Profiling <../../datasources/CustomDB/ProfilingForCustomDB>` :
+
+    - Users can run a sample for an individual table on the **Samples** tab of the Table Catalog page or profile an individual column on the **Overview** tab of the Column page.
+    - Automatic full and selective Profiling is supported.
+    - Use the **Per-Object Parameters** in Settings tab to specify which objects to profile.
+    - Custom query-based Sampling is supported. :ref:`Custom Query-Based Sampling <Sampling_Profiling-Custom_Query_Based_Sampling_for_Tables>` allows you to provide a custom query for profiling each specific table.
+    - Deep Column Profiling (:ref:`Profiling V2 <profilingV2-label>` ) is supported.
+
+Query Log Ingestion
+---------------------
+
+Not supported.
+
+Compose
+---------
+
+Log into Compose:
+
+    - Authenticate compose with your MongoDB Atlas credentials.
+    - Use the **Schema.Table** format for writing queries.
+
+Troubleshooting
+-----------------
+
+Logs to collect/review:
+
+    - For logs related to MDE: **taskserver.log, taskserver_err.log**.
+    - For logs related to Compose: **connector.log, connector_err.log**.
+    - For any other errors: **alation-error.log, alation-debug.log**

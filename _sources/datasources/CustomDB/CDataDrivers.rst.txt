@@ -1,0 +1,236 @@
+CData Drivers
+==================
+
+Alation is partnering with CData for the driver and license distribution since a large number of Alation Custom DB connectors use CData drivers to connect to data sources and extract metadata. This document provides information on how to obtain a CData license from Alation and place a CData driver onto an Alation instance based on different scenarios.
+
+How to Get a CData Driver?
+-----------------------------
+
+You can get a CData driver in three different ways described below. Alation does not provide CData licenses for POCs and pilot deployments of the Alation Catalog. For POCs, use the trial license that can be downloaded from the CData website together with the trial version of the driver (`Scenario 1`_). Alation provides licenses to customers who intend to evaluate the driver before purchase (`Scenario 2`_) or who are willing to buy the driver from Alation (`Scenario 3`_).
+
+
+Scenario 1
+~~~~~~~~~~~~~
+
+You require a CData driver for a  POC or for a pilot stage review with Alation:
+
++--------+----------------------------------------------------------------------+
+| Steps  | Activity                                                             |
++========+======================================================================+
+| 1      | Download the driver from the `CData website <http://www.cdata.com>`_.|
+|        | The driver **.jar** is packaged with a license file that             |
+|        | has a validity of 30 days.                                           |
++--------+----------------------------------------------------------------------+
+| 2      | Install the driver on the Alation server.                            |
+|        | Refer to                                                             |
+|        | `Install CData Driver on the Alation Instance`_.                     |
++--------+----------------------------------------------------------------------+
+| 3      | Once the license expires or in case of any CData driver-related      |
+|        | issues, contact the CData team at support@cdata.in                   |
+|        | or support@cdata.com.                                                |
++--------+----------------------------------------------------------------------+
+
+Scenario 2
+~~~~~~~~~~~~~
+
+You are an existing customer of Alation and require a CData driver for validation purposes:
+
++--------+----------------------------------------------------------------------+
+| Steps  | Activity                                                             |
++========+======================================================================+
+| 1      | Download the driver **.jar** from the                                |
+|        | `CData website <http://www.cdata.com>`_.                             |
++--------+----------------------------------------------------------------------+
+| 2      | Contact Alation Support to get                                       |
+|        | the development/test RTK (runtime key). The RTK is a                 |
+|        | replacement for the license file.                                    |
++--------+----------------------------------------------------------------------+
+| 3      | Install the driver on the Alation server.                            |
+|        | Refer to                                                             |
+|        | `Install CData Driver on the Alation Instance`_.                     |
++--------+----------------------------------------------------------------------+
+| 4      | Contact the Alation Support team if you encounter any issues with    |
+|        | Alation functionality when using this driver.                        |
++--------+----------------------------------------------------------------------+
+
+Scenario 3
+~~~~~~~~~~~~~
+
+You have decided to buy a CData driver from Alation:
+
++--------+----------------------------------------------------------------------+
+| Steps  | Activity                                                             |
++========+======================================================================+
+| 1      | Contact Alation Support to get                                       |
+|        | the driver **.jar** file and the production RTK.                     |
+|        |                                                                      |
+|        | The production RTK is valid for 90 days and this period is tracked   |
+|        | by Alation. Alation will provide a new production RTK once           |
+|        | the previous one expires after 90 days. After you receive a new      |
+|        | RTK, update it in your Alation instance.                             |
++--------+----------------------------------------------------------------------+
+| 2      | Add the driver to the directory                                      |
+|        | **/opt/alation/alation-<XXXX>/data1/site_data/custom_drivers/**      |
+|        | (path outside the Alation shell). See                                |
+|        | `Add CData Driver to Alation Instance`_.                             |
++--------+----------------------------------------------------------------------+
+
+RTK (Runtime Key)
+~~~~~~~~~~~~~~~~~~~~~~
+
+The runtime key (RTK) is a unique key provided by Alation as a license key to the driver. The RTK will have to be changed for every driver version upgrade. This RTK has to be appended to the JDBC URI of the respective connectors.
+
+*Example:*
+
+.. code-block:: Bash
+
+      mongodb://10.13.64.245:27017?RTK=444752465641454E5454F4E58064242370000
+
+Install CData Driver on the Alation Instance
+------------------------------------------------
+
+.. note::
+
+    The following steps are applicable only to `Scenario 1`_ and `Scenario 2`_.
+
+
+Perform the following steps to install the CData driver on the Alation instance:
+
+1. Download the driver from the `CData website <http://www.cdata.com>`_.
+
+#. Extract the following files from the driver package:
+
+      - setup.jar
+      - readme.txt
+
+#. Copy the **setup.jar** to a directory on the Alation host, for example **/tmp**.
+
+    .. code-block:: Bash
+
+        scp <path to the driver> <your_username@alation_host>:/tmp/
+
+#. Use SSH to connect to the Alation server.
+
+#. Go to the directory **/opt/alation/alation-<XXXX>/data1/site_data/custom_drivers/**. <XXXX> stands for your alation version, for example:
+
+    .. code-block:: Bash
+
+        cd /opt/alation/alation-5.14.0.113546/data1/site_data/custom_drivers/
+
+#. Create a subdirectory, for example, **cdata_install**.
+
+    .. code-block:: Bash
+
+        sudo mkdir cdata_install
+
+#. Move the **setup.jar** to this directory:
+
+    .. code-block:: Bash
+
+        sudo scp /tmp/setup.jar .
+
+#. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+#. Go to the **/custom_drivers/cdata_install** directory inside the shell:
+
+    .. code-block:: Bash
+
+        cd opt/alation/site/site_data/custom_drivers/cdata_install
+
+#. Run the driver installation command given below. Substitute ``<version>`` with the actual version you find in the java directory of your instance. Then follow the prompts in the console and provide valid credentials to complete the installation of the driver:
+
+    - **Releases V R4 (5.8.x) - V R7 (5.12.x)**:
+
+      .. code-block:: Bash
+
+          sudo /opt/java/jdk-<version>/bin/java -jar setup.jar
+
+
+    - **Release 2020.3.x and newer releases**:
+
+      .. code-block:: Bash
+
+          sudo /opt/java/amazon-corretto-<version>-linux-x64/bin/java -jar setup.jar
+
+#. This command installs the driver and creates a **../custom_drivers/cdata_install/lib/** subdirectory with a number of files. You will need two of these files: the **.jar** with the driver and the license file:
+
+    - **cdata.jdbc.<Product>.jar**
+    - **cdata.jdbc.<Product>.lic**
+
+#. If you do not have the RTK from Alation, use the **.lic** file. Copy the **.jar** and the **.lic** files to the **opt/alation/site/site_data/custom_drivers** folder.
+
+#. If you have the RTK from Alation, only copy the **.jar** file to the **../custom_drivers** folder. You do not need to copy the **.lic** file in this case.
+
+#. Set the driver file ownership to ``alation``.
+
+    .. code-block:: Bash
+
+        sudo chown alation:alation <driver_file_name>.jar
+
+#. Restart Alation:
+
+    .. code-block:: Bash
+
+        alation_action restart_alation
+
+#. After the restart, the driver should become visible in the list of drivers in the Alation user interface.
+
+#. Exit the shell: ``exit``
+
+
+Add CData Driver to Alation Instance
+-------------------------------------------
+
+Use these steps to add a CData driver to the Alation server if you have obtained the driver from Alation using `Scenario 3`_. When you receive the CData driver **.jar** from Alation, the driver does not require installation.
+
+Prerequisite
+~~~~~~~~~~~~~~~
+
+You have the CData driver **cdata.jdbc.[product].jar** that was provided by Alation.
+
+Steps to Add the Driver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Copy the **cdata.jdbc.[product].jar** to a directory on the Alation host, for example, **/tmp**:
+
+    .. code-block:: Bash
+
+              scp <path to the driver> <your_username@alation_host>:/tmp/
+
+#. SSH to the Alation server:
+
+    .. code-block:: Bash
+
+        ssh <alation_hostname>
+
+#. Move **cdata.jdbc.[product].jar** to the the **/opt/alation/alation-<XXXX>/data1/site_data/custom_drivers/** folder (<XXXX> stands for your Alation version).
+
+#. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+#. Go to the **opt/alation/site/site_data/custom_drivers** directory.
+
+    .. code-block:: Bash
+
+        cd opt/alation/site/site_data/custom_drivers
+
+#. Set the driver file ownership to ``alation``:
+
+    .. code-block:: Bash
+
+        sudo chown alation:alation <driver_file_name>.jar
+
+#. Restart Alation. This makes the **.jar** visible in the list of drivers in the Alation user interface.
+
+    .. code-block:: Bash
+
+        alation_action restart_alation
+
+#. Exit the shell: ``exit``

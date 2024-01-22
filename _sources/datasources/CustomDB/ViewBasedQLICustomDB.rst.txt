@@ -1,0 +1,95 @@
+View-Based QLI
+==================
+
+View-based QLI requires that you create a view in your database ensuring that it has the columns listed in the table below.
+
+Parameters of QLI View and Description
+----------------------------------------
+
+.. tabularcolumns:: |p{3cm}|p{2cm}|p{8cm}|p{2cm}|
+
++----------------------+-----------+-----------------------------------------------+---------------+
+| Parameter            | Type      | Description                                   | If Required   |
++======================+===========+===============================================+===============+
+| userName             | String    | Name of the user who executes the query       | Yes           |
++----------------------+-----------+-----------------------------------------------+---------------+
+| queryString          | String    | Query run on the data source.                 | Yes           |
++----------------------+-----------+-----------------------------------------------+---------------+
+| defaultDatabases     | String    | Default schema or database name. This         | Yes           |
+|                      |           | parameter plays a vital role in resolution.   |               |
+|                      |           | Without ``defaultDatabases``, the query log   |               |
+|                      |           | parser cannot resolve partially qualified     |               |
+|                      |           | tables. Lineage will function partially only  |               |
+|                      |           | if the defaultDatabase is not provided.       |               |
+|                      |           | Example: If you run a query with ``select *   |               |
+|                      |           | from Table`` which does not have a            |               |
+|                      |           | database name, the parser parses it           |               |
+|                      |           | using ``defaultDatabases``.                   |               |
++----------------------+-----------+-----------------------------------------------+---------------+
+| sessionId            | String    | Unique Id of the session. This parameter      | Yes           |
+|                      |           | is important for resolution. If the session   |               |
+|                      |           | has queries such as "use database1"           |               |
+|                      |           | the information is used for resolution.       |               |
++----------------------+-----------+-----------------------------------------------+---------------+
+| sessionStartTime     | String    | Start time of the session during the          | Yes           |
+|                      |           | execution of the query.                       |               |
++----------------------+-----------+-----------------------------------------------+---------------+
+| StartTime            | String    | Start time of the query.                      | Yes           |
++----------------------+-----------+-----------------------------------------------+---------------+
+| cancelled            | String    | This parameter checks if the query            | No            |
+|                      |           | execution gets canceled.                      |               |
+|                      |           | Boolean, accepts values ``false`` or ``true``.|               |
++----------------------+-----------+-----------------------------------------------+---------------+
+| milliSeconds         | Float     | Execution time of the query in milliseconds.  | No            |
++----------------------+-----------+-----------------------------------------------+---------------+
+
+Example query to create the view for QLI (Oracle)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+      CREATE OR REPLACE VIEW SYS.alation_query_log_view AS
+          SELECT * FROM (
+            SELECT q.userid as userName,
+              to_char(q.NTIMESTAMP#, 'YYYY-MM-DD HH24:MI:SS.FF') AS startTime,
+              q.returncode,
+              q.sqltext as queryString,
+              q.sessionid as sessionId,
+              q.clientid as client_id,
+              q.action# as command_type,
+              q.process# as process_id,
+              to_char(q.NTIMESTAMP#, 'YYYY-MM-DD HH24:MI:SS.FF') AS sessionStartTime,
+              q.statement,
+              ROW_NUMBER() OVER(PARTITION BY q.sessionid, q.process#, q.statement ORDER BY q.entryid) as num,
+              -- columns in ASH tables and not audit
+              null as service_hash,
+              null as client_addr,
+              0 as time_ms,
+              0 as read_io_requests,
+              0 as write_io_requests,
+              0 as cpu_time_ms
+            FROM sys.aud$ q
+            LEFT JOIN sys.aud$ s
+              on q.sessionid = s.sessionid AND q.process# = s.process# AND s.action# = 100 -- LOGON
+                WHERE q.sqltext is not null
+                ) queries WHERE num = 1;
+
+Steps in Alation
+-------------------
+
+To set up view-based QLI in Alation,
+
+#. Make sure MDE is run.
+#. On the **General Settings** page, specify the parameter **Query Log Privileges**  the fully qualified view name: ``DBName.SchemaName.ViewName``:
+
+  .. image:: ../../_static/DS_CustomDB20.png
+      :width: 5.5in
+      :align: center
+
+3. Click **Save**.
+4. Click **Optionally enter a name of a column that partitions by date** to reveal the input field for the partition column and specify the column name.
+5. Click **Save**.
+6. Go to the **Query Log Ingestion** tab.
+7. Under **Run Manual Query Ingestion**, specify a date range for the QLI.
+8. Click **Preview** to fetch a preview from the database.
+9. Click **Import** to run QLI.

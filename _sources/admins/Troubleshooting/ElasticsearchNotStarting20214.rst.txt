@@ -1,0 +1,40 @@
+Elasticsearch Is Not Starting After Update to 2021.4.4
+========================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+If after the update to 2021.4.4 you observe issues with Alation Search, perform the checks described below.
+
+In case of the HA configuration, perform the checks on the primary server.
+
+Check Status of the Elasticsearch Component
+---------------------------------------------
+
+From the Alation shell, check the status of the Elasticsearch component:
+
+.. code-block:: Bash
+
+    alation_supervisor status java:*
+
+You may see that Elasticsearch is stuck in the ``STARTING`` state, for example:
+
+.. code-block:: Bash
+
+    (env) PROD [alationadmin@ip-10-41-2-83 /]$ alation_supervisor status java:*
+
+    java:connector                   RUNNING   pid 13526, uptime 1 day, 23:59:59
+    java:elasticsearch-7.14          STARTING
+    java:taskserver                  RUNNING   pid 13527, uptime 1 day, 23:59:59
+
+Check Elasticsearch Log File
+-----------------------------------
+
+Check the log file **/opt/alation/site/logs/elasticsearch.log**. A specific error that usually accompanies this issue is related to permissions for ``getClassLoader``, for example:
+
+.. code-block:: Bash
+
+    java.security.AccessControlException: access denied ("java.lang.RuntimePermission" "getClassLoader")
+    at java.security.AccessControlContext.checkPermission(AccessControlContext.java:472) ~[?:?]
+    at java.security.AccessController.checkPermission(AccessController.java:1036) ~[?:?]
+
+If these are the symptoms you find, validate and update the values of the **alation_conf** parameter ``elasticsearch.env.es_java_opts``. Use the steps in :doc:`Validating the Value of Parameter elasticsearch.env.es_java_opts <../../installconfig/Update/ValidatingValueOfelasticsearch_env>`.

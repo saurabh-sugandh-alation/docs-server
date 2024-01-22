@@ -1,0 +1,40 @@
+Objects by Number of Users Visiting
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query returns visit counts for Alation objects and includes Title,
+object URL, and object type information.
+
+.. code-block:: sql
+
+    SELECT
+      OT.object_type_name AS object_type,
+      FV.text_value as title,
+      o.object_url,
+      count(distinct V.user_id) AS count_of_users_visiting_page
+    FROM
+      public.alation_visits V
+      INNER JOIN public.alation_object o ON v.object_uuid = o.object_uuid
+      AND V.object_type_id = o.object_type_id
+      INNER JOIN public.object_field_value OFV ON V.object_uuid = OFV.object_uuid
+      AND V.object_type_id = OFV.object_type_id
+      INNER JOIN public.field_value FV ON OFV.value_fp = FV.value_fp
+      INNER JOIN public.alation_object_type OT ON OT.object_type_id = V.object_type_id
+    WHERE
+      ofv.field_id IN (
+        select
+          field_id
+        from
+          public.object_field
+        where
+          field_name = 'title'
+      )
+    GROUP BY
+      object_type,
+      title,
+      object_url
+    ORDER BY
+      count_of_users_visiting_page DESC;

@@ -1,0 +1,113 @@
+Installing Certificates for Secure Data Source Connections
+==========================================================
+
+Overview
+----------
+
+Alation has its own Java truststore inside the Alation shell. When configuring connection to a data source over SSL, you will need to bring your SSL certificates into the Java truststore on the Alation server.
+
+It is also required to pass the location and password to the Java truststore directly to the Java processes as parameters as there is no user interface for specifying them. The parameters ``connector.extra_flags``, ``taskserver.extra_flags``, and ``elasticsearch.env.es_java_opts`` parameters in ``alation_conf`` serve this purpose.
+
+You can view the current parameter values from the Alation shell by running these commands:
+
+.. code-block:: bash
+
+      # to print the current values for connector.extra_flags and taskserver.extra_flags:
+      alation_conf extra_flags
+
+      # to print the current values for elasticsearch.env.es_java_opts
+      alation_conf elasticsearch.env.es_java_opts
+
+These parameters may be empty or they may already have values that were set previously.
+
+If they are empty, you can set them in the following way:
+
+.. code-block:: bash
+
+      alation_conf taskserver.extra_flags -s " -Djavax.net.ssl.trustStore=/opt/alation/site/site_data/jssecacerts -Djavax.net.ssl.trustStorePassword=changeit"
+
+Note the space in front of the **-D**: ``"  -D``.
+
+If the flags already have values, make sure to preserve those values and append the new values to the existing ones without overwriting. Append the new values by adding a space then the new value to the string. For example, if your current value is ``taskserver.extra_flags = -Dsun.security.krb5.debug=true``,
+add the new value to the end of the string after a space:
+
+.. code-block:: bash
+
+    alation_conf taskserver.extra_flags -s " -Dsun.security.krb5.debug=true -Djavax.net.ssl.trustStore=/opt/alation/site/site_data/jssecacerts -Djavax.net.ssl.trustStorePassword=changeit"
+
+
+First Time Setup
+----------------------
+
+1. Enter the Alation shell:
+
+    .. code-block:: bash
+
+         sudo /etc/init.d/alation shell
+
+2. Copy over the default Java truststore certificates into the Alation custom location and change ownership to **alation**:
+
+    .. code-block:: bash
+
+         sudo cp /etc/pki/java/cacerts /opt/alation/site/site_data/jssecacerts
+
+         sudo chown alation:alation /opt/alation/site/site_data/jssecacerts
+
+3. Configure and deploy the required parameters in Alation. The ``alation_conf`` values for: ``taskserver.extra_flags``, ``connector.extra_flags``, and ``elasticsearch.env.es_java_opts`` must be set to the string below. Note the space at the beginning of the string:
+
+    **-Djavax.net.ssl.trustStore=/opt/alation/site/site_data/jssecacerts -Djavax.net.ssl.trustStorePassword=changeit**
+
+    .. note::
+
+        If the ``alation_conf`` attributes already have some other values, append new values but do not overwrite the existing ones.
+
+    To set the values:
+
+    .. code-block:: bash
+
+         alation_conf taskserver.extra_flags -s " -Djavax.net.ssl.trustStore=/opt/alation/site/site_data/jssecacerts -Djavax.net.ssl.trustStorePassword=changeit"
+
+         alation_conf connector.extra_flags -s " -Djavax.net.ssl.trustStore=/opt/alation/site/site_data/jssecacerts -Djavax.net.ssl.trustStorePassword=changeit"
+
+         alation_conf elasticsearch.env.es_java_opts -s " -Djavax.net.ssl.trustStore=/opt/alation/site/site_data/jssecacerts -Djavax.net.ssl.trustStorePassword=changeit"
+
+4. Deploy the configuration:
+
+    .. code-block:: bash
+
+        alation_action deploy_conf_all
+
+Add a new Certificate to the Alation Java Keystore
+----------------------------------------------------
+
+To add a new cert,
+
+1. Place the SSL certificate into the Alation box from outside of the Alation shell, for example:
+
+    .. code-block:: bash
+
+         scp selfsigned.cer:<hostname>:
+         ssh <hostname>
+         mv selfsigned.cer /<your/path/to/data>/tmp/selfsigned.cer
+
+2. Enter the Alation shell:
+
+    .. code-block:: bash
+
+         sudo /etc/init.d/alation shell
+
+3. Import the certificate into the Alation Java truststore. Replace ``YOURALIAS`` with a suitable name for the certificate (companyname_databasename) - alphanumeric only, no special characters. Substitute ``version`` with the actual version number you find in the java directory.
+
+    - **Release 2020.3.x and newer**
+
+        .. code-block:: bash
+
+            sudo /opt/java/amazon-corretto-<version>-linux-x64/bin/keytool -import -alias YOURALIAS -file /data1/tmp/selfsigned.cer -keystore /opt/alation/site/site_data/jssecacerts -storepass changeit
+
+4. Type "yes" and click Enter when it prompts for *Trust this certificate?*
+
+5. Restart the Java processes:
+
+    .. code-block:: bash
+
+         alation_supervisor restart java:*

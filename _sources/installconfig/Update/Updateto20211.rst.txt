@@ -1,0 +1,259 @@
+Update Alation to 2021.1
+==========================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+2021.1 Update Version Dependencies
+-------------------------------------------
+
+Alation supports the update to version 2021.1 from the following previous versions:
+
+    - 2020.4.x
+    - 2020.3.x
+    - V R7 (5.12.x)
+
+Use the instructions appropriate for your current version.
+
+Releases older than V R7 (5.12.x)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Direct update to 2021.1 is not supported. First, update Alation to a version that supports the update to 2021.1 and then perform a second update to 2021.1.
+
+Update from 2021.1 LA to 2021.1 GA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    This information is only relevant if you are updating a **test instance** with 2021.1 LA to 2021.1 GA.
+
+If you have Tableau sources configured to use SSL connections, after the update from 2021.1 LA to 2021.1 GA, reload the SSL certificates on the Tableau source Settings page and test the connection.
+
+.. _20211-Release-Specific-Information:
+
+2021.1 Release-Specific Information
+---------------------------------------
+
+- Elasticsearch 1.4 removal from the Alation server
+- Internal codebase upgrade to Python 3
+- A new version of Alation Analytics V2
+- A new version of Alation Connector Manager
+- The Snowflake data source built-in driver updated to version 3.12.14
+- The **Labs** tab in Admin Settings renamed to **Feature Configuration**
+- The **Domains** feature with a dedicated feature switch in Admin Settings > Server Admin > Feature Configuration > Data Domains
+- The **Group Role assignment** feature with a dedicated feature switch in Admin Settings > Catalog Admin > Groups > Use Custom Groups to assign user roles
+
+For more details on new features, improvements, and bug fixes, see :doc:`Release Notes 2021.1 (General Availability) <../../releases/releasenotes/ReleaseNotes20211>`.
+
+2021.1 Update Known Issue
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This information only applies if in your instance of Alation, the internal Alation database is protected by a password:
+
+    - Update to 2021.1.x requires that the Postgres password should be cleared before the update to 2021.1.x and set back after the update is completed. Please **contact Alation Support** to guide you through the update process if you have a password set for the internal Alation database.
+
+Backup Check
+-------------------
+
+Before performing any update actions, ensure that you have the latest valid Alation backup and take and store a backup or a system image, if necessary.
+
+Update 2020.4 To 2021.1
+-------------------------
+
+STEP 1: Perform Encryption Key Rotation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. important::
+
+    Update to 2021.1 cannot be done if key rotation has never been performed on the instance. The 2021.1 update command will stop with a "key rotation required" warning.
+
+    Please plan your Alation upgrade to 2021.1 so that the schedule accommodates for this preparatory step.
+
+
+If you have not recently done so, perform the encryption key rotation on the Alation Server. On large installations, if key rotation has never been performed before, the initial key rotation may take some time to complete.
+
+Key Rotation on HA Pair
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    - Key rotation should be done on the **Primary** server.
+    - If you plan to update the HA Pair with splitting the cluster, **perform key rotation on Primary before splitting the Pair**.
+    - After key rotation on the Primary is completed, allow some time for replication to happen between Primary and Secondary. The cluster should be in sync before you update or split and update.
+
+
+On how to perform key rotation: :doc:`Encryption Key Rotation <../../admins/AdminSettings/EncryptionKeyRotation>`
+
+STEP 2: Take an Additional Backup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is highly recommended to take an additional Alation backup after successfully performing key rotation. This backup is required if you have to restore using a 2021.1 build. You cannot restore data that did not have at least one key rotation.
+
+STEP 3: Run a Postgres Scan
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step is optional but recommended.
+
+After the encryption key rotation and before updating Alation, scan the internal Postgres database for corrupted indexes. If the scan finds corrupted indexes in Postgres, contact Alation Support to resolve the Postgres problems before updating Alation.
+
+On how to scan Postgres: :doc:`How to Scan Postgres For Corrupted Indexes <../../admins/How-tos/HowToScanPostgresForCorruptedIndexes>`
+
+STEP 4: Update Alation To 2021.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Proceed to update the Alation application using the appropriate update instructions:
+
+  - :doc:`Manual Software Update for Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+  - Update on the HA Pair:
+
+        - with splitting the HA cluster: :doc:`Update HA Pair with Cluster Splitting <../../installconfig/Update/UpdateHAPairwithClusterSplitting>`
+        - without splitting the cluster: :doc:`Update HA Pair Configuration (4.7 and above) <../../installconfig/Update/updateHAPair>`
+
+STEP 5: Perform Post-Update Steps
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If relevant to your Alation instance:
+
+- *Perform this step only if using Alation Analytics V2*: :doc:`Update Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2>`
+- *Perform this step only if using OCF Framework*: :doc:`Update Alation Connector Manager <../../installconfig/Update/OCFUpdateAlationConnectorManager>`
+- **On instances using the HA Pair configuration**: if before the update you had the Backup V2 feature enabled, check the corresponding feature flag after the update. The flag value is reset to the default when the HA cluster is rebuilt. If you use the update scenario with splitting and rebuilding the cluster, you need to re-enable the Backup V2 feature on the Primary instance after updating and rebuilding the HA. On how to enable Backup V2: :doc:`/installconfig/BackupandRestore/BackupV1AndV2/EnableOrDisableBackupV2`.
+
+.. _Update_20211-VR7-20211:
+
+Update V R7 (5.12.x) or 2020.3 To 2021.1
+-------------------------------------------
+
+This update scenario skips release 2020.4.x which includes a number of major changes to the Alation application. The changes in 2020.4 cause a number of additional checks and steps in the process of updating Alation.
+
+If you have chosen to skip the 2020.4.x release and update to 2021.1 from V R7 or 2020.3, do the following before the upgrade:
+
+1. Inform yourself on the changes in 2020.3 and 2020.4:
+
+    - :doc:`Release Notes 2020.3 (General Availability) <../../releases/releasenotes/ReleaseNotes20203(GeneralAvailability)>`
+    - :ref:`2020.3 Release Specific Information <20203-Release-Specific-Information>`
+
+    - :doc:`Release Notes 2020.4 (General Availability) <../../releases/releasenotes/ReleaseNotes20204>`
+    - :ref:`2020.4 Release-Specific information <20204-Release-Specific-Information>`
+
+2. Make a list of post-upgrade steps that may be relevant to your instance in the releases you skip (2020.3 and 2020.4). You will need to address those after the update as well:
+
+    - :ref:`Post-Upgrade Steps 2020.4 <Update_20204-Post_Upgrade>`
+    - For 2020.3, refer to :ref:`2020.3 Release Specific Information <20203-Release-Specific-Information>`
+
+3. Create an update schedule that accommodates for the required pre-update steps, such as Postgres re-indexing and encryption key rotation (see below) and the post-update steps relevant to your instance.
+
+4. Make sure you have the latest valid Alation backup.
+
+To update Alation from V R7 or 2020.3 to 2021.1, follow these steps:
+
+STEP 1: Required Checks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Internal PostgreSQL upgrade to 9.6 is required
+
+	   To check your current Postgres version, from the Alation shell, run:
+
+        .. code-block:: Bash
+
+            alation_psql
+
+      If not 9.6, you need to first :doc:`Upgrade Internal PostgreSQL Instances from 9.3 to 9.6 <../../installconfig/Update/UpgradeInternalPostgreSQLInstances>`.
+
+2. Elasticsearch migration from 1.4 to 7.4 should be complete
+
+      To check the Elasticsearch version that is currently in use on your instance, from the Alation shell, run:
+
+        .. code-block:: Bash
+
+            alation_conf elasticsearch.backend_mode
+
+      It should be set to **2**. If you see a different value, you will not be able to update as Elasticsearch migration may not have happened. In this case, contact Alation Support to assist with the update.
+
+STEP 2: Perform Encryption Key Rotation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. important::
+
+    Update to 2021.1 cannot be done if key rotation has never been performed on the instance.
+
+
+If you have not recently done so, perform the encryption key rotation on the Alation Server. On large instances, if key rotation has never been performed before, the initial key rotation may take up to a week to complete. Please plan your Alation upgrade to 2021.1 so that the schedule accommodates for this preparatory step.
+
+In case of HA Pair configuration, key rotation should be done on the Primary server.
+
+It is recommended to take an Alation backup after performing key rotation.
+
+On how to perform key rotation: :doc:`Encryption Key Rotation <../../admins/AdminSettings/EncryptionKeyRotation>`
+
+STEP 3: Take an Additional Backup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is highly recommended to take an additional Alation backup after successfully performing key rotation. This backup is required if you have to restore using a 2021.1 build. You cannot restore data that did not have at least one key rotation.
+
+STEP 4: Run Pre-Upgrade Reindexing Script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Running of the re-indexing script is required because of the changes in release 2020.4.
+
+.. note::
+
+    On HA Pair, the reindexing script should be run on the Primary instance.
+
+
+1. Copy and save the following script as ``preupgrade_reindexing.py`` to **/opt/alation/alation/opt/alation/** on the Alation host (path outside the Alation shell): :doc:`Pre-Update Reindexing Script for 2020.4 </installconfig/Update/20204UpgradeScript>`
+
+2. Is it recommended to run the script in a Screen session. To start a Screen session:
+
+    .. code-block:: Bash
+
+        screen -S reindex_db
+
+3. From the Alation shell, change user to Alation:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        sudo su alation
+
+4. Update the permissions on the ``preupgrade_reindexing.py`` script so that it can be executed by user ``alation``:
+
+    .. code-block:: Bash
+
+        cd /opt/alation/
+        sudo chown alation:alation preupgrade_reindexing.py
+        chmod 755 preupgrade_reindexing.py
+
+5. Run the script from **/opt/alation/** (inside the Alation shell) with the command given below. This script stops all Alation services except Postgres. Do not start any of the services while the script is running as this can result in an inconsistent state of the data.
+
+    .. code-block:: Bash
+
+        python preupgrade_reindexing.py
+
+The script prints its output to the console and to **/opt/alation/site/site_data/pre_upgrade_reindex_rosemeta_db.log** (path inside the shell).
+
+    .. warning::
+
+        In case the script execution fails, do not proceed with the update. Contact Alation Support to troubleshoot and assist with the next steps.
+
+The time required for reindexing to complete depends on the size of the internal database. During the update, Alation will run a second re-indexing. The update time will be increased by approximately this amount of time when the second reindexing runs automatically during the update.
+
+After the reindexing script completes, proceed to step 5.
+
+STEP 5: Update Alation To 2021.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Proceed to update the Alation application using the appropriate update instructions:
+
+- :doc:`Manual Software Update for Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+- Update on the HA Pair:
+
+      - with splitting the HA cluster: :doc:`Update HA Pair with Cluster Splitting <../../installconfig/Update/UpdateHAPairwithClusterSplitting>`
+      - without splitting the cluster: :doc:`Update HA Pair Configuration (4.7 and above) <../../installconfig/Update/updateHAPair>`
+
+
+STEP 6: Perform Post-Update Steps
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If relevant to your Alation instance:
+
+- Do the post-update steps for the releases you skipped (2020.3 and 2020.4)
+- *Perform this step only if using Alation Analytics V2*: :doc:`Update Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2>`
+- *Perform this step only if using OCF Framework*: :doc:`Update Alation Connector Manager </installconfig/Update/OCFUpdateAlationConnectorManager>`
+- **On instances using the HA Pair configuration**: if before upgrade you had the Backup V2 feature enabled, check the corresponding feature flag after the upgrade. The flag value is reset to the default when the HA Cluster is rebuilt. If you use the update scenario with splitting and rebuilding the cluster, you need to re-enable the Backup V2 feature on the Primary instance after upgrading and rebuilding the HA. On how to enable Backup V2: :doc:`/installconfig/BackupandRestore/BackupV1AndV2/EnableOrDisableBackupV2`.

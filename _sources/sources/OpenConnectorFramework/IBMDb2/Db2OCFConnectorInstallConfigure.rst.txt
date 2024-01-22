@@ -1,0 +1,335 @@
+Db2 OCF Connector: Install and Configure
+============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+
+Network Configuration
+-----------------------
+
+Open outbound TCP port **50000** to the Db2 Database (default).
+
+  .. note::
+
+      Db2 instances can listen on non-standard ports. Open the appropriate outbound TCP ports from the Alation server.
+
+Service Account
+---------------------
+
+The DB2 service account is a Linux account. When the account is created, grant it the required permissions to access the database and perform MDE, profiling, and QLI.
+
+Create an Account
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Example SQL to create an account:
+
+.. code-block:: Bash
+
+    group -g 999 db2iadm1
+
+    useradd -u 1004 -g db2iadm1 -m -d /home/alation alation
+
+    password alation
+
+Example SQL to grant database access to the account:
+
+.. code-block:: Bash
+
+    -- SQL: enable new user to connect to database
+
+    GRANT CONNECT ON DATABASE TO alation;
+
+    -- This grants \`alation\` access to all data
+
+    GRANT DATAACCESS ON DATABASE TO alation;
+
+Permissions for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: SQL
+
+      GRANT SELECT ON SYSCAT.SCHEMATA TO alation;
+      GRANT SELECT ON SYSCAT.TABLES TO alation;
+      GRANT SELECT ON SYSCAT.VIEWS TO alation;
+      GRANT SELECT ON SYSCAT.COLUMNS TO alation;
+      GRANT SELECT ON SYSIBM.SYSCOLUMNS TO alation;
+      GRANT SELECT ON SYSCAT.REFERENCES TO alation;
+      GRANT SELECT ON SYSCAT.KEYCOLUSE TO alation;
+      GRANT SELECT ON SYSCAT.INDEXES TO alation;
+      GRANT SELECT ON SYSIBM.SYSROUTINEPARMS TO alation;
+      GRANT SELECT ON SYSCAT.ROUTINES TO alation;
+
+Permissions for Sampling and Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For profiling, the service account requires the ``SELECT`` permission on tables that you want to sample.
+
+Permissions for Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See `QLI Configuration on Db2`_ below.
+
+Additional Setup: Enable Explain in Compose
+------------------------------------------------------
+
+.. include:: ../../../shared/OCF/Db2_EnableExplain.rst
+
+JDBC URI
+----------------------------
+
+Format
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    db2://<hostname_or_ip>:<port>/<service_name>
+
+Example
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    db2:/my_ibm.net:50000/TESTDB
+
+Configuration in Alation
+----------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New Data Source
+------------------------------------------------------
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **DB2 OCF Connector**.
+
+Access
+-------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+-------------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ConnectorSettings_2.rst
+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+You can view the connector logs in **Admin Settings** > **Manage Connectors** > **DB2 OCF Connector**.
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_ObfuscateLiterals.rst
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+------------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+The default queries that the connector uses to extract metadata can be found in :doc:`/sources/OpenConnectorFramework/IBMDb2/Db2OCFExtractionQueries`. You can customize these queries to adjust the extraction to your needs.
+
+MDE Extraction from Compose
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After users create tables or views in Compose, Alation incrementally extracts their metadata and adds it  to the corresponding schemas in the catalog. A Data Source Admin does not need to rerun MDE to have these new objects represented in Alation.
+
+For incremental MDE from Compose to be successful, the CREATE statements should use this format:
+
+    .. code-block:: Bash
+
+        CREATE TABLE "SCHEMA_NAME"."TABLE_NAME" ({column properties});
+
+|
+
+    .. code-block:: Bash
+
+        CREATE VIEW "SCHEMA_NAME"."VIEW_NAME" AS {view condition};
+
+For lineage to be generated successfully for views, the fully qualified name of the table should be used in the view condition.
+
+    .. note::
+
+        DB2 stores table names in uppercase. Ensure that you use double quotes to use the necessary case.
+
+Sampling and Profiling
+-------------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Compose
+--------------------------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+Query Log Ingestion
+---------------------------------
+
+QLI Configuration on Db2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Query Log Ingestion (QLI) requires creating an `event monitor <https://www.ibm.com/docs/en/db2/10.5?topic=statements-create-event-monitor>`_ and tables on your database to capture query history.
+
+Alation supports two QLI options for Db2. Depending on which type of QLI you opt for, you may need to create an additional view for QLI. See `Configure Table-Based QLI`_ or `Configure Query-Based QLI`_ below.
+
+Use the following example SQL to enable query history on Db2 and grant the service account permissions to select from the QLI tables:
+
+.. code-block:: SQL
+
+    CREATE EVENT MONITOR alationQueryLogMonitor FOR STATEMENTS
+        WRITE TO TABLE connheader(
+        TABLE alationDb2QueryLogger.connection_header INCLUDES(sequence_no, auth_id, appl_id, conn_time)
+        ),
+        stmt(
+            TABLE alationDb2QueryLogger.statement INCLUDES(
+              appl_id,
+              stmt_operation,
+              stmt_text,
+              start_time,
+              stop_time,
+              system_cpu_time,
+              user_cpu_time
+              )
+        )
+    MANUALSTART BUFFERSIZE 512 NONBLOCKED;
+    SET EVENT MONITOR alationQueryLogMonitor STATE = 1;
+
+|
+
+.. code-block:: SQL
+
+    GRANT SELECT ON alationDb2QueryLogger.statement TO alation;
+    GRANT SELECT ON alationDb2QueryLogger.connection_header TO alation;
+
+Configure Table-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you opt for table-based QLI, in a schema of your choice create a view on top of the QLI tables using the SQL example below and grant the service account the ``SELECT`` rights on this view. You will need to provide the name of this view in Alation when configuring QLI in the data source settings.
+
+When using the example below:
+
+    - Substitute the placeholder value ``<schema_name>`` with your schema name.
+    - You can give the view any name of your choice. Substitute the placeholder name ``<view_name>`` with the name you choose.
+
+.. code-block:: SQL
+
+    CREATE VIEW <schema_name>.<view_name> AS
+      SELECT
+          TRIM(alationDb2QueryLogger.connection_header.auth_id) AS userName,
+          alationDb2QueryLogger.connection_header.conn_time AS sessionstartTime,
+          alationDb2QueryLogger.statement.start_time AS startTime,
+          TRIM(alationDb2QueryLogger.connection_header.auth_id || '/' || to_char(alationDb2QueryLogger.statement.start_time,
+              'YYYY-MM-DD HH:MI:SS.SSSSS') || '/' || alationDb2QueryLogger.statement.appl_id) AS sessionId,
+          alationDb2QueryLogger.statement.stmt_text AS queryString,
+          'N' AS cancelled,
+          '' AS defaultDatabases,
+          (CASE
+              WHEN timestampdiff(2, char(alationDb2QueryLogger.statement.stop_time-alationDb2QueryLogger.statement.start_time)) > 10*60
+                  THEN cast(timestampdiff(2, char(alationDb2QueryLogger.statement.stop_time-alationDb2QueryLogger.statement.start_time)) AS decimal(31,3))
+              ELSE cast(timestampdiff(1, char(alationDb2QueryLogger.statement.stop_time-alationDb2QueryLogger.statement.start_time))/1000000.0 AS decimal(31,3))
+          END) as seconds_taken,
+          CAST(alationDb2QueryLogger.statement.system_cpu_time/1000000.0 AS decimal(31,3)) AS system_cpu_time,
+          CAST(alationDb2QueryLogger.statement.user_cpu_time/1000000.0 AS decimal(31,3)) AS user_cpu_time
+    FROM alationDb2QueryLogger.statement
+    INNER JOIN alationDb2QueryLogger.connection_header
+        ON alationDb2QueryLogger.connection_header.appl_id = alationDb2QueryLogger.statement.appl_id
+    WHERE alationDb2QueryLogger.statement.stmt_operation IN (3,6);
+
+|
+
+.. code-block:: SQL
+
+    GRANT SELECT ON <schema_name>.<view_name> TO alation;
+
+On the **Query Log Ingestion** tab, in the **Table Name** field under **Connector Settings > Query Extraction**, specify the name of the view in which the query logs are available. Make sure that the service account has permissions to select from this view. The table name must be provided in the following format: ``database.schema.view_name``.
+
+Configure Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you cannot create the view for QLI, for example, due to access restrictions, you can use a custom QLI query to extract query history into Alation.  If you opt for query-based QLI, Alation will query the system table storing query history every time you manually run QLI or when the QLI job runs on schedule.
+
+For custom query-based QLI to succeed, ensure that the service account has enough permissions to select from the system table.
+
+The template for the QLI query is given below. You can customize it by adding, removing, or changing the filter, but the columns and their aliases must remain as is since Alation expects this query structure.
+
+    .. note::
+
+        - The query must include the following fields: ``userName``, ``startTime``, ``sessionStartTime``, ``sessionId``, ``queryString``, ``cancelled``, ``defaultDatabases``, ``seconds_taken``.
+
+        - When using the QLI query template, do not substitute the ``STARTTIME`` and ``ENDTIME`` parameters in the WHERE filter. These parameters are not actual column names and should stay as is. They are expected by the connector and will be substituted with the start and end date of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+To configure query-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, in the **Custom QLI Query** field, specify the QLI query.
+
+3. Click **Save**.
+
+QLI Query Template
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: SQL
+
+    SELECT
+      TRIM(alationDb2QueryLogger.connection_header.auth_id) AS userName,
+      alationDb2QueryLogger.connection_header.conn_time AS sessionstartTime,
+      alationDb2QueryLogger.statement.start_time as startTime,
+      TRIM(alationDb2QueryLogger.connection_header.auth_id || '/' || to_char(alationDb2QueryLogger.statement.start_time,'YYYY-MM-DD HH:MI:SS.SSSSS') || '/' || alationDb2QueryLogger.statement.appl_id) AS sessionId,
+      alationDb2QueryLogger.statement.stmt_text AS queryString,
+      'N' as cancelled,
+      '' as defaultDatabases,
+      (CASE WHEN timestampdiff(2, CHAR(alationDb2QueryLogger.statement.stop_time-alationDb2QueryLogger.statement.start_time)) > 10*60
+          THEN cast(timestampdiff(2, CHAR(alationDb2QueryLogger.statement.stop_time-alationDb2QueryLogger.statement.start_time)) AS decimal(31,3))
+          ELSE cast(timestampdiff(1, CHAR(alationDb2QueryLogger.statement.stop_time-alationDb2QueryLogger.statement.start_time))/1000000.0 AS decimal(31,3))
+      END) AS seconds_taken,
+      CAST(alationDb2QueryLogger.statement.system_cpu_time/1000000.0 AS decimal(31,3)) AS system_cpu_time,
+      CAST(alationDb2QueryLogger.statement.user_cpu_time/1000000.0 AS decimal(31,3)) AS user_cpu_time
+    FROM alationDb2QueryLogger.statement
+    INNER JOIN alationDb2QueryLogger.connection_header
+      ON alationDb2QueryLogger.connection_header.appl_id = alationDb2QueryLogger.statement.appl_id
+    WHERE alationDb2QueryLogger.statement.stmt_operation IN (3,6)
+      AND alationDb2QueryLogger.statement.stmt_text IS NOT NULL
+      AND TRIM(alationDb2QueryLogger.statement.stmt_text) <> ''
+      AND start_time > STARTTIME
+      AND start_time < ENDTIME
+    ORDER BY
+      sessionId,
+      startTime;
+
+Perform QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst
+
+Log Location
+--------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting` for information about logs.

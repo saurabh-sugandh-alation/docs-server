@@ -1,0 +1,113 @@
+Recreate Databricks Logging Script Under Workspace
+======================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Use the information on this page to validate your QLI configuration for data sources:
+
+    - OCF Azure Databricks
+    - OCF Databricks on AWS
+
+.. warning::
+
+    The steps below must be performed by a database administrator (DBA) or in the presence of a DBA.
+
+
+Databricks has deprecated cluster-scoped init scripts stored on DBFS.
+
+    .. note::
+
+        You can find more information about the types of scripts in `Databricks documentation <https://docs.databricks.com/en/init-scripts/index.html>`_.
+
+If you previously followed the steps in Alation documentation to configure query log ingestion (QLI) and saved the init script that enables logging to DBFS, you need to recreate this script under the workspace.
+
+Databricks `has provided communication <https://kb.databricks.com/cluster-named-init-script-migration-notebook?_gl=1*1cjeb8t*_gcl_au*NTg3MjgzNzgxLjE2ODc4MTkzNDA.*rs_ga*MzY0ODhlMzktZGU3ZS00ZDQyLWEwNzEtMTQ1MTE3NWNkNzA3*rs_ga_PQSEQ3RZQC*MTY5MjM5MTU5NDgxMi4xMS4xLjE2OTIzOTE2MDEuNTQuMC4w&_ga=2.61866148.942687066.1692233826-1370477236.1687819340>`_ to its customers about deprecating scripts on DBFS and the need to migrate them to be stored under the workspace. Your DBA may have already migrated all the init scripts in bulk using recommendations from Databricks. Thus, there are two scenarios for you to address this change:
+
+    - If the init scripts on your cluster have not been migrated yet, follow the steps in `Recreate Init Script`_ to recreate Alation's script.
+
+    - If your DBA has already migrated the init scripts in bulk, you will need to ensure that the migrated script works as expected. Use the information in `Validate QLI Configuration`_.
+
+Recreate Init Script
+-----------------------
+
+These steps apply to Azure Databricks and Databricks on AWS.
+
+To recreate the script:
+
+1. Go to your workspace and create a new folder, for example, ``alation_init_scripts``.
+
+    .. note::
+
+        You can give the new folder any name. We're using ``alation_init_scripts`` as an example.
+
+2. Set the permissions on the folder to be **Can Manage** for **Admins**:
+
+    - `Azure Databricks folder permissions <https://learn.microsoft.com/en-us/azure/databricks/security/auth-authz/access-control/workspace-acl#folder-permissions>`_
+
+    - `Databricks on AWS folder permissions <https://docs.databricks.com/en/security/auth-authz/access-control/workspace-acl.html#folder-permissions>`_
+
+    .. note::
+
+        We recommend restricting the permissions to Admins only to ensure that unauthorized users cannot manage this folder and modify the init script.
+
+3. Create a new file with the name ``alation_qli_init_sript.sh``. Ensure you use the **.sh** extension.
+
+4. Copy the script given below into the file you created. Check that the pasted content is correct and does not include accidentally added extra spaces or line breaks.
+
+.. include:: ../../shared/OCF/OCF_Databricks_QLI_scripts.rst
+
+5. Configure the cluster to run the new init script. Follow these steps in Databricks documentation:
+
+    - `Azure Databricks <https://learn.microsoft.com/en-us/azure/databricks/init-scripts/cluster-scoped#configure-a-cluster-scoped-init-script-using-the-ui>`_
+
+    - `Databricks on AWS <https://docs.databricks.com/en/init-scripts/cluster-scoped.html#configure-a-cluster-scoped-init-script-using-the-ui>`_
+
+    .. note::
+
+        The Init script path should look like ``/<folder_path>/<script_name>.sh``, for example, ``/alation_init_scripts/alation_qli_init_sript.sh``:
+
+            - Ensure ``Workspace`` is selected as the **Destination** and not ``DBFS``.
+
+            - The ``workspace`` keyword should not be prefixed to the path.
+
+    .. image:: ../../_static/OCF_Databricks_RecreateInitScript_Path.png
+        :width: 500px
+        :class: with-border
+
+6. We recommend deleting the old init script that was saved to DBFS from the cluster configuration:
+
+    - If the old script only contains Alation's code, delete it.
+
+          .. image:: ../../_static/OCF_Databricks_RecreateInitScript_Delete.png
+              :width: 500px
+              :class: with-border
+
+    - If you previously combined other code with Alation's code that enables logging into one init script, discuss with your DBA if you may delete the whole script. You may need to access the script file on DBFS, remove Alation's code, and save.
+
+7. Save the changes to the cluster configuration.
+
+8. Restart the cluster.
+
+9. Next, use the recommendations in `Validate QLI Configuration`_.
+
+Validate QLI Configuration
+--------------------------------
+
+Use the information in this section to validate the QLI configuration after recreating the init script under the workspace or if your DBA admin migrated the init scripts in bulk and you did not have to recreate it:
+
+1. Check if the logs are coming as expected into the log storage. The path to the logs is similar to ``/cluster-logs/0130-102557-aft119/driver/``, where:
+
+    - ``/cluster-logs`` is the subfolder in the Azure Storage container (Azure Databricks) or the Amazon S3 bucket (Databricks on AWS).
+    - ``0130-102557-aft119`` is your cluster ID.
+    - ``/driver/`` is the auto-created directory that stores the log files that Alation will process.
+
+2. After you've ensured that the logs keep being added, in Alation, run QLI for your data source.
+
+    .. note::
+
+        There is a delay between writing contents to a log file and converting the log file into a compressed **.log.gz** file. Before you run QLI in Alation, ensure that your log storage container or bucket has archived logs.
+
+For steps to run QLI, refer to:
+
+    - :ref:`Run QLI on OCF Azure Databricks Data Source <azure-databricks-run-QLI>`
+    - :ref:`Run QLI on OCF Databricks on AWS Data Source <aws-databricks-run-QLI>`

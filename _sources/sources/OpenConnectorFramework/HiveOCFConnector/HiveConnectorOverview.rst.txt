@@ -1,0 +1,133 @@
+Hive OCF Connector: Overview
+====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The OCF connector for Hive was developed by Alation and is available as a Zip file that can be uploaded and installed in the Alation application. The connector is compiled together with the required database driver, so no additional effort is needed to procure and install the driver.
+
+To download the Hive OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+This connector should be used to catalog Hive as a data sources on Alation on-prem and Cloud Service instances. It extracts and catalogs such database objects as schemas, tables, views, and columns. After the metadata is extracted, it is represented in the data catalog as a hierarchy of catalog pages under the data source. Alation users can leverage the full catalog functionality to search for the extracted metadata, curate the corresponding catalog pages, create documentation about the data source, and exchange information about it.
+
+    .. note::
+
+        For information about the supported Hive distributions and versions, refer to :doc:`/releases/supportmatrices/index`.
+
+Team
+-----------
+
+You may need the assistance of your Hive administrator to configure this data source.
+
+  - Alation administrator:
+
+      - Ensures that Alation Connector Manager is installed and running or installs it.
+      - Installs the OCF connector.
+      - Creates and configures the Hive data source in the catalog.
+      - Performs initial extraction and prepares the data source for Alation users.
+
+  - Hive administrator:
+
+      - Creates a service account for Alation and provides access to metadata.
+      - Provides the JDBC URI.
+      - Provides the Hive client configuration files.
+      - Provides the SSL certificate.
+
+Scope
+-------------
+
+The table below describes which metadata objects are extracted by this connector and which operations are supported.
+
++----------------------------------+-----------------------------------------+--------------------------------------------------------+
+|                                  | Hive 2                                  | Hive 3                                                 |
++==================================+=============+=============+=============+=============+=============+=============+==============+
+| **Platform**                     | **CDH**     | **EMR**     | **MapR**    | **HDP**     | **EMR**     | **CDP**     | **Azure**    |
+|                                  |             |             |             |             |             |             | HDInsight    |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| **Engine**                       | MR          | MR          | MR          | Tez         | Tez         | Tez         | Tez          |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| **Authentication**                                                                                                                  |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Basic                            | Yes         | Yes         | Yes         | Yes         | Yes         | Yes         | Yes          |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Kerberos with keytabs            | Yes         | Yes         | No          | Yes         | Yes         | Yes         | *n/a*        |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Knox LDAP                        | *n/a*       | *n/a*       | *n/a*       | *n/a*       | *n/a*       | *n/a*       | *n/a*        |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| ZooKeeper URL                    | Yes         | *n/a*       | *n/a*       | Yes         | No          | Yes         | No           |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| SASL                             | Yes         | No          | *n/a*       | Yes         | *n/a*       | No          | *n/a*        |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Azure Encryption                 |*n/a*        | *n/a*       | *n/a*       | *n/a*       | *n/a*       | *n/a*       | Yes          |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| HttpFS Kerberos                  | Yes         | *n/a*       | *n/a*       | *n/a*       | *n/a*       | *n/a*       | *n/a*        |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Wire-level security              | *n/a*       | *n/a*       | Yes         | *n/a*       | *n/a*       | *n/a*       | *n/a*        |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| MapR SASL                        | *n/a*       | *n/a*       | Yes         | *n/a*       | *n/a*       | *n/a*       | *n/a*        |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| **Metadata extraction (default MDE)**                                                                                               |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Data source                      | Yes                                                                                              |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Schema                           | Yes                                                                                              |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Table                            | Yes                                                                                              |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| View                             | Yes                                                                                              |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Column                           | Yes                                                                                              |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Primary keys                     | No                                                                                               |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Foreign keys                     | No                                                                                               |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Source comments                  | Schema, Table, Table-Column, View, and View-Column source comments                               |
+|                                  | are extracted.                                                                                   |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| **Sampling and profiling**                                                                                                          |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Table sampling                   | Yes                                                                                              |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Column sampling                  | Yes                                                                                              |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Custom query-based table         | Yes                                                                                              |
+| sampling                         |                                                                                                  |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Custom query-based column        | Yes                                                                                              |
+| profiling                        |                                                                                                  |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| **Query log ingestion**                                                                                                             |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| File-based QLI                   | Yes         | Yes         | No          | No          | No          | No          | No           |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| **Lineage**                                                                                                                         |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Table-level Lineage              | Yes         | Yes         | No          | No          | No          | No          | No           |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Column-level Lineage             | No                                                                                               |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| **Compose**                                                                                                                         |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Customer-managed (on-prem)       | Yes                                                                                              |
+| Alation instances                |                                                                                                  |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Alation Cloud Service            | Yes                                                                                              |
+| instances, connection            |                                                                                                  |
+| without Agent                    |                                                                                                  |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+| Alation Cloud Service            | No                                                                                               |
+| instances, connection            |                                                                                                  |
+| via Agent                        |                                                                                                  |
++----------------------------------+-------------+-------------+-------------+-------------+-------------+-------------+--------------+
+
+
+Limitations
+------------------
+
+1. Table sampling and column profiling of columns of type ``union`` results in the error *Unrecognized column type: UNIONTYPE*. This is an `Apache Hive known issue <https://docs.cloudera.com/documentation/enterprise/release-notes/topics/cdh_rn_hive_ki.html#beeline_fails_on_uniontype_columns>`_.
+
+2. MapR with Kerberos is not a supported configuration.
+
+3. Compose does not  work with Kerberos authentication (only basic authentication is supported).
+
+4. Partition keys will be shown in the user interface only if a comment was added while creating the partition.

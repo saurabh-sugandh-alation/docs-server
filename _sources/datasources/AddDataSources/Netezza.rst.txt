@@ -1,0 +1,103 @@
+Netezza
+===========
+
+Required Information
+-----------------------
+
+To configure Netezza in Alation, you will need the following information:
+
+-  Hostname or IP address of your server
+-  Port number : Default is **5480**
+-  Database name : Optional
+-  Service account with following privileges
+-  Query Log Ingestion setup:  Custom View
+
+.. image:: ../../_static/DS_Netezza01.png
+    :width: 3.5in
+    :align: center
+
+Preliminaries
+----------------
+
+Firewall Configuration:
+
+-  Open outbound TCP port **5480** to the Netezza server
+
+Create Service Account
+------------------------
+
+Sample SQL to create an account:
+
+.. code-block:: bash
+
+    CREATE USER alation WITH PASSWORD '[password]';
+
+Metadata Extraction
+----------------------
+
+Provide list privilege on for all required schemas:
+
+.. code-block:: sql
+
+    GRANT LIST ON <databaseName or ALL>.<schemaName or ALL>.SCHEMA to alation;
+
+Provide list privileges on following objects:
+
+.. code-block:: sql
+
+    GRANT LIST ON<databaseName or ALL>.<schemaName or ALL>.<tableName or ABLE> TO alation;
+    GRANT LIST ON<databaseName or ALL>.<schemaName or ALL>.<viewName or VIEW>  TO alation;
+    GRANT LIST ON<databaseName or ALL>.<schemaName or ALL>.<functionName or FUNCTION> TO alation;
+    GRANT LIST ON<databaseName or ALL>.<schemaName or ALL>.<procedureName or PROCEDURE> TO alation;
+
+Provide or ensure following grants are available on system tables:
+
+.. code-block:: sql
+
+    GRANT SELECT ON [SYS_TABLES] to alation;
+
+List of system tables [SYS_TABLES] used:
+
+- _V_OBJ_RELATION_XDB
+- _V_SYS_OBJECT_STORAGE_SIZE
+- _V_FUNCTION
+- _V_JDBC_SCHEMA3
+- _V_VIEW_XDB
+- _V_JDBC_PKFK3
+- _V_JDBC_PRIMARYKEYS3
+- _V_JDBC_COLUMNS3
+- _V_JDBC_PROCEDURE_COLUMNS3
+
+Table Profiles
+-----------------
+
+Grant SELECT privilege on all tables or views using class of objects:
+
+- If present in a different DB:
+
+      .. code-block:: sql
+
+          GRANT SELECT ON [<database or ALL>.]<schema or ALL>.<TABLE or VIEW> TO alation;
+
+- If present in the same DB:
+
+      .. code-block:: sql
+
+          GRANT SELECT ON [<schema or ALL>].<TABLE or VIEW> TO alation;
+
+      Grant select on specific table or view name:
+
+      .. code-block:: sql
+
+          GRANT SELECT on [[<database>.]<schema>.]<TableName or ViewName> TO alation;
+
+      or,
+
+      .. code-block:: sql
+
+          GRANT SELECT on [<schema>.]<TableName or ViewName> TO alation;
+
+Query History
+---------------
+
+See Appendix A.6 Netezza Query Log View in the :doc:`Appendix <../../datasources/AddDataSources/Appendix>`

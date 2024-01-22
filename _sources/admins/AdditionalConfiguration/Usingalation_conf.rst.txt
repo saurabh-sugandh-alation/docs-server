@@ -1,0 +1,191 @@
+Using alation_conf
+===========================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+To configure specific features in Alation, you may sometimes need to work with **alation_conf**.
+
+**alation_conf** is a file that stores most of the Alation application configuration settings. **alation_conf** is also a utility you can use to work with the **alation_conf** file. Using the **alation_conf** utility requires server-side admin access to the Alation application.
+
+.. note::
+
+   **alation_conf** includes critical information. Use discretion when making changes to **alation_conf**. Always follow the steps that Alation recommends. If you make unneeded or incorrect changes, it can cause irrecoverable damage to the Alation application.
+
+Accessing alation_conf
+----------------------
+
+To use **alation_conf**, you must first access the Alation server and enter the Alation shell.
+
+.. include:: /shared/AccessingAlationShell.rst
+
+You are now in the Alation shell. This gives you access to **alation_conf**. See below for help interacting with **alation_conf**.
+
+Getting Help
+-----------------------------
+
+To output documentation on **alation_conf** usage, run one of the following commands:
+
+.. code-block:: bash
+
+   alation_conf -h
+
+or
+
+.. code-block:: bash
+
+   alation_conf --help
+
+Viewing Values
+---------------------------------
+
+All Parameters
+~~~~~~~~~~~~~~
+
+To view the value of all parameters, run ``alation_conf`` inside the Alation shell: 
+
+.. code-block:: bash
+
+   alation_conf
+
+.. note::
+
+   Be aware that **alation_conf** is a very long file. You may wish to use one of the options below.
+
+Searching and Filtering
+~~~~~~~~~~~~~~~~~~~~~~~
+
+You can search **alation_conf** for parameters that match a search term. To do this, enter ``alation_conf`` followed by the search term. This is a good way to view all the parameters related to one of Alation’s components.
+
+**Example:**
+
+.. code-block:: bash
+
+   (env)[alation]$ alation_conf postgres
+   alation.cluster.postgres_state = ready
+   customer.agent.postgres_log_directory = /var/log/postgresql/
+   tableau.permissions.extraction_conf.postgres_query_batch_size = 1000
+   alation.postgresql.full_scan = True
+   alation.postgresql.auto_scan.enabled = False
+   alation.postgresql.auto_scan.scheduled_minute = 0
+   alation.postgresql.auto_scan.scheduled_hour = 4
+   alation.postgresql.auto_scan.scheduled_day = sun,mon,tue,wed,thu,fri,sat
+
+.. note::
+
+   Many parameters related to Postgres are named with “pgsql” rather than “postgres.”
+
+Specific Parameters
+~~~~~~~~~~~~~~~~~~~
+
+You can also view the value of a specific parameter. To do this, enter ``alation_conf`` followed by the full name of the parameter.
+
+**Example:**
+
+.. code-block:: bash
+
+   (env)[alation]$ alation_conf alation.postgresql.auto_scan.enabled
+   alation.postgresql.auto_scan.enabled = False
+
+Verbose Output
+~~~~~~~~~~~~~~
+
+To get extra help with parameters, use the ``-v`` argument. Verbose output may give you details such as:
+
+* The data type of the value
+* What the value is for
+* Allowed values
+* What services you'll have to restart after changing the value
+
+The output may include other information, depending on the parameter.
+
+**Example:**
+
+.. code-block:: bash
+
+   (env)[alation]$ alation_conf alation.postgresql.auto_scan.enabled -v
+   type: <class 'bool'>
+   comment: Schedule automated scan_postgres run
+   require_restart: True
+   whitelist: True
+
+JSON Output
+~~~~~~~~~~~
+
+For automation purposes, it may be helpful to get the value of parameters in JSON format. To do this, use the ``-j`` argument.
+
+**Example:**
+
+.. code-block:: bash
+
+   (env)[alation]$ alation_conf alation.postgresql.auto_scan.enabled -j
+   {"alation.postgresql.auto_scan.enabled": false}
+
+Setting a Value
+---------------
+
+.. warning::
+
+   **alation_conf** has critical information. If you make unneeded or incorrect changes, it can cause irrecoverable damage to the Alation application.
+
+To set a value for a parameter, use the ``-s`` option:
+
+.. code-block:: bash
+
+   alation_conf <fully.qualified.Parameter.name> -s <value>
+
+**Example**:
+
+.. code-block:: bash
+
+   alation_conf alation.install.base_url -s 'https://34.26.27.85' 
+
+Encrypted Values
+~~~~~~~~~~~~~~~~
+
+Starting from version 5.8.x, you can use the ``-se`` option to set an
+encrypted value with a prompt and hidden entry.
+
+.. code-block:: bash
+
+   alation_conf <fully.qualified.attribute.name> -se
+
+You'll be prompted with the message **Please enter your value:**. Enter the new value. This only applies to encrypted attributes.
+
+**Example**:
+
+.. code-block:: bash
+
+   (env)[alation]$ alation_conf alation.authentication.ldap.bind_password -se
+   Please enter your value:
+
+Clearing a Value
+----------------
+
+To clear value for a parameter, use the ``-c`` option:
+
+.. code-block:: bash
+
+   alation_conf <fully.qualified.attribute.name> -c
+
+Deploying Changes
+-----------------
+
+Some changes to **alation_conf** take effect immediately. In some cases, you must take an extra step to deploy changes before they take effect. Deploying a change copies it to other configuration files in the Alation application. You will always be instructed when you need to deploy changes.
+
+Alation uses Chef Solo to deploy changes inside the Alation chroot.
+
+Some changes can be deployed with specific commands. This is helpful when configuring a specific component of Alation. For example, to deploy only the Postgres configuration, you can run the following command:
+
+.. code-block:: bash
+
+   alation_action deploy_conf_postgres
+
+To deploy all configuration changes at once, run the following command:
+
+.. code-block:: bash
+
+    alation_action deploy_conf_all
+
+Any services affected by the configuration change need to be manually restarted. In each specific case, the instruction will explain which component requires a restart.
+
+See :doc:`Alation Actions <../../admins/RunbookForAdministrators/AlationActions>` for more details about restarting services.

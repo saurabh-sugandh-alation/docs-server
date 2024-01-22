@@ -1,0 +1,387 @@
+Configure Sampling and Profiling for OCF Data Sources
+========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Overview
+-----------------------------
+
+Sampling is a data source operation that selects a sample of 10,000 rows from database tables, providing catalog users with a quick preview of the data. The samples can be viewed on the **Samples** tab on the table catalog pages or on the **Overview** tab on the column catalog pages.
+
+You must have the *Data Source Admin* access level to an OCF data source to configure sampling and bulk-sample multiple tables.
+
+Supported Sampling Methods
+-----------------------------
+
+These are the various sampling methods that Alation supports:
+
+    - Default Sampling
+
+    - Custom Query-Based Sampling
+
+    - Column Profiling
+
+    - Dynamic Sampling
+
+Default Sampling
+~~~~~~~~~~~~~~~~~~~~
+
+A Data Source Admin samples tables and columns in bulk from the data source settings page. Alation runs a default ``SELECT`` query against all selected tables. By default, all tables are selected for the sampling operation. Admin-sampled data is visible to all users with access to the data source.
+
+Custom Query-Based Sampling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A Data Source Admin can override default sampling queries with custom queries for specific table objects.
+
+Column Profiling (Deep Column Profiling)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation can calculate value distribution stats for columns. Column profiling requires the `Profiling V2`_ feature to be enabled. Custom profiling queries can be provided for all columns or specific column objects.
+
+Dynamic Sampling
+~~~~~~~~~~~~~~~~~~~~~
+
+If dynamic sampling is enabled, users retrieve their own table samples and column profiles after authentication. Sampling by the Data Source Admin becomes unavailable.
+
+By default, dynamic sampling is disabled.
+
+Profiling V2
+-----------------
+
+Profiling V2 adds the configuration options for deep column profiling.
+
+The Profiling V2 feature adds capabilities to data sampling but is disabled by default.
+
+Enabling Profiling V2 adds the configuration options for deep column profiling:
+
+    - Custom queries for individual columns — You can specify custom profiling queries for individual columns on the Per-Object Parameters tab.
+
+    - Customizing default profiling queries — Customize default profiling queries for all columns on the Custom Settings tab.
+
+    - Frequency Distribution chart — View column value ranges on a histogram chart. If you enable the Frequency Distribution chart, users can access it on catalog pages of column 
+
+Configure Sampling and Profiling
+-----------------------------------
+
+Following are the steps involved in configuring sampling and profiling:
+
+    1. `Enable Profiling V2`_ (Optional)
+
+    2. `Select Schemas to Include in Catalog`_ 
+
+    3. `Customize the Default Profiling Queries`_
+
+    4. `Run Sampling and Profiling`_
+
+
+Enable Profiling V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To enable Profiling V2, set the dedicated **alation_conf** parameters to ``True``.
+
+For information on how to use **alation_conf**, refer to :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.
+
+.. note::
+
+    Alation Cloud Service customers can request server configuration changes through Alation Support.
+
+Use the parameter ``alation.feature_flags.enable_profiling_v2``. It enables deep column profiling and custom profiling queries at the column level.
+
+    - Default: ``False``
+
+    - Restart: After changing the value, restart Alation Supervisor using the command ``alation_supervisor restart all``.
+
+Enable Frequency Distribution Chart
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can additionally enable the Frequency Distribution chart:
+
+    - ``alation.profiling.v2.distribution.show_distribution_chart``—Display of the Frequency Distribution chart on catalog pages of column objects.
+
+        - Default: ``False``
+
+    - ``alation.profiling.v2.distribution.max_unbatched_values``—Set the minimum number of unique values in a column for Alation to group value ranges in the Frequency Distribution chart.
+
+        - Default: ``200``
+
+    - ``alation.profiling.v2.distribution.batch_count``—Determine the number of ranges to display on the Frequency Distribution chart.
+
+        - Default: ``50``
+
+Verify the Enabled Profiling V2 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To find out the current status of Profiling V2 on your Alation instance, check the current values of the parameters listed in `Enable Profiling V2`_. They should be in ``True``.
+
+
+Select Schemas to Include in Catalog
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can define sampling settings for each level of the metadata object hierarchy in a data source (Schema > Table > Column).
+
+Include or exclude specific metadata objects from sampling or profiling. Provide custom sampling or profiling queries for individual tables and columns.
+
+To select schemas, perform the following steps:
+
+    1. On the Settings page of your OCF data source, go to the **Per-Object Parameters** tab.
+
+        The page displays the different schemas and tables for the data source. 
+
+        .. image:: ../../_static/SamplingForOCF_PerObjectParam.png
+            :class: with-border
+            :width: 600px
+    
+    2. The names of schemas and tables are links. Click the name of a schema or table to go down to the child object level.
+
+        You can include or exclude schemas, tables, or columns from sampling:
+
+        +--------------------+------------------------------------------------------------------+
+        | Parameter          | Description                                                      |
+        +====================+==================================================================+
+        | Make Browsable     | Define visibility of an object and its child objects in the      |
+        |                    | catalog search. Select to expose, clear to hide. The changes may |
+        |                    | take a few minutes to update in the search index.                |
+        +--------------------+------------------------------------------------------------------+
+        | Sample?            | Choose objects for admin-initiated bulk-sampling on the          |
+        |                    | Data Sampling tab. All objects are selected by default. Clear    |
+        |                    | checkboxes to exclude. Applies at the schema and table levels.   |
+        +--------------------+------------------------------------------------------------------+
+        | Max rows to Scan   | A read-only parameter, displaying the maximum sampled rows       |
+        |                    | (10,000) for each table. Available at the schema and table       |
+        |                    | levels.                                                          |
+        +--------------------+------------------------------------------------------------------+
+        | Max rows to Store  | Set the maximum rows to be stored for a table, at the schema     |
+        |                    | and table level. If defined at the schema level, it applies to   |
+        |                    | all tables in the schema. If defined at the table level, it's    |
+        |                    | specific to that table.                                          |
+        |                    |                                                                  |
+        |                    |  - Click the number for a specific object to edit it.            |
+        |                    |                                                                  |
+        |                    |  - Default: ``100``                                              |
+        |                    |                                                                  |
+        |                    |                                                                  |
+        |                    |  .. note::                                                       |
+        |                    |                                                                  |
+        |                    |       When defined at the schema level, the **Max rows to        |
+        |                    |       Store** value propagates to newly added tables. To disable |
+        |                    |       propagation, set the **alation_conf** parameter            |
+        |                    |       ``alation.ocf.mde.rdbms.fix_num_sample_rows`` to ``False``.|
+        |                    |                                                                  |
+        |                    |       For information on how to use **alation_conf**, refer to   |
+        |                    |       :doc:`/admins/AdditionalConfiguration/Usingalation_conf`.  |
+        |                    |       No restart is required. Refresh the Alation page to view   |
+        |                    |       the changes.                                               |
+        |                    |                                                                  |
+        |                    |       If you are an Alation Cloud Service customer, you can      |
+        |                    |       request server configuration changes through Alation       |
+        |                    |       Support.                                                   |
+        |                    |                                                                  |
+        +--------------------+------------------------------------------------------------------+
+        | Skip Views         | Allows skipping views during sampling. Selected by default.      |
+        |                    | Applies at the schema level.                                     |
+        +--------------------+------------------------------------------------------------------+
+        | Sampling Query     | Allows skipping views during sampling. Selected by default.      |
+        | (for table objects)| Applies at the schema level.                                     |
+        | or                 | Available at the table and column levels. See                    |
+        | Profiling Query    | `Configure Custom Query-Based Sampling for Tables`_              |
+        | (for column        | and `Configure Custom Query-Based Profiling for Columns`_        |
+        | objects)           | for details.                                                     |
+        +--------------------+------------------------------------------------------------------+
+        | Max values to Store| Allows setting the number of column values to be stored for a    |
+        |                    | sample. Available at the column level. Click the number for a    |
+        |                    | specific column to edit.                                         |
+        +--------------------+------------------------------------------------------------------+      
+        
+Configure Custom Query-Based Sampling for Tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As a Data Source Admin, you can specify custom queries for sampling individual tables:
+
+1. On the **Per-Object Parameters** tab, navigate to the table level of your data source by clicking the name of a schema object that contains the table you want.
+
+2. Locate the table and open the sampling query editor by clicking the pencil icon in the **Sampling Query** column.
+
+    .. image:: ../../_static/SamplingForOCF_SamplingQuery.png
+        :class: with-border
+        :width: 400px
+
+3. Add the custom query in the query editor and save it. The next sampling job will use this query to sample the table.
+
+    .. image:: ../../_static/SamplingForOCF_SamplingQuerySave.png
+        :width: 500px
+        :class: with-border
+
+
+.. note::
+
+    There is no SQL validation for the custom sampling queries. Any errors will be logged in the **Sampling Job Status** table on the Data Sampling tab. We recommend test-running and troubleshooting custom queries in Compose before saving it in the catalog and running the sampling job.
+
+Configure Custom Query-Based Profiling for Columns
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ensure you have enabled Profiling V2 (`Enable Profiling V2`_).
+
+To specify custom queries for profiling individual columns:
+
+1. On the **Per-Object Parameters** tab, navigate to the column you want to profile by clicking the name of the table object that contains this column.
+
+2. Locate the column and in the **Profiling Query** column, click the pencil icon to open the query editor.
+
+    .. image:: ../../_static/SamplingForOCF_ProfilingQuery.png
+        :class: with-border
+
+3. In the query editor, provide a custom query and click **Save**. The next profiling job you run for this column will use the saved query to profile the column.
+
+    .. note::
+
+        Individual column profiling queries on the **Per-Object Parameters** tab take precedence over default profiling queries and custom profiling queries on the :ref:`Custom Settings <custom-profiling-queries>` tab.
+
+.. _custom-profiling-queries:
+
+Customize the Default Profiling Queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ensure you have enabled Profiling V2 (`Enable Profiling V2`_).
+
+The **Custom Settings** tab allows customizing the default queries for profiling all columns.
+
+By default, Alation runs default queries to profile columns, with variations for numeric and non-numeric data types.
+
+    .. image:: ../../_static/SamplingForOCF_CustomSettings.png
+        :class: with-border
+        :width: 600px
+
+You can customize these queries and the statistics that will be displayed on the **Overview** tab of the column catalog page.
+
+    .. image:: ../../_static/ColumnProfiling_09.png
+        :class: with-border
+
+The profiling queries depend on the data source type. An example is given below.
+
+Numeric Columns
+~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    SELECT
+      MIN({column_name}) AS MIN,
+      MAX({column_name}) AS MAX,
+      AVG({column_name}) AS MEAN,
+      (COUNT(*) - COUNT({column_name})) AS "#NULL",
+      (CASE WHEN COUNT(*) > 0 THEN ((COUNT(*) - COUNT({column_name})) * 100.0 / COUNT(*)) ELSE 0.0 END) AS "%NULL"
+    FROM {schema_name}.{table_name};
+
+Non-numeric Columns
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    SELECT
+      (SUM
+        (CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END)) AS "#NULL",
+      (CASE WHEN COUNT(*) > 0 THEN
+        ((((SUM(CASE WHEN {column_name} IS NULL THEN 1 ELSE 0 END))) * 100.0 / count(*)) ) ELSE 0.0 END ) AS "%NULL",
+      (SUM(CASE WHEN {column_name} = '' THEN 1 ELSE 0 END) ) AS "#EMPTY",
+      (CASE WHEN COUNT(*) > 0 THEN
+        (((SUM(CASE WHEN {column_name} = '' THEN 1 ELSE 0 END)) * 100.0 / count(*))) ELSE 0.0 END) AS "%EMPTY"
+    FROM {schema_name}.{table_name};
+
+.. important::
+
+    The profiling query templates always contain the variables ``{column_name}``, ``{schema_name}``, and ``{table_name}``. For some databases, ``{schema_name}`` may not be required. More information and examples are available in the documentation for specific OCF connectors.
+
+
+Run Sampling and Profiling 
+-----------------------------
+
+Data Source Admins can perform sampling manually, set up automated, user-initiated, or enable dynamic sampling on the **Data Sampling** tab:
+
+    - `Set Up Admin-Initiated Sampling`_
+
+    - `Set Up User-Initiated Sampling`_
+
+    - :ref:`Set Up Dynamic Sampling <ocf-dynamic-sampling>`
+
+
+Set Up Admin-Initiated Sampling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Admins can perform sampling manually or set up automated sampling. 
+
+
+    - `Perform Manual Sampling`_
+
+    - `Perform Automated Sampling`_
+
+Perform Manual Sampling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To perform sampling manually:
+
+1. Ensure that the **Enable Automated Sampling** toggle is off.
+
+2. When running sampling manually, you can select the number of tables to sample from the **All tables** list. By default, all tables are sampled that are allowed for sampling on the **Per-Object Parameters** tab. Popular tables that haven't previously been sampled are prioritized.
+
+    .. note::
+
+        The **All tables** setting only applies when you run sampling manually on-demand but will not apply to scheduled (automatic) sampling.
+
+    .. image:: ../../_static/SamplingForOCF_AllTables.png
+        :width: 300px
+        :class: with-border
+
+3. Click the **Sample** button to kick off a sampling job.
+
+Perform Automated Sampling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To schedule the sampling job to run automatically:
+
+1. Enable the **Enable Automated Sampling** toggle.
+
+    .. image:: ../../_static/SamplingForOCF_AutomatedSampling.png
+        :width: 350px
+        :class: with-border
+
+2. Set a schedule with recurrence, day, and time in the Automated Sampling Time section. Sampling will be performed automatically based on the schedule you have set.
+
+    .. note::
+
+        The **All tables** list does not apply to scheduled sampling. To include or exclude tables from scheduled sampling, use the capabilities on the **Per-Object Parameters** tab. Scheduled sampling will sample all tables selected for sampling under **Per-Object Parameters**.
+
+Set Up User-Initiated Sampling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As a Data Source Admin, you may choose not to sample tables in bulk as it is a resource-intensive operation. Instead, you can leave it to the catalog users to retrieve their own samples or profiles.
+
+Users can initiate sampling or profiling on the **Samples** tab of a table catalog page and/or on the **Overview** tab of a column catalog page. The configuration on the **Per-Object Parameters** tab also applies to the sampling of individual tables and columns by non-admin users.
+
+.. note::
+
+    If Profiling V2 is enabled (`Enable Profiling V2`_) on your Alation instance, then for column objects, Alation will retrieve column profiles.
+
+Authentication for user-initiated sampling depends on whether or not dynamic sampling is enabled for a data source. See :ref:`Dynamic Sampling <ocf-dynamic-sampling>` below.
+
+.. _ocf-dynamic-sampling:
+
+Set Up Dynamic Sampling
+-------------------------------------
+
+As a Data Source Admin, you can configure sampling so that users will be required to provide their own database credentials when they retrieve table samples and column profiles for specific tables and columns — *dynamic sampling*.
+
+By default, dynamic sampling is disabled, and Alation uses the service account to retrieve user-initiated samples and profiles.
+
+To enable dynamic sampling:
+
+On the **Data Sampling** tab, click the **Enable dynamic sampling/profiling** toggle under the **Dynamic Sampling** section.
+
+
+.. important::
+
+    Enabling dynamic sampling will disable the ability to perform manual or scheduled sampling jobs. The **Automated and Manual Sampling** section of the interface on the **Data Sampling** tab will become disabled.
+
+.. image:: ../../_static/SamplingForOCF_DataSampling.png
+    :class: with-border
+    :width: 600px
+
+For dynamic sampling, catalog users can select the connections added on the **Compose** tab of the settings. Before running a dynamic sample or profile, they will need to either select an existing connection or create their own.

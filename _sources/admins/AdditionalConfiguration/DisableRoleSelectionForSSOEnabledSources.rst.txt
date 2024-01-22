@@ -1,0 +1,57 @@
+Disable Role Selection for SSO-Enabled Data Sources
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Available from release 2021.2*
+
+By default, users connecting to SSO-enabled data sources will need to select a role if the SAML assertion response returns multiple roles. Role selection can be disabled on the level of the AuthService configuration object. This means that it will be disabled for all data sources configured to use this AuthService configuration.
+
+When role selection is disabled, the data source driver assumes the first role from the list of roles returned in the SAML response from the IdP unless a specific role is included into the Compose connection URI.  For example, for Amazon Athena data sources, the user who creates the connection can include the ``preferred_role`` parameter in the URI to specify which role to assume when connected.
+
+Disable Role Selection
+------------------------
+
+1. SSH to the Alation host.
+2. Enter the Alation shell and then enter the Django shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        alation_django_shell
+
+3. To disable the role selection, run the code given below substituting the placeholder values with real values:
+
+    - **<method>** - authentication method used to create the config object, for example ``aws_iam`` for AWS data sources
+    - **<name>** - name of the AuthService configuration object for which you are disabling the role selection
+
+    .. code-block:: Bash
+
+        from auth_client.auth import Client as AuthClient
+        AuthClient(<method>).configure(operation='update', config={'config_name':<name>, 'multirole': 'false'})
+
+    **Example**
+
+    .. code-block:: Bash
+
+        from auth_client.auth import Client as AuthClient
+        AuthClient('aws_iam').configure(operation='update', config={'config_name':'my_aws_connection', 'multirole': 'false'})
+
+4. Exit from the Django shell: ``exit``.
+5. Exit from the Alation shell: ``exit``.
+
+
+Enable Role Selection
+---------------------------
+
+    .. code-block:: Bash
+
+        from auth_client.auth import Client as AuthClient
+        AuthClient(<method>).configure(operation='update', config={'config_name':<name>, 'multirole': 'true'})
+
+**Example**
+
+    .. code-block:: Bash
+
+        from auth_client.auth import Client as AuthClient
+        AuthClient('aws_iam').configure(operation='update', config={'config_name':'my_aws_connection', 'multirole': 'true'})

@@ -1,0 +1,221 @@
+Set Up SAML and SCIM Integration in Azure AD
+====================================================
+
+*Applies from version 2021.4*
+
+Creating a SAML Application and Configuring Single Sign-On
+--------------------------------------------------------------------
+
+Create an Application for SAML Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the steps in this section to create an enterprise application in Azure Active Directory (AD) that can be used for SAML authentication and SCIM provisioning with Alation.
+
+    .. note::
+
+        If you are already using SAML SSO with Azure AD and wish to add user and group provisioning over SCIM, you can edit your existing SAML application and add Provisioning.
+
+        Your existing application must allow Provisioning. Some types of Azure AD applications may not support editing the Provisioning settings. If that is the case, you can create a new Azure AD application to use for SCIM sync with Alation and configure Provisioning only. Your existing SAML application will be used for SAML authentication, while the second application will be used for user and group management with SCIM. On how to configure Provisioning, see `Configuring SCIM Provisioning`_ below.
+
+To create an application for SAML SSO:
+
+1. Log in to the Azure portal.
+
+2. Navigate to **Azure Active Directory > Enterprise applications**.
+
+3. Click **New application**:
+
+    .. image:: ../../_static/AAD_SCIM_01.png
+
+
+4. This takes you to the Browse AD Gallery screen. Click **Create your own application** to create a non-gallery application:
+
+    .. image:: ../../_static/AAD_SCIM_02.png
+
+
+5. Provide a name for the application, leave selected **Integrate any other application you don’t find in the gallery**, and click **Create**.
+
+6. This action should take you to the properties page of your new application. Click on the **Get started** link in the **Set up single sign on** block:
+
+    .. image:: ../../_static/AAD_SCIM_03.png
+
+7. On the **Single sign-on** page that opens, select SAML:
+
+    .. image:: ../../_static/AAD_SCIM_04.png
+
+8. On the next screen, click **Edit** in the **Basic SAML Configuration** block:
+
+    .. image:: ../../_static/AAD_SCIM_05.png
+
+ 9. For **Basic SAML Configuration**, provide the values given below, substituting ``<base_URL>`` with your Alation URL (for example: **mycatalog.alation-test.com**):
+
+    - **Identifier (Entity ID)** = ``https://alation.com/``
+    - **Reply URL (Assertion Consumer Service URL)** = ``https://<base_URL>/saml2/acs/``
+    - **Sign on URL** = ``https://<base_URL>/``
+
+9. Save.
+
+10. Click **Edit** in the **User Attributes & Claims** block. Configure attribute mappings based on the SAML attributes available in the user profile. For information about SAML attributes required by Alation, see :ref:`Configure SAML Attributes <User_Authentication-Configure_SAML_Attributes>`.
+
+Use the following recommendations:
+
+    - In the **Name** field for an attribute claim, specify the ``urn:oid`` of the attribute.
+    - Clear the **Namespace** field: it must be empty
+
+    .. image:: ../../_static/AAD_SCIM_07.png
+        :width: 400px
+
+    After editing Basic SAML Configuration and User Attributes & Claims, the properties page of your application will look similar to the following:
+
+    .. image:: ../../_static/AAD_SCIM_06.png
+        :width: 500px
+
+
+11. Alation does not require a SAML Signing Certificate. However, if your environment requires the use of such a certificate, you can set it up.
+
+12. Download the **Federation Metadata XML** from under the option **SAML Signing Certificate**. This is the **idp_metadata.xml** file that needs to be uploaded to Alation.
+
+    .. image:: ../../_static/AAD_SCIM_08.png
+        :width: 500px
+
+13. To test the setup, click **Test** in the **Test single sign-on with <your_app_name>** block.
+
+Next, assign users and groups to your app.
+
+Assign Users and Groups to the App
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. On the properties page of the application, click on the **Users and groups** option in the left sidebar.
+
+2. Click  **Add user/group**. Search and select the users and groups and assign them to the app.
+
+Complete the Configuration in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Log in to Alation and go to **Admin Settings > Authentication**.
+
+2. In the **Account Authentication Method** table, click **Edit** for SAML. The SAML properties page will open in a new browser tab.
+
+3. Complete the SAML configuration following the instructions on this page and upload the **idp_metadata.xml** file.
+
+4. Click **Save**. Note that saving the properties does not activate SAML yet.
+
+    .. warning::
+
+        Before activating SAML in Alation, make sure that the SAML SSO application in your IdP has all the required user assignments. Make sure that users with the Server Admin roles have been assigned to the application so that they can log in and manage the application after SAML is activated.
+
+5. Go back to the browser tab with the **Authentication** page.
+
+6. You can activate SAML authentication by clicking **Activate** for SAML in the **Account Authentication Method** table.
+
+
+Next, you can configure SCIM Provisioning if you wish to manage users and groups from the Active Directory.
+
+Configuring SCIM Provisioning
+----------------------------------
+
+STEP 1: Configure SCIM Sync on the Alation Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform the configuration for SCIM on the Alation server using the steps in :ref:`Configure SCIM Integration <Enable_SCIM_Integration-Configure_SCIM_Integration>`. As a result, you will have a SCIM authentication token from Alation that should be provided in the properties of your Azure AD app.
+
+STEP 2: Configure SCIM Provisioning in Azure AD
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Log in to the Azure Portal.
+
+2. Open the properties page of your SAML SSO application in Azure AD.
+
+3. Click on the **Provisioning** tab on the left and click **Get Started** on the Provisioning page:
+
+    .. image:: ../../_static/AAD_SCIM_09.png
+
+4. For **Provisioning Mode**, select **Automatic**.
+
+5. Provide Admin Credentials:
+
+      - **Tenant URL**: ``https://<base_URL>/scim/v2/``
+
+      - **Secret Token**: provide the token value from Alation
+
+6. Click the **Test Connection** button to verify the connection. If the connection can be established successfully, you will be able to configure Group and User attribute mappings.
+
+    .. image:: ../../_static/AAD_SCIM_10.png
+        :width: 500px
+
+7. Under **Mappings**, click **Provision Azure Active Directory Groups**.
+
+8. Under **Target Object Actions**, make sure that all actions are selected:
+
+    - Create
+    - Update
+    - Delete
+
+9. Remove the attribute mapping: ``ObjectId - ExternalId``, only leaving the attributes ``displayName`` and ``members``. Your configuration should be similar to the following:
+
+    .. image:: ../../_static/AAD_SCIM_11.png
+
+10. Save.
+
+11. Under **Mappings**, click **Provision Azure Active Directory Users**.
+
+12. Remove most of the attributes, only leaving the following list:
+
+    - ``userPrincipalName``
+    - ``Switch([IsSoftDeleted], , “False”, ”True”, “True”, “False”)``
+    - ``displayName``
+    - ``mail``
+    - ``givenName``
+    - ``surname``
+
+    .. image:: ../../_static/AAD_SCIM_12.png
+
+13. Save.
+
+14. Check that the users and groups that need to be synced to Alation have been added under the **Users and Groups** tab of the application.
+
+15. Perform provisioning. See `How Application Provisioning works in Azure Active Directory <https://docs.microsoft.com/en-us/azure/active-directory/app-provisioning/how-provisioning-works>`_ in Azure AD documentation for details.
+
+    .. important::
+
+        You can monitor the provisioning process by tailing the *scim-debug.log* file from the Alation shell. See `Monitoring SCIM Provisioning`_ below.
+
+
+The users and groups that are pushed from Azure AD to Alation should be created in Alation after the push. If user or group properties change, the changes will be reflected in Alation after the automatic provisioning  (40 min after the change) or after provisioning is performed on demand. If a user or group is unassigned from the application, this user will be suspended in Alation and the corresponding SCIM group will be deleted.
+
+Monitoring SCIM Provisioning
+---------------------------------
+
+When you are performing a SCIM push from Azure AD, you can monitor the process by tailing the *scim-debug.log* file from the Alation shell. To tail the log file:
+
+1. SSH to the Alation host.
+
+2. Enter the Alation shell:
+
+    .. code-block:: bash
+
+        /etc/init.d/alation shell
+
+3. Navigate to the directory **/opt/alation/site/logs**.
+
+4. To tail the *scim-debug.log* file:
+
+    .. code-block:: bash
+
+        tail -f  scim-debug.log
+
+5. To exit the tail mode, press Ctrl+C
+
+
+Limitations
+--------------------
+
+Nested Groups Are Not Supported
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Currently, Microsoft Azure AD does not support reading or provisioning nested groups.
+
+SCIM API Request Throttling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation supports a maximum of 20/sec read and write throttle for its SCIM endpoints. If your account exceeds this threshold, Alation returns a 400 HTTP status code ("Bad Request"). Note that this request limit may occur during the initial provisioning when a relatively large number of requests are made to initially provision all users and groups.

@@ -1,0 +1,160 @@
+SAP BusinessObjects Connector: Overview
+==================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The SAP BusinessObjects (SAP BO) OCF connector was developed by Alation and is available as a Zip file that can be uploaded and installed in :doc:`Manage Connectors <../../../sources/OpenConnectorFramework/ManageConnectors>`. 
+
+To download the SAP BO OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+This connector should be used to catalog BO as a Business Intelligence source in Alation. The connector catalogs SAP BO objects such as public folders, Webi documents, reports, report fields, report filters, data providers and data provider fields. It enables end users to search and find BO objects from the Alation user interface.
+
+Team
+---------------
+
+The following administrators are required to install this connector:
+
+    - Alation Administrator:
+
+          - Installs the connector
+          - Creates and configures a Business Intelligence source in the Catalog
+
+    - BusinessObjects Administrator:
+
+          - Creates a Service Account with the *Enterprise* authentication type
+          - Provides the API URL to access metadata
+          - Provides access to public folders to extract metadata.
+
+Scope
+----------------
+
+The table below shows what features are covered by the connector.
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
++------------------------+--------------------------------------------------+-----------------+
+| Feature                | Scope                                            | Availability    |
++========================+==================================================+=================+
+| BO  Instance           | Catalog SAP BO instance in an Azure Cloud        | Yes             |
+|                        | Environment                                      |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Folders                | Catalog public folders from BO                   | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Filter Folders         | Ability to include or exclude certain Folders    | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Documents              | Catalog Webi Documents in a Folder               | Yes\*           |
++------------------------+--------------------------------------------------+-----------------+
+| Report Tabs            | Catalog report tabs of a Document                | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Report fields,         | Catalog dimensions, measures and measure         | Yes             |
+| variables,             | expressions of report objects                    |                 |
+| calculations           |                                                  |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Report Filters         | Catalogs measures and dimensions                 | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Report object lineage  | Catalog the lineage of a report object           | Yes\**          |
++------------------------+--------------------------------------------------+-----------------+
+| Filter Reports         | Ability to include or exclude certain reports    | No              |
++------------------------+--------------------------------------------------+-----------------+
+| Report Owner           | Owners or Authors who created a report           | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Data Providers         | Catalog Data Providers of documents. If data     | Yes             |
+|                        | provider is created from Universe, Universe name |                 |
+|                        | is appended in the data provider name            |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Universes              | Universes are cataloged as separate objects      | No              |
++------------------------+--------------------------------------------------+-----------------+
+| Image Preview          | Ability to show a thumbnail image of reports and | No              |
+|                        | dashboards                                       |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Popularity             | Popularity of Dashboards & Reports               | No              |
++------------------------+--------------------------------------------------+-----------------+
+| Security Replication   | Replicate access control to reports and          | No              |
+|                        | dashboards                                       |                 |
++------------------------+--------------------------------------------------+-----------------+
+
+\* - Catalogs only Webi type of Documents
+
+\** - Report object lineage is available only if the underlying data source is cataloged in Alation and fully qualified SQL is available from data providers details. The Universe name and host details should be provided in Settings. Lineage does not work for Snowflake data sources.
+
+BusinessObjects Object Hierarchy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following diagram shows the hierarchy of BOBJ objects and how they are cataloged in Alation:
+
+    .. image:: ../../../_static/SAPBOBJ_01.png
+        :width: 600px
+
+BusinessObjects APIs
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The table below lists the BusinessObjects APIs used by this connector to extract metadata from the SAP BO server.
+
++------------------------------------------------------------------------------+------------------------------+
+| API Endpoint                                                                 | Description                  |
++==============================================================================+==============================+
+| **Authentication**                                                           | Gets the access token        |
+|                                                                              | for authentication           |
+| <api-url>/logon/long                                                         |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Users**                                                                    | Gets users                   |
+|                                                                              |                              |
+| <api-url>/v1/users                                                           |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Folders**                                                                  | Gets Public folders          |
+|                                                                              |                              |
+| <api-url>/v1/folders                                                         |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Documents**                                                                | Gets documents inside        |
+|                                                                              | a folder                     |
+| <api-url>/v1/infostore/<folderId>/children?type=webi&pagesize=500            |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Document Details**                                                         | Gets documents inside        |
+|                                                                              | a folder                     |
+| <api-url>/v1/infostore/,folderId>/children?type=webi&pagesize=500            |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Reports**                                                                  | Gets reports from a          |
+|                                                                              | document                     |
+| <api-url>/raylight/v1/documents/<document id>/reports                        |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Report Specifications**                                                    | Gets report specifications   |
+|                                                                              |                              |
+| <api-url>/raylight/v1/documents/{id}/reports/{id}/specification              |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Universes**                                                                | Gets universes               |
+|                                                                              |                              |
+| <api-url>/raylight/v1/universes                                              |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Data Providers**                                                           | Gets data providers          |
+|                                                                              |                              |
+| <api-url>/raylight/v1/documents/<document id>/dataproviders                  | for a document               |
++------------------------------------------------------------------------------+------------------------------+
+| **Data Provider Details**                                                    | Gets details of data         |
+|                                                                              | providers                    |
+| <api-url>/raylight/v1/documents/{documentId}/dataproviders/{dataProviderId}  |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Report Elements**                                                          | Gets report elements         |
+|                                                                              | for reports and documents    |
+| <api-url>/raylight/v1/documents/<document id>/reports/<report id>/elements   |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Report Element Details**                                                   | Gets report element          |
+|                                                                              | details                      |
+| <api-url>/raylight/v1/documents/{documentId}/reports/{reportId}/elements/    |                              |
+| {elementId}                                                                  |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Report Filters**                                                           | Gets filters for reports     |
+|                                                                              |                              |
+| <api-url>/raylight/v1/documents/<document id>/reports/<report id>/datafilter |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Document variables**                                                       | Gets variables for documents |
+|                                                                              |                              |
+| <api-url>raylight/v1/documents/<document id>/variables                       |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Document Variable Details**                                                | Gets variable details        |
+|                                                                              |                              |
+| <api-url>s/raylight/v1/documents/{documentId}/variables/{variableId}         |                              |
++------------------------------------------------------------------------------+------------------------------+
+| **Logoff**                                                                   | Invalidates the token        |
+|                                                                              |                              |
+| <api-url>/logoff                                                             |                              |
++------------------------------------------------------------------------------+------------------------------+

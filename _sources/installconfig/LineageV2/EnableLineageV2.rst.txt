@@ -1,0 +1,59 @@
+Enabling Lineage V2
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies to releases V R6 (5.10.x) to 2021.1*
+
+.. note::
+
+    In release 2021.2 and newer releases, Lineage V2 is enabled by default and does not require to be explicitly enabled by an admin.
+
+Lineage V2 can be turned on by setting the corresponding feature flag. This feature cannot be disabled. 
+
+You will need the SSH access to the Alation instance to enable Lineage V2.
+
+To enable:
+
+1. SSH to your Alation instance.
+
+2. Enter the Alation shell:
+
+  .. code-block:: bash
+
+      sudo /etc/init.d/alation shell
+
+3. Using the **alation_conf** command, set  the dedicated flag ``alation.feature_flags.enable_lineage_v2`` to ``True``:
+
+  .. code-block:: bash
+
+      alation_conf alation.feature_flags.enable_lineage_v2 -s True
+
+4. Restart the web server:
+
+  .. code-block:: bash
+
+      alation_supervisor restart web:*
+
+5. If lineage data already exists on your instance (if this is not a new installation of Alation), run the following script from the Django shell to migrate the existing lineage data to the new model:
+
+  .. code-block:: bash
+
+      alation_django_shell
+
+      from rosemeta.tasks.migrations import populate_new_lineages_from_old
+      populate_new_lineages_from_old.delay()
+
+6. Exit the Django shell:
+
+  .. code-block:: bash
+
+      exit()
+
+7. Exit the Alation shell:
+
+  .. code-block:: bash
+
+      exit
+
+You have now enabled Lineage V2 on your Alation instance.

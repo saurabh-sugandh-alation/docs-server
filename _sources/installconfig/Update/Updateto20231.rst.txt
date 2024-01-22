@@ -1,0 +1,269 @@
+Update Alation to 2023.1
+======================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+2023.1 Update Version Dependencies
+-----------------------------------------
+
+Alation supports a direct update to version 2023.1 from the following previous versions:
+
+    - 2022.4.x
+    - 2022.3.x
+    - 2022.2.x
+
+
+Version 2022.1.x and Older
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Direct update to 2023.1 is not supported from version 2022.1 and older versions. First, update Alation to a version that supports the update to 2023.1 and then perform a second update to 2023.1. Use the update instructions specific to your release.
+
+2023.1 Release-Specific Information
+-----------------------------------------
+
+    .. note::
+
+        The full list of new features is available in :doc:`/releases/releasenotes/ReleaseNotes20231`.
+
+If you are updating to 2023.1.6, two additional steps are available:
+
+- An update is available for the 2022.4 script that ensures all dataflow objects have a group ID. The update fixes an issue where group IDs were not being generated for certain link types. All installations should be checked to see if they need to have this script run or re-run. See :doc:`Update Source Field for Dataflow Objects </installconfig/Update/UpdateSourceForDataflows>`.
+
+- Alation Analytics V2 can now be backed up and restored using pgbackrest.
+
+Postgres Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Postgres component (the internal PostgreSQL database) was upgraded from version **13.6** to version **13.8** to take advantage of improvements and bug fixes in the newer version. No manual action is required from Alation admins as the database version upgrade happens automatically during the Alation update.
+
+Alation Analytics PostgreSQL Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Alation Analytics database was upgraded from version **13.1** to version **13.9**. No additional manual actions are required from Alation admins as the Alation Analytics database version upgrade happens automatically during the update of the Alation Analytics application.
+
+Change Of the Default Backup Tool
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From version 2023.1, the default backup tool in the Alation application is **pgBackRest**. On existing Alation instances, where **pgBackRest** has not been enabled yet, during the update to 2023.1, the value of the **alation_conf** parameter ``alation.feature_flags.enable_pgbackrest`` will be changed from ``False`` to ``True``, thus enabling the tool.
+
+    .. note::
+
+        Previously, the default backup tool was **pg_probackup**. The **pgBackRest** tool was available additionally from version 2022.2 and could be enabled on demand, using the dedicated feature flag in **alation_conf**.
+
+We recommend ensuring that you have the latest Alation backup before the update.
+
+After the update, take a new manual full backup to ensure you have the first backup that uses **pgBackRest**.
+
+
+Encryption Security Fix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    .. note::
+
+        Applies to updates from versions older than 2022.3.10.
+
+If you are updating from a version older than 2022.3.10 to version 2023.1, you are skipping some versions that include a security fix removing a risk identified in the current encryption mechanism that makes Alation potentially susceptible to key reuse attacks. Information about this risk is available in `November 3, 2022 - Encryption Key Reuse Security Advisory <https://community.alation.com/askalationexpertsmicrosite/viewdocument/november-3-2022-encryption-key-r?CommunityKey=ae45134b-412a-4cff-bb26-1e9f3caa2f60>`_  available on Alation Community (requires Community login). On customer-managed instances, additional action is required after the update as existing data needs to be re-encrypted. The step to perform re-encryption is included in the update instructions below.
+
+Job Schedule Fix
+~~~~~~~~~~~~~~~~
+
+In the 2022.3 release, we introduced a bug that caused the schedule for certain jobs to be shifted eight hours earlier. Version 2023.1.4 includes a script that can be run to fix the problem. After upgrading to 2023.1.4, see :doc:`Fix Job Schedules after 2022.3 Upgrade </admins/Troubleshooting/FixJobSchedules>` for details on how to fix the issue.
+
+Update Known Issues
+-------------------------------
+
+Reset Postgres Password
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateKnownIssue.rst
+
+Use Cluster Splitting for HA Pair Update
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Alation update of an HA pair without splitting the cluster fails. We recommend upgrading HA instances using the cluster splitting upgrade method until this issue is resolved.
+
+Update Alation to 2023.1
+------------------------------------
+
+Use the steps in this section to update Alation to 2023.1 from versions 2022.4.x, 2022.3.x, and 2022.2.x.
+
+    .. note::
+
+        If you are updating from release 2022.3.x and skipping release 2022.4 or from release 2022.2.x and skipping releases 2022.3 and 2022.4, review the information specific to releases 2022.3 and 2022.4 in the corresponding release notes.
+
+            - :doc:`/releases/releasenotes/ReleaseNotes20223`
+            - :doc:`/releases/releasenotes/ReleaseNotes20224`
+
+Step 1: Scan Postgres
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/UpdateScanPostgres.rst
+
+
+Step 2: Verify Backup Availability
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ensure you have a valid latest Alation backup.
+
+Step 3: Update the Alation Application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Update instructions:
+
+    - :doc:`Manual Software Update for Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+
+    - Update on the HA pair:
+
+        - with splitting the HA cluster: :doc:`Update HA Pair with Cluster Splitting <../../installconfig/Update/UpdateHAPairwithClusterSplitting>`
+
+            .. note::
+
+                See `Use Cluster Splitting for HA Pair Update`_ under **Update Known Issues** for this release.
+
+Step 4: Update Alation Connector Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you are using Open Connector Framework (OCF) and OCF connectors.
+
+.. include:: ../../shared/UpdateACM.rst
+
+Step 5: Update Alation Analytics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you are using the Alation Analytics application.
+
+Docker Compose Compatibility
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This step applies if you are updating from versions 2022.2.x or 2022.3. Check and, if necessary, upgrade Docker Compose, as from version 2022.4, Alation Analytics requires Docker Compose version 1.27.0.
+
+.. include:: ../../shared/UpdateUpdateDockerCompose.rst
+
+Updating Alation Analytics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the steps in :doc:`/installconfig/AlationAnalyticsV2/UpdateAlationAnalyticsV2` to update the Alation Analytics application.
+
+Step 6: Take a Full Manual Backup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Take a full manual backup to ensure that you have the first full backup of the updated instance taken with **pgBackRest**.
+
+Step 7: Run Alation Analytics Scripts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you are using Alation Analytics and have updated it to the 2023.1-compatible version.
+
+In 2023.1, we optimized the migrations of the database which were slowing down the upgrade of the Alation Analytics app. To apply the change, run the two scripts described below. In case of the HA pair configuration, run the scripts on the primary server.
+
+1. Enter the Alation shell. You should be in the Alation shell to tail the log files and to run the scripts.
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+
+2. Make sure that the Alation Analytics ETL process is not running. The scripts should not be executed when the ETL process is running. You can check this by logging in to Alation, navigating to **Admin Settings > Monitor > Active Tasks** and making sure that the Alation Analytics ETL job is not listed as an active task. Alternatively, you can use the tail command on the ``celery-alationanalytics_error.log`` file from the Alation shell. If Alation Analytics ETL is running, the log will be printing messages similar to the following:
+
+    .. code-block:: Bash
+
+        {"message": "Starting the ETL Job ObjectFieldIncrementalPhysicalValueETLJob...", "timestamp":
+        "2022-08-10T11:57:55.567009Z", "level": "INFO"}
+        {"message": "Starting extraction of 'Article' records.", "timestamp":
+        "2022-08-10T11:57:55.639785Z", "level": "DEBUG"}
+        {"message": "Starting extraction of 'Article' records.", "timestamp":
+        "2022-08-10T11:57:55.639848Z", "level": "DEBUG"}
+
+    To tail the log:
+
+    .. code-block:: Bash
+
+	       tail -f /opt/alation/site/logs/celery-alationanalytics_error.log
+
+2. After ensuring that the ETL process is not running, from the Alation shell, change the user to ``alation``.
+
+    .. code-block:: Bash
+
+        sudo su alation
+
+3. Navigate to the directory **/opt/alation/django/alation_analytics_v2/one_off_scripts/**.
+
+    .. code-block:: Bash
+
+        cd /opt/alation/django/alation_analytics_v2/one_off_scripts/
+
+4. Run the flags script with the command below. The logs will be redirected to the ``reconcile_flag.log`` file.
+
+    .. code-block:: Bash
+
+        nohup python -u reconcile_flag.pyc >> reconcile_flag.log &
+
+5. This command will launch a process with a PID. Save the PID value as you may need it. You can monitor this process by either tailing the corresponding log inside of the Alation shell or checking on the corresponding PID outside of the Alation shell.
+
+    5.1 To use the log for monitoring, in a separate Terminal window, from the Alation shell, tail the ``reconcile_flag.log`` file. When the script run is completed, you should see a message that the flags have been reconciled and the number of flags. Execution errors, should any occur,  will be printed to the log too. Contact Alation Support if the script execution ends in an error.
+
+    .. code-block:: Bash
+
+        tail -f /opt/alation/django/alation_analytics_v2/one_off_scripts/reconcile_flag.log
+
+    5.2 To check if the process is still active, in a Terminal window connected to the Alation host, outside of the Alation shell, use the command below to list the current processes and check if there is a process with the corresponding PID.
+
+    .. code-block:: Bash
+
+        ps -a
+
+6. After completing the flags script, in a similar way, run the script to reconcile tags. The script should also be run from the directory **/opt/alation/django/alation_analytics_v2/one_off_scripts/** in the Alation shell and as user ``alation``.
+
+    .. code-block:: Bash
+
+        nohup python -u reconcile_tags.pyc >> reconcile_tags.log &
+
+7. This command will launch a process with a PID. Save the PID value as you may need it. You can monitor this process by either tailing the corresponding log inside of the Alation shell or checking on the corresponding PID outside of the Alation shell.
+
+    7.1 To use the log for monitoring, in a separate Terminal window, from the Alation shell, tail the ``reconcile_tags.log`` file. When the script run is completed, you should see a message that the tags have been reconciled and the number of tags. Execution errors, should any occur,  will be printed to the log too. Contact Alation Support if the script execution ends in an error.
+
+    .. code-block:: Bash
+
+        tail -f /opt/alation/django/alation_analytics_v2/one_off_scripts/reconcile_tags.log
+
+    7.2 To check if the process is still active, in a Terminal window connected to the Alation host, outside of the Alation shell, use the command below to list the current processes and check if there is a process with the corresponding PID.
+
+    .. code-block:: Bash
+
+        ps -a
+
+8. After completing the scripts, to exit from the user ``alation``, use the ``exit`` command.
+
+.. important::
+
+    Depending on whether or not you have to perform other post-upgrade actions, consider taking a second full backup after running these scripts.
+
+    If none of the next steps apply to your instance, we recommend creating a second backup after running the Alation Analytics scripts. If your instance is large and this requirement is not feasible, you can plan to take the next backup on your schedule. However, if there is a need to restore from a backup that was taken before applying the scripts, you'll need to run the scripts again on the restored instance.
+
+    If you have more scripts to run after the update, consider taking a second full backup after running all the scripts.
+
+Step 8: De-duplicate Mixed Case Usernames
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you updated Alation from version **2022.2.x**, skipping release 2022.3.
+
+.. include:: ../../shared/UpdateDeduplicateUsernames.rst
+
+
+Step 9: Run Script to Update Source Field for Dataflow Objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you updated Alation from version 2022.2.x or 2022.3.x and you already began using Lineage V3. If you are still using Lineage V2, skip this step.
+
+In order to enable correct filtering of dataflow objects on Lineage diagrams using the Source filter, Alation provides a script that populates the Source field for dataflow objects created on previous versions. The script does not require a downtime or affect user activity in the catalog. You can run it any time after the update to 2022.4. For detailed information on how to run this script, refer to :doc:`/installconfig/Update/UpdateSourceForDataflows`.
+
+Step 10: Perform Re-encryption
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This step applies if you updated Alation from release 2022.3.9 or older, where the encryption security fix was not available.
+
+    .. note::
+
+        If you already performed re-encryption on a previous version, there is no need to do it again. Skip this step.
+
+The existing data on your updated instance needs to be re-encrypted. Re-encryption will run as a background process and no separate downtime is required. Users can work in Alation while the re-encryption job is in progress. For re-encryption steps, refer to :doc:`/installconfig/Update/ReencryptData`.

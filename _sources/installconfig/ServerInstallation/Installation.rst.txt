@@ -1,0 +1,394 @@
+Installation Process
+====================
+
+Alation will deliver to you an installation file (RPM or Debian format) to install on your system.  Alation can be installed on your hardware, VM, or on AWS.
+The Alation installation package creates a chroot environment containing all the binaries needed by Alation. The Alation chroot is based on:
+
+    - Red Hat UBI Init 8.4 from release 2021.4
+    - CentOS 8.2 - starting from release 2020.4
+    - CentOS 7.6 - starting from release V R 5 (5.9.x)
+    - CentOS 6.6 - in releases prior to V R5 (5.9.x)
+
+The chroot includes some core OS modules like openSSL, Python PIP, Ruby Gem modules, and Telnet.
+
+Download the Installation Package
+----------------------------------------------------
+
+Download the installation package for your operating system from the Alation `Customer Portal <https://customerportal.alationdata.com/>`_:
+
+    - Alation should have created an account for you and sent an invitation to join the Customer Portal.
+    - Finish setting up your account to access the download information.
+
+
+Install on Red Hat, Fedora, CentOS, Oracle Linux
+----------------------------------------------------
+
+1. Move the downloaded RPM file to the host you have prepared for Alation.
+
+2. Confirm the download is good. If the RPM file is corrupted, retry your download.
+
+    .. code-block:: bash
+
+        rpm -K alation####.rpm
+
+3. Install the RPM. The installation will take 3-4 minutes.
+
+    .. code-block:: bash
+
+        sudo rpm -ivh alation####.rpm
+
+4. Initialize Alation.
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation init <data mount point> <backup mount point>
+
+    - <data mount point>: Absolute path to the data disk mount point (for example, **/mnt/data**). Not the path to the device.
+    - <backup mount point>: Absolute path to backup disk mount point.
+
+    **Example**:
+
+      .. code-block:: bash
+
+          sudo /etc/init.d/alation init /mnt/data /mnt/backup
+
+5. Start Alation.
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation start
+
+6. Proceed to the configuration.
+
+Install on Ubuntu, Debian
+-----------------------------
+
+1. Move the downloaded DEB file to the host you have prepared for Alation.
+2. Install the DEB file. The installation will take 3-4 minutes.
+
+    .. code-block:: bash
+
+        sudo dpkg -i alation####.deb
+
+3. Initialize Alation:
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation init <data mount point> <backup mount point>
+
+
+    - <data mount point>: Absolute path to the data disk mount point (for example, **/mnt/data**). Not the path to the device.
+    - <backup mount point>: Absolute path to backup disk mount point.
+
+    **Example**:
+
+      .. code-block:: bash
+
+          sudo /etc/init.d/alation init /mnt/data /mnt/backup
+
+4. Start Alation.
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation start
+
+4. Proceed to the configuration.
+
+Setting the Base URL
+-----------------------------------
+
+Use the **alation_conf** parameter ``alation.install.base_url`` to set the base URL for your Alation instance. This is the URL that users in your organization will use to access the Alation Catalog.
+
+    .. note::
+
+        From version 2022.1, there is no user interface to set the base URL. It can be set or changed only using **alation_conf**.
+
+To set the base URL:
+
+1. On the Alation host, enter the shell.
+
+    .. code-block:: bash
+
+        sudo /etc/init.d/alation shell
+
+2. Set the URL. Include the ``http://`` or ``https://`` into the value.
+
+    .. code-block:: bash
+
+        alation_conf alation.install.base_url -s <new_value>
+
+3. Confirm the new value.
+
+    .. code-block:: bash
+
+        alation_conf alation.install.base_url
+
+4. Restart the web processes.
+
+    .. code-block:: bash
+
+        alation_supervisor restart web:uwsgi
+
+Stay in the shell to set feature flags.
+
+Setting Feature Flags
+------------------------
+
+Set the appropriate feature flags to enable certain options and features.
+
+Feature flags are set from the Alation shell using the Alation configuration utility, **alation_conf**.
+
+    - To enter the Alation shell, on the Alation host, run:
+
+        .. code-block:: bash
+
+            sudo /etc/init.d/alation shell
+
+    - To set a flag, use the **alation_conf** command:
+
+        .. code-block:: bash
+
+            alation_conf <flag_name> -s <value>
+
+        **Example**:
+
+        .. code-block:: bash
+
+            alation_conf alation.roles.allow_source_and_catalog_admins_to_create_ds -s True
+
+    - To exit the shell, use:
+
+        .. code-block:: bash
+
+            exit
+
+|
+
+.. table::
+    :widths: 30 70
+
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | **alation_conf** settings to consider                                          | Description                                          |
+    +================================================================================+======================================================+
+    | ``event_bus.backup.enabled``                                                   | Enables or disables the backup process for the       |
+    |                                                                                | Event Bus component. Event Bus is used by Lineage    |
+    |                                                                                | V3. ``True`` by default.                             |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.backup.eb_restore_file``                                             | Should be used to specify the path to the Event      |
+    |                                                                                | Bus backup file when restoring Alation from a        |
+    |                                                                                | backup.                                              |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.monitor_pg_disk_usage.enabled``                                      | Enables size monitoring for the tables of the        |
+    |                                                                                | internal database. Sends email alerts to Server      |
+    |                                                                                | Admins when thresholds are hit. ``True`` by          |
+    |                                                                                | default.                                             |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.monitor_pg_disk_usage.\*``                                           | Group of parameters that can be used to configure    |
+    |                                                                                | table size monitoring.                               |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.search.enable_search_autocomplete``                                  | Enables or disables the Search Autocomplete          |
+    |                                                                                | feature for Full-Page Search. ``True`` (enabled)     |
+    |                                                                                | by default. Set to ``False`` to disable. Requires    |
+    |                                                                                | restarting celery-beat.                              |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.feature_flags.enable_advanced_search``                               | Displays or hides the legacy Advanced Search page.   |
+    |                                                                                | ``False`` (disabled) by default from 2021.4          |
+    |                                                                                | Requires restarting Django.                          |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.feature_flags.enable_query_search``                                  | Displays or hides the legacy Query Search page.      |
+    |                                                                                | ``False`` (disabled) by default from 2021.4.         |
+    |                                                                                | Requires restarting Django.                          |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``user_group_management.sync_from_directory_provider.enabled``                 | Default is ``False``. Set to ``True``                |
+    |                                                                                | to enable group syncing if the Alation               |
+    |                                                                                | authentication method is LDAP or SAML.               |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``user_group_management.sync_from_directory_provider.protocol``                | Default is ``ldap``. Part of the configuration       |
+    |                                                                                | of group sync with an LDAP directory or an IdP.      |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``user_group_management.sync_from_directory_provider.ldap.group_sync_period``  | Sets number of minutes after which the LDAP          |
+    |                                                                                | server should be queried to update members           |
+    |                                                                                | belonging to groups that are synced from the LDAP    |
+    |                                                                                | directory. Default is 15.                            |
+    |                                                                                | Only applies if ``sync_from_directory_provider``     |
+    |                                                                                | is enabled and the protocol is set to ``ldap``.      |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.roles.allow_source_and_catalog_admins_to_create_ds``                 | Allow users with the Source Admin role to add        |
+    |                                                                                | sources to Alation. ``False`` (not allowed) by       |
+    |                                                                                | default.                                             |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.authentication.saml.use_name_id_as_username``                        | In case of SAML authentication, Alation admins can   |
+    |                                                                                | choose to use the ``nameID`` attribute instead of    |
+    |                                                                                | the ``uid`` attribute as the username in Alation.    |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.search.enable_lexicon_synonym_search``                               | **True** (enabled) by default.                       |
+    |                                                                                | Alation search includes confirmed Lexicon            |
+    |                                                                                | expansions into search results.                      |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.search.flag_boost_ranking_factor``                                   | Default: **2.0**                                     |
+    |                                                                                |                                                      |
+    |                                                                                | Can be used to adjust the search ranking boost       |
+    |                                                                                | for Endorsed objects. Scores that are greater        |
+    |                                                                                | than 1.0 will boost the ranking. The higher the      |
+    |                                                                                | score, the higher endorsed objects will appear in    |
+    |                                                                                | search ranking.                                      |
+    |                                                                                | To neutralize, set to 1.0.                           |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.search.flag_penalty_ranking_factor``                                 | Default: **0.5**                                     |
+    |                                                                                |                                                      |
+    |                                                                                | Can be used to adjust the search ranking penalty     |
+    |                                                                                | for Deprecated objects. Scores that are smaller      |
+    |                                                                                | than 1.0 penalize the ranking. The lower the score,  |
+    |                                                                                | the lower deprecated objects will appear in search   |
+    |                                                                                | ranking.                                             |
+    |                                                                                | To neutralize, set to 1.0                            |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.compose.query_export.enabled``                                       | Disables or enables the Query Export feature in      |
+    |                                                                                | Compose. ``True`` (enabled) by default.              |
+    |                                                                                | Query Export allows the complete result set to be    |
+    |                                                                                | streamed to a file when executing a query.           |
+    |                                                                                | When this feature is disabled, the export menu in    |
+    |                                                                                | Compose is not available, including all underlying   |
+    |                                                                                | options such as **Run & Export Full Query**,         |
+    |                                                                                | **Run & Export Current Statement**, and              |
+    |                                                                                | **Run & Export as Script**.                          |
+    |                                                                                |                                                      |
+    |                                                                                | Alternatively, this feature can be turned off/on     |
+    |                                                                                | in the Alation UI in Admin Settings > Compose        |
+    |                                                                                | Settings using the **Allow Query Exports** switch.   |
+    |                                                                                |                                                      |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.feature_flags.enable_profiling_v2``                                  | Enables Custom Query-Based Profiling                 |
+    |                                                                                | for Custom DB. ``False`` (disabled) by default.      |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.taskserver_timeouts.profileColumnV2``                                | Sets a custom timeout in seconds for Custom DB       |
+    |                                                                                | Column-Based Profiling                               |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.profiling.v2.distribution.show_distribution_chart``                  | Enables the display of the Frequency Distribution    |
+    |                                                                                | chart on the Catalog pages of Column objects.        |
+    |                                                                                | ``False`` (disabled) by default.                     |
+    |                                                                                |                                                      |
+    | Requires:                                                                      |                                                      |
+    |                                                                                |                                                      |
+    | ``alation.feature_flags.enable_profiling_v2=True``                             |                                                      |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.profiling.v2.distribution.max_unbatched_values``                     | Sets the number of unique values that must be        |
+    |                                                                                | discovered before Alation starts to batch ranges     |
+    |                                                                                | of values for the Frequency Distribution chart.      |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.profiling.v2.distribution.batch_count``                              | Sets the number of ranges to be batched into the     |
+    |                                                                                | Frequency Distribution chart.                        |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.granular_object_privacy.enabled``                                    | Enables object-level privacy                         |
+    |                                                                                | control for supported object types. Currently,       |
+    |                                                                                | only Table objects are supported. ``False``          |
+    |                                                                                | (disabled) by default.                               |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.catalog.unpublished_query_visibility_level``                         | Determines whether unpublished queries are           |
+    |                                                                                | visible to everyone. Possible values:                |
+    |                                                                                |                                                      |
+    |                                                                                |  - ``visible``: Visible to everyone who has access.  |
+    |                                                                                |  - ``not_visible``: Unpublished queries are not      |
+    |                                                                                |    visible to everyone. In 2022.4 and earlier,       |
+    |                                                                                |    unpublished queries are only visible to their     |
+    |                                                                                |    author and users who are added as viewers.        |
+    |                                                                                |    In 2023.1 and later, unpublished queries are only |
+    |                                                                                |    visible to those with edit or owner access to the |
+    |                                                                                |    query. See :ref:`Unpublished Query Access` for    |
+    |                                                                                |    more information.                                 |
+    |                                                                                |  - ``per_ds``: Unpublished queries only on           |
+    |                                                                                |    specific data sources are treated as visible.     |
+    |                                                                                |    Queries on other data sources are treated as not  |
+    |                                                                                |    visible.                                          |
+    |                                                                                |                                                      |
+    |                                                                                | After editing, run:                                  |
+    |                                                                                | ``alation_action rebuild_es_index``.                 |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.catalog.unpublished_query_visible_ds_ids_csv``                       | Sets data source id's to which to apply the          |
+    |                                                                                | parameter                                            |
+    |                                                                                | *alation.catalog.unpublished_query_visibility_level* |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.datasource_auth.credentials.storage_mode``                           | Sets the credentials storage mode for Compose:       |
+    |                                                                                | "Persistent" or "Transient". Values:                 |
+    |                                                                                |                                                      |
+    |                                                                                |   - 0 for "Persistent"                               |
+    |                                                                                |   - 1 for "Transient"                                |
+    |                                                                                |                                                      |
+    |                                                                                | Default: 0                                           |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.feature_flags.enable_gbm_v2_connector_strategy``                     | Enables OCF connector BI sources.                    |
+    |                                                                                | ``True`` (enabled) by default from 2021.4.           |
+    | Requires:                                                                      |                                                      |
+    |                                                                                |                                                      |
+    | ``alation.feature_flags.enable_lineage_v2 = True``                             |                                                      |
+    |                                                                                |                                                      |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.feature_flags.enable_permissions_middleware_feature``                | Enables the Viewer role.                             |
+    |                                                                                | ``True`` (enabled) by default from version 2022.1    |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.healthcheck.enable_admin_alert_checks``                              | Enables system health checks and                     |
+    |                                                                                | notifications for admins. ``False`` (disabled) by    |
+    |                                                                                | default.                                             |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.feature_flags.enable_swagger``                                       | Allows access to the OAS 3.0 specs of the APIs       |
+    |                                                                                | in Swagger UI (GBM V2, Lineage V2, etc.).            |
+    |                                                                                |                                                      |
+    |                                                                                | ``True`` by default from release 2021.2**            |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.help.helpdesk_url``                                                  | Configures the link to your Organization's           |
+    |                                                                                | internal support ticketing system.                   |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.help.alation_helpdesk_users``                                        | Configures access to Alation Service Cloud           |
+    |                                                                                | for designated admins using their emails.            |
+    |                                                                                | The email value is case sensitive. No spaces         |
+    |                                                                                | after commas when specifying multiple emails.        |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.authentication.token.disable_v0_api_token_auth``                     | Prevents users from generating a V0 API token        |
+    |                                                                                | from the GET call.                                   |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.feature_flags.enable_lineage_v2``                                    | Enables Lineage V2, dataflow objects, and            |
+    |                                                                                | column level lineage via API.                        |
+    |                                                                                | ``True`` by default from release 2021.2. Cannot be   |
+    |                                                                                | set to ``False``.                                    |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | **alation_action** enable_backupv2                                             | Enables Backup V2.                                   |
+    |                                                                                | Enabled by default from version 2021.2               |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation.backup_v2.incr_backup``                                              |  Enables incremental backups for Backup V2           |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+    | ``alation_conf alation.backup_v2.incr_backup_versions``                        |  Sets the incremental backup cadence.                |
+    +--------------------------------------------------------------------------------+------------------------------------------------------+
+
+Basic Server Configuration
+----------------------------
+
+License
+~~~~~~~~~~
+
+The Alation team should have generated a license file for you which can be downloaded from the Customer Portal to your local system.
+
+To upload the Alation license:
+
+1. Open the Alation URL **http(s)://<base_URL>** in a supported browser. You should see a screen that prompts to upload a license to the Alation host.
+
+    .. image:: ../../_static/install_image4.png
+        :class: with-border
+        :width: 300px
+
+2. Click **Upload License File** and upload the license file to Alation.
+
+3. After uploading the license, you will be prompted to create an account. Click the **New to Alation? Sign Up!** link at the bottom of the page and enter your user information to set up an initial account. The first account you create will have the Server Admin role, allowing you to complete the rest of the configuration in the user interface.
+
+    .. image:: ../../_static/install_image11.png
+        :class: with-border
+        :width: 300px
+
+Completing the Configuration in the Alation UI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+After creating the initial admin account, proceed to completing the configuration in the Alation admin UI.
+
+Items to complete include:
+
+    -  User Authentication using LDAP/AD, SAML, or OIDC
+    -  Email server configuration
+    -  Data source connections.

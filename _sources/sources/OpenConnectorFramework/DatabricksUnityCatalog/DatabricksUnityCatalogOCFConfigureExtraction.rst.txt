@@ -1,0 +1,254 @@
+Configure Metadata Extraction
+==================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Metadata extraction (MDE) fetches data source information, such as schemas, tables, columns, keys, functions, and more. Alation queries your database to retrieve this metadata, which becomes catalog objects.
+For Databricks Unity Catalog data sources, custom query-based MDE is not supported. You can initiate MDE on demand or schedule it for regular catalog updates.
+
+You configure MDE on the **Metadata Extraction** tab of the data source settings. Depending on your connector version, use the information in the relevant topic:
+
+    - `Version 2.2.0 or Newer`_
+    - `Versions Before 2.2.0`_
+
+Version 2.2.0 or Newer
+----------------------------
+
+Use the information in this section to configure the **Metadata Extraction** tab for connector version **2.2.0** or newer. In version **2.2.0**, the user interface of the **General Settings** page was redesigned. The new interface will be available if your Alation version is **2023.3.4** or newer.
+
+    .. note::
+
+        If you install the connector version **2.2.0** or newer on an Alation version older than **2023.3.4**, refer to `Versions Before 2.2.0`_.
+
+Follow these steps to configure and run metadata extraction:
+
+    - `Test Access and Fetch Schemas`_
+    - `Select Schemas for Extraction`_
+    - `Run MDE`_
+    - `View MDE Job History`_
+    - `Enable Raw Dump or Replay (Optional)`_
+
+Test Access and Fetch Schemas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As a first preparatory step before connecting, Alation tests if the user account you're connecting with has the necessary permissions to extract lineage and fetches schemas for extraction. Refer to :ref:`Create a Service Account <uc-create-service-account>` for information about what permissions are required.
+
+To initiate the test, under the **Step 1: Test access and fetch schemas** section of the user interface, click **Run**. Alation will check the available permissions and retrieve the list of schemas that will appear under section **Step 2: Select schemas for extraction**.
+
+If the test results in partial success or errors, Alation will display an error log. Review the error messages in the log for troubleshooting suggestions.
+
+    .. note::
+
+      In case you are connecting to a single-user cluster and you have configured an external connection, then schema-fetching will fail if Alation's user is not the Owner of the external connection. You will see an error similar to the following: *Error operating GET_SCHEMAS PERMISSION_DENIED: User is not an owner of Connection '<external_connection_name>'*.
+
+Select Schemas for Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, all the schemas that Alation fetches from the data source will be selected for extraction. Depending on the volume of the metadata accessible to Alation's user, extracting all schemas may be time-consuming and resource-intensive. We recommend only selecting the schemas you want to be in the catalog.
+
+To select schemas:
+
+1. Under **Step 2: Select schemas for extraction**, review the list of available schemas.
+
+2. Select schemas for extraction:
+
+    - `Select Schemas Manually`_
+    - `Select Schemas Using Filters`_
+
+    .. important::
+
+	       You must use filters if you plan to schedule MDE.
+
+Select Schemas Manually
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To manually select schemas:
+
+Under **Step 2: Select schemas for extraction**, ensure that the **Enable advanced settings** toggle is disabled. If it's enabled, you may have previously used filters to select schemas. Refer to `Switching Between Manual Selection and Filters`_.
+
+From the list of schemas in the **Schemas** table, select the checkboxes of the schemas you want to extract. You can find specific schemas using the Search bar at the top of the table. Selected schemas move to the top of the list.
+
+Select Schemas Using Filters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Selecting schemas using filters can be handy if you frequently change schemas or have extensive metadata.
+
+    .. note::
+
+        If you select schemas using filters, you cannot manually adjust your selection.
+
+To select schemas using filters:
+
+1. Under **Step 2: Select schemas for extraction** section, activate the **Enable advanced settings** toggle. This will reveal filter configuration fields.
+
+2. From the **Extract** dropdown list, select a filter option that suits your use case:
+
+    - **Only selected schemas** (default)—Extracts metadata only from the selected schemas.
+    - **All schemas except selected**—Extracts metadata from all schemas except the selected schemas.
+
+3. Alation can keep the catalog synchronized with the current schema selection every time you run a subsequent MDE job. To enable synchronization, select the checkbox **Keep the catalog synchronized with the current selection of schemas**. This will soft-delete the schemas from previous extraction that are not part of the current schema selection during MDE. Your catalog will display only the schemas selected for extraction.
+
+    - If you choose to leave this checkbox clear (default), Alation will not delete the previously extracted schemas. Your catalog will display all schemas extracted during the previous MDE jobs.
+
+4. Using the controls under the Select schemas section, create a filter:
+
+    a. From the **Schema** dropdown list, select **Schema** or **Catalog**.
+    b. From the **Contains** dropdown list, select a filter condition.
+    c. In the **Filter value** field, specify a keyword or string to apply the filter condition to.
+    d. Click **Apply Filters**. The filter will be applied to the **Schemas** table: only the schemas or catalogs that match the filter will be selected.
+
+5. You can add multiple filters by clicking the **Add another filter** link.
+
+Switching Between Manual Selection and Filters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As you adjust your MDE configuration, you may have to switch from manual schema selection to filters and back.
+
+To switch from manual to filters:
+
+1. Enable the **Enable advanced settings** toggle under **Step 2: Select schemas for extraction**.
+
+2. Create and apply filters using the information in **Select Schemas Using Filters**.
+
+    .. important::
+
+	       Applying the filters will clear your manual selection and update it to match the filters.
+
+To switch from filters to manual:
+
+1. Disable the **Enable advanced settings** toggle under **Step 2: Select schemas for extraction**.
+
+2. A warning will pop up:
+
+      - All previously applied filters will be cleared.
+      - The Extract filter will be reset to Extract only selected schemas.
+      - Catalog synchronization will be disabled. During subsequent MDE jobs, the previously extracted schemas will be kept in the catalog.
+
+3. Click **Continue**.
+
+4. The **Enable advanced settings** toggle will be disabled. The **Schemas** table will become manually editable. It will display your previous selection of schemas that you can now adjust manually.
+
+Run MDE
+~~~~~~~~~~~~~
+
+You can run or schedule MDE after configuring your schema selection.
+
+    - `Run MDE Manually on Demand`_
+    - `Schedule MDE`_
+
+Run MDE Manually on Demand
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Under the section of the user interface **Step 3: Run extraction**, click **Run Extraction**. This action will initiate an MDE job.
+
+You can monitor the status under the **MDE Job History** tab. Click the link **Go to MDE Job History** to open the history. Find more details in `View MDE Job History`_.
+
+Schedule MDE
+^^^^^^^^^^^^^^^^^
+
+You can configure a schedule for MDE. The MDE job will run automatically on the schedule you set.
+
+To schedule MDE:
+
+1. Under the section **Step 3: Run extraction**, enable the **Enable extraction schedule** toggle.
+
+2. Using the date and time widgets, select the recurrence period, day, and time for your MDE schedule. The values are set in your local time. The next MDE job for your data source will run on the schedule you have specified.
+
+Scheduled MDE jobs are also logged on the **MDE Job History** sub-tab.
+
+View MDE Job History
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On the **MDE Job History** sub-tab, you can view the status of your MDE jobs.
+
+To open the list of MDE jobs, click the **MDE Job History** sub-tab on top of the page.
+
+An MDE job can have one of these statuses:
+
+    - **Did Not Start**—The job did not start due to configuration or other issues.
+    - **Succeeded**—The job was successful.
+    - **Partial Success**—The job was successful, but there are some warnings. For example, if Alation fails to extract some objects, it skips them and proceeds to extract other objects, with MDE resulting in partial success.
+    - **Failed**—The job failed due to errors.
+
+For each of the MDE jobs listed in the **Extraction job status** table, you can view the detailed log messages. Click the status link or the **View Details** link for a job to open a detailed report in a pop-up info box. If there were errors during MDE, the corresponding error messages are displayed in the Job errors table. Follow the instructions in the **Hints** column for troubleshooting tips.
+
+In some cases, you may see the **Generate Error Report** link displayed above the **Job errors** table. Click this link to generate a Zip archive with CSV files for different error categories, such as data or connection errors.
+
+You can download the generated report by clicking the Download Error Report link that appears after the report is generated.
+
+Lineage Extraction Job
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Metadata extraction will trigger a dependent direct lineage extraction job. If you have enabled the system.access tables in Unity Catalog and have provided the service account with access to tables in the system.access schema, lineage data will be extracted into Alation. See :ref:`Capturing Lineage <uc-capturing-lineage>` for more details. If you have not enabled the ``system.access`` tables, the downstream lineage extraction job will fail.
+
+You can track the result of the lineage extraction job in the **Details** log accessible from the **Job History** table. Entries relevant to the direct lineage extraction job start with the ``DirectLineageExtraction Info Log`` label. More detailed logs will be available in the connector log.
+
+    .. note::
+
+        You can access the connector logs from the **General Settings** tab of the settings. This requires the role of Server Admin. Click the **Manage Connector** link to navigate to the connector management page. For some connector configuration, connector log may be unavailable in the Alation user interface.
+
+Enable Raw Dump or Replay (Optional)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As you are testing and fine-tuning your MDE configuration, you can use the **Raw Dump or Replay** feature. By default, it's disabled. We recommend enabling it for extraction debugging only.
+
+The full use of this feature requires access to the backend of the Alation server.
+
+If Raw Dump or Replay is enabled, Alation will divide MDE in two stages:
+
+    - First, it will "dump" the extracted metadata into files. You can access and review the files on the Alation server in order to debug extraction issues before attempting to ingest the metadata into the catalog.
+    - Second, you can ingest the metadata from the files into the catalog.
+
+Both stages are manually controlled from the user interface.
+
+To use the Raw Dump or Replay feature:
+
+1. On the **Metadata Extraction** tab, expand the section **Troubleshooting: Enable raw dump or replay (optional)**.
+
+2. From the Enable Raw Dump or Replay dropdown list, select the option **Enable Raw Metadata Dump**.
+
+3. Click **Save**. This enables the first stage of MDE.
+
+4. Ensure your MDE configuration includes all the schemas you want extracted into the catalog.
+
+5. Run MDE manually. The metadata will be extracted and dumped into four files—``attribute.dump``, ``function.dump``, ``schema.dump``, ``table.dump``—in a subdirectory of the directory ``opt/alation/site/tmp/`` on the Alation server (inside the Alation shell).
+
+6. Select the **MDE Job History** switch at the top of the **Metadata Extraction** tab.
+
+7. In the **Extraction job status** table, click the **View Details** link for this MDE job to display the job details. The log will list the location of the ``.dump`` files for this specific job, for example ``/opt/alation/site/tmp/rosemeta/170/extraction_dump/5028``.
+
+8. Access and review the metadata dump files on the Alation server to intercept any potential extraction issues.
+
+9. Go back to the Alation user interface.
+
+10. From the **Enable Dump or Replay** dropdown list, select the option **Enable Ingestion Replay**.
+
+11. Click **Save**. This will enable the second stage where the metadata from the files can be ingested into the Alation catalog.
+
+12. Run MDE. The metadata from the files will be ingested into the catalog.
+
+Disable Raw Dump or Replay
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To disable the Raw Dump or Replay feature:
+
+1. From the **Enable Raw Dump or Replay** dropdown list, select the option **Off**.
+
+2. Click **Save**. The next MDE job you run will extract and ingest the metadata directly into the catalog.
+
+
+Versions Before 2.2.0
+-------------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/ConfigureMDEforOCFDataSources` for information about the available configuration options. For Databricks Unity Catalog data sources, Alation supports **full and selective default MDE**. Custom query-based MDE is not supported.
+
+Lineage Extraction Job
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Metadata extraction will trigger a dependent direct lineage extraction job. If you have enabled the ``system.access`` tables in Unity Catalog and have provided the service account with access to tables in the ``system.access`` schema, lineage data will be extracted into Alation. If you have not enabled the ``system.access`` tables, the downstream lineage extraction job will fail.
+
+You can track the result of the lineage extraction job in the **Details** log accessible from the **Job History** table at the bottom of the **Metadata Extraction** tab. The screenshot below shows an example of the **Details** log, where records relevant to the direct lineage extraction job start with the ``DirectLineageExtraction Info Log`` record. More detailed logs will be available in the connector log.
+
+    .. image:: ../../../_static/OCF_Databricks_UC_InstallConfig_Details.png
+        :width: 600px
+        :class: with-border

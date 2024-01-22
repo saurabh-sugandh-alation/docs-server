@@ -1,0 +1,200 @@
+Extract Synonyms
+======================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from release V R7 (5.12.x)*
+
+A synonym is a database object that is an alternative name for another object existing in the database. The object that is given a synonym is known as the base object. A synonym creates an abstraction layer between a database object and its user and serves as a pointer to the base object.
+
+Using synonyms can provide such benefits as:
+
+- Simplified access to base objects with long and complex names;
+- Stability in database object referencing in queries and applications;
+- Additional security for the base object name and location.
+
+Starting with *V R7 (5.12.x)*, Alation can automatically extract synonym objects from the Oracle and SQL Server data sources during metadata extraction (MDE).
+
+.. note::
+
+    Synonym extraction is supported for versions Oracle 2012 and above and SQL Server 2014 and above.
+
+Enabling Synonym Extraction
+-----------------------------
+
+Synonym extraction needs to be enabled in **Labs/Feature Configuration** on your Alation instance.
+
+On the **Labs/Feature Configuration** page, find and enable a feature called **Enable Synonym MDE**.
+
+After you have enabled synonym extraction, synonyms will be automatically extracted during the next MDE from the Oracle and SQL Server data sources in Alation.
+
+After synonyms are extracted, Alation creates dedicated catalog pages for these synonym objects.
+
+.. important::
+
+      Synonyms are extracted during MDE only: the Alation catalog will not reflect changes to synonyms from CREATE/DROP SYNONYM queries in Compose until the next MDE is performed.
+
+Finding Synonyms in Your Alation Catalog
+------------------------------------------
+
+You can find extracted synonyms using the Catalog Browser and Advanced Search. They are indicated with a special icon that differentiates them from table objects:
+
+.. image:: ../../_static/Synonyms_06.png
+    :width: 50px
+    :align: center
+
+.. image:: ../../_static/Synonyms_01.png
+    :width: 5.5in
+    :align: center
+
+In **Advanced Search**, you can filter the synonyms using the dedicated synonyms filter which will be available for the Table object type:
+
+#. Open the **Advanced Search** page.
+#. Select filter values:
+
+      - **Tables** in the object type filter
+      - **SYNONYM** for the Table Type
+
+ All available synonyms will be displayed in the search results pane:
+
+.. image:: ../../_static/Synonyms_02.png
+    :width: 5.5in
+    :align: center
+
+Catalog Page for a Synonym Object
+-----------------------------------
+
+The catalog page of a synonym object uses the Table object template. The page of a synonym can be differentiated with the help of the synonym icon and the **Properties** field that will identify this object as a synonym:
+
+.. image:: ../../_static/Synonyms_03.png
+    :width: 5.5in
+    :align: center
+
+Tabs
+~~~~~~~~
+
+- **Overview** displays fields have information about the object and its child objects. You can drill down into each child column to view its respective catalog page.
+- **Columns** shows the columns in the table referenced by the synonym. In Alation, these are not the same column objects as column objects extracted for the base table object. Columns under a synonym object are copied from the base object into the catalog as child objects of the synonym and are given their own catalog object IDs.
+
+    .. note::
+
+        The column information for a synonym will be available even if the base table object has not been extracted.
+        *Primary Key*, *Foreign key* and *Index* details are not getting extracted for Synonyms.
+
+- **Samples** displays data samples from the base table if Profiling is performed for the synonym.
+- **Filters** and **Joins** tabs display Filter and Joins information for the synonym, respectively. This calculation takes into account queries that use the synonym and does not add up the queries that directly use the base object.
+- **Lineage** disabled as Lineage is not supported for synonyms.
+- **Queries** lists published Compose queries that use the synonym.
+
+Properties
+~~~~~~~~~~~~
+
+The **Properties** field will identify the object as a synonym and display a reference to the base object if it is extracted into Alation:
+
+.. image:: ../../_static/Synonyms_04.png
+    :width: 2.5in
+    :align: center
+
+Note that if the base object has not been extracted and is not present in the catalog, Alation will display a warning on the page of a synonym that the base object cannot be found in the catalog:
+
+.. image:: ../../_static/Synonyms_05.png
+    :width: 5.5in
+    :align: center
+
+Catalog Data
+~~~~~~~~~~~~~~
+
+For synonyms, Alation will:
+
+- Display **Popularity** reflecting how often this synonym is used in ingested queries
+- Display **Top Users** reflecting which users query the synonym the most
+- Allow specifying **Stewards**. Note that this value is not copied over from the base object. This value belongs to the specific synonym object.
+- Allow specifying values for other custom fields on the page.
+
+Actions
+~~~~~~~~~~~~~
+
+- **Endorse-Warn-Deprecate** Trust Flags, starring and watching will work in the same way as they do for other data objects.
+- Upload/Download **data dictionary** works as it would for Table objects.
+- **Upload Data** feature is NOT available for synonyms.
+
+Using Synonyms in Compose
+-------------------------------
+
+You can use synonyms in Compose instead of fully qualified base object names.
+
+.. note::
+
+    For Oracle public synonyms, Compose will append public. in front of a public synonym.
+    This is not how naming resolution occurs in Oracle, and users will have to manually delete the public. in front of public synonyms.
+    For details on how oracle resolves object names, refer to `Oracle documentation <https://docs.oracle.com/cd/B28359_01/server.111/b28310/general008.htm#ADMIN11561>`_.
+
+For more about extracting synonyms from the Oracle sources, see `Extracting Synonyms From Oracle Sources`_.
+
+For more details about extracting synonyms from SQL Server sources, see `Extracting Synonyms from SQL Server Sources`_.
+
+Extracting Synonyms From Oracle Sources
+----------------------------------------
+
+For Oracle sources, Alation can extract both private and public synonyms. All extracted public synonyms can be located under the schema called PUBLIC on the catalog page of your data source. This schema is used in Alation to only surface the synonym object pages to users - it is created by Alation and is not present in the database itself.
+
+Private synonyms will be extracted together with their respective schemas if these schemas are extracted.
+
+For Oracle database versions below 12c, Alation will not extract public synonyms that match the following regular expressions (``%`` indicates the rest of the character following that pattern):
+
+================= ================= =================== ========================
+``"'/%'``         ``'EXF%'``        ``'sun/%'``         ``'CQ_NOTIFICATION%'``
+``'_ALL%'``       ``'GV$%'``        ``'USER%'``         ``'CWM%'``
+``'_DBA%'``       ``'java/%'``      ``'UTL%'``          ``'DATABASE%'``
+``'ALL%'``        ``'oracle/%'``    ``'V$%'``           ``'DATAPUMP%'``
+``'APEX%'``       ``'KU$%'``        ``'WM$%'``          ``'HS_%'``
+``'AWRBL%'``      ``'MGMT%'``       ``'WWV%'``          ``'SMP_%'``
+``'AWRRPT%'``     ``'MRV%'``        ``'HTMLDB%'``       ``'SQL_%'``
+``'BLASTN%'``     ``'org/%'``       ``'HTTPClient/%'``  ``'SYS_%'``
+``'com/%'``       ``'SDO%'``        ``'LOADER%'``       ``'USER_%'``
+``'CTX_%'``       ``'SI_%'``        ``'OLAP%'``         ``'UTL_%'``
+``'DBMS%'``       ``'sqlj%'``       ``'ORA_%'``         ``'V_OLAPI%'``
+``'DBA%'``        ``'ST_%'``        ``'javax/%'``       ``'WM_%'``
+``'DM_%'``                          ``'md5/%'``         ``'WRI$_%'``
+                                                        ``'OWA%'``
+================= ================= =================== ========================
+
+Extracting Synonyms from SQL Server Sources
+---------------------------------------------
+
+SQL Server does not have a concept of private vs. public synonyms. Alation will extract synonyms if their parent schemas are extracted during MDE.
+
+SQL Server extraction limitation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If a synonym was created in a database without being qualified by a schema, Alation will not be able to extract the synonym. This is because the synonym is qualified by the user, and Alation cannot predict which tables are qualified by what user. To determine if a synonym is defined in this way, run the query:
+
+.. code-block:: SQL
+
+      SELECT * FROM sys.synonyms where name="{{synonym_name}}"
+
+In the query result, you will see a column labeled ``base_object_name``. If the value of that column only has a table name, Alation will not be able to extract the synonym.
+
+To work around this, you can drop then synonym then re-create it using the following query:
+
+.. code-block:: console
+
+    CREATE SYNONYM {{qualifying_schema_name}}.{{synonym_name}}
+    FOR {{base_table_schema}}.{{base_table_name}};
+
+After the next MDE, the synonym should be extracted.
+
+Known Limitations
+~~~~~~~~~~~~~~~~~~~
+
+- Synonyms are not extracted for Oracle and SQL Server sources added as Custom DB type:
+
+    - Oracle-Custom DB shows the private synonyms as a table without columns. Public synonyms are not getting extracted.
+    - Custom DB-SQL Server does not extract/show synonyms at all
+
+- For Oracle data sources, the **Columns** tab on the catalog page of a synonym may show an incorrect column count.
+- For Oracle sources, if a private synonym and a public synonym have the same name, it is possible that a query using one of these synonyms may be attributed to both objects in Alation and will be displayed for both these synonym objects.
+- For Oracle sources, Alation cannot extract column information for a synonym created over a DBLink.
+- For Oracle sources, on the Joins tab for a synonym, all public synonyms will have the predicate ``"PUBLIC"``.
+- On the **Query** tab of a synonym catalog page, the query execution frequency may be incorrect.
+- For Oracle sources, Function, Stored Procedure, Sequence, Temp Table and User-defined object type of synonyms are shown with No base table in the **Properties** section and with 0 columns.

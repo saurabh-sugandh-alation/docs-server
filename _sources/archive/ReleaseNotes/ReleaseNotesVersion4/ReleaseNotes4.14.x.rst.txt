@@ -1,0 +1,348 @@
+Release Notes 4.14.x
+====================
+
+Release 4.14.0
+---------------------
+
+New Feature
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Search deduplication:  when this is enabled, if you search for
+   an object that exists in multiple places (e.g. a table duplicated
+   across different data sources and schemas), you'll see the different
+   matches grouped together and have the ability to pick the particular
+   instance you want. If you're interested, talk to your admins and
+   Solutions Engineer.
+
+Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Now, Table Pages for MySQL and MemSQL Data Sources will show
+   Update Time.
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Values on Column pages are displayed in order
+   of descending  frequency, so the most frequent values in the
+   column are shown up top. This worked historically but then regressed.
+-  Previously, when scheduled queries with comments would run,
+   they'd sometimes be reported as having failed even when execution
+   succeeded. This will no longer happen.
+-  Scheduled queries will now run with the specified custom
+   connection-string, rather than the data source default.
+-  In Compose, the Explain menu now works for Netezza. 
+-  Throughout Catalog (in both built-in and custom fields) users who've
+   been suspended by an admin will be indicated by '[GONE]' being
+   affixed to their names.
+-  Users' job titles now appear next to their names in Tagged
+   Objects lists.
+-  Clicking the login button twice in a row will no longer cause
+   authentication issues.
+-  @-mentions now work with non-English keyboards.
+-  Flags on published queries will now display properly.
+-  Alation will no longer add arcs to Lineage  for *failed* CREATE
+   statements,
+
+   -  and if you successfully run *multiple* CREATE statements in
+      Compose during a single query execution, arcs will be added for
+      *each*. Previously, only the last would be considered.
+
+-  It is now possible to read text in the Tags field on the Description
+   pane in Compose when using the Dusk Theme. Previously the
+   text was white-on-white.
+-  The in-app user satisfaction survey
+
+   -  now displays the full question without truncation
+   -  and accepts non-ASCII characters in the feedback form.
+
+-  The Ask-a-Colleague modal now works better. Previously, certain
+   flows would cause two overlapping dialog boxes to appear
+   simultaneously.
+-  Query counts on Tables pages are now computed and displayed
+   correctly.
+-  SmartSuggest will now work better for all supported data source
+   types. Previously, keyword lists for certain sources/dialects, such as
+   MemSQL, were unavailable and caused problems.
+-  Images and text will no longer bleed across boundaries in small
+   windows.
+-  Tags are now once again searchable by their prefixes. A
+   regression in 4.10.x made it possible to find tags *only* by exact
+   name match.
+-  We now show a peek when hovering over the column type in the
+   sidebar on the right of a Column page in Catalog. This allows you to
+   see the full value for the column type definition that can be long
+   in the case of complex nested types. *However*, we limit the capture
+   of this string to 100 characters, so longer type definitions will
+   still be truncated.
+
+Admin Release Notes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+New Features
+^^^^^^^^^^^^
+
+-  Automatic Extraction for Amazon S3
+
+   -  Got a Data Lake in Amazon S3 you want to curate? Alation can now
+      automatically crawl and catalog directories and files in S3
+      Buckets, creating pages for each asset where you can flag, tag,
+      title, describe, and otherwise annotate them.
+
+-  Archiving Old Ingested Queries  to save space
+
+   -  Now you can configure query logs that have already been processed
+      to be archived or deleted. This can save lots of disk space on
+      your instance. You can find this option in *Admin Settings > Misc*
+      at the bottom in the section titled "Archive processed QLI data". 
+   -  Note: Query logs will only be archived if they are older than the
+      given time interval. Note that the logs are archived or deleted in
+      chunks of about 10GB so you will not be able to archive anything
+      if you have less than this threshold worth of query log data.
+
+-  And we now connect to Spark SQL and SAS DB. You can extract
+   metadata for and execute queries against each.
+
+Improvements
+^^^^^^^^^^^^^^^^^^
+
+-  It is now possible for Stewards to create new Custom Templates with
+   no fields that can be helpful for classifying articles and making
+   them facet-searchable.
+-  We've also improved our API documentation for GET Metadata
+   (including from Custom Fields and Report Sources) and for Lineage.
+
+Bug Fixes
+^^^^^^^^^^^^^
+
+-  It is now possible to add a BI Source with a URI that Alation has
+   seen before. Previously this was not possible, even when the old
+   source had been deleted.
+-  The GET Metadata API for rich-text fields will now return
+   full values, including HTML tags—so the API result matches
+   what users see in the UI. Previously, the API returned values
+   truncated to 20 characters with HTML tags stripped away.
+-  Data Profiling now works for tables containing column names
+   that are also reserved keywords in the data source's SQL dialect.
+-  Previously, instances with SAML authentication ignored the
+   "Moderate user signups" checkbox in settings. Now if that box is
+   checked, new users will need to be activated by an admin before they
+   can access Alation. Users who had already signed into Alation once
+   will continue to be able to access Alation without needing to be
+   activated.
+-  Metadata Extraction robustness:
+
+   -  SQL Server: extraction now works when a particular database is
+      specified in the interface and when certain parameters (e.g.
+      UseNTLMv2) are included in the URI
+   -  Snowflake  extraction will no longer fail due to a
+      serialization error
+   -  Teradata Aster columns on VIEWs will be extracted. Previously,
+      TABLE columns were included but VIEW columns were missed.
+
+-  We've fixed a regression introduced in 4.12 that broke Greenplum
+   Query Log Ingestion so it couldn't run at all. Now you can again.
+-  Previously a bug made it impossible to update Object Set-, People
+   Set-, or Reference-type fields in Customize Catalog if a group
+   (rather than an individual user) had been added as a value to that
+   Custom Field on any object. That's been fixed.
+-  Allie (the Alation AI bot) can now populate the Lexicon (mappings
+   from literal tokens in data-object names like 'rvnu' to
+   human-readable terms like "revenue") even when some entries have
+   non-ASCII characters. Previously she'd choke on Unicode characters.
+-  We now clean up temp files created during Query Log Ingestion
+   even if QLI crashes before finishing.
+-  Our ER Studio integration now supports stripping out Rich Text
+   Formatting in descriptions. This feature can be turned off by running
+   the following command from the Alation backend shell:
+   *alation_conf
+   alation.feature_flags.strip_rtf_characters_in_erstudio_descriptions
+   -s False*
+-  Deleted MicroStrategy sources will now be labeled as such.
+   Previously, they looked identical to normal sources, which made it
+   appear that deletion didn't even work.
+
+   -  Also, deleted BI sources (for any Source type) can now be
+      restored.
+
+-  Over 100 data sources can now be viewed in the Deployment Command
+   Center. Previously, only 100 would be shown.
+-  It is now possible to profile Teradata Aster  tables and
+   columns with names containing space (' ') or period ('.').
+-  It is now once again possible for System Administrators of Alation to
+   specify a post-process script for backups (e.g. to move them to a
+   remote server).
+
+ 
+
+Release 4.14.1
+---------------------
+
+Bug Fixes for End-Users
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Icons on page headers will now display correctly in Firefox.
+   Previously, they'd appear cropped in that browser.
+-  When users mouse over a button that's disabled, they'll see a
+   tooltip explaining why (often this has to do with their
+   individual permissions). This used to work but regressed.
+-  In Compose, the run log for an in-progress Hive query will not
+   disappear even if the next Hive request times out. Previously a
+   time-out would wipe away earlier lines of the log.
+-  Hive log requests no longer queue up and consume Alation connector
+   resources if your Hive data source is slow to respond with the log.
+   This should eliminate crashing that sometimes occurred when the
+   works were gummed up.
+
+Bug Fix for Admins
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  LDAP Group syncing now works for non-ASCII characters.
+   Previously, Unicode characters caused failures.
+
+   -  Also,  we fixed a regression introduced in release 4.11 that
+      caused LDAP Groups to not sync properly.
+
+ 
+
+Release 4.14.2
+---------------------
+
+Bug Fixes for End-Users
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Reply-by-Email now works from Outlook 365. Previously,
+   messages sent from Outlook 365 would generate blank posts in Alation.
+-  Column metadata from Views are now extracted and shown for
+   SAP HANA datasources. Previously, only column metadata from
+   *Tables* was extracted from SAP HANA datasources. 
+
+ 
+
+Release 4.14.3
+---------------------
+
+Bug Fixes for Admins
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Alation can now extract MicroStrategy BI Servers that have
+   non-English names for standard folders Public and Reports, if
+   MicroStrategy Admins specify a Windows shortcut. Previously, Alation
+   could not extract from such servers.
+-  Pending Users: customers with very specific situations may need
+   to upgrade to 4.14.3 promptly. Your Customer Success Manager has
+   reached out to your Admin if your company may be affected.
+
+Release 4.14.4
+---------------------
+
+Admin Release Notes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+New Feature
+^^^^^^^^^^^
+
+-  Compose Support for Hive/Presto-like Virtual  Data Sources
+
+   -  it is now possible to configure a Virtual Data Source and
+      Connection String combination to let users write and run queries
+      in Compose against systems like Qubole, which Alation does not
+      yet automatically extract. 
+
+Bug Fixes
+^^^^^^^^^^
+
+-  Hive Query Log Ingestion will now continue if some summary files
+   are missing. Missing files will simply be skipped. Previously a
+   missing summary file would cause the entire ingestion job to fail.
+-  Data profiling in Hive data sources will work when table and
+   column names are also reserved keywords. This support was
+   included in 4.14.0 for other data sources. 
+
+Release 4.14.5
+---------------------
+
+Bug Fixes for Admins
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Alation can now extract MicroStrategy BI Servers that have
+   non-English names for the standard folders Public
+   Objects and Reports, if Alation Sys-Admins run a backend
+   command as described below. Previously (in 4.14.3), Alation could
+   only extract from such servers only if MicroStrategy Admins added a
+   Windows shortcut. To set up, run:
+
+   -  ``alation_conf alation.microstrategy.default public folder_name -s <yourpublicfolder>``
+   -  ``alation_conf alation.microstrategy.default report folder_name -s <yourreportfolder>``
+
+-  Metadata Extraction for Snowflake is working once again. A change to
+   the Snowflake JDBC driver broke extraction in 4.14.0.
+-  Query Log Ingestion for Presto 0.182 now works, due to
+   improvements to Alation’s Parser.
+
+Release 4.14.6
+---------------------
+
+Bug Fix for End-Users
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  It is now possible to add a Flag (Endorsement, Deprecation, or
+   Warning) to an object when Custom Permissions have been set for
+   Flags, as long as you’re in the permitted group. A regression in
+   4.12.0 made it so custom permissions prevented anyone from adding
+   Flags.
+
+Bug Fixes for Admins
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  You can now once again go to the Authentication tab in Admin
+   Settings. A regression in 4.14.0 made caused a 500 error when
+   attempting to visit that page.
+-  We’ve added a backend configuration for excluding schemas with a
+   large number of tables from SmartSuggest. For data sources with very
+   large schemas (in this case, over 100k tables), we can configure a
+   limit so that those schemas are excluded that can alleviate crashes
+   on the server or memory bloat on the client.
+
+Release 4.14.7
+---------------------
+
+Bug Fix for End-Users
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Tableau lineage and SQL Server fix - Resolved issue where users
+   were not able to see lineage all the way to the original table. 
+
+Bug Fixes for Admins
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Unable to configure MSSQL datasource when using Active Directory
+   credentials - Patch to MSSQL driver applied to support AD
+   credentials.
+
+Release 4.14.8
+---------------------
+
+Improvements for Admins
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Alation now supports HTTPS proxy for sending usage and health data
+   to Alation.
+
+Release 4.14.9
+---------------------
+
+Bug Fixes for Admins
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Improved performance and hardened MDE extraction for Oracle.
+
+Release 4.14.10
+---------------------
+
+Bug Fixes for Admins
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Fixed bug where Greenplum and Postgres extraction skipped tables
+   that had columns with comments (in the source database) but the table
+   did not.

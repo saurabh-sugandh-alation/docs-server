@@ -1,0 +1,67 @@
+Troubleshoot the Configuration of MDE with IAM Authentication
+====================================================================
+
+Logs
+--------------
+
+  - Auth service logs: **/opt/alation/site/logs/authserver.log**
+  - Auth service errors logs: **/opt/alation/site/logs/authserver_err.log**
+  - MDE logs: **/opt/alation/site/logs/celery*.log**
+
+
++-----------------------------+--------------------------------+---------------------------------------------------+
+| Type of Error               | Description                    | Troubleshooting                                   |
++=============================+================================+===================================================+
+| Error serializing           | If MDE fails with this error   |                                                   |
+| table objects: Error        | for Amazon Athena,             |   - Increase the STS max duration                 |
+| iterating schema            | the cause may be               |     configuration in AWS for both the             |
+| children                    | expiration of the STS token    |     EC2 instance role and the IAM Role            |
+|                             | while the extraction was in    |     that is assumed                               |
+|                             | progress                       |                                                   |
+|                             |                                |   - If max STS duration is configured to be       |
+|                             |                                |     12 hours and you still see this               |
+|                             |                                |     error, you may have run into the              |
+|                             |                                |     limitation of Alation                         |
+|                             |                                |     not supporting metadata extraction            |
+|                             |                                |     that runs for more than 12 hours.             |
+|                             |                                |     As an alternative, you can use an             |
+|                             |                                |     EC2 instance profile role to                  |
+|                             |                                |     authenticate.                                 |
++-----------------------------+--------------------------------+---------------------------------------------------+
+| TaskServer timed out        | If the ``adbcExtractSchemas``  | Increase the timeout using the                    |
+| after <..> seconds for      | method times out but the       | **alation_conf** parameter                        |
+| method:                     | extraction is not completed    | ``alation.taskserver_timeouts.adbcExtractSchemas``|
+| adbcExtractSchemas          | yet, extraction fails.         |                                                   |
++-----------------------------+--------------------------------+---------------------------------------------------+
+| Incomplete                  | AuthService and the data source| Check **authserver.log**                          |
+| authorization,              | are configured without         | for more details on what is the root cause        |
+| state not found             | the right instance profile,    | of the failure                                    |
+|                             | or the instance profile was    |                                                   |
+|                             | assigned to an EC2 instance    | Try restarting the EC2 instance for the instance  |
+|                             | but does not take effect.      | profile to be associated with it                  |
++-----------------------------+--------------------------------+---------------------------------------------------+
+| [Simba][AthenaJDBC          | Taskserver                     | Restart Taskserver.                               |
+| (100211) Missing            | needs to be restarted          |                                                   |
+| credentials error:          | after the backend              | From the Alation shell, run:                      |
+| Either UID/PWD or           | configuration.                 |                                                   |
+| AwsCredentialsProviderClass |                                | .. code-block:: Bash                              |
+| must be provided            |                                |                                                   |
+|                             |                                |      alation_supervisor restart java:taskserver   |
+|                             |                                |                                                   |
++-----------------------------+--------------------------------+---------------------------------------------------+
+| The security token included | An STS token is generated using| Restart the EC2 instance hosting Alation.         |
+| in the request is invalid.  | an IAM role. Instance          | Check the IAM Role policies and their             |
+| (Service: AmazonAthena;     | profiles are not recognized    | permissions.                                      |
+| Status Code: 400; Error     | or configuration does not      | Check that your Amazon Athena or Redshift         |
+| Code:                       | take effect.                   | instances are up and accessible from Alation.     |
+| UnrecognizedClientException;|                                |                                                   |
+| Request ID: <...>)          | This is typically an AWS       |                                                   |
+|                             | misconfiguration.              |                                                   |
++-----------------------------+--------------------------------+---------------------------------------------------+
+| Job is not running. It might| The log **authserver.log**     | Check the configuration of the role               |
+| have been killed or crashed | will contain the details:      | that gives access to the AWS resources.           |
+| unexpectedly or there might | "Error: AWS Validation Error.  | It must contain the instance profile role         |
+| have been a system outage   | User: <..> is not authorized   | in the Trusted Relationships.                     |
+|                             | to perform: sts:AssumeRole     |                                                   |
+|                             | on resource: <..>              |                                                   |
++-----------------------------+--------------------------------+---------------------------------------------------+

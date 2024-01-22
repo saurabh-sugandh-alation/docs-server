@@ -1,0 +1,223 @@
+Troubleshoot the Agent
+=========================
+
+.. include:: /shared/ProductLabels/Cloud_Label.rst
+
+This section will help you troubleshoot issues with the Agent. Issues may include:
+
+-  Agent is in a “Disconnected” status.
+
+-  Agent connectors are in an “Unknown” status.
+
+-  Error when installing new connectors.
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-automatic-reconnect
+   :end-before: .. end-automatic-reconnect
+
+.. _diagnose-agent-connectivity-problems:
+
+Diagnose Agent Connectivity Problems
+------------------------------------
+
+*Applies to Agent versions 1.5.0.2541 and later*
+
+Alation Agent versions 1.5.0.2541 and later come packaged with a suite of diagnostics that you can use to troubleshoot connectivity issues when deploying the Agent. These checks include (but are not limited to):
+
+- Operating system, memory, and CPU compatibility.
+- Configuration of the Agent.
+- Expired or revoked security certificates.
+- Issues related to DNS resolution and establishment of a TCP connection to Alation Cloud Service.
+
+To use the diagnostic tools, log into the Agent host machine. Some of the most useful commands are shown below.
+
+To get help information about the diagnostics tool:
+
+.. code:: bash
+
+   kratos diagnostics help
+
+To save the logs for all Agent :ref:`components <Agent Architecture>`, including connectors, to the **/tmp** directory:
+
+.. code:: bash
+
+   kratos diagnostics logs -o /tmp
+
+To get a list of available diagnostics:
+
+.. code:: bash
+
+   kratos diagnostics list
+
+To run all diagnostics and save the results to a file:
+
+.. code:: bash
+
+   kratos diagnostics run >> agent_diagnostics.yaml
+
+You can send the resulting file, which includes the output logs of the diagnostics, to Alation Support to enable faster diagnosis of Agent connectivity problems.
+
+Check the System Requirements
+-----------------------------
+
+Verify that the Agent’s host machine meets the :ref:`Agent System Requirements`.
+
+Check the Agent Version
+-----------------------
+
+Ensure that you have installed the latest version of the Agent.
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+         :start-after: .. start-check-agent-version
+         :end-before: .. end-check-agent-version
+
+#. .. include:: ../../shared/Agent_TextFragments.rst
+      :start-after: .. start-go-to-customer-portal
+      :end-before: .. end-go-to-customer-portal
+
+#. On the Alation Customer Portal, check the latest version number under the **Version** column. If it’s newer than the Agent you have installed, :doc:`upgrade the Agent<UpgradingTheAgent>`.
+
+.. _Check Agent Status:
+
+Check the Agent’s Status
+---------------------------
+
+As a troubleshooting step, or when starting and stopping the Agent, you may want to check the Agent’s status.
+
+Agent Status in Alation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+In Alation, you can check the Agent’s connection status by visiting **Admin Settings > Manage Connectors > Agents Dashboard**. The Agent’s **Status** tells you if your Alation Cloud instance can reach the Agent’s *reverse proxy* :ref:`component <Agent Architecture>`. This does not necessarily indicate that the Alation Connector Manager component or the connectors are running.
+
+.. _Check Agent Status on Agent Machine:
+
+Agent Status on the Agent’s Machine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can check the status of the Agent’s individual components on the Agent’s host machine. To check the status, run the following command:
+
+.. code-block:: bash
+
+   sudo docker ps
+
+This command will output a list of running Docker containers. A normally functioning Agent will show several containers:
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-agent-container-list
+   :end-before: .. end-agent-container-list
+
+If any components are missing from the list, that means they are not running. You can try to start the components back up by running ``sudo hydra restart`` on the Agent machine. Then run ``sudo docker ps`` again to check the status.
+
+Check the Certificates
+-------------------------
+
+If the Agent shows as disconnected, it may be that the Agent’s certificates have expired or been revoked. The certificates expire automatically after one year.
+
+To check if the Agent has valid certificates, see :ref:`Viewing the Certificates Expiration Date`. If the Agent does not have valid certificates, see :ref:`Renewing Agent Certificates` to reestablish the connection. Do not add a new Agent, as doing so will not solve problems with certificates and may cause additional problems.
+
+.. include:: /cloud/AlationAgent/UpdateAgentDnsAddress.rst
+
+Check Agent Error Messages
+-----------------------------
+
+To view Agent error messages, run the following command on the Agent’s host machine:
+
+.. code-block:: bash
+
+   sudo systemctl status hydra.service
+
+Check Logs
+-------------
+
+Each :ref:`component <Agent Architecture>` of the Agent writes its own logs on the Agent host machine. Each connector that’s installed on the Agent also has its own logs. On the Agent machine, you can get an archive of all logs or check the logs for each component and connector separately. Connector logs are also available directly in Alation.
+
+All Logs
+~~~~~~~~
+
+You can get an archive of all Agent component logs, including connector logs, using the Agent diagnostics tool on the Agent machine.
+
+To save all Agent logs to the current working directory:
+
+.. code:: bash
+
+   kratos diagnostics logs
+
+To save all Agent logs to a specified directory:
+
+.. code:: bash
+
+   kratos diagnostics logs -o /tmp
+
+Agent Component Logs
+~~~~~~~~~~~~~~~~~~~~
+
+To check the Agent’s logs, you’ll need to know the name of the Docker container for the :ref:`component <Agent Architecture>` you’re checking. To get the names of the containers, run the following command on the Agent’s host machine:
+
+.. code-block:: bash
+
+   sudo docker ps
+
+In the output, look under the **NAMES** column.
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-agent-container-list
+   :end-before: .. end-agent-container-list
+
+Access the logs using the ``docker logs`` command followed by the name of the container. For example:
+
+.. code-block:: bash
+
+   # tail logs for Alation Connector Manager component
+   docker logs -f agent
+   # tail logs for reverse proxy component
+   docker logs -f proxy
+   # save logs to a file
+   docker logs agent >& agent.logs 2>&1
+   docker logs proxy >& agent.logs 2>&1
+
+
+Connector Logs
+~~~~~~~~~~~~~~
+
+Each OCF connector has logs that record information about actions such as metadata extraction and query log ingestion. Logs for OCF connectors installed on the Agent are available from the **Connectors Dashboard**. The **Logs** area displays seven days or 1,000 lines of logs. You must be a Server Admin to see the Connectors Dashboard.
+
+To view OCF connector logs in Alation:
+
+#. In Alation, click on the **Settings** gear icon in the top right corner. This opens the **Admin Settings** page.
+
+   .. image:: ../../_static/TopNavigationBar_Gear.png
+
+#. Under the **Server Admin** section, click **Manage Connectors**.
+
+   .. image:: ../../_static/AdminSettings_ManageConnectors.png
+      :class: with-border
+
+#. Click the connector whose logs you want to see.
+
+#. Choose whether you want to see **Connector Logs** or **System Logs**.
+
+   .. image:: ../../_static/OCF_ConnectorLogs.png
+
+   .. note::
+
+      The option to download connector logs is not supported for Agent connectors.
+
+To view OCF connector logs on the Agent’s host machine:
+
+1. Get the ID of the connector by running ``kratos list`` and looking for the “id” field. Or run ``sudo docker ps`` and look for the number following the underscore in the container name.
+
+2. Use the commands below to work with the connector logs as desired:
+
+   .. code-block:: bash
+
+      # Tail logs
+      kratos tail <ID>
+
+      # Get full logs
+      kratos logs <ID>
+
+      # Get logs from a specific date
+      kratos logs --since 2020-08-15 <ID>
+
+      # Redirect logs to a file
+      kratos logs <ID> > connector_3.log 2>&1

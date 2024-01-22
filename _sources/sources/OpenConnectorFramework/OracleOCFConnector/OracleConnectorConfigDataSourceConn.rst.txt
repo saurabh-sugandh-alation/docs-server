@@ -1,0 +1,592 @@
+Configure Connection to Data Source
+=====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+After you install the Oracle OCF connector, you must configure the connection to the Oracle data source.
+
+The various steps involved in configuring the Oracle data source connection setting are:
+
+    1. `Provide Access`_
+
+    2. `Connect to Data Source`_
+
+    .. image:: ../../../_static/Oracle2.0_General_Settings.png
+        :width: 600px
+
+Provide Access
+----------------
+
+Go to the **Access** tab on the Settings page of your Oracle data source, set the data source visibility using these options:
+
+    - **Public Data Source** — The data source is visible to all users of the catalog.
+
+    - **Private Data Source** — The data source is visible to the users allowed access to the data source by Data Source Admins.
+
+You can add new Data Source Admin users in the **Data Source Admins** section.
+
+Connect to Data Source
+-------------------------
+
+To connect to the data source, you must perform these steps:
+
+    1. `Provide the JDBC URI`_
+
+    2. `Configure Authentication`_
+
+    3. `Test the Connection`_
+
+    4. `Configure Additional Connection Settings`_
+
+    5. `Configure Logging`_
+
+.. important::
+
+    The Alation user interface displays standard configuration settings for credentials and connection information stored in the Alation database. If your organization has configured Azure KeyVault or AWS Secrets Manager to hold such information, the user interface will change to include the following buttons adjacent to the respective fields:
+
+     .. image:: ../../../_static/SnowflakeOCF_New_Vault_Button.png
+        :width: 150px       
+    
+    By default, you see the user interface for **Standard**. In the case of Vault, instead of the actual credential information, you must select the source and provide the corresponding key. For details, see :doc:`Configure Secrets for OCF Connector Settings </sources/OpenConnectorFramework/ConfigureSecretsforOCFConnectors/index>`.
+
+Provide the JDBC URI
+----------------------
+
+JDBC URI
+~~~~~~~~~~~~~
+
+When building the URI, include the following information:
+
+    - Hostname or IP of the instance
+    - Port number
+    - Service name
+    - Service account username
+    - Password
+
+URI Format
+^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      oracle:thin:@//<Hostname_or_IP>:<Port_Number>/<Service_Name>
+
+**Example**
+
+
+.. code-block:: Bash
+
+      oracle:thin:@//ifac-orcl.ceeyrlqdpprr.us-west-2.rds.amazonaws.com:1521/orcl
+
+Use this JDBC URI format for Basic and Kerberos authentication without SSL connection.
+
+JDBC URI for SSL Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For SSL authentication, use the TCPS protocol and the following JDBC URI format:
+
+    ``oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=<Hostname_or_IP>)(PORT=<Port_Number>))(CONNECT_DATA=(SID=<Service_Name>)))``
+
+Use this format to enable SSL authentication.
+
+JDBC URI for LDAP Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+URI Format
+^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      oracle:thin:@ldap://<Hostname or IP >:<Port>/<servicename>,<LDAP Context>
+
+**Example**
+
+
+.. code-block:: Bash
+
+      oracle:thin:@ldap://ip-10-13-52-95.test.com:389/alation,cn=OracleContext,dc=alation-test,dc=com
+
+Connect Using Native Network Encryption (NNE)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NNE encrypts database connections without the need to configure TCP/IP and SSL/TLS and to open and listen on different ports. There are multiple configuration options for NNE. You may come across different scenarios where you need to pass different parameters in the JDBC URI to connect, depending on how NNE was configured on your Oracle database.
+For more information, refer to the `Oracle official documentation on NNE <Oracle official documentation on NNE - https://docs.oracle.com/en/database/oracle/oracle-database/19/dbseg/configuring-network-data-encryption-and-integrity.html#GUID-7F12066A-2BA1-476C-809B-BB95A3F727CF>`_.
+
+Consider the following scenarios for NNE:
+
+
+Scenario 1 (Default):
+^^^^^^^^^^^^^^^^^^^^^^^
+
+No settings done on the Oracle server.
+
+- Pass extra parameters in JDBC URI as shown below:
+
+    .. code-block:: Bash
+
+        oracle:thin:@//<Hostname_or_IP>:<Port_Number>/<Service_Name>?
+        oracle.net.encryption_client=REQUIRED
+        &oracle.net.encryption_types_client=AES256
+        &oracle.net.crypto_checksum_client=REQUIRED
+        &oracle.net.crypto_checksum_types_client=SHA256
+
+
+    This will allow Oracle to enable the NNE encryption.
+
+Scenario 2:
+^^^^^^^^^^^^^^
+
+This scenario applies if you are using one algorithm for encryptions and another for checksum.
+
+This corresponds to the following configuration in the sqlnet.ora file on the Oracle server:
+
+    .. code-block:: Bash
+
+        SQLNET.ENCRYPTION_SERVER = ACCEPTED
+        SQLNET.CRYPTO_CHECKSUM_SERVER = ACCEPTED
+        SQLNET.CRYPTO_CHECKSUM_TYPES_SERVER= (SHA256)
+        SQLNET.ENCRYPTION_TYPES_SERVER= (AES256)
+
+    In the above configuration, AES256 is used for encryption and SHA256 is used for checksum.
+
+If this is your case, you need to add the following parameters to the JDBC URI you provide in Alation:
+
+    .. code-block:: Bash
+
+        oracle:thin:@//10.13.80.110:1521/alation?
+        oracle.net.encryption_client=REQUIRED
+        &oracle.net.encryption_types_client=<Encryption mechanism allowed on Oracle server>
+        &oracle.net.crypto_checksum_client=REQUIRED
+        &oracle.net.crypto_checksum_types_client=<Checksum mechanism allowed on Oracle server>
+
+
+
+Provide the JDBC URI in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To provide to the JDBC URI in the Alation UI, perform these steps:
+
+.. tabs::
+
+    .. tab:: Connector Version 1.5.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.5.0**
+
+            1. On the Settings page of your Oracle data source, go to the **General Settings** tab.
+
+            2. In the **Provide the JDBC URI** section, based on the type of authentication you want to use, enter the JDBC URI. For details, see `Provide the JDBC URI`_ . 
+
+            3. Click **Save**.
+
+    .. tab:: Connector Versions Prior to 1.5.0
+
+            1. On the Settings page of your Oracle data source, go to the **General Settings** tab.
+
+            2. Go to the **Connector Settings** > **Datasource connection** section and based on the type of authentication you want to use, enter the JDBC URI. For details, see `Provide the JDBC URI`_ . 
+
+            3. Click **Save**.
+
+
+Configure Authentication
+--------------------------
+
+Alation supports the following authentication types for the Oracle data source:
+
+    - Basic authentication (database username and password)
+
+    - Kerberos authentication
+    
+    - LDAP authentication
+
+    - SSL authentication
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Basic authentication requires a service account username and password.
+
+Configure Basic Authentication 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. tabs::
+
+    .. tab:: Connector Version 1.5.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.5.0**
+
+            1. On the Settings page of Oracle data source, go to the **General Settings** tab.
+
+            2. In the **Configure authentication** step, click on the **Basic** tab. 
+
+            3. Provide the service account username and password. 
+
+            4. To use SSL with Basic authentication, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate.        
+
+                .. note::
+
+                        - To use SSL authentication, ensure that you have provided the JDBC URI format for TCPS protocol. See `JDBC URI for SSL Authentication`_. 
+
+                        - The Oracle OCF connector supports *.crt* file for SSL certificate.  
+
+            5. Click **Save**.
+
+    .. tab:: Connector Versions Prior to 1.5.0
+
+            1. On the Settings page of your Oracle data source, click on the **General Settings** tab.
+
+            2. Go to the **Connector Settings** > **Datasource connection** section and provide the following information: 
+
+                +--------------------------+---------------------------------------------------------+
+                | Parameter                | Description                                             |
+                +==========================+=========================================================+
+                | Username                 | Specify the service account username.                   |
+                +--------------------------+---------------------------------------------------------+
+                | Password                 | Specify the service account password.                   |
+                +--------------------------+---------------------------------------------------------+
+            
+
+            3. To use SSL with Kerberos, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate.
+
+                .. note::
+
+                        - To use SSL authentication, ensure that you have provided the JDBC URI format for TCPS protocol. See `JDBC URI for SSL Authentication`_. 
+
+                        - The Oracle OCF connector supports *.crt* file for SSL certificate.          
+            
+            4. Click **Save**.    
+
+
+Kerberos Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation supports Kerberos authentication with password and keytab.
+
+Have the **krb5.conf** and the keytab files ready for upload when configuring the data source in Alation.
+
+Configure Kerberos Authentication with Password
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. tabs::
+
+    .. tab:: Connector Version 1.5.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.5.0**
+
+            1. On the Settings page of Oracle data source, go to the **General Settings** tab.
+
+            2. In the **Configure authentication** step, click on the **Kerberos with password** tab. 
+
+            3. Provide the service account username, password, and upload the **krb5.conf** file  using the **Upload krb5.conf** link.
+
+            4. To use SSL with Kerberos, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate..  
+
+                .. note::
+
+                        - To use SSL authentication, ensure that you have provided the JDBC URI format for TCPS protocol. See `JDBC URI for SSL Authentication`_. 
+
+                        - The Oracle OCF connector supports *.crt* file for SSL certificate.
+
+            5. Click **Save**.
+
+    .. tab:: Connector Versions Prior to 1.5.0
+
+            1. On the Settings page of your Oracle data source, click on the **General Settings** tab.
+
+            2. Go to the **Connector Settings** > **Datasource connection** section and provide the following information: 
+
+                +--------------------------+---------------------------------------------------------+
+                | Parameter                | Description                                             |
+                +==========================+=========================================================+
+                | Username                 | Specify the service account username.                   |
+                +--------------------------+---------------------------------------------------------+
+                | Password                 | Specify the service account password.                   |
+                +--------------------------+---------------------------------------------------------+
+                | Enable Kerberos          | Select this checkbox and upload the **krb5.conf** file  |
+                | authentication           | using the **upload** link under the checkbox.           |
+                |                          |                                                         |
+                +--------------------------+---------------------------------------------------------+
+
+            3. To use SSL with Kerberos, turn on the **Enable SSL** toggle, upload the SSL certificate, and provide the Truststore password.
+            
+                .. note::
+
+                        - To use SSL authentication, ensure that you have provided the JDBC URI format for TCPS protocol. See `JDBC URI for SSL Authentication`_. 
+
+                        - The Oracle OCF connector supports *.crt* file for SSL certificate.
+
+            4. Click **Save**.    
+
+Configure Kerberos Authentication with Keytab
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. tabs::
+
+    .. tab:: Connector Version 1.5.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.5.0**
+
+            1. On the Settings page of Oracle data source, go to the **General Settings** tab.
+
+            2. In the **Configure authentication** step, click on the **Kerberos with keytab** tab. 
+
+            3. Provide the service account username and upload the **krb5.conf** file  using the **Upload krb5.conf** link.
+
+            4. To use SSL with Kerberos, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate.     
+
+                .. note::
+
+                        - To use SSL authentication, ensure that you have provided the JDBC URI format for TCPS protocol. See `JDBC URI for SSL Authentication`_. 
+
+                        - The Oracle OCF connector supports *.crt* file for SSL certificate.
+            5. Click **Save**.
+
+    .. tab:: Connector Versions Prior to 1.5.0
+
+            1. On the Settings page of your Oracle data source, click on the **General Settings** tab.
+
+            2. Go to the **Connector Settings** > **Datasource connection** section and provide the following information: 
+
+                +--------------------------+---------------------------------------------------------+
+                | Parameter                | Description                                             |
+                +==========================+=========================================================+
+                | Username                 | Specify the service account username.                   |
+                +--------------------------+---------------------------------------------------------+
+                | Password                 | Not applicable                                          |
+                +--------------------------+---------------------------------------------------------+
+                | Use keytab               | Select this checkbox if using keytab and upload         |
+                |                          | the keytab file for the service account using           |
+                |                          | the **upload** link under the checkbox.                 |
+                +--------------------------+---------------------------------------------------------+
+
+            3. 4. To use SSL with Kerberos, turn on the **Enable SSL** toggle and upload the SSL certificate.  
+
+                .. note::
+
+                        - To use SSL authentication, ensure that you have provided the JDBC URI format for TCPS protocol. See `JDBC URI for SSL Authentication`_. 
+
+                        - The Oracle OCF connector supports *.crt* file for SSL certificate.
+
+            4. Click **Save**.    
+
+LDAP Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are using LDAP authentication, check the following settings on your `Oracle LDAP server <https://docs.oracle.com/en/operating-systems/oracle-linux/7/userauth/userauth-AuthenticationConfiguration.html#ol7-s7-auth>`_:
+
+    - Check that the file ``$ORACLE_HOME/network/admin/ldap.ora`` exists on the LDAP server. See an example below:
+
+        .. code-block:: Bash
+
+            # ldap.ora
+            # Place this file in the network/admin subdirectory of your
+            # $ORACLE_HOME location
+
+            DIRECTORY_SERVERS = (ip-10-13-52-95.alation-test.com:389:636)
+            DEFAULT_ADMIN_CONTEXT = "dc=alation-test,dc=com"
+            DIRECTORY_SERVER_TYPE = OID
+
+        In this example:
+
+            - ``ip-10-13-52-95.alation-test.com:389:636``—Hostname(s) and port number(s) of the LDAP directory server(s).
+
+            - ``"dc=alation-test,dc=com"``—Default directory entry.
+
+        You should use your specific values instead.
+
+For more details about the ``ldap.ora file``, refer to the Oracle documentation: `Directory Usage Parameters in the ldap.ora File <https://docs.oracle.com/en/database/oracle/oracle-database/19/netrf/directory-usage-parameters-in-ldap-ora-file.html>`_.
+
+If you don't have the ``ldap.ora`` file in the directory ``$ORACLE_HOME/network/admin/``, then create it and add the content based on the example above. Use your specific property values in the file.
+
+Configure LDAP Authentication 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. tabs::
+
+    .. tab:: Connector Version 1.5.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.5.0**
+
+            1. On the Settings page of Oracle data source, go to the **General Settings** tab.
+
+            2. In the **Configure authentication** step, click on the **Basic** tab. 
+
+                .. note::
+
+                    Ensure that you have provided the JDBC URI format applicable for LDAP authentication. See `JDBC URI for SSL Authentication`_. 
+
+            3. Provide the service account username and password.
+
+            4. To use SSL with LDAP, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate.
+
+                .. note::
+
+                        - To use SSL authentication, ensure that you have provided the JDBC URI format for TCPS protocol. See `JDBC URI for SSL Authentication`_. 
+
+                        - The Oracle OCF connector supports *.crt* file for SSL certificate.
+
+            5. Click **Save**.
+
+    .. tab:: Connector Versions Prior to 1.5.0
+
+            1. On the Settings page of your Oracle data source, click on the **General Settings** tab.
+
+            2. Go to the **Connector Settings** > **Datasource connection** section and provide the following information: 
+
+                .. note::
+
+                    Ensure that you have provided the JDBC URI format applicable for LDAP authentication. See `JDBC URI for SSL Authentication`_. 
+
+                +--------------------------+---------------------------------------------------------+
+                | Parameter                | Description                                             |
+                +==========================+=========================================================+
+                | Username                 | Specify the service account username.                   |
+                +--------------------------+---------------------------------------------------------+
+                | Password                 | Specify the service account password.                   |
+                +--------------------------+---------------------------------------------------------+
+
+            3. To use SSL with Kerberos, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate.
+            
+                .. note::
+
+                        - To use SSL authentication, ensure that you have provided the JDBC URI format for TCPS protocol. See `JDBC URI for SSL Authentication`_. 
+
+                        - The Oracle OCF connector supports *.crt* file for SSL certificate.
+
+            4. Click **Save**.    
+
+
+Testing LDAP Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can test the connection over LDAP to your Oracle database from the Alation host using an ``ldapsearch`` tool, for example:
+
+    .. code-block:: Bash
+
+        ldapsearch -x -h ip-10-13-52-95.alation-test.com -p 389 -b dc=alation-test,dc=com
+
+You should receive a control response similar to the following:
+
+    .. image:: ../../../_static/OCF_Oracle_LDAP_Control_Response.png
+        :width: 500px
+        :class: with-border
+
+
+Test the Connection
+--------------------
+
+The connection test checks database connectivity. Alation uses the JDBC URI to connect to the database and to confirm when the connection is established.
+
+After specifying the JDBC URI and configuring authentication, test the connection.
+
+To validate the network connectivity, go to **General Settings** > **Test Connection** on the Settings page of your Oracle data source and click **Test**.
+
+A dialog box appears confirming the status of the connection test. 
+
+
+Configure Additional Connection Settings
+-----------------------------------------
+   
+Apart from the mandatory configurations that you perform to connect to the data source in the General Settings tab, you can configure the following additional settings:
+
+    - `Configure Additional Data Source Connections`
+
+    - `Disable Obfuscate Literals`
+
+    - `Disable automatic lineage generation`
+
+Configure Additional Data Source Connections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation can associate objects in a data source with objects in another source in the catalog through lineage. For example, you can show lineage between your data source and BI sources that use its data. 
+
+Provide additional connection information for the data source to see lineage across multiple sources on the Lineage chart. 
+
+.. tabs::
+
+    .. tab:: Connector Version 1.5.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.5.0**.
+
+            To enter additional data source connection details, go to **General Settings** > **Advanced settings** of the Settings page of your Oracle connector and enter the connection URL.
+
+            Use the following format: ``<host>:<port>``
+
+            You can provide multiple values as a comma-separated list:
+            
+            ``<host1>:<port1>,<host2>:<port2>``
+
+            For example:
+
+            ``10.13.71.216:1541,sever.com:1542``
+
+
+    .. tab:: Connector Versions Prior to 1.5.0
+
+            On the **Application Settings** section of **General Settings** tab, provide the host and port information in the **Additional data source connections** field.
+            
+            This parameter is used to generate lineage between the current data source and another source in the catalog, for example a BI source that retrieves data from the underlying database. The parameter accepts host and port information of the corresponding BI data source connection.
+
+            Use the following format: ``<host>:<port>``
+
+            You can provide multiple values as a comma-separated list:
+            
+            ``<host1>:<port1>,<host2>:<port2>``
+
+            For example:
+
+            ``10.13.71.216:1541,sever.com:1542``
+
+
+For more details, see :doc:`/sources/OpenConnectorFramework/BIConnectionInfoField`.
+
+Enable or Disable Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can hide literal values from queries ingested with query log ingestion and displayed on the Queries tab of a schema and table catalog objects. 
+
+.. tabs::
+
+    .. tab:: Connector Version 1.5.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.5.0**.
+
+            Go to the **General Settings** tab and turn on or off the **Obfuscate literals** toggle under the **Advanced settings** section.
+
+
+    .. tab:: Connector Versions Prior to 1.5.0
+
+        Go to the **General Settings** tab and turn on or off the **Obfuscate literals** toggle.
+               
+
+When enabled, literal values are substituted with placeholder values. Disable this option when you want literal values in queries to be visible to users.
+
+By default, this option is disabled.
+
+Configure Logging
+-------------------
+
+To set the logging level for your Oracle data source logs, perform these steps:
+
+.. tabs::
+
+    .. tab:: Connector Version 1.5.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.5.0**.
+
+            
+            1. On the Settings page of your Oracle data source, go to **General Settings** > **Connector logs**.
+
+            2. Select a logging level for the connector logs and click **Save**. 
+        
+                The available log levels are based on the Log4j framework.
+
+
+    .. tab:: Connector Versions Prior to 1.5.0
+
+            1. On the Settings page of your Oracle data source, go to **Logging configuration** section of **General Settings** tab.
+
+            2. Select a logging level for the connector logs and click **Save**. 
+        
+                The available log levels are based on the Log4j framework.
+
+
+You can view the connector logs in **Admin Settings** > **Server Admin** > **Manage Connectors** > **Oracle OCF connector**.

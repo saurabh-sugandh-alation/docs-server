@@ -1,0 +1,74 @@
+Configure Multi-Select Filters For Query Forms
+==================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from release 2021.3*
+
+When creating queries in Compose, analysts can configure parameterized filters to be multi-select fields on the corresponding *Query Form* so that users working with the form in the Catalog can take advantage of selecting values from a list instead of entering them manually.
+
+When you go to the **Run Form** catalog page of a parameterized query, the query parameters are displayed in the **Filter Results** section. For example, the query form shown below contains a field for manually entering the filter value:
+
+    .. image:: /_static/Compose_ConfigureMultiselectForQueryForms_01.png
+
+
+This query form allows entering a **single value**, which in this example is a TV show name. The underlying query behind this query form includes a parameterized filter for the ``primary_title`` column and looks as follows:
+
+    .. code-block:: console
+
+        SELECT
+           primary_title,
+           original_title,
+           start_year,
+           end_year
+        FROM IMDb.titles
+        WHERE primary_title = ${TV Show Name | eg: The Big Bang Theory | help: Enter TV Show Name}
+        AND title_type = 'tvSeries';
+
+
+The parameterized filter in this query -
+
+    .. code-block:: console
+
+        WHERE primary_title = ${TV Show Name | eg: The Big Bang Theory | help: Enter TV Show Name}
+
+defines the filter field that appears on the corresponding query form.
+
+In order to allow users to select multiple values instead of manually entering a single name, the syntax of the filter can be modified in the following way:
+
+    - Use ``IN`` as the predicate operator (or ``NOT IN`` starting in 2022.1)
+    - In the *example* section of the parameterized filter, - the ``eg`` parameter, - list specific column values wrapping them in single quotes:
+
+    .. code-block:: console
+
+        WHERE primary_title IN (${TV Show Name | eg: 'The Big Bang Theory', 'Star Trek', 'House' | help: Enter TV Show Name})
+
+This will add a multi-select option to the filter field on the query form:
+
+    .. image:: /_static/Compose_ConfigureMultiselectForQueryForms_02.png
+
+It is possible to add more than one filter to a query form. In the following example, the query has been modified to include two multi-select filters:
+
+    .. code-block:: console
+
+          SELECT
+            primary_title,
+            original_title,
+            start_year,
+            end_year
+          FROM IMDb.titles
+          WHERE primary_title IN (${TV Show Name |eg: 'The Big Bang Theory', 'Star Trek', 'House' | help: Enter TV Show Name})
+          AND start_year IN (${Year Started | eg: '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021' | type: date | help: Enter the Year of the Show})
+          AND title_type = 'tvSeries';
+
+
+Note that if the variable type is defined with the ``type`` parameter, the input field on the query form will reflect the variable type. For example, for the **Year Started** filter in the example, the variable type is set to ``date``, and the input field on the query form will appear as a *date picker* type of field instead of a text field:
+
+    .. code-block:: console
+
+          AND start_year IN (${Year Started | eg: '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021' | type: date | help: Enter the Year of the Show})
+
+
+ Users will see a date picker widget when they click on the field to enter values:
+
+    .. image:: /_static/Compose_ConfigureMultiselectForQueryForms_03.png

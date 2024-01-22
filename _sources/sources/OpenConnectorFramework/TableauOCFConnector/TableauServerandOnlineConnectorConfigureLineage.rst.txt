@@ -1,0 +1,117 @@
+Configure Lineage for OCF Tableau BI Source
+==================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Table Level Lineage (TLL) is calculated by default for Tableau objects enabling users the ability to trace back the source for their Tableau views/reports to the original data source, for example, RDBMS table.
+
+From Tableau OCF connector version 1.4.0.3284 and Alation version 2023.1, you can additionally enable Column Level Lineage. Users will be able to see lineage links from table columns in the underlying RDBMS data source to BI report fields in Tableau views.
+
+Both the database connected to Tableau and the Tableau instance should be cataloged in Alation for the lineage between them to become available. For example, if your Tableau instance is connected to a Snowflake database as a source of data for visualizations, both Snowflake and Tableau must be cataloged in Alation as sources:
+
+    - Snowflake—as a data source
+    - Tableau—as a BI source.
+
+The settings of a data source allow you to configure a “link” to the BI source that uses the data from the database. This information is used to build lineage relations between metadata objects under the data source and the BI source.
+
+Enable Column-Level Lineage for Tableau
+--------------------------------------------
+
+*Applies from version 2023.1*
+
+Feature configuration requires the role of Server Admin.
+
+To enable the column-level lineage:
+
+1. Log in to your Alation instance as a Server Admin.
+
+2. Go to **Admin Settings** > **Server Admin** > **Feature Configuration**.
+
+3. Locate the feature toggle **Automatically extracts Column Level Lineage for Tableau BI data source**.
+
+4. Click this toggle to activate it.
+
+5. Scroll up to the top of the page and click Save changes to apply the configuration.
+
+Configure Lineage
+----------------------------------------------
+
+Configuration of data source settings requires the role of Server Admin.
+
+When calculating lineage between Tableau and a data source, Alation relies on the link between a Tableau BI source and the underlying data source that provides data for Tableau views cataloged in Alation.
+
+Before you configure lineage, make sure that at least one extraction was performed from the data source and the Tableau BI source and that you have metadata from these sources in the catalog.
+
+To configure lineage:
+
+1. Under your Tableau BI source, find the relevant data source connection information. You can find the data source information on the DataSources tab of the Tableau BI source, a workbook, or a report page. The BI server source page lists all extracted data sources for all extracted BI objects. The page of a workbook or report only lists data sources used to create the reports.
+
+        .. image:: ../../../_static/OCF_Tableau_Lineage_DataSourcesTab.png
+            :width: 600px
+            :class: with-border
+
+        Click into the name of the data source to open its page and then open the **Connections** tab to view the database connection information under **Properties** on the right in the **Database Connection** field.
+
+        .. image:: ../../../_static/OCF_Tableau_Lineage_ConnectionsTab.png
+            :width: 600px
+            :class: with-border
+
+
+2. Copy the **Database Connection** value.
+
+3. In the Alation catalog, find the data source that is also the data source for Tableau and open its settings. For example, the following Snowflake data source is also the data source for Tableau.
+
+    .. image:: ../../../_static/Tableau_Lineage_DSSettings.png
+        :width: 400px
+        :class: with-border
+
+4. Open the **General Settings** tab.
+
+5. Under **Application Settings**, in the BI connection info field, specify the database connection information you have copied from the Tableau BI source. This field links the two sources and enables table-to-BI-report and column-to-BI-column lineage generation between the data source and the BI source.
+
+    .. image:: ../../../_static/OCF_Tableau_Lineage_BIConnection.png
+        :width: 400px
+        :class: with-border
+
+6. Click **Save**.
+
+7. Before the next extraction from your Tableau BI source, ensure that the checkbox **Disable Automatic Lineage Generation** is clear.
+
+8. Perform extraction on the Tableau BI source.
+
+
+Now, during the metadata extraction, Alation will generate lineage data revealing lineage links between the data source tables and columns and the Tableau BI source reports and BI report columns. For example, the screenshot below shows the Lineage diagram for a Tableau dashboard object cataloged in Alation. You can trace the BI column **Amount** (highlighted) all the way up to the data source column **amount**.
+
+    .. image:: ../../../_static/OCF_Tableau_Lineage_BIDiagram.png
+        :width: 600px
+        :class: with-border
+
+Under the corresponding data source, you will see lineage links going downstream from a column object to the BI column object. For example, the screenshot below shows the Lineage diagram from the corresponding table page. The table column amount is highlighted. You can trace lineage all the way down to the Tableau dashboard that uses the data from this table. The table column **amount** is used to create the BI field **Amount** in Tableau.
+
+
+    .. image:: ../../../_static/OCF_Tableau_Lineage_DSDiagram.png
+        :width: 600px
+        :class: with-border
+
+From connector version **1.6.1**, lineage will be generated for dashboards when it references or uses unpublished sheets. Dashboards with the following scenarios are cataloged in Alation:
+
+    - Dashboards without published sheets and therefore linked directly to the underlying data source in the lineage.
+
+      .. image:: ../../../_static/OCF_Tableau_Lineage01.png
+          :width: 600px
+          :class: with-border
+
+    - Dashboards that are linked through published sheets and not directly linked to the data source.
+
+      .. image:: ../../../_static/OCF_Tableau_Lineage02.png
+          :width: 600px
+          :class: with-border
+
+    - Dashboards that are linked through hidden or unpublished sheets and published sheets.
+
+          - Lineage is generated for dashboard linking through sheets to connect with data sources.
+          - The data sources that are only available to the dashboard are directly linked through hidden or unpublished sheets.
+
+            .. image:: ../../../_static/OCF_Tableau_Lineage03.png
+                :width: 600px
+                :class: with-border

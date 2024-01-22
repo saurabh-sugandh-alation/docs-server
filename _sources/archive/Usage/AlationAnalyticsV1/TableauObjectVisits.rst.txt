@@ -1,0 +1,31 @@
+Tableau Object Visits
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query retrieves visits to all Tableau objects by day.
+
+.. code-block:: sql
+
+    -- Tableau Specific Object Visit Time Series
+    SELECT
+      COUNT(*) AS N,
+      AOT.object_type_name,
+      DATE(AV.timestamp)
+    FROM
+      public.alation_visits AS AV
+      JOIN public.alation_object_type AS AOT ON AV.object_type_id = AOT.object_type_id
+    WHERE
+      AOT.object_type_id IN (
+        SELECT
+          object_type_id
+        FROM
+          public.alation_object_type
+        WHERE
+          object_type_name LIKE '%tableau%'
+      )
+    GROUP BY
+      AOT.object_type_name,
+      DATE(AV.timestamp);

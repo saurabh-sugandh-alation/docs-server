@@ -1,0 +1,152 @@
+Connector Overview
+=====================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The Databricks Unity Catalog OCF connector should be used to catalog Databricks workspaces that have Unity Catalog enabled. It supports both interactive clusters and SQL warehouses for metadata extraction. The connector can catalog metadata objects from multiple workspaces using a single data source connection. Extracted schemas will be referenced with multipart names (``catalog.schema``).
+
+The connector supports both Azure Databricks and Databricks on AWS.
+
+The connector is available as a Zip file that can be uploaded and installed in the Alation application. The latest connector package can be downloaded from the `Alation Customer Portal <https://customerportal.alationdata.com/>`_. Ask an Alation admin with access to Customer Portal to download the connector from the **Connectors** section (Customer Portal > Connectors).
+
+Connector Version Compatibility
+-----------------------------------
+
+Newer versions of the connector offer more features and may require newer Alation releases. See :doc:`/sources/OpenConnectorFramework/DatabricksUnityCatalog/DatabricksUnityCatalogOCFReleaseNotes` for version information.
+
+Team
+----------------
+
+You may require assistance from your Databricks account administrator when configuring this connector in Alation.
+
+    - Databricks administrator:
+
+        - Creates a user for Alation and grants it the required permissions to access metadata
+        - Generates a personal access token
+        - Provides the JDBC URI to access metadata
+        - Assists in enabling the Public Preview features (system lineage and audit tables)
+        - Assists with configuring OAuth authentication for Compose
+
+    - Alation Server Admin:
+
+        - Installs the connector
+        - Creates and configures a Databricks Unity Catalog OCF data source in Alation
+
+Scope
+-----------
+
+The table below shows which metadata objects are extracted by this connector and which operations are supported.
+
++----------------------------+---------------------------------------------------------------+-------------+
+| Feature                    | Scope                                                         | Availability|
++============================+===============================================================+=============+
+| **Authentication**                                                                                       |
++----------------------------+---------------------------------------------------------------+-------------+
+| Basic                      | Authentication with a username and password                   | Yes\*       |
+|                            |                                                               |             |
+|                            | \* Databricks on AWS only; not supported for Azure Databricks |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Token-based                | Authentication with a personal access token (PAT)             | Yes         |
+|                            |                                                               |             |
+|                            | (Supported for both Azure Databricks and Databricks on AWS)   |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSO authentication         | SSO authentication with an identity provider application      | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Metadata extraction (MDE)**                                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| Default MDE                | Extraction of metadata based on default extraction queries    | Yes         |
+|                            | in the connector code                                         |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based MDE     | Extraction of metadata based on extraction                    | No          |
+|                            | queries provided by a user                                    |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Extracted metadata objects**                                                                           |
++----------------------------+---------------------------------------------------------------+-------------+
+| Data source                | Data source object in Alation that is parent to extracted     | Yes         |
+|                            | metadata                                                      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Schemas                    | List of schemas, with multipart schema names                  | Yes         |
+|                            | ``catalog.schema``                                            |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Tables                     | List of tables                                                | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Columns                    | List of columns                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column data types          | Column data types                                             | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Views                      | List of views                                                 | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Source comments            | Source comments                                               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Primary keys               | Primary key information for extracted tables                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Foreign keys               | Foreign key information for extracted tables                  | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| Functions                  | Extraction of function metadata                               | No          |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Sampling and profiling**                                                                               |
++----------------------------+---------------------------------------------------------------+-------------+
+| Table sampling             | Extracts data samples from all extracted tables               | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Column sampling            | Extracts data samples from all extracted columns              | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| Deep column profiling      | On-demand profiling of specific columns with the calculation  | Yes         |
+|                            | of value distribution stats                                   |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Dynamic profiling          | On-demand table and column profiling by individual users who  | Yes         |
+|                            | use their own database accounts to retrieve the profiles      |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based table   | Ability to use custom queries for sampling specific tables    | Yes         |
+| sampling                   |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based column  | Ability to use custom queries for profiling specific columns  | Yes         |
+| sampling                   |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Query log ingestion (QLI)** (beta)                                                                     |
++----------------------------+---------------------------------------------------------------+-------------+
+| Extraction and ingestion   | Extraction of query history from the system audit table       | Yes         |
+| of query history           | and ingestion of query history metadata into the catalog      |             |
+|                            |                                                               |             |
+| (Available from connector  |                                                               |             |
+| version **2.0.3.6564** and |                                                               |             |
+| and Alation version        |                                                               |             |
+| **2023.1.7.1**)            |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Query history, filters,    | Query history, filters, joins, and popularity information     | Yes         |
+| expressions, joins, and    | is calculated from the query history metadata extracted       |             |
+| popularity                 | and ingested with QLI                                         |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Lineage extraction** (beta)                                                                            |
++----------------------------+---------------------------------------------------------------+-------------+
+| Extraction of lineage      | Lineage information is calculated                             | Yes         |
+| information                | during metadata extraction (*direct lineage extraction*).     |             |
+|                            | Additionally, lineage is generated based on DDL               |             |
+| (Available from connector  | queries run in Compose                                        |             |
+| version **1.0.3.4144** and |                                                               |             |
+| Alation version            | Users can also create lineage manually or add it using        |             |
+| **2023.1.2**)              | the public API                                                |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Data upload**                                                                            | Yes         |
++----------------------------+---------------------------------------------------------------+-------------+
+| **Compose**                                                                                              |
++----------------------------+---------------------------------------------------------------+-------------+
+| Customer-managed           | Connections from Compose and querying                         | Yes         |
+| (on-premise) Alation       |                                                               |             |
+| instances                  |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Alation Cloud Service      | Compose on Alation Cloud Service instances: depending on your | Yes         |
+| instances                  | network configuration, you may need to use Alation Agent      |             |
+|                            | to connect to your data source                                |             |
+|                            |                                                               |             |
+|                            | Compose with Agent is supported from connector version        |             |
+|                            | **1.2.1.5335**                                                |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| Personal Access Token (PAT)| Authentication in Compose with a PAT                          | Yes         |
+| authentication in Compose  |                                                               |             |
++----------------------------+---------------------------------------------------------------+-------------+
+| SSO through OAuth in       | Authentication in Compose with OAuth via Azure Active         | Yes         |
+| Compose                    | Directory                                                     |             |
+|                            |                                                               |             |
+|                            | OAuth authentication is supported from connector version      |             |
+|                            | **2.1.0**.                                                    |             |
++----------------------------+---------------------------------------------------------------+-------------+

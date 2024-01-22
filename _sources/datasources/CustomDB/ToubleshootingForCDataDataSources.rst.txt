@@ -1,0 +1,18 @@
+Troubleshooting for CData Data Sources
+==============================================
+
+Logs to collect and review:
+
+    - For logs related to MDE: **taskserver.log, taskserver_err.log**
+    - For logs related to Compose: **connector.log, connector_err.log**
+    - For any other errors: **alation-error.log, alation-debug.log**
+
+To show the driver activity from query execution to network traffic, use **Logfile** and **Verbosity**. At the end of the URI, add **Logfile=/tmp/log.file;Verbosity=3;** which will generate the log file in the specified directory. For more information about setting the Verbosity level, refer to `Logging <https://cdn.cdata.com/help/FGG/jdbc/pg_advancedlogging.htm>`_ in CData documentation.
+
+Find a number of examples of the required Verbosity level below:
+
+    - **Authentication Errors:** Recording the **Logfile** at **Verbosity 4** is necessary to get full details on authentication errors.
+    - **Queries Timeout:** A server that takes too long to respond will exceed the client-side timeout of the driver. Setting the **Timeout** property to a higher value will help avoid connection errors. You can also disable Timeout by setting it to 0 and at the same time setting **Verbosity** to 2.  This will show where the time is spent.
+    - **The certificate presented by the server cannot be validated:** This error indicates that the  driver cannot validate the server certificate through the chain of trust. If you are using a self-signed certificate, there is only one certificate in the chain.
+
+      To resolve this error, you must verify yourself that the certificate can be trusted and specify to the driver that you trust the certificate. One way you can specify that you trust a certificate is  to add the certificate to the trusted system store; another is to set **SSLServerCert**.

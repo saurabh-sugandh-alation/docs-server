@@ -1,0 +1,577 @@
+Curation progress (Titles and Descriptions Only)
+================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query produces curation progress report for all objects with or without stewards. Percent completion is computed as,
+
+.. image:: ../../../_static/Screen_Shot_2019-10-09_at_5.25.43_PM.png
+
+.. code-block:: sql
+
+    -- temp table cleanup
+    DROP TABLE IF EXISTS schema_data;
+    DROP TABLE IF EXISTS table_data;
+    DROP TABLE IF EXISTS attribute_data;
+    DROP TABLE IF EXISTS ObjsWithSteward;
+    DROP INDEX IF EXISTS idx_psMain1;
+
+    -- ########################################################### --
+    -- Build an index of all the objects with stewards
+    -- ########################################################### --
+    SELECT DISTINCT
+      AO.object_uuid,
+      AO.object_type_id,
+      OT1.object_type_name AS objectType,
+      AO.object_url,
+      FV.object_type_uuid_value AS stewardUUID,
+      AU.user_name AS stewardUsername,
+      AU.email AS stewardEmail,
+      AU.is_active AS stewardActiveFlag,
+      AU.display_name AS stewardDisplayname,
+      AU.is_admin,
+      AU.user_type
+    INTO
+      TEMP TABLE ObjsWithSteward
+    FROM
+      public.alation_object AS AO
+      -- Join on object UUID and object type ID to get value_fp associated with the catalog object
+      JOIN public.object_field_value AS OFV ON AO.object_uuid = OFV.object_uuid
+      AND AO.object_type_id = OFV.object_type_id
+      -- Use value_fp to get the attached steward UUID and object type ID
+      JOIN public.field_value AS FV ON OFV.value_fp = FV.value_fp
+      -- Using object UUID and type ID, we get the value_fp associated to the stewards
+      JOIN public.object_field_value as OFV2 ON FV.object_type_uuid_value = OFV2.object_uuid
+      AND FV.object_type_id_value = OFV2.object_type_id
+      -- Now we get the value of the steward fields
+      JOIN public.field_value AS FV2 ON OFV2.value_fp = FV2.value_fp
+      -- Get user information
+      JOIN public.alation_user AS AU ON AU.email = FV2.text_value
+      -- Get object type information
+      JOIN public.alation_object_type AS OT1 ON AO.object_type_id = OT1.object_type_id
+      -- Get deletion information
+      -- First grab the object UUID (uuid + type_id) and get the value_fp (value pointer)
+      JOIN public.object_field_value AS OFV3 ON AO.object_uuid = OFV3.object_uuid
+      AND AO.object_type_id = OFV3.object_type_id
+      -- Get field value
+      JOIN public.field_value AS FV3 ON OFV3.value_fp = FV3.value_fp
+      -- Match on field id to get deletion flag
+      JOIN public.object_field AS OBF ON OFV3.field_id = OBF.field_id
+      -- Requesting field_id for stewards only
+    WHERE
+      OFV.field_id IN (
+        SELECT
+          field_id
+        FROM
+          public.object_field
+        WHERE
+          field_name = 'steward'
+      )
+      AND
+      -- ensure only field_name = 'deleted' field values are extracted
+      OBF.field_name = 'deleted'
+      AND
+      -- Get only objects which are not deleted
+      FV3.boolean_value IS False;
+      -- Create an index for optimized search
+      CREATE INDEX idx_psMain1 ON ObjsWithSteward(object_uuid, objectType);
+
+      -- ########################################################### --
+      -- gather data on schemas
+      -- ########################################################### --
+      WITH temp_table AS (
+        SELECT
+          DISTINCT AO.object_uuid,
+          AO.object_type_id,
+          AO.object_url,
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          MAX(case when field_id = 3 then 1 else 0 end) as has_title,
+          MAX(case when field_id = 4 then 1 else 0 end) as has_description
+        FROM
+          public.alation_object AO
+          JOIN public.object_field_value AS OFV ON OFV.object_uuid = AO.object_uuid
+          AND OFV.object_type_id = AO.object_type_id
+          JOIN public.object_parent_relationship AS OPR ON OPR.object_uuid = AO.object_uuid
+          AND OPR.object_type_id = AO.object_type_id
+        WHERE
+          OFV.field_id IN (3, 4) /* title or description */
+          AND AO.object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'schema'
+          )
+          -- because we only want the direct parent for this type of object, we will only ask for data sources
+          AND OPR.parent_object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'data'
+          )
+        GROUP BY
+          AO.object_uuid,
+          AO.object_type_id,
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          ao.object_url),
+
+      -- ########################################################### --
+      -- intermediate transformation table
+      -- ########################################################### --
+      intermediate_set AS (
+        SELECT
+          TT.parent_object_uuid,
+          TT.parent_object_type_id,
+          SUM(TT.has_title) AS title_freq,
+          SUM(TT.has_description) AS des_freq
+        FROM
+          temp_table AS TT
+        GROUP BY
+          TT.parent_object_uuid,
+          TT.parent_object_type_id),
+
+      -- ########################################################### --
+      -- gather the number of children for the given parent
+      -- ########################################################### --
+      total_records AS (
+        SELECT
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          OPR.object_type_id,
+          COUNT(*) AS number_of_schemas
+        FROM
+          public.object_parent_relationship AS OPR
+          -- grab parents
+        WHERE
+          OPR.parent_object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'data'
+          )
+          -- grab children
+          AND OPR.object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'schema'
+          )
+        GROUP BY
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          OPR.object_type_id
+          )
+
+      -- ########################################################### --
+      -- collect all the data on attributes
+      -- ########################################################### --
+    SELECT
+      TR.parent_object_uuid,
+      TR.parent_object_type_id,
+      ITS.title_freq,
+      ITS.des_freq,
+      TR.number_of_schemas AS number_of_children,
+      CASE WHEN (ITS.title_freq + ITS.des_freq) :: decimal /(2 * TR.number_of_schemas) :: decimal IS NULL THEN 0 WHEN (ITS.title_freq + ITS.des_freq) :: decimal /(2 * TR.number_of_schemas) :: decimal IS NOT NULL THEN ROUND(
+        (ITS.title_freq + ITS.des_freq) :: decimal /(2 * TR.number_of_schemas) :: decimal * 100,
+        2
+      ) END AS percent_complete INTO TEMP TABLE schema_data
+    FROM
+      intermediate_set AS ITS FULL
+      OUTER JOIN total_records AS TR ON ITS.parent_object_uuid = TR.parent_object_uuid
+      AND ITS.parent_object_type_id = TR.parent_object_type_id
+      -- the child object id goes here
+      AND TR.object_type_id = (
+        select
+          object_type_id
+        from
+          public.alation_object_type
+        where
+          object_type_name = 'schema'
+      );
+
+      -- ########################################################### --
+      -- gather data on tables
+      -- ########################################################### --
+      WITH temp_table AS (
+        SELECT
+          DISTINCT AO.object_uuid,
+          AO.object_type_id,
+          AO.object_url,
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          MAX(case when field_id = 3 then 1 else 0 end) as has_title,
+          MAX(case when field_id = 4 then 1 else 0 end) as has_description
+        FROM
+          public.alation_object AO
+          JOIN public.object_field_value AS OFV ON OFV.object_uuid = AO.object_uuid
+          AND OFV.object_type_id = AO.object_type_id
+          JOIN public.object_parent_relationship AS OPR ON OPR.object_uuid = AO.object_uuid
+          AND OPR.object_type_id = AO.object_type_id
+        WHERE
+          OFV.field_id IN (3, 4) /* title or description */
+          AND AO.object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'table'
+          )
+          -- because we only want the direct parent for this type of object, we will only ask for schemas
+          AND OPR.parent_object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'schema'
+          )
+        group by
+          AO.object_uuid,
+          AO.object_type_id,
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          ao.object_url
+      ),
+
+      -- ########################################################### --
+      -- intermediate transformation table
+      -- ########################################################### --
+      intermediate_set AS (
+        SELECT
+          TT.parent_object_uuid,
+          TT.parent_object_type_id,
+          SUM(TT.has_title) AS title_freq,
+          SUM(TT.has_description) AS des_freq
+        FROM
+          temp_table AS TT
+        GROUP BY
+          TT.parent_object_uuid,
+          TT.parent_object_type_id
+      ),
+      -- ########################################################### --
+      -- gather the number of children for the given parent
+      -- ########################################################### --
+      total_records AS (
+        SELECT
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          OPR.object_type_id,
+          COUNT(*) AS number_of_tables
+        FROM
+          public.object_parent_relationship AS OPR
+          -- grab parents
+        WHERE
+          OPR.parent_object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'schema'
+          )
+          -- grab children
+          AND OPR.object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'table'
+          )
+        GROUP BY
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          OPR.object_type_id
+      )
+      -- ########################################################### --
+      -- collect all the data on attributes
+      -- ########################################################### --
+    SELECT
+      TR.parent_object_uuid,
+      TR.parent_object_type_id,
+      ITS.title_freq,
+      ITS.des_freq,
+      TR.number_of_tables AS number_of_children,
+      CASE WHEN (ITS.title_freq + ITS.des_freq) :: decimal /(2 * TR.number_of_tables) :: decimal IS NULL THEN 0 WHEN (ITS.title_freq + ITS.des_freq) :: decimal /(2 * TR.number_of_tables) :: decimal IS NOT NULL THEN ROUND(
+        (ITS.title_freq + ITS.des_freq) :: decimal /(2 * TR.number_of_tables) :: decimal * 100,
+        2
+      ) END AS percent_complete INTO TEMP TABLE table_data
+    FROM
+      intermediate_set AS ITS FULL
+      OUTER JOIN total_records AS TR ON ITS.parent_object_uuid = TR.parent_object_uuid
+      AND ITS.parent_object_type_id = TR.parent_object_type_id
+      -- the child object id goes here
+      AND TR.object_type_id = (
+        select
+          object_type_id
+        from
+          public.alation_object_type
+        where
+          object_type_name = 'table'
+      );
+
+      -- ########################################################### --
+      -- gather data on attributes
+      -- ########################################################### --
+      WITH temp_table AS (
+        SELECT
+          DISTINCT AO.object_uuid,
+          AO.object_type_id,
+          AO.object_url,
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          MAX(case when field_id = 3 then 1 else 0 end) as has_title,
+          MAX(case when field_id = 4 then 1 else 0 end) as has_description
+        FROM
+          public.alation_object AO
+          JOIN public.object_field_value AS OFV ON OFV.object_uuid = AO.object_uuid
+          AND OFV.object_type_id = AO.object_type_id
+          JOIN public.object_parent_relationship AS OPR ON OPR.object_uuid = AO.object_uuid
+          AND OPR.object_type_id = AO.object_type_id
+        WHERE
+          OFV.field_id IN (3, 4) /* title or description */
+          AND AO.object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'attribute'
+          )
+          -- because we only want the direct parent for this type of object, we will only ask for tables
+          AND OPR.parent_object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'table'
+          )
+        group by
+          AO.object_uuid,
+          AO.object_type_id,
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          ao.object_url
+      ),
+
+      -- ########################################################### --
+      -- intermediate transformation table
+      -- ########################################################### --
+      intermediate_set AS (
+        SELECT
+          TT.parent_object_uuid,
+          TT.parent_object_type_id,
+          SUM(TT.has_title) AS title_freq,
+          SUM(TT.has_description) AS des_freq
+        FROM
+          temp_table AS TT
+        GROUP BY
+          TT.parent_object_uuid,
+          TT.parent_object_type_id
+      ),
+
+      -- ########################################################### --
+      -- gather the number of children for the given parent
+      -- ########################################################### --
+      total_records AS (
+        SELECT
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          OPR.object_type_id,
+          COUNT(*) AS number_of_attributes
+        FROM
+          public.object_parent_relationship AS OPR
+          -- grab parents
+        WHERE
+          OPR.parent_object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'table'
+          )
+          -- grab children
+          AND OPR.object_type_id = (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name = 'attribute'
+          )
+        GROUP BY
+          OPR.parent_object_uuid,
+          OPR.parent_object_type_id,
+          OPR.object_type_id
+      )
+
+      -- ########################################################### --
+      -- collect all the data on attributes
+      -- ########################################################### --
+    SELECT
+      TR.parent_object_uuid,
+      TR.parent_object_type_id,
+      ITS.title_freq,
+      ITS.des_freq,
+      TR.number_of_attributes AS number_of_children,
+      CASE WHEN (ITS.title_freq + ITS.des_freq) :: decimal /(2 * TR.number_of_attributes) :: decimal IS NULL THEN 0 WHEN (ITS.title_freq + ITS.des_freq) :: decimal /(2 * TR.number_of_attributes) :: decimal IS NOT NULL THEN ROUND(
+        (ITS.title_freq + ITS.des_freq) :: decimal /(2 * TR.number_of_attributes) :: decimal * 100,
+        2
+      ) END AS percent_complete INTO TEMP TABLE attribute_data
+    FROM
+      intermediate_set AS ITS FULL
+      OUTER JOIN total_records AS TR ON ITS.parent_object_uuid = TR.parent_object_uuid
+      AND ITS.parent_object_type_id = TR.parent_object_type_id
+      AND TR.object_type_id = (
+        select
+          object_type_id
+        from
+          public.alation_object_type
+        where
+          object_type_name = 'attribute'
+      );
+
+      -- ########################################################### --
+      -- get titles for all objects
+      -- ########################################################### --
+      WITH object_titles AS(
+        SELECT
+          OFV.object_uuid,
+          OFV.object_type_id,
+          FV.text_value AS object_title
+        FROM
+          public.object_field_value AS OFV
+          JOIN public.field_value AS FV ON OFV.value_fp = FV.value_fp
+        WHERE
+          OFV.object_type_id IN (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name IN ('attribute', 'data', 'schema', 'table')
+          )
+          AND OFV.field_id = 3
+      ),
+
+      -- ########################################################### --
+      -- get names for all objects
+      -- ########################################################### --
+      object_names AS(
+        SELECT
+          OFV.object_uuid,
+          OFV.object_type_id,
+          FV.text_value AS object_name
+        FROM
+          public.object_field_value AS OFV
+          JOIN public.field_value AS FV ON OFV.value_fp = FV.value_fp
+        WHERE
+          OFV.object_type_id IN (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name IN ('attribute', 'data', 'schema', 'table')
+          )
+          AND OFV.field_id = 3192
+      ),
+
+      -- ########################################################### --
+      -- get list of objects which are not deleted
+      -- ########################################################### --
+      live_objects AS(
+        SELECT
+          OFV.object_uuid,
+          OFV.object_type_id,
+          FVD.boolean_value AS is_deleted
+        FROM
+          public.object_field_value AS OFV
+          -- Get field value
+          JOIN public.field_value AS FVD ON OFV.value_fp = FVD.value_fp
+          -- Match on field id to get deletion flag
+          JOIN public.object_field AS OBF ON OFV.field_id = OBF.field_id
+        WHERE
+          OFV.object_type_id IN (
+            select
+              object_type_id
+            from
+              public.alation_object_type
+            where
+              object_type_name IN ('attribute', 'data', 'schema', 'table')
+          )
+          AND
+          -- ensure only field_name = 'deleted' field values are extracted
+          OBF.field_name = 'deleted'
+          AND
+          -- Get only objects which are not deleted
+          FVD.boolean_value IS False
+      ),
+
+      -- ########################################################### --
+      -- put all the object data together
+      -- ########################################################### --
+      full_data AS (
+        (
+          SELECT
+            *
+          FROM
+            schema_data
+        )
+        UNION
+          (
+            SELECT
+              *
+            FROM
+              table_data
+          )
+        UNION
+          (
+            SELECT
+              *
+            FROM
+              attribute_data
+          )
+      )
+    SELECT
+      FD.parent_object_uuid AS object_uuid,
+      FD.parent_object_type_id AS object_type_id,
+      AOT.object_type_name,
+      OTS.object_title,
+      OTN.object_name,
+      AO.object_url,
+      FD.number_of_children,
+      FD.percent_complete,
+      FD.title_freq,
+      FD.des_freq,
+      OWS.stewardusername,
+      OWS.stewardemail
+    FROM
+      full_data AS FD
+      LEFT OUTER JOIN ObjsWithSteward AS OWS ON FD.parent_object_uuid = OWS.object_uuid
+      AND FD.parent_object_type_id = OWS.object_type_id
+      JOIN public.alation_object_type AS AOT ON FD.parent_object_type_id = AOT.object_type_id
+      JOIN public.alation_object AS AO ON FD.parent_object_uuid = AO.object_uuid
+      AND FD.parent_object_type_id = AO.object_type_id
+      LEFT OUTER JOIN object_titles AS OTS ON FD.parent_object_uuid = OTS.object_uuid
+      AND FD.parent_object_type_id = OTS.object_type_id
+      LEFT OUTER JOIN object_names AS OTN ON FD.parent_object_uuid = OTN.object_uuid
+      AND FD.parent_object_type_id = OTN.object_type_id
+      JOIN live_objects AS LO ON FD.parent_object_uuid = LO.object_uuid
+      AND FD.parent_object_type_id = LO.object_type_id;
+      -- temp table cleanup
+      DROP TABLE IF EXISTS schema_data;DROP TABLE IF EXISTS table_data;DROP TABLE IF EXISTS attribute_data;DROP TABLE IF EXISTS ObjsWithSteward;DROP INDEX IF EXISTS idx_psMain1;

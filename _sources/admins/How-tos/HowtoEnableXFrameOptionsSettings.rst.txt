@@ -1,0 +1,46 @@
+How to Enable X-Frame-Options Settings
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from version V R4 (5.8.x)*
+
+If you want to disable the capability to load the Alation application in
+an iframe, you need to configure Alation to use the X-Frame-Options
+response header.
+
+Be advised that enabling the X-Frame-Options response will cause
+the DataOS integration to stop working because it relies on ability to load
+Alation in iframes.
+
+To enable X-Frame-Options response header for Alation,
+
+1. Enter the Alation shell:
+
+    .. code-block:: bash
+
+       sudo service alation shell
+
+2. Run the following commands to set the X-Frame-Options header directive and to deploy the settings in the NGINX component. Provide the desired X-Frame-Options directive instead of value  in the sample code below. For details on X-Frame-Options directives, refer to X-Frame-Options documentation, for example `X-Frame-Options <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options>`_.
+
+    Provide only one directive value in this parameter.
+
+    .. code-block:: bash
+
+       alation_conf nginx.x_frame_options -s 'value'
+       alation_action deploy_conf_nginx
+       sudo service nginx restart
+
+    Example:
+
+    .. code-block:: bash
+
+        alation_conf nginx.x_frame_options -s 'deny'
+
+3. To return to the default configuration, reset the ``nginx.x_frame_options`` parameter to the empty state. This will allow Alation to be loaded in iframes.
+
+    .. code-block:: bash
+
+       alation_conf nginx.x_frame_options -c
+       alation_action deploy_conf_nginx
+       sudo service nginx restart

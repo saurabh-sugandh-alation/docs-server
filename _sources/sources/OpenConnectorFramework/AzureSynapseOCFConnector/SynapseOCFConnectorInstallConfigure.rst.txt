@@ -1,0 +1,338 @@
+Azure Synapse OCF Connector: Install and Configure
+======================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Network Configuration
+--------------------------
+
+Ports
+~~~~~~~~~~~~~~~~~
+
+Open outbound TCP port **1433** to Azure Synapse Analytics (default).
+
+Azure Synapse Analytics can listen on non-standard ports. If you connect Alation to an Azure Synapse Analytics instance, then open the appropriate outbound TCP ports from the Alation server.
+
+Connectivity
+~~~~~~~~~~~~~~~~~~
+
+You may need to whitelist the Alation IP address on your Azure portal if the connectivity test from Alation is unsuccessful.
+
+Service Account
+----------------------
+
+For SQL authentication, create a service account for Alation on the master database and grant it the required permissions.
+
+  **Example**:
+
+      .. code-block:: SQL
+
+            CREATE LOGIN [login_value] WITH PASSWORD = [password];
+            CREATE USER [service_account] FOR LOGIN [login_value];
+
+If using an Azure AD account, grant the required permissions to the AD account.
+
+      .. note::
+
+          The connector does not support authenticating with an Azure service principal in Azure AD (Microsoft Entra ID). Use an AD user account.
+
+Permissions for Metadata Extraction, Sampling, and Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Grant the service account read access on all databases that you want extracted into the catalog. Read access is also enough for sampling and profiling.
+
+Dedicated SQL Pool
+^^^^^^^^^^^^^^^^^^^^^^
+
+      .. code-block:: SQL
+
+            EXEC sp_addrolemember 'db_datareader', '<alation_service_account>'
+
+      .. note::
+
+          Refer to Azure documentation for details on database-level roles, for example: `Database-level roles <https://learn.microsoft.com/en-us/sql/relational-databases/security/authentication-access/database-level-roles?view=azure-sqldw-latest>`_.
+
+Serverless SQL Pool
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+      .. code-block:: SQL
+
+            ALTER ROLE db_datareader ADD member '<alation_service_account>';
+
+For sampling and profiling of external tables and views on top of external tables, the service account or—in case of dynamic profiling— individual users require access to the files under the storage account. For more information about access to storage accounts, refer to  `Control storage account access for serverless SQL pool <https://learn.microsoft.com/en-us/azure/synapse-analytics/sql/develop-storage-files-storage-access-control?tabs=managed-identity#database-scoped-credential>`_.
+
+On both dedicated and serverless pools, additionally grant the service account the ``VIEW DEFINITION`` permissions for Alation to extract view definitions for views:
+
+      .. code-block:: SQL
+
+            GRANT VIEW DEFINITION TO <alation_service_account>;
+
+Permissions for Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For query log ingestion, the service account requires access to the ``sys.fn_get_audit_file`` file. The configuration details are available in `Query Log Ingestion`_ below.
+
+Dedicated SQL Pool
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For QLI from a dedicated SQL pool, the service account needs the ``CONTROL`` permission to access the audit file.
+
+    .. code-block:: SQL
+
+        GRANT CONTROL TO <alation_service_account>;
+
+Serverless SQL Pool
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For QLI from a serverless SQL pool, the service account needs the ``CONTROL SERVER`` permission to access the audit file.
+
+    .. code-block:: SQL
+
+        GRANT CONTROL SERVER TO <alation_service_account>;
+
+
+JDBC URI
+-------------------
+
+Format
+~~~~~~~~~~~
+
+For both SQL authentication and Azure AD username and  password authentication, use the following format:
+
+    .. code-block:: Bash
+
+        sqlserver://<hostname_or_ip>:<port>
+
+Authentication with an Azure AD account does not require any additional parameters in the URI.
+
+    .. note::
+
+        In Azure Portal, the JDBC URL for a resource under Azure Synapse can be found in the resource properties. Alation only requires the hostname and port information and, optionally, the database name. The full URL should not be used.
+
+With the JDBC URI in this format, Alation will extract schemas from all data resources under Synapse Analytics that the service account has been granted access to. You can optionally include the ``database`` parameter if you want to extract metadata from one specific data resource only.
+
+Examples
+~~~~~~~~~~~~
+
+Dedicated SQL Pool
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. code-block:: Bash
+
+        sqlserver://test99443.sql.azuresynapse.net:1433
+
+    .. code-block:: Bash
+
+        sqlserver://test99443.sql.azuresynapse.net:1433;database=test99443
+
+Serverless SQL Pool
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    .. code-block:: Bash
+
+        sqlserver://synaptestal102416adity22-ondemand.sql.azuresynapse.net:1433
+
+    .. code-block:: Bash
+
+        sqlserver://synaptestal102416-ondemand.sql.azuresynapse.net:1433;database=test1
+
+
+Configuration in Alation
+---------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_Install_NoAgent.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **Synapse OCF Connector**.
+
+Access
+--------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+---------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Configure the connection on the **General Settings** tab.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Populate the data source connection information and save the values by clicking Save in this section.
+
++-----------------------------------------+----------------------------------------------+
+| Parameter                               | Description                                  |
++=========================================+==============================================+
+| JDBC URI                                | Specify the JDBC URI in the required format. |
++-----------------------------------------+----------------------------------------------+
+| Azure Active Directory                  | Select this checkbox if you are using an     |
+|                                         | Azure AD account to authenticate on the      |
+|                                         | database. No additional parameters are       |
+|                                         | required in the URI when you select the      |
+|                                         | checkbox.                                    |
++-----------------------------------------+----------------------------------------------+
+| Username                                | Specify the service account username.        |
++-----------------------------------------+----------------------------------------------+
+| Password                                | Specify the service account password.        |
++-----------------------------------------+----------------------------------------------+
+| Enable SSL                              | Enable or disable SSL authentication by      |
+|                                         | selecting or clearing the **Enable SSL**     |
+|                                         | checkbox.                                    |
+|                                         |                                              |
+|                                         | If the **Enable SSL** checkbox is enabled,   |
+|                                         | upload the SSL certificate using the upload  |
+|                                         | link below.                                  |
++-----------------------------------------+----------------------------------------------+
+| Truststore Password                     | Specify the password for the SSL certificate.|
+|                                         |                                              |
+|                                         | Note:                                        |
+|                                         |                                              |
+|                                         | The password will be deleted if the data     |
+|                                         | source connection is deleted.                |
++-----------------------------------------+----------------------------------------------+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Obfuscate Literals**—Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^^^^
+
+After specifying the connector settings, under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+The default queries that the connector uses to extract metadata can be found in :doc:`/sources/OpenConnectorFramework/AzureSynapseOCFConnector/SynapseExtractionQueries`. You can customize these queries to adjust the extraction to your needs.
+
+Incremental Extraction from Compose
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After creating tables in Compose, users will see the new table information on the respective catalog page without re-running MDE.
+
+Compose users should use fully qualified names when creating tables to ensure the successful incremental extraction, for example:
+
+.. code-block:: Bash
+
+    CREATE TABLE [DATABASE_NAME].[SCHEMA_NAME].[TABLE_NAME] ({column properties});
+
+Sampling and Profiling
+-------------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Compose
+-----------------------
+
+To connect to Synapse Analytics in Compose, Compose users must ensure that a valid database name is included in the Compose URI in this format:
+
+    .. code-block:: Bash
+
+        sqlserver://<hostname_or_ip_address>:<port_number>;database=<DB_Name>
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+Query Log Ingestion
+------------------------
+
+The Azure Synapse Analytics data source supports table-based and custom query-based QLI. Both types of QLI require that `auditing <https://learn.microsoft.com/en-us/azure/azure-sql/database/auditing-overview?view=azuresql>`_ should be enabled in Azure.
+
+    .. important::
+
+        If using the QLI functionality, ensure that the service account has the CONTROL permission as it needs to access the ``sys.fn_get_audit_file``. For details, refer to the corresponding Azure documentation: `sys.fn_get_audit_file (Transact-SQL) <https://learn.microsoft.com/en-us/sql/relational-databases/system-functions/sys-fn-get-audit-file-transact-sql?view=azure-sqldw-latest>`_.
+
+Enable Auditing for Azure Synapse
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_EnableAzureAuditing.rst
+
+Table-Based QLI
+~~~~~~~~~~~~~~~~~~~~~
+
+To go with the table-based QLI option, you will need to create a view on your database to store the query history data.
+
+Use the query format given below to create a view in Azure Synapse Analytics to use for QLI. The view name must be in the following format: ``<schema>.<view>``.
+
+  .. note::
+
+      Substitute the placeholder ``<container_URI>`` with the container URI you find in your container properties, for example:
+
+          .. code-block:: Bash
+
+              https://testaccount.blob.core.windows.net/sqldbauditlogs/my_database/
+
+  .. code-block:: SQL
+
+        CREATE VIEW <schema>.<view> AS
+          SELECT
+              server_principal_name as userName,
+              event_time as startTime,
+              [statement] as queryString,
+              session_id as sessionID,
+              event_time as sessionStartTime,
+              duration_milliseconds as milliseconds,
+              'N' as cancelled,
+              database_name as defaultDatabases
+          FROM sys.fn_get_audit_file('<container_URI>', default, default);
+
+In Alation, on the **Query Log Ingestion** tab of the data source settings, specify the name of the table or view in which the query logs are available in the **Table Name** field. Make sure that the service account has the permissions to access this table or view.
+
+Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_QLI_CustomQueryQLI.rst
+
+QLI Query Template
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+When using the SQL below, substitute the placeholder ``<container_URI>`` with the container URI you find in your container properties, for example: ``https://testaccountvipra.blob.core.windows.net/sqldbauditlogs/my_database/``.
+
+
+  .. code-block:: SQL
+
+        SELECT
+            server_principal_name as userName,
+            event_time as startTime,
+            [statement] as queryString,
+            session_id as sessionID,
+            event_time as sessionStartTime,
+            duration_milliseconds as milliseconds,
+            'N' as cancelled,
+            database_name as defaultDatabases
+        FROM sys.fn_get_audit_file('<container_URI>', default, default)
+        WHERE event_time BETWEEN (STARTTIME) AND (ENDTIME);
+
+Automated and Manual QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst
+
+Log Location
+--------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting` for information about logs.

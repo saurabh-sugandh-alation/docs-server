@@ -1,0 +1,342 @@
+Impala on CDH OCF Connector: Install and Configure
+======================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Ports
+-----------
+
+- Open outbound TCP port **21050** to the Impala server
+- Open outbound TCP port **9083** to the metastore
+- Open outbound TCP port **9870** to the WebHDFS server
+- Open outbound TCP port **9871** to the HDFS server if the cluster uses TLS
+- Open TCP port **9864** on all cluster data nodes to Alation traffic when using WebHDFS
+- Open TCP port **9865** on all cluster data nodes to Alation traffic when using Secure (TLS) WebHDFS
+- Open TCP port **14000** for HTTPFS connection
+
+Extraction of Complex Data Types
+-------------------------------------
+
+.. include:: ../../../shared/OCF/OCF_ExtractionOfComplexDataTypes.rst
+
+Service Account
+------------------
+
+Create a service account for Alation prior to adding your Impala data source to the catalog. The service account requires these permissions:
+
+    - SELECT on all schemas which you plan to extract into the catalog.
+    - Read and execute permissions for the HDFS location that stores Impala query logs.
+    - Read and execute permissions for Impala external tables.
+    - Access to the metastore.
+
+Kerberized Impala
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation recommends creating the service account in the same realm as the realm used by Impala users.
+
+Kerberos Configuration File
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In case your Impala data source is kerberized, prepare the **krb5.conf** file and, if applicable, the keytab file for the service account. They will need to be uploaded to Alation.
+
+Connection Over SSL
+-------------------------------
+
+If your connection from Alation will go over SSL, prepare the truststore file. The truststore file will need to be uploaded to Alation in the settings of the Impala data source to enable metadata extraction, sampling, and query log ingestion over SSL.
+
+Alation expects the **truststore.jks** file of the HDFS service. You will also need the truststore password. Consult your Impala administrator about downloading this file.
+
+Usually, you can download the certificate from the HDFS component in Cloudera Manager. To locate and download the certificate:
+
+1. Open the HDFS service in Cloudera Manager.
+
+    .. image:: ../../../_static/OCF_Impala_ClouderaManager_HDFS.png
+        :width: 400px
+        :class: with-border
+
+2. Click **Configuration**, then search for *Cluster-Wide Default TLS/SSL Client Truststore Location*. You should be able to locate the path to the folder that contains the **truststore.jks** file.
+
+    .. image:: ../../../_static/OCF_Impala_ClouderaManager_Cert.png
+        :width: 600px
+        :class: with-border
+
+    .. note::
+
+        The path to the file may be different for your Impala instance.
+
+
+Configuration in Alation
+----------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The connector name is **Impala OCF Connector**.
+
+JDBC URI
+-----------------
+
+Impala supports different types of authentication methods. Use the JDBC URI format that corresponds to the authentication method you are using.
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Format
+^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    hive2://<HOSTNAME>:21050/default/;auth=noSasl
+
+Example
+^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    hive2://ip-10-13-28-190.alation-test.com:21050/default/;auth=noSasl
+
+Kerberized Impala
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Format
+^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    hive2://<HOSTNAME>:21050/default/;principal=impala/<sevice_principal>
+
+Example
+^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    hive2://ip-10-13-6-82.alation-test.com:21050/default/;principal=impala/ip-10-13-6-82.alation-test.com@ALATION-TEST.COM
+
+Connection over SSL
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Format
+^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    hive2://<hostname>:<port>/default/;auth=noSasl;ssl=true
+
+Examples
+^^^^^^^^^^^^^^^^^^
+
+    - SSL
+
+      .. code-block:: Bash
+
+          hive2://ip-10-13-22-251.alation-test.com:21050/default/;auth=noSasl;ssl=true
+
+    - Kerberos + SSL
+
+      .. code-block:: Bash
+
+          hive2://ip-10-13-6-82.alation-test.com:21050/default/;ssl=true;principal=impala/ip-10-13-6-82.alation-test.com@ALATION-TEST.COM
+
+Metastore URI
+~~~~~~~~~~~~~~~~~~~~~
+
+Format
+^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    trift://<hostname>:<port>
+
+Example
+^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    thrift://ip-10-13-22-251.alation-test.com:9083
+
+Metastore Principal Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    hive/ip-10-13-6-82.alation-test.com@ALATION-TEST.COM
+
+Access
+--------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+----------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/ImpalaConnectionTable.rst
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+You can view the connector logs in **Admin Settings** > **Manage Connectors** > **Impala OCF Connector**.
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_ObfuscateLiterals.rst
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^^^^
+
+After specifying the connector settings, under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+---------------------------
+
+The Impala OCF Connector supports default extraction—This type of MDE is based on Impala API calls that are built in the connector code.
+
+Custom query-based MDE is not supported.
+
+.. note::
+
+    Complex data types are extracted. See `Extraction of Complex Data Types`_ for information on how to enable their representation in the Alation user interface.
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+Compose
+-------------------------------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+    .. note::
+
+        Compose is not available on Alation Cloud Service instances when the data source is connected through Alation Agent.
+        For this data source, Compose with Kerberos and SSL authentication is currently not supported.
+
+Sampling and Profiling
+-------------------------------
+
+Alation supports a number of ways to retrieve data samples and column profiles. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Query Log Ingestion
+------------------------
+
+On the **Query Log Ingestion** tab, you can select the QLI options for your data source and schedule the QLI job if necessary.
+
+For Impala on CDH, Alation supports QLI from query log files stored on HDFS.
+
+Prerequisites for QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to run Query Log Ingestion for an Impala data source, perform the following pre-configuration on your instance of Impala:
+
+    - Enable audit log in Impala. For specific details refer to documentation for your CDH version, for example: `Impala Auditing <https://docs.cloudera.com/documentation/enterprise/6/6.3/topics/impala_auditing.html#auditing>`_.
+
+          - Enable auditing by including the option ``-audit_event_log_dir=directory_path`` in your ``impalad`` startup options. The path refers to a local directory on the server, not an HDFS directory.
+
+          - Decide how many queries will be represented in each log file. By default, Impala starts a new log file every 5,000 queries. To specify a different number, include the option ``-max_audit_event_log_file_size=number_of_queries`` in the ``impalad`` startup options. Limiting the size manages disk space by archiving older logs and reduces the amount of text to process when analyzing activity for a particular period.
+
+    - Periodically retrieve audit logs from Impala coordinator nodes to HDFS.
+
+          - By default, the audit logs are located in **/var/log/impalad/audit/** inside Impala coordinator nodes. Users can also configure the place of audit logs.
+
+          - To periodically retrieve logs, you can write a script and run it as a cron job to pull the audit logs from impala coordinator nodes to HDFS every day. See an example in Appendix 8 :ref:`A.8 Impala QLI Script <Appendix_8>`.
+
+          - Create a directory for storing all Impala audit logs in HDFS.
+
+          - The audit log files from each Impala coordinator node should only stay in an HDFS subdirectory of the audit log directory. The subdirectory should be named by the ID of the Impala coordinator node, for example, IP address, or any unique identifier.
+
+After all the steps are completed, you can configure and perform Query Log Ingestion (QLI) for Impala in Alation.
+
+Place Query Logs on HDFS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Impala supports query log extraction from files located on an HDFS server. To set up QLI:
+
+1. SSH into the CDH instance.
+
+2. Log in as the root user.
+
+3. While logged in as the root user, change the current directory to **/var/log/impalad/audit**.
+
+4. In the audit directory, make sure there's an Impala audit event log file. The file has the format: ``impala_audit_event_log_1.0-*``.
+
+5. After confirming the file exists, create a directory in the **/user/history/done directory** on HDFS, for example:
+
+    .. code-block:: Bash
+
+        sudo -u hdfs hadoop fs -mkdir -p /user/history/done/log_1
+
+    The name of the directory can be anything you want. We named it ``log_1`` in this example.
+
+6. After creating the ``log_1`` directory, recursively modify the permission of the ``/done`` directory and its sub-directories with the following command:
+
+    .. code-block:: Bash
+
+        sudo -u hdfs hadoop fs -chmod -R 777 /user/history/done
+
+7. Copy the ``impala_audit_event_log_1.0-*file`` into the ``log_1`` directory with the following command:
+
+    .. code-block:: Bash
+
+        hadoop fs -put impala_audit_event_log_1.0-* /user/history/done/log_1
+
+As an alternative to the above steps that manually copy the log file to a directory, you can use this script to periodically copy the log file to the HDFS.
+
+Configure QLI in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can configure QLI on the **Query Log Ingestion** tab of the data source settings page.
+
+1. Open the **Query Log Ingestion** tab of the settings page.
+
+2. Under **Connector Settings > Query Extraction**, provide the required information and click **Save**:
+
+    +----------------------------------------+-------------------------------------------+
+    | Parameter                              | Description                               |
+    +========================================+===========================================+
+    | Logs Directory                         | ``/user/history/done``                    |
+    +----------------------------------------+-------------------------------------------+
+    | WebHDFS Server                         | Hostname of the WebHDFS server            |
+    +----------------------------------------+-------------------------------------------+
+    | WebHDFS Port                           | Specify the HDFS port number for your     |
+    |                                        | environment. The default is **9870** or   |
+    |                                        | or **9871** in case of TLS). If you       |
+    |                                        | are using a different port, clear the     |
+    |                                        | **Use Default** checkbox under the        |
+    |                                        | HDFS Port field.                          |
+    +----------------------------------------+-------------------------------------------+
+    | Use Default                            | Leave selected if you are using the       |
+    |                                        | default port.                             |
+    |                                        |                                           |
+    |                                        | Clear this checkbox if you                |
+    |                                        | are using a port number other than the    |
+    |                                        | default.                                  |
+    +----------------------------------------+-------------------------------------------+
+    | WebHDFS User                           | ``hdfs``                                  |
+    +----------------------------------------+-------------------------------------------+
+
+Perform QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst

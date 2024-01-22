@@ -1,0 +1,255 @@
+Authenticate API Calls with OAuth 2.0
+=====================================
+
+.. include:: /shared/ProductLabels/Cloud_Label.rst
+
+.. include:: /shared/2023_3AndNewer.rst
+
+.. include:: /shared/CloudMessages/CloudNativeArchitectureOnly.rst
+
+Alation offers the ability to authenticate Alation API calls using OAuth 2.0. This enables you to authenticate programmatically (machine to machine) using an access token, without requiring user credentials. You can also verify tokens online or offline, revoke tokens, and rotate signing keys for increased security.
+
+See `RFC6749 <https://datatracker.ietf.org/doc/html/rfc6749>`__ to learn more about OAuth and how it works. See `RFC7517 <https://datatracker.ietf.org/doc/html/rfc7517>`__ for more about JSON web keys and `RFC7519 <https://datatracker.ietf.org/doc/html/rfc7519>`__ for more about JSON web tokens.
+
+The OAuth 2.0 framework provides several different types of credentials, or authorization grants. Alation currently offers a client credentials grant. See `RFC6749, section 4.4 <https://datatracker.ietf.org/doc/html/rfc6749#section-4.4>`__ for more information about client credentials grants.
+
+The workflow for setting up and using Alation’s OAuth implementation goes like this:
+
+1. In Alation, :ref:`register an OAuth client application <register-an-oauth-client-application>`.
+
+2. :ref:`Use Alation’s OAuth 2.0 API <use-the-oauth-2.0-api-v2>` to generate and verify a JSON web token.
+
+3. :ref:`Authenticate your Alation API calls <authenticate-api-calls-with-a-json-web-token>` using a verified JSON web token as a bearer token.
+
+4. :ref:`Manage the client application <manage-the-client-application>` as needed by:
+
+   a. :ref:`Changing the duration of its access tokens <change-access-token-duration>`
+
+   b. :ref:`Changing the application’s user role <change-the-user-role>`
+
+   c. :ref:`Regenerating the application’s client secret <regenerate-the-client-secret>`
+
+   d. :ref:`Revoking the application’s tokens <revoke-all-tokens>`
+
+   e. :ref:`Deleting the client application <delete-an-oauth-client-application>`
+
+5. If necessary, :ref:`rotate the signing key <rotate-the-signing-key>` used to validate tokens.
+
+This process is described in detail below.
+
+.. _register-an-oauth-client-application:
+
+Register an OAuth Client Application
+------------------------------------
+
+To use the OAuth client credentials workflow, you must first register an OAuth client application in Alation. You must be a Server Admin to do this.
+
+To create an OAuth client application:
+
+1. |Click Settings icon|
+
+2. |Click Authentication|
+
+3. Under **OAuth Client Applications**, click **Add**.
+
+   .. note::
+
+      The **OAuth Client Application** section is only available on Alation Cloud Service instances on the cloud native architecture. Other types of Alation instances can’t use this feature.
+
+4. Enter a **Name** for the client application. This field is required. The name must be unique and must start with an alphanumeric character. The name can contain lowercase letters, numbers, hyphens, underscores, and spaces.
+
+5. In the **Access Token duration** field, specify in seconds how long the client’s tokens will be valid.
+
+6. Under **System User Role**, click the dropdown menu and select an Alation user role. API calls using this client application’s tokens will have the API permissions of the chosen role. See the `APIs by Roles table <https://developer.alation.com/dev/docs/alation-apis-by-roles>`__ for details on which APIs each role can use.
+
+   .. note::
+
+      An Alation system user with the chosen role will be created for this application. You can see system users on the **Users** settings page under **System Users**. If this client application is ever deleted, the system user will be suspended and will no longer appear on the **Users** settings page.
+
+7. Click **Save**. A dialog box will appear showing the client ID and client secret.
+
+8. Click **Copy** next to the client ID and client secret and store the values in a secure location.
+
+   .. important::
+
+      The client secret will never be shown again. Once you close the dialog, you will not be able to access it again in Alation. If needed, you can :ref:`generate a new secret <regenerate-the-client-secret>`.
+
+9. |Click Close| The new OAuth client application will appear under **OAuth Client Applications**. You can now use your securely stored client ID and client secret with the OAuth 2.0 API v2 to create a JSON web token (JWT). See `Use the OAuth 2.0 API v2`_ below for details.
+
+.. _use-the-oauth-2.0-api-v2:
+
+Use the OAuth 2.0 API v2
+------------------------
+
+The OAuth 2.0 API v2 can be used to create and verify JSON web tokens (JWTs) so they can be used to authenticate Alation API calls. All Alation roles are allowed to use this API.
+
+-  **To create a JWT**, refer to the `Create JSON web token <https://developer.alation.com/dev/reference/createtoken>`__ endpoint documentation.
+
+-  **To introspect a JWT or verify it online**, refer to the `Introspect JSON Web Token <https://developer.alation.com/dev/reference/introspecttoken>`__ endpoint documentation.
+
+-  **To verify a JWT offline** with a JSON web key set (JWKS), refer to the `Get JSON Web Key Set <https://developer.alation.com/dev/reference/get_well-known-jwks-json>`__ endpoint documentation.
+
+For working examples of all the OAuth 2.0 API endpoints, see the `OAuth 2.0 recipe <https://developer.alation.com/dev/recipes/authentication-with-oauth-20-api>`__ on our Developer Portal.
+
+Once you’ve created and verified a JWT, you can use it to authenticate Alation API calls as described below.
+
+.. _authenticate-api-calls-with-a-json-web-token:
+
+Authenticate API Calls with a JSON Web Token
+--------------------------------------------
+
+After creating a JSON web token (JWT), you can use it as a bearer token to authenticate Alation API calls. Example:
+
+.. code-block::
+
+   curl --request GET \
+   --url https://alation_domain/ENDPOINT/ \
+   --header 'authorization: Bearer YOUR-JSON-WEB-TOKEN-HERE' \
+
+The APIs you’re allowed to use are determined by the Alation user role associated with the OAuth client application that generated the token.
+
+.. _manage-the-client-application:
+
+Manage the Client Application
+-----------------------------
+
+You can manage the OAuth client application by:
+
+-  :ref:`Changing the duration of its access tokens <change-access-token-duration>`
+
+-  :ref:`Changing the application’s user role <change-the-user-role>`
+
+-  :ref:`Regenerating the application’s client secret <regenerate-the-client-secret>`
+
+-  :ref:`Revoking the application’s tokens <revoke-all-tokens>`
+
+-  :ref:`Deleting the client application <delete-an-oauth-client-application>`
+
+All these actions can be done on the Authentication settings page:
+
+1. |Click Settings icon|
+
+2. |Click Authentication|
+
+3. Under **OAuth Client Applications**, locate the relevant client application and click the three dots (...) on the right.
+
+   .. image:: /_static/Admin_Auth_OAuthClientApplications.png
+
+.. _change-access-token-duration:
+
+Change Access Token Duration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Changing the duration of the client application’s access tokens only affects newly created tokens. Existing tokens will continue to have the same duration they did when created.
+
+To change the duration of the application’s tokens:
+
+1. |Click three dots|
+
+2. |Click View/Edit|
+
+3. In the **Access Token duration** field, specify in seconds how long the client’s tokens will be valid.
+
+.. _change-the-user-role:
+
+Change the User Role
+~~~~~~~~~~~~~~~~~~~~
+
+To change which APIs can be used by a client application, you can change the user role associated with the application. Once the user role has been changed, API calls using this client application’s tokens will have the API permissions of the chosen role. The new permissions will apply to API calls using both existing tokens and new tokens.
+
+To change the application’s user role:
+
+1. |Click three dots|
+
+2. |Click View/Edit|
+
+3. Under **System User Role**, click the dropdown menu and select an Alation user role.
+
+   .. note::
+
+      The existing Alation system user for this client application will be updated to have the chosen role. You can see system user and its role on the **Users** settings page under **System Users**.
+
+.. _regenerate-the-client-secret:
+
+Regenerate the Client Secret
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you regenerate the client secret for a client application, the old client secret will be invalidated, and a new one will be created. You must use the new client secret to authenticate the `Create JSON web token <https://developer.alation.com/dev/reference/createtoken>`__ and `Introspect JSON Web Token <https://developer.alation.com/dev/reference/introspecttoken>`__ endpoints. Tokens created using the old client secret will continue to work until they expire.
+
+To regenerate the application’s client secret:
+
+1. |Click three dots|
+
+2. Click **Regenerate Client Secret**. |Confirmation dialog appears|
+
+3. Click **Continue** to regenerate the client secret.
+
+4. Click **Copy** next to the client ID and client secret and store the values in a secure location.
+
+   .. important::
+
+      The client secret will never be shown again. It is not stored in Alation. Once you close the dialog, you will not be able to access it again in Alation. If needed, you can generate a new secret.
+
+.. _revoke-all-tokens:
+
+Revoke All Tokens
+~~~~~~~~~~~~~~~~~
+
+If needed, you can revoke all the existing tokens for a client application. Revoked tokens can no longer be used to authenticate. You will need to create a new token to continue authenticating against the Alation APIs.
+
+1. |Click three dots|
+
+2. Click **Revoke Token**. |Confirmation dialog appears|
+
+3. Click **Continue** to revoke this application’s tokens. |Success message appears|
+
+4. |Click Close|
+
+.. _delete-an-oauth-client-application:
+
+Delete an OAuth Client Application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Deleting a client application in Alation will immediately revoke all that application’s tokens. You will no longer be able to use the application’s client secret to authenticate the `Create JSON web token <https://developer.alation.com/dev/reference/createtoken>`__ and `Introspect JSON Web Token <https://developer.alation.com/dev/reference/introspecttoken>`__ endpoints. In addition, the client application’s system user will be suspended and will no longer appear under **System Users** on the Users settings page.
+
+1. |Click three dots|
+
+2. Click **Delete**. |Confirmation dialog appears|
+
+3. Click **Continue** to delete the client application. |Success message appears|
+
+4. |Click Close|
+
+.. _rotate-the-signing-key:
+
+Rotate the Signing Key
+----------------------
+
+Regularly rotating keys is an industry standard and follows cryptographic best practices. For security purposes, we recommend regularly rotating the keys for your OAuth client applications. If your signing keys have been leaked, rotate the key immediately.
+
+After rotating keys, new tokens can only be validated using the new signing key. Old tokens can still be validated using the old key. See `Use the OAuth 2.0 API v2`_ above for information on how to validate tokens using the OAuth 2.0 API.
+
+Keys can be rotated at most once every five minutes.
+
+To rotate your signing key:
+
+1. |Click Settings icon|
+
+2. |Click Authentication|
+
+3. In the **Signing Keys** section, click **Rotate Key**. |Confirmation dialog appears|
+
+4. Click **Continue** to rotate the keys. |Success message appears|
+
+5. |Click Close|
+
+
+.. Substitutions
+
+.. |Click three dots| replace:: On the Authentication settings page, under **OAuth Client Applications**, locate the relevant client application and click the three dots (...) on the right.
+.. |Click View/Edit| replace:: Click **View/Edit**.
+.. |Confirmation dialog appears| replace:: A confirmation dialog appears.
+.. |Success message appears| replace:: A success message will appear.
+.. |Click Close| replace:: Click **Close**.
+.. |Click Settings icon| replace:: In Alation, click the **Settings** gear icon in the top right corner.
+.. |Click Authentication| replace:: Click **Authentication**.

@@ -1,0 +1,251 @@
+Example Queries for Query-Based MDE
+====================================
+
+Validations of custom queries for MDE in Alation are based on the expected result set and will throw errors if alias names have a mismatch or if a required column is missing. You can use null/empty values, if the data source does not have a relevant field.
+
+TABLE_TYPE expects the result value to be TABLE or VIEW to extract and ingest data correctly. Adjust the queries to store the same value for this field. Example: DB2 returns T for TABLE and V for view, so the query has to be built in a way to capture this info. Use the Preview feature to check your result sets.
+
+For specific database types, the mandatory result set column names, such as CATALOG or SCHEMA may be part of reserved keywords. Use the appropriate escape characters to enclose the result set columns.
+
+Example:
+
+For Oracle data sources, the result set column should be escaped in double quotes:
+
+.. code-block:: sql
+
+      SELECT  ''  AS "CATALOG",
+        USERNAME AS "SCHEMA"
+      FROM SYS.ALL_USERS;
+
+DB 2
+---------
+
+Schema
+~~~~~~~~~
+
+.. code-block:: sql
+
+      SELECT
+        '' AS CATALOG,
+         SCHEMANAME AS SCHEMA
+      FROM SYSCAT.SCHEMATA
+
+Table
+~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS CATALOG,
+      TABSCHEMA AS SCHEMA,
+      TABNAME AS TABLE,
+      TYPE AS TABLE_TYPE,
+      REMARKS AS REMARKS
+    FROM SYSCAT.TABLES
+
+Table (with a filter)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS CATALOG,
+      TABSCHEMA AS SCHEMA,
+      TABNAME AS TABLE,
+      CASE WHEN TYPE = 'T' THEN 'TABLE' ELSE 'VIEW' END AS TABLE_TYPE,
+      REMARKS AS REMARKS
+    FROM SYSCAT.TABLES WHERE TABSCHEMA= <'TEST_METADATA_EXTRACTION'>
+
+Column
+~~~~~~~~~~~~
+
+.. code-block:: sql
+
+      SELECT
+        '' AS CATALOG,
+        c.TABSCHEMA AS SCHEMA,
+        c.TABNAME AS TABLE,
+        c.COLNAME AS COLUMN,
+        c.TYPENAME AS TYPE_NAME,
+        c.TYPENAME AS DATA_TYPE,
+        c.COLNO AS ORDINAL_POSITION,
+        NULLS AS IS_NULLABLE,
+        c.DEFAULT AS COLUMN_DEF,
+        c.REMARKS AS REMARKS
+      FROM SYSCAT.COLUMNS AS c, SYSCAT.TABLES as t
+        WHERE c.TABSCHEMA = t.TABSCHEMA AND c.TABNAME = t.TABNAME AND c.TABSCHEMA = <'TEST_METADATA_EXTRACTION'>
+
+Primary Key
+~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS CATALOG,
+       TBCREATOR AS SCHEMA,
+       TBNAME AS TABLE,
+       NAME AS PK_NAME,
+       NAME AS PK_COLUMN,
+       COLNO AS ORDINAL_POSITION
+    FROM SYSIBM.SYSCOLUMNS
+      WHERE TBCREATOR=<'TEST_METADATA_EXTRACTION'> AND KEYSEQ > 0 FOR FETCH ONLY WITH UR
+
+Foreign Key
+~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS CATALOG,
+       FK.TABSCHEMA AS SCHEMA,
+       FK.TABNAME AS TABLE,
+       FK.CONSTNAME AS FK_NAME,
+       FKCOL.COLNAME AS FK_COLUMN,
+       '' AS PK_CATALOG,
+       FK.REFTABSCHEMA AS PK_SCHEMA,
+       FK.REFTABNAME AS PK_TABLE,
+       FK.REFKEYNAME AS PK_NAME,
+       PKCOL.COLNAME AS PK_COLUMN
+  FROM SYSCAT.REFERENCES FK
+  INNER JOIN
+        SYSCAT.KEYCOLUSE FKCOL ON FK.TABSCHEMA = FKCOL.TABSCHEMA
+        AND FK.TABNAME = FKCOL.TABNAME
+        AND FK.CONSTNAME = FKCOL.CONSTNAME
+  INNER JOIN
+        SYSCAT.KEYCOLUSE PKCOL ON FK.REFTABSCHEMA = PKCOL.TABSCHEMA
+        AND FK.REFTABNAME = PKCOL.TABNAME
+        AND FK.REFKEYNAME = PKCOL.CONSTNAME
+        AND FKCOL.COLSEQ = PKCOL.COLSEQ
+   WHERE FK.TABSCHEMA = <'TEST_METADATA_EXTRACTION'> FOR FETCH ONLY WITH UR
+
+Index
+~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS CATALOG,
+       SI.TABSCHEMA AS SCHEMA,
+       SI.TABNAME AS TABLE,
+       SI.INDNAME AS INDEX_NAME,
+       SI.INDEXTYPE AS TYPE,
+       SIC.COLNAME AS COLUMN,
+       '' AS FILTER_CONDITION,
+       SIC.COLSEQ AS ORDINAL_POSITION,
+       SIC.COLORDER AS ASC_OR_DESC
+    FROM SYSCAT.INDEXES SI
+    INNER JOIN
+        SYSCAT.INDEXCOLUSE SIC
+            ON SI.INDNAME = SIC.INDNAME AND SI.TABSCHEMA = SIC.INDSCHEMA
+        WHERE SI.TABSCHEMA = <'TEST_METADATA_EXTRACTION'> FOR FETCH ONLY WITH UR
+
+Partition
+~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS CATALOG,
+      TABSCHEMA AS SCHEMA,
+      TABNAME AS TABLE,
+      DATAPARTITIONNAME AS PARTITION_NAME,
+      DATAPARTITIONID AS PARTITION_ORDINAL_POSITION,
+      NULL AS PARTITION_DESCRIPTION
+    FROM SYSCAT.DATAPARTITIONS
+
+Function
+~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+       '' AS CATALOG,
+       SRP.ROUTINESCHEMA AS SCHEMA,
+       SRP.ROUTINETYPE AS FUNCTION_TYPE,
+       SRP.ROUTINENAME AS FUNCTION_NAME,
+       SRP.SPECIFICNAME AS SPECIFIC_NAME,
+       SRP.TYPENAME AS COLUMN_TYPE,
+       SRP.PARMNAME AS COLUMN_NAME,
+       SRP.ROWTYPE AS ROW_TYPE,
+       R.TEXT AS REMARKS
+    FROM SYSIBM.SYSROUTINEPARMS SRP
+    INNER JOIN
+          SYSIBM.SYSROUTINES R
+                ON SRP.ROUTINESCHEMA = R.ROUTINESCHEMA
+                AND SRP.ROUTINENAME = R.ROUTINENAME
+                AND  SRP.ROUTINETYPE = R.ROUTINETYPE
+    WHERE SRP.ROUTINESCHEMA = <'TEST_METADATA_EXTRACTION'> FOR FETCH ONLY WITH UR
+
+View Definition
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS CATALOG,
+      VIEWSCHEMA AS SCHEMA,
+      VIEWNAME AS VIEW_NAME,
+      TEXT AS VIEW_CREATE_STATEMENT
+    FROM SYSCAT.VIEWS
+    WHERE VIEWSCHEMA = <'TEST_METADATA_EXTRACTION'> FOR FETCH ONLY WITH UR
+
+
+Oracle Queries
+-------------------
+
+Schema
+~~~~~~~~~~
+
+.. code-block:: sql
+
+      SELECT
+        ''  AS "CATALOG",
+         USERNAME AS "SCHEMA"
+         FROM SYS.ALL_USERS
+
+Table
+~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS "CATALOG",
+      OWNER AS "SCHEMA",
+      TABLE_NAME AS "TABLE",
+      'TABLE' AS "TABLE_TYPE",
+      '' AS REMARKS
+    FROM SYS.ALL_TABLES
+
+Column
+~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS "CATALOG",
+        COL.OWNER AS "SCHEMA",
+        COL.TABLE_NAME AS "TABLE",
+        COL.COLUMN_NAME AS "COLUMN",
+        COL.DATA_TYPE AS "TYPE_NAME",
+        COL.DATA_TYPE AS "DATA_TYPE",
+        DATA_DEFAULT AS "COLUMN_DEF",
+        COL.NULLABLE AS "IS_NULLABLE",
+        COLUMN_ID AS "ORDINAL_POSITION",
+        '' AS "REMARKS"
+    FROM  ALL_TAB_COLUMNS COL
+
+Synonyms
+~~~~~~~~~~
+
+.. code-block:: sql
+
+    SELECT
+      '' AS "CATALOG",
+      OWNER AS "SCHEMA",
+      SYNONYM_NAME,
+      '' AS "BASE_OBJ_CATALOG",
+      TABLE_OWNER AS "BASE_OBJ_SCHEMA",
+      TABLE_NAME AS "BASE_OBJ_NAME",
+      '' AS "BASE_OBJ_LINK"
+    FROM ALL_SYNONYMS
+        WHERE OWNER = 'PUBLIC'

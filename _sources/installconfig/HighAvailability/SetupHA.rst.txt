@@ -1,0 +1,303 @@
+Set Up High Availability
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Alation HA setup prioritizes having less downtime. Besides a few restarts of services, the setup process should only take between ten to
+30 minutes regardless of instance size. The actual replication of your data may take hours and in some cases days to complete, depending on the size of the internal application database. This may also be dependent on your system and network.
+
+Prerequisites
+----------------------------
+
+-  The Primary and Secondary servers should have identical physical configuration.
+
+   -  Data partitions must be the same size
+   -  Installation space (**/opt/alation**) must be the same size
+
+-  The same version of the Alation software must be installed on both servers. The Secondary server does not need to be configured because it will inherit the configuration from the Primary system. When installing the Secondary system, follow the :doc:`Installation Process <../../installconfig/ServerInstallation/Installation>` steps up to ``/etc/init.d/alation start``.
+
+-  The Primary and Secondary systems must be able to connect over the ports described in :doc:`HA Requirements <../../installconfig/HighAvailability/HARequirements>`.
+
+Setting Up High Availability Pair  
+-----------------------------------
+
+The High Availability (HA) configuration that Alation currently uses is IP-based. This means that you cannot move your HA pair to a new instance by un-mounting the data drives from the old Primary and Secondary instances and then re-mounting them on new instances, as the new Primary and Secondary servers will not synchronize. If you want to transfer Alation to a new instance, we recommend that you do a backup of the data drive, restore it on a new server, and set up HA anew between the new Primary and Secondary instances.
+
+Step 1: Enter the Alation Shell
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On both the Primary and Secondary hosts, enter the Alation shell. The commands in this section must be run from the Alation shell.
+
+      .. code-block:: Bash
+
+          sudo /etc/init.d/alation shell
+
+Step 2: Generate Keys
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On both Primary and Secondary, run:
+
+      .. code-block:: Bash
+
+          alation_action cluster_generate_keys
+
+This action is **safe**, with no restart of services required.
+
+Step 3: Set up Key Exchange
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. On both Primary and Secondary, run the command given below. This action is **safe**, with no restart of services required:
+
+      .. code-block:: Bash
+
+          replication_helper
+
+2. You will be presented with a public key for the current server and asked to paste the public key from the remote server.
+
+3. You will be presented with the IP address of the current server and are prompted to enter the IP address of the remote server. Enter the IP addresses in the **IPv4** format. For example: ``10.0.0.1``.
+
+Step 4: Put the Primary Server into Master Mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+   This action includes the restart of Alation services.
+
+   This action is unsafe.
+
+From the Primary, run:
+
+      .. code-block:: Bash
+
+          alation_action cluster_enter_master_mode 
+
+Step 5: Disable Instance Protection on Secondary
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+   If important data exists on the target instance, ensure that you back it up first as this step will make it possible to delete all instance data.
+
+   This action is **unsafe** as it opens a way to delete the data.
+
+From the Secondary, run:
+
+      .. code-block:: Bash
+
+          alation_conf alation.cluster.protected_instance -s False
+
+No restart of services is required.
+
+After instance protection is disabled, Primary can connect to Secondary and wipe its data.
+
+Step 6: Input IP Addresses
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    This step applies from release 2020.4. If you are on an older release, skip this step and proceed to Step 7.
+
+On both Primary and Secondary, use the commands given below to input the IP address of the current host in the **IPv4** format (example: ``10.0.0.1``):
+
+      - On Primary, input the IP address of the Primary host
+      - On Secondary, input the IP address of the Secondary host
+
+      .. code-block:: Bash
+
+          alation_conf alation.cluster.override_ip -s <host ip>
+
+      .. code-block:: Bash
+
+          alation_conf alation.cluster.enable_override_ip -s True
+
+Step 7: Add the Secondary on the Primary
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+    This action deletes any instance that is not protected in order to set up replication and restarts PostgreSQL on the Primary and Alation services on the Secondary instance. Ensure that you have a valid backup before completing this step.  
+
+    This action is unsafe.
+
+From the Primary, run:
+
+      .. code-block:: Bash
+
+          alation_action cluster_add_slaves
+
+
+Step 8: Check Value of ``pgsql.config.max_wal_senders`` on Secondary
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    This step applies from release 2021.3, where the internal PostgreSQL database is on version 13.x. If you are on an older release, skip this step and proceed to Step 9.
+
+
+1. On Secondary, check the value of the **alation_conf** parameter ``pgsql.config.max_wal_senders`` to confirm the value is ``4``.
+
+      .. code-block:: Bash
+
+          alation_conf pgsql.config.max_wal_senders
+
+2. If the value is not ``4``, set it to ``4``.
+
+      .. code-block:: Bash
+
+          alation_conf pgsql.config.max_wal_senders -s 4
+
+3. After changing this value, deploy the configuration.
+
+      .. code-block:: Bash
+
+          alation_action deploy_conf_all
+
+
+
+Step 9: Replicate PostgreSQL
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+   This action deletes all PostgreSQL data on the target machine. Ensure that you have a valid backup before completing this step.  
+
+   This action is **unsafe**. 
+
+.. note::
+
+   Because this action may take a long time to run, consider using a tool such as `Screen <https://linuxize.com/post/how-to-use-linux-screen/>`_.
+
+1. On the Secondary, start a Screen session.
+
+      .. code-block:: Bash
+
+          screen
+
+2. If not in the shell, enter the Alation shell.
+
+      .. code-block:: Bash
+
+          sudo /etc/init.d/alation shell
+
+3. Replicate PostgreSQL.
+
+      .. code-block:: Bash
+
+          alation_action cluster_replicate_postgres
+
+This step does not require a restart of any services on your Primary instance.
+
+.. _Setup_HA_Step_9:
+
+Step 10: Copy KV Store
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+   This action deletes all your KV Store data on Secondary. Ensure that you have a valid backup before performing this step. 
+
+   This action is **unsafe**. 
+
+.. note::
+
+   Because this action may take a long time to run, consider using Screen.
+
+1. On the Secondary, start a Screen session.
+
+      .. code-block:: Bash
+
+          screen
+
+2. If not in the shell, enter the Alation shell.
+
+      .. code-block:: Bash
+
+          sudo /etc/init.d/alation shell
+
+3. Copy KV Store.
+
+      .. code-block:: Bash
+
+          alation_action cluster_kvstore_copy
+
+This step does not require a restart of any services on your Primary instance.
+
+Step 11: Synchronize the Event Bus Data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    .. note::
+
+          This step applies from release **2021.4**. On older releases, skip this step.
+
+From the Secondary, run:
+
+    .. code-block:: Bash
+
+        alation_action cluster_start_kafka_sync
+
+
+Verification
+------------
+
+Ports
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Without any command line arguments, ``replication_port_check`` reads
+**alation.cluster.hosts** from Alation, iterates through each host, and runs
+port checks. This is useful if you want to troubleshoot network
+connectivity between the two hosts.
+
+From the Alation shell, on both Primary and Secondary, run:
+
+      .. code-block:: Bash
+
+          replication_port_check
+
+This action is **safe**, with no restart of services required.
+
+Databases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The **/monitor/replication** URI returns a JSON with PostgreSQL lags. If PostgreSQL returns ``unknown``, this indicates that something has gone wrong. You will need to rebuild replication for that service. In addition, if the lag bytes increase and never decrease, you may need to provide a faster machine to keep up. 
+
+From the Primary, run:
+
+      .. code-block:: Bash
+
+          curl -L http://localhost/monitor/replication
+
+Alternatively, in a browser tab, view: ``http(s)://<BASE_URL>/monitor/replication``.
+
+Files/Configurations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``alation_action cluster_replicate_files`` command will run one-time (non-looping) and pass off the Python script that rsync's files and sync's configurations. If there are any rsync errors, capture the debug output and file a ticket with Alation Support to investigate. 
+
+From the the Alation shell on Secondary, run:
+
+      .. code-block:: Bash
+
+          alation_action cluster_replicate_files
+
+Backup V2
+~~~~~~~~~~~~~~~~
+
+.. note::
+
+      This step applies to releases older than **2021.2**. From 2021.2, Backup V2 is the default backup tool.
+
+Perform this step if before rebuilding the HA pair, you had Backup V2 enabled on your Alation instance. The HA setup resets the Alation Backup V2 feature flag back to the default value (``False``). Re-enable Backup V2 after HA setup is complete. On how to enable Backup V2, see :doc:`/installconfig/BackupandRestore/BackupV1AndV2/EnableOrDisableBackupV2`.
+
+
+Related Topics
+----------------
+
+ :doc:`High Availability <../../installconfig/HighAvailability/index>`
+
+ :doc:`HA Requirements <../../installconfig/HighAvailability/HARequirements>`
+
+ :doc:`Failover to Secondary <../../installconfig/HighAvailability/FailovertoSecondary>`  
+
+ :doc:`Migrating from Legacy to Supported HA <../../installconfig/HighAvailability/MigratefromLegacytoSupportedHA>`
+
+ 

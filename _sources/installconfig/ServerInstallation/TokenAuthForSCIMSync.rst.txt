@@ -1,0 +1,73 @@
+Managing Token Authentication for SCIM Sync
+=============================================
+
+*Applies from version 2021.4*
+
+Alation supports token authentication when syncing user and group information over SCIM. Token authentication can be configured during SCIM setup for an Alation instance. See :ref:`Configure SCIM Integration <Enable_SCIM_Integration-Configure_SCIM_Integration>` about the end-to-end configuration of SCIM sync.
+
+SCIM authentication tokens have a lifespan of 6 months. The expiration period cannot be customized: a token lasts for 6 months and expires. After 6 months, a new token needs to be created.
+
+You do not have to wait for the token to expire to renew it. If you require a shorter expiration period for authentication tokens, you can create a new token after the desired period of time.
+
+    .. important::
+
+        After renewing the token on the Alation server, update the token value in the properties of the SCIM application in your IdP.
+
+Retrieve the Expiration Date of the Current Token
+----------------------------------------------------
+
+To get the expiration date for the current token:
+
+1. SSH to the Alation host.
+
+2. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+3. Enter the Django shell:
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+4. In the Django shell, run:
+
+    .. code-block:: Bash
+
+        from rosemeta.utils.users_and_groups.configuration_utils import get_scim_bearer_token_expiry_date
+
+    .. code-block:: Bash
+
+        get_scim_bearer_token_expiry_date()
+
+This will output the expiration date of the current token in UTC.
+
+Create a New Token
+-------------------------
+
+To create a new token, run the following code form the Django shell:
+
+    .. code-block:: Bash
+
+        from rosemeta.utils.users_and_groups.configuration_utils import set_scim_bearer_token
+
+    .. code-block:: Bash
+
+        set_scim_bearer_token()
+
+This sets a new SCIM authentication token on the Alation server.
+
+Retrieve the Current Token Value
+-----------------------------------------
+
+To retrieve the current token value, run the following code from the Alation Django shell:
+
+    .. code-block:: Bash
+
+        from rosemeta.utils.users_and_groups.configuration_utils import get_scim_bearer_token
+
+    .. code-block:: Bash
+
+        get_scim_bearer_token()

@@ -1,0 +1,61 @@
+Vertica
+===========
+
+Required Information
+-----------------------
+
+To configure Vertica in Alation, you will need the following information:
+
+-  Hostname or IP address of your server
+-  Port number - default is **5433**
+-  Service account with privileges listed below
+-  Query Log Ingestion setup:  ETL job and table
+
+.. image:: ../../_static/DS_Vertica01.png
+    :width: 3.5in
+    :align: center
+
+Preliminaries
+-------------------
+
+Firewall Configuration:
+
+-  Open outbound TCP port **5433** to Vertica server
+
+Create Service Account
+-------------------------
+
+Sample SQL to create an account:
+
+.. code-block:: sql
+
+    CREATE USER alation IDENTIFIED BY [password];
+
+Metadata Extraction
+-----------------------
+
+Alation requires USAGE on all schemas that it will ingest and SELECT on
+all tables that it will ingest.
+
+.. code-block:: sql
+
+    GRANT SELECT ONPROJECTIONS TO alation;
+    GRANT SELECT ON PROJECTION_STORAGE TO alation;
+
+Table Profiles
+-------------------
+
+.. code-block:: sql
+
+    GRANT USAGE ON SCHEMA [schema] TO alation;
+    GRANT SELECT ON ALL TABLES IN SCHEMA [schema] TO alation;
+
+Query History
+------------------
+
+Vertica by default logs queries to some system tables. However, only an
+admin account can select rows from these tables that have other users
+queries. For Alation to ingest the queries you must either give
+Alation admin credentials or create an ETL process to move the data into
+another table that Alation can access. See Appendix A.5 Vertica Query Log for the SQL to create this table and move the
+queries into it. 

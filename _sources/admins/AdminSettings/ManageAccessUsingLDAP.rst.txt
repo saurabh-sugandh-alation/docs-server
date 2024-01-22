@@ -1,0 +1,42 @@
+Manage Access to Alation Using LDAP Filters
+============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Enabling LDAP-based authentication in Alation allows users to
+automatically create a new account in Alation by logging in with
+their LDAP credentials. To prevent unlicensed users from
+creating accounts in Alation, admins may configure Alation to only allow
+login attempts from users who match an **LDAP filter** (for example, they belong to
+one or more LDAP groups).
+
+You can configure LDAP filters in **Admin Settings** > **Authentication**. If
+you have not yet enabled LDAP authentication, refer to :doc:`/installconfig/ServerInstallation/UserAuthenticationSetup/UserAuthenticationLDAP`.
+
+.. image:: ../../_static/AuthTab_01.png
+    :width: 5.5in
+    :align: center
+
+Near the bottom there is a box labeled **Filter**. Enter an LDAP search
+string into this box to limit users who may log into Alation using LDAP.
+
+Sample filter expressions:
+
+-  Check for membership in an AD group - "Finance":
+
+   ``(memberOf=cn=Finance,cn=Groups,dc=alation,dc=com)``
+
+-  Check for membership in AD groups "Finance" or "Sales":
+
+   ``((memberOf=cn=Finance,cn=Groups,dc=alation,dc=com)(memberOf=cn=Sales,cn=Groups,dc=alation,dc=com))``
+
+-  Check for nested membership in an AD ancestor group - "Europe":
+
+   ``(memberOf:1.2.840.113556.1.4.1941:=cn=Finance,cn=Groups,dc=alation,dc=com)``
+
+Caveats:
+
+#. Alation accounts are not created for all users in the group.  Alation accounts are created when a user first logs into Alation.
+#. If a user is removed from the LDAP group, they will not be immediately logged out of Alation.  When their current session expires (default expiration is two weeks, but can be configured) their next login attempt will fail.
+#. If a user is removed from the LDAP group, they are not automatically suspended.
+#. With LDAP filtering on, consider disabling account moderation (first checkbox on the User settings tab), because LDAP is already restricting who may create a new account.

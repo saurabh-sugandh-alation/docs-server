@@ -1,0 +1,368 @@
+SAP IQ OCF Connector: Install and Configure
+===============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Network Connectivity
+-------------------------
+
+Open outbound TCP port **2638** to the SAP IQ server.
+
+Service Account
+--------------------------
+
+Create a service account for Alation and grant it the permissions to perform metadata extraction, sampling and profiling, and query log ingestion.
+
+**Example**:
+
+    .. code-block:: SQL
+
+        CREATE USER alation IDENTIFIED BY 'password';
+
+Permissions for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    .. code-block:: SQL
+
+        GRANT SELECT ON SYS.SYSUSER to alation
+        GRANT SELECT ON SYS.SYSTABLE to alation
+        GRANT SELECT ON SYS.SYSCOLUMNS to alation
+        GRANT SELECT ON SYS.SYSUSERPERMS to alation
+        GRANT SELECT ON SYS.SYSINDEX to alation
+        GRANT SELECT ON SYS.SYSINDEXES to alation
+
++-----------------------------------+-----------------------------------------------+
+| Permission                        | Purpose                                       |
++===================================+===============================================+
+| GRANT SELECT ON SYS.SYSUSER       | Required for schema extraction                |
++-----------------------------------+-----------------------------------------------+
+| GRANT SELECT ON SYS.SYSTABLE      | Required for table extraction                 |
++-----------------------------------+-----------------------------------------------+
+| GRANT SELECT ON SYS.SYSCOLUMNS    | Required for column extraction                |
++-----------------------------------+-----------------------------------------------+
+| GRANT SELECT ON SYS.SYSUSERPERMS  | Required for view extraction                  |
++-----------------------------------+-----------------------------------------------+
+| GRANT SELECT ON SYS.SYSINDEX      | Required for index extraction                 |
++-----------------------------------+-----------------------------------------------+
+| GRANT SELECT ON SYS.SYSINDEXES    | Required for index, primary key, and foreign  |
+|                                   | key extraction.                               |
++-----------------------------------+-----------------------------------------------+
+
+
+Permissions for Sampling and Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Grant the service account the ``SELECT`` permissions on all schemas and tables you want to sample in Alation. For views, grant ``SHOW VIEW`` on all views you want to sample.
+
+**Example**:
+
+    .. code-block:: SQL
+
+        GRANT SELECT ON [database].* TO alation;
+        GRANT SHOW VIEW ON [database].* TO alation;
+
+Permissions for Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Grant the service account the ``SELECT`` permissions on the table that stores query history. Refer to `Query Log Ingestion`_ below for detailed information on how to configure QLI.
+
+JDBC URI
+---------------------
+
+Format
+~~~~~~~~~~~~~~~~~~~~~
+
+Use the following format to build the JDBC URI:
+
+.. code-block:: Bash
+
+    sybase:Tds://<hostname_or_ip>:<port>?ServiceName=<database_name>
+
+Example
+~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+    sybase:Tds:10.13.9.72:2638?ServiceName=alation
+
+Configuration in Alation
+--------------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **SybaseIQ OCF Connector**.
+
+Access
+--------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+--------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ConnectorSettings_2.rst
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+You can view the connector logs in **Admin Settings** > **Manage Connectors** > **SybaseIQ OCF Connector**.
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_ObfuscateLiterals.rst
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+The default queries that the connector uses to extract metadata can be found in :doc:`/sources/OpenConnectorFramework/SAPIQ/SAP_IQ_ExtractionQueries`. You can customize these queries to adjust the extraction to your needs.
+
+Sampling and Profiling
+-------------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Compose
+-------------------------------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+Query Log Ingestion
+--------------------------------
+
+Configure QLI in SAP IQ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Step 1: Check Request Logging State
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Begin with checking the state of the Request Logging and Request Log files. By default, the value of Request Logging is none and the value of Request Log is empty. Run the following query to check the current state:
+
+    .. code-block:: SQL
+
+        SELECT property('RequestLogFile'), property('RequestLogging');
+
+Step 2: Enable SQL Log Storage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Set Request Logging to SQL.
+
+    .. code-block:: SQL
+
+        CALL sa_server_option('RequestLogging','SQL');
+
+2. Execution of this call enables SQL log storage. Set the log file to ``sqllog.txt``.
+
+    .. code-block:: SQL
+
+        CALL sa_server_option('RequestLogFile', 'sqllog.txt');
+
+    .. note::
+
+        Setting the log file to ``sqllog.txt`` must be done every time the database server is restarted.
+
+Step 3: Create a Table for Logging Events
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Create a table to store query history in a schema of your choice. In the example below, we are creating the table ``user_connections_event_table``.
+
+    .. code-block:: SQL
+
+        SELECT * INTO user_connections_event_table FROM  sp_iqconnection() WHERE 1=2
+
+    .. note::
+
+        If the query errors out, run the query ``SELECT * FROM user_connections_event_table`` to make sure that the table exists.
+
+Step 4: Enable Query History
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use the following example queries to enable storage of query history and grant the service account permissions to select from the QLI table.
+
+    .. code-block:: SQL
+
+        CREATE EVENT user_connections_event
+        TYPE CONNECT
+        HANDLER
+        BEGIN
+        INSERT INTO user_connections_event_table
+          SELECT * FROM sp_iqconnection() a
+          WHERE a.Name != 'user_connections_event'
+            AND datediff(Second, now(), a.conncreatetime) < 1
+        END;
+
+        GRANT SELECT ON user_connections_event_table TO alation;
+
+
+Step 5: Create an Event to Dump Logs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run the query call ``sa_get_request_times('sqllog.txt');`` every time before you perform the steps in :ref:`QLI Queries`.
+
+Use the following example queries to create an event that copies logs from ``sqllog.txt`` to **satmp_request_time**.
+
+For Daily Automated QLI Query
+''''''''''''''''''''''''''''''''
+
+    .. code-block:: SQL
+
+        CREATE EVENT AlationQliEvent
+        schedule 
+        START TIME '17:14' on
+        ('Mon',
+        'Tue',
+        'Wed',
+        'Thu',
+        'Fri',
+        'Sat',
+        'Sun')
+        HANDLER
+            BEGIN
+  	            call sa_get_request_times('sqllog.txt');
+        END;
+
+For Weekly Automated QLI Query
+''''''''''''''''''''''''''''''''
+
+    .. code-block:: SQL
+
+        CREATE EVENT AlationQliEvent
+        schedule 
+        START TIME '17:14' on
+        ('Sun')
+        HANDLER
+            BEGIN
+  	            call sa_get_request_times('sqllog.txt');
+        END;
+
+.. _QLI Queries:
+
+Configure QLI in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can configure QLI on the **Query Log Ingestion** tab of the data source Settings page. Select a QLI option for your data source and schedule the QLI job if necessary.
+
+You can choose to create a table or a view on your database to store the query history data (table-based QLI) or to provide a custom query to retrieve query history every time you run QLI (custom query-based QLI).
+
+Table-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^
+
+ Use the query format below to create a view and flush the query history from the data source:
+
+    - Substitute the placeholder view name ``schema.view`` with your actual values.
+    - This example selects from ``schema.user_connections_event_table``. Substitute the example value ``schema.user_connections_event_table`` with the name of your schema and QLI table.
+
+.. code-block:: SQL
+
+    CREATE VIEW schema.view AS
+      SELECT * FROM
+        (SELECT
+            u.Userid as username,
+            u.ConnCreateTime AS sessionStartTime,
+            c.start_time AS startTime,
+            trim(u.Userid) || '\/' || trim(CAST( DATEFORMAT( u.ConnCreateTime , 'yyyy-mm-ddHH:NN:SS.SS' ) AS CHAR(25)))
+                          || '\/' || trim(c.conn_id) AS sessionId,
+            c.req_id AS idx,
+            c.millisecs/1000.0 AS seconds,
+            c.stmt AS queryString,
+            c.rowcount AS num_result_rows,
+            'N' as cancelled,
+            DB_NAME() AS defaultDatabases,
+            RANK() over
+              (PARTITION BY c.req_id, c.start_time, c.stmt
+              ORDER BY u.ConnCreateTime desc) AS RANK
+              FROM satmp_request_time c
+        INNER JOIN
+              (SELECT DISTINCT
+                  ConnCreateTime,
+                  ConnHandle,
+                  Userid
+              FROM schema.user_connections_event_table) u
+          ON c.conn_handle = u.ConnHandle
+              AND c.start_time > u.ConnCreateTime ) AS T
+      WHERE T.RANK = 1
+          AND username IS NOT NULL;
+
+On the **Query Log Ingestion** tab under **Connector Settings > Query Extraction**, in the **Table Name** field specify the name of the view in which the query logs are available. Make sure that the service account has the permissions to access this view. The table name must be provided in the format ``schema.view``.
+
+Custom Query-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_QLI_CustomQueryQLI.rst
+
+QLI Query Template
+''''''''''''''''''''''
+
+This example selects from ``schema.user_connections_event_table``. Substitute the example value ``schema.user_connections_event_table`` with the name of your schema and QLI table.
+
+.. code-block:: SQL
+
+    SELECT * FROM
+      (SELECT
+          u.Userid as username,
+          u.ConnCreateTime AS sessionStartTime,
+          c.start_time AS startTime,
+          trim(u.Userid) || '\/' || trim(CAST( DATEFORMAT( u.ConnCreateTime , 'yyyy-mm-ddHH:NN:SS.SS' ) AS CHAR(25)))
+                        || '\/' || trim(c.conn_id) AS sessionId,
+          c.req_id AS idx,
+          c.millisecs/1000.0 AS seconds,
+          c.stmt AS queryString,
+          c.rowcount AS num_result_rows,
+          'N' AS cancelled,
+          DB_NAME() AS defaultDatabases,
+          RANK() over
+            (PARTITION BY c.req_id, c.start_time, c.stmt
+            ORDER BY u.ConnCreateTime desc) AS RANK
+      FROM satmp_request_time c
+      INNER JOIN
+              (SELECT DISTINCT
+                  ConnCreateTime,
+                  ConnHandle,
+                  Userid
+              FROM schema.user_connections_event_table) u
+          ON c.conn_handle = u.ConnHandle AND c.start_time > u.ConnCreateTime) AS T
+      WHERE T.RANK = 1
+        AND username IS NOT NULL
+        AND startTime >=DATEFORMAT(STARTTIME, 'YYYY-MM-DD HH:mm:ss.SSS')
+        AND startTime < DATEFORMAT(ENDTIME , 'YYYY-MM-DD HH:mm:ss.SSS');
+
+
+Perform QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst
+
+Log Location
+--------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting` for information about logs.

@@ -1,0 +1,94 @@
+Backup V2 Process
+=======================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Backup V2 process depends on your Alation release.
+
+Version 2023.1 and Newer
+-------------------------------
+
+From version 2023.1, the Backup V2 process uses **pgBackRest** as the default tool for backing up the internal Postgres database. The pgBackRest tool allows excluding the Postgres database from the compressed Alation backup and managing the database backup separately from the Alation backup. When Postgres is excluded from the Alation backup, its backup will be created in a separate directory.
+
+Postgres Backup Is Included (Default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /shared/BackupAndRestore_TextFragments.rst
+   :start-after: .. start-backup-examples
+   :end-before: .. end-backup-examples
+
+During the backup process, the backup data is first staged in backup staging directories. Alation stages the data in two locations: **/data2/tmp** and **/data2/backup/pgbackrest** (both paths are given inside the Alation shell).
+
+The directory **/data2/tmp** is always present on **/data2**. If the **/data2/tmp** folder is not initially empty, its contents are cleared automatically at the start of the backup process. It is the default location for staging and compressing the backup data and creating the backup **.tar.gz** files.
+
+    .. note::
+
+        This default backup staging location can be changed using the **alation_conf** parameter ``alation.backup.data_temp_dir``. At any time, the ``alation.backup.data_temp_dir`` parameter stores the location of the current staging directory for the creation of the compressed backup files.
+
+The directory **/data2/backup/pgbackrest** will be created by the first backup process and used for staging the Postgres database data for backing up.
+When the backup process has completed, the staged contents of the **/data2/tmp** and **/data2/backup/pgbackrest** folders are compressed together into the Alation backup **.tar.gz** file. The Event Bus backup is created as a separate file.
+
+Both compressed backup files will appear in the backup storage directory **/data2/backup** (default location).
+
+The contents of the **/data2/tmp** folder are deleted automatically after the backup is complete, but the folder itself is not deleted.
+
+.. include:: /shared/BackupAndRestore_TextFragments.rst
+      :start-after: .. start-both-backups_required
+      :end-before: .. end-both-backups_required
+
+Postgres Backup Is Excluded
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can configure the backup process to exclude the Postgres database backup from the compressed Alation backup file. If Postgres is excluded from the Alation backup, it will need to be managed separately. Refer to :doc:`/installconfig/BackupandRestore/ManagePostgresBackupsSeparately` for more information.
+
+.. _Backup20214:
+
+Versions 2021.4 - 2022.4
+--------------------------------
+
+The backup process follows the same flow as in `Versions 2020.3 - 2021.3`_; however, from version 2021.4, Alation backs up a new Alation server component—the Event Bus—and creates two **.tar.gz** files backup files in the backup directory: the Alation backup and the Event Bus backup.
+
+.. note::
+
+    The Event Bus component powers the :doc:`Lineage V3 service </installconfig/LineageV3/EnablingLineageV3>` and the :doc:`Manual Lineage Curation </sources/Lineage/ManualLineageCuration>` functionality. However, the two backup files will be created even if the Lineage V3 service and Manual Lineage are disabled and not in use on an Alation instance.
+
+.. include:: /shared/BackupAndRestore_TextFragments.rst
+   :start-after: .. start-backup-examples
+   :end-before: .. end-backup-examples
+
+.. include:: /shared/BackupAndRestore_TextFragments.rst
+      :start-after: .. start-both-backups_required
+      :end-before: .. end-both-backups_required
+
+Versions 2020.3 - 2021.3
+------------------------------
+
+In **versions 2020.3 - 2021.3**, the Alation backup process creates one **.tar.gz** backup file ``<timestamp_version>_alation_backup.tar.gz``, for example ``202008140102_5-17-0-116556_alation_backup.tar.gz``.
+
+The default Postgres backup tool on these versions is **pg_probackup**.
+
+During the backup process, the backup files are first staged in backup staging directories. Alation creates staging folders in 2 locations: **/data2/tmp** and **/data2/backup/pgbackup** (both paths are given inside the Alation shell).
+
+The directory **/data2/tmp** is always present on **/data2**. If the **/data2/tmp** folder is not initially empty, its contents are cleared automatically at the start of the backup process. It is the default location for staging and compressing the backup data and creating the backup *.tar.gz* file. This default location can be changed using the **alation_conf**  parameter ``alation.backup.data_temp_dir``. So at any time, the ``alation.backup.data_temp_dir`` parameter stores the location of the current backup staging directory for the creation of a compressed backup file.
+
+The directory **/data2/backup/pgbackup** is created by the backup process and used for staging the Postgres data for the backup.
+
+When the backup process has completed, the staged contents of the **/tmp** and **/pgbackup** folders are compressed together into a backup *.tar.gz* file. The name of the backup file includes the date, time, and build number, for example: ``202008140102_5-17-0-116556_alation_backup.tar.gz``.
+
+A compressed backup file will appear in the backup storage directory **/data2/backup** (default location).
+
+    .. note::
+
+        A compressed incremental backup file includes a copy of the full backup, which is why it is not smaller in size than the full compressed backup. Incremental backups take much less time to be created, but because they are compressed together with the full backup, they take as much space as a compressed full backup.
+
+The contents of the **/data2/tmp** folder are deleted automatically after the backup is complete, but the folder itself is not deleted.
+
+There is a difference in how the **/data2/backup/pgbackup** staging directory is cleared depending on whether or not incremental backups are in use:
+
+    - If incremental backups are disabled, the contents of the **/data2/backup/pgbackup** directory and the directory itself are cleared after the backup process has completed.
+
+    - If incremental backups are enabled, the contents of the **/data2/backup/pgbackup** directory are not cleared.
+
+    .. note::
+
+        If an incremental backup fails, the staging files in **/pgbackup** should be cleared manually before performing the next backup.

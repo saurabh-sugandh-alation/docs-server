@@ -1,0 +1,815 @@
+
+<!DOCTYPE html>
+<html lang="" >
+<head>
+  <meta charset="utf-8"/>
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="book-version"      content=""/>
+  <meta name="book-release"      content=""/>
+  <meta name="docsearch:name"    content="Alation User Guide" />
+  <meta name="docsearch:version" content="" />
+  <meta name="docsearch:package_type" content="" />
+	<meta name="robots" content="noindex" />
+
+  
+  <title>Configure Authentication via AWS STS and an IAM Role &mdash; Alation User Guide</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/css/main.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/sphinx_collapse.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/css/rtd_sphinx_search.min.css" type="text/css" />
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="Alation User Guide" href="#"/>
+        <link rel="up" title="Open Connector Framework" href="index.html"/>
+        <link rel="next" title="Configure Metadata Extraction for OCF Data Sources" href="ConfigureMDEforOCFDataSources.html"/>
+        <link rel="prev" title="Integration with Azure Key Vault for Data Source Authentication Using OCF Connector" href="ConfigureSecretsforOCFConnectors/OCFIntegrationWithAzureKeyVault.html"/>
+
+	
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-67846571-1"></script>
+	<script>
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+
+	gtag('config', 'UA-67846571-1');
+	</script>
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<!-- Second Google Analytics tag to assist mapping with mattermost.com visits --> 
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120238482-1"></script>
+	<script>
+	  window.dataLayer = window.dataLayer || [];
+	  function gtag(){dataLayer.push(arguments);}
+	  gtag('js', new Date());
+
+	  gtag('config', 'UA-120238482-1');
+	</script>
+
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <header>
+    <div class="header__container wy-max-content-width">
+        <a href="/" class="header__logo">
+            <img width="176" src="../../_static/img/logo-alation.svg" alt="Alation" />
+        </a>
+        <ul class="header__links">
+            <li><a href="https://help.alation.com/s/">Alation Help Center</a></li>
+        </ul>
+    </div>
+</header>
+
+  <div class="wy-grid-for-nav wy-max-content-width">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-scroll__content">
+          <div class="wy-side-nav-search">
+            
+
+            <ul class="sidebartop">
+              <li class="nolink search"><div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search this project" aria-label="Search this project" id="searchinput" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+</li>
+
+            </ul>
+
+            
+          </div>
+
+          <div class="wy-menu wy-sidebar wy-sidebar--hidden" data-spy="affix" role="navigation" aria-label="main navigation">
+            
+              
+              
+              
+                  <p class="caption" role="heading"><span class="caption-text">Welcome to Alation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/About/index.html">About Alation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/CloudAndOnPrem/index.html">Alation Cloud and On-Premise</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/UserProfileandPreferences/index.html">User Profile and Preferences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/CatalogBasics/index.html">Catalog Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/CatalogPages/index.html">Catalog Pages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/Conversations/index.html">Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/Domains/index.html">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/BestPractices/index.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome/Glossary/index.html">Alation Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation Cloud Service</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud/StatusPage/index.html">Status Page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud/CloudOverview/index.html">Cloud Service Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud/CloudConfiguration/index.html">Configuration for Cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cloud/AlationAgent/index.html">Alation Agent</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation Integration</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../integration/AlationAnywhere/index.html">Alation Anywhere</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../integration/AlationConnectedSheets/index.html">Alation Connected Sheets</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Installation &amp; Configuration</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/ServerInstallation/index.html">Install Alation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/HighAvailability/index.html">High Availability</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/Update/index.html">Update Alation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/BackupandRestore/index.html">Back Up and Restore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/LineageV2/index.html">Lineage V2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/LineageV3/index.html">Lineage V3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/AlationAnalyticsV2/index.html">Alation Analytics V2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installconfig/AlationContainerService/index.html">Alation Container Service</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Sources</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../CatalogSources/index.html">Catalog Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../VirtualDataSources/index.html">Virtual Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Lineage/index.html">Lineage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../APIResources/index.html">API Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../WorkwithCatalogData/index.html">Working with Catalog Data</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Open Connector Framework</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="OCFOverview.html">Open Connector Framework (OCF) Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="OCFInstallAlationConnectorManager.html">Install Alation Connector Manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="AutoInstallDockerAsDependency.html">Auto-Install Docker as Alation Connector Manager Dependency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InstallDocker2020_3_To_2021_1.html">Install Docker for Alation Versions 2020.3.x - 2021.1.x</a></li>
+<li class="toctree-l2"><a class="reference internal" href="OCFInstallBIConnectors.html">Install OCF BI Connectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ManageConnectors.html">Manage Connectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="OCFMaintainConnectors.html">Maintaining OCF Connectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="OCFConnectorCatalogUserExperience.html">OCF Connector Catalog User Experience</a></li>
+<li class="toctree-l2"><a class="reference internal" href="OCFTroubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MigrateNativeSourcestoOCF/index.html">Migrate Native Sources to Open Connector Framework</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ConfigureSecretsforOCFConnectors/index.html">Configure Secrets for OCF Connector Settings</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Configure Authentication via AWS STS and an IAM Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ConfigureMDEforOCFDataSources.html">Configure Metadata Extraction for OCF Data Sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ConfigureSamplingforOCFDataSources.html">Configure Sampling and Profiling for OCF Data Sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ConfigureComposeforOCFDataSources.html">Configure Compose for OCF Data Sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SchemaPathPattern.html">Schema Path Pattern</a></li>
+<li class="toctree-l2"><a class="reference internal" href="BIConnectionInfoField.html">BI Connection Info</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RecreateDatabricksInitScriptUnderWorkspace.html">Recreate Databricks Logging Script Under Workspace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="AthenaOCFConnector/index.html">Amazon Athena OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="AWSGlue/index.html">AWS Glue OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="AWSS3/index.html">Amazon S3 OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="AzureBlobStorage/index.html">Azure Blob Storage OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="AzureDatabricks/index.html">Azure Databricks OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="AzureSQLDBOCFConnector/index.html">Azure SQL DB OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="AzureSynapseOCFConnector/index.html">Azure Synapse Analytics OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="DatabricksonAWS/index.html">Databricks on AWS OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="DatabricksUnityCatalog/index.html">Databricks Unity Catalog OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="DBT/index.html">Add-On OCF Connector for dbt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Denodo/index.html">Denodo OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GBQOCFConnector/index.html">Google BigQuery OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Greenplum/index.html">Greenplum OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="HiveOCFConnector/index.html">Hive OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="IBMDb2/index.html">IBM Db2 Database OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ImpalaOnCDH_OCFConnector/index.html">Impala on CDH OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ImpalaOnCDP_OCFConnector/index.html">Impala on CDP OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InformaticaPowerCenter/index.html">Informatica PowerCenter OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MySQL/index.html">MySQL OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Looker/index.html">Looker OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="OracleOCFConnector/index.html">Oracle OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PostgreSQLOCFConnector/index.html">PostgreSQL OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PowerBIOCFConnector/index.html">Azure Power BI OCF Connector (Legacy)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PowerBIScannerOCFConnector/index.html">Azure Power BI Scanner OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="QlikSense/index.html">QlikSense OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Redshift/index.html">Amazon Redshift OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SAPASE/index.html">SAP ASE (Sybase ASE) OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SAPBOConnector/index.html">SAP BusinessObjects OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SAPBWConnector/index.html">SAP BW OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SAPECC/index.html">SAP ECC OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SAPHANA/index.html">SAP HANA OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SAPIQ/index.html">SAP IQ OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SingleStore/index.html">SingleStore OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Snowflake/index.html">Snowflake OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SQLServer/index.html">SQL Server OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SSRS/index.html">SSRS OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="StarburstOCFConnector/index.html">Starburst Enterprise (Trino) OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="TableauOCFConnector/index.html">Tableau OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Teradata/index.html">Teradata OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Vertica/index.html">Vertica OCF Connector</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Sources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../datasources/DSConfiguration/index.html">Data Source Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../datasources/AddDataSources/index.html">Adding Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../datasources/ComposeSSOAWSDataSources/index.html">Compose SSO for Amazon Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../datasources/ComposeSSOAzureDataSources/index.html">Compose SSO for Azure Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../datasources/AuthenticationForExtraction/index.html">Authentication for Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../datasources/CustomDB/index.html">Custom DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../datasources/GBQ/index.html">Google BigQuery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../datasources/Hive/index.html">Hive</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">BI Sources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../bisources/AddBISources/index.html">Add BI Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bisources/AddTableauServer/index.html">Add Tableau Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bisources/WorkwithBISources/index.html">Working with BI Sources</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">File System Sources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../filesystems/FileSystems/index.html">Add File Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../filesystems/VirtualFileSystems/index.html">Virtual File Systems</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation for Analysts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/UserAuthenticationForDataSources/index.html">User Authentication for Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/ShareAndAccessQueries/index.html">Share and Access Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/WriteQueries/index.html">Write Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/DevelopQueries/index.html">Develop Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../analyst/WorkwithQueryResults/index.html">Work with Query Results</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation for Data Stewards</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/GovernanceApp/index.html">Governance App</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/PolicyCenter/index.html">Policy Center</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/Workflow/index.html">Workflow Center</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/GovernanceDashboard/index.html">Governance Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/StewardshipWorkbench/index.html">Stewardship Workbench</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/AnalyticsStewardship/index.html">Analytics Stewardship</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/Glossary/index.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/ArticlesAndTags/index.html">Articles and Tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/ArticleGroups/index.html">Article Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/DataCatalogCustomization/index.html">Customize Your Data Catalog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/DataDocumentation/index.html">Data Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/AutoTitlingandLexicon/index.html">Auto-titling and Lexicon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../steward/SnowflakeTags/index.html">Snowflake Tags</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation for Server Administrators</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/CustomizableHomePage/index.html">Customizable Homepage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/AdminSettings/index.html">Administrator Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/AdditionalConfiguration/index.html">Additional Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/RunbookForAdministrators/index.html">Runbook for Administrators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/AlationAPIs/index.html">Alation APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/How-tos/index.html">How-tos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../admins/Troubleshooting/index.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Release Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/releasenotes/index.html">Release Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/supportmatrices/index.html">Support Matrices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/endofsupport/index.html">End Of Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/snowflakeclladdon/index.html">Snowflake Parser Add-On</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../releases/fieldnotices/index.html">Important Notices and Security Alerts</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Archived Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../archive/About/index.html">About the Documentation Archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../archive/AdminConfig/index.html">Administration and Update Archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../archive/ReleaseNotes/index.html">Release Notes Archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../archive/Usage/index.html">Usage and Customization Archive</a></li>
+</ul>
+
+              
+            
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="wy-nav-top-icon"></i>
+        <a href="../../index.html">Alation User Guide</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+
+          <div role="navigation" aria-label="breadcrumbs" class="breadcrumbs">
+    <a href="../../index.html">Docs</a>
+    <span class="separator">&gt;</span>
+    <a href="index.html">Open Connector Framework</a>
+    <span class="separator">&gt;</span>
+    <span>Configure Authentication via AWS STS and an IAM Role</span>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody" class="toBeIndexed">
+            
+  <section id="configure-authentication-via-aws-sts-and-an-iam-role">
+<h1>Configure Authentication via AWS STS and an IAM Role<a class="headerlink" href="#configure-authentication-via-aws-sts-and-an-iam-role" title="Permalink to this headline">¶</a></h1>
+<p class="cloud-label hover-text">Alation Cloud Service <span class="tooltip-text">Applies to Alation Cloud Service instances of Alation</span></p>
+<p class="on-prem-label hover-text">Customer Managed <span class="tooltip-text">Applies to customer-managed instances of Alation</span></p>
+<p><em>Available from release 2023.3</em></p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Use the steps below to configure authentication via the AWS Security Token Service (STS) and an AWS IAM role for Amazon sources cataloged in Alation using Open Connector Framework (OCF) connectors.</p>
+<p>You can perform this configuration on:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Customer-managed (on-premise) Alation instances installed on AWS EC2</p></li>
+<li><p>Alation Cloud Service instances that have not been migrated to the cloud-native architecture</p></li>
+<li><p>Enterprise Edition of Alation Cloud Service instances (cloud-native architecture)</p></li>
+</ul>
+</div></blockquote>
+<p>This configuration will work for the following Amazon sources:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Amazon Athena</strong> (Athena OCF connector version <strong>1.2.0.6527</strong> or newer)</p></li>
+<li><p><strong>Amazon Glue</strong> (AWS Glue OCF connector version <strong>1.1.1.6409</strong> or newer)</p></li>
+<li><p><strong>Amazon Redshift</strong> (Redshift OCF connector version <strong>1.3.2.6521</strong> or newer)</p></li>
+<li><p><strong>Amazon S3</strong> (S3 OCF connector version <strong>3.8.5.6552</strong> or newer)</p></li>
+</ul>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>STS authentication with an AWS IAM role can be configured between different AWS accounts when the Alation instance is deployed under one AWS account and the Amazon resources are running under another AWS account.</p>
+<p>This configuration will also work if the on-premise Alation instance and the Amazon resources exist under the same AWS account.</p>
+</div>
+</div></blockquote>
+<p>STS authentication with an AWS IAM role does not require a service account (an IAM user) on Amazon resources. The IAM role providing access to the Amazon source will be assumed by the Alation instance.</p>
+<blockquote>
+<div><a class="with-border reference internal image-reference" href="../../_images/STS_Auth_diagram.png"><img alt="../../_images/STS_Auth_diagram.png" class="with-border" src="../../_images/STS_Auth_diagram.png" style="width: 600px;" /></a>
+</div></blockquote>
+</section>
+<section id="workflow">
+<h2>Workflow<a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h2>
+<p>The full configuration includes steps in the AWS IAM user interface, the Alation user interface, and in case of an on-premise instance, on the Alation server. You will need to switch between AWS and Alation to complete all the steps.</p>
+<p>You must have the role of Server Admin to configure Alation and an advanced role in AWS that allows creating roles and policies.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="#sts-prerequisites"><span class="std std-ref">Prerequisites</span></a></p></li>
+<li><p><a class="reference internal" href="#sts-start-cag"><span class="std std-ref">Step 1—Alation: Start the Connector Access Gateway Service</span></a></p></li>
+<li><p><a class="reference internal" href="#sts-create-resource-role"><span class="std std-ref">Step 2—AWS IAM: Create an IAM Role with Access to Amazon Resources</span></a></p></li>
+<li><p><a class="reference internal" href="#sts-create-auth-profile"><span class="std std-ref">Step 3—Alation: Create an Authentication Profile and Get the Alation Instance Role</span></a></p></li>
+<li><p><a class="reference internal" href="#sts-create-tag"><span class="std std-ref">Step 4—AWS IAM: Create a Resource Tag and Define the Trust Relationship</span></a></p></li>
+<li><p><a class="reference internal" href="#sts-configure-assume-role"><span class="std std-ref">Step 5—AWS IAM: Allow the Alation Instance Role to Assume Another Role</span></a></p></li>
+<li><p><a class="reference internal" href="#sts-configure-connectors"><span class="std std-ref">Step 6—Alation: Configure Your Source to Use IAM Role Authentication</span></a></p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="prerequisites">
+<span id="sts-prerequisites"></span><h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p>AuthService of the Alation instance is up and running (default).</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>On an on-premise instance, you can check the state of AuthService with the following command, from the Alation shell:</p>
+<p><code class="docutils literal notranslate"><span class="pre">alation_supervisor</span> <span class="pre">status</span> <span class="pre">java:authserver</span></code></p>
+<p>The status should be <code class="docutils literal notranslate"><span class="pre">RUNNING</span></code>.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p><strong>On-premise instances only</strong>—If this has not been done yet for your Alation instance, you must assign it an IAM role allowing the <code class="docutils literal notranslate"><span class="pre">sts:AssumeRole</span></code> action. See <a class="reference internal" href="#how-to-assign-an-aws-iam-role-to-the-alation-instance">How to Assign an AWS IAM Role to the Alation Instance</a> below for more details.</p></li>
+</ol>
+<section id="how-to-assign-an-aws-iam-role-to-the-alation-instance">
+<h3>How to Assign an AWS IAM Role to the Alation Instance<a class="headerlink" href="#how-to-assign-an-aws-iam-role-to-the-alation-instance" title="Permalink to this headline">¶</a></h3>
+<p>Perform these steps under the AWS account where your Alation instance is running.</p>
+<p>To assign an AWS IAM role to the instance:</p>
+<ol class="arabic">
+<li><p>In AWS IAM, create an AWS IAM role selecting the <strong>Type of Trusted Entity</strong> to be <strong>AWS Service</strong> and <strong>Use Case</strong> to be <strong>EC2</strong>.</p></li>
+<li><p>Under the <strong>Trust relationships</strong> tab on the properties page of the role you created, make sure that <code class="docutils literal notranslate"><span class="pre">&quot;Principal&quot;</span></code> is set to <code class="docutils literal notranslate"><span class="pre">&quot;Service&quot;:</span> <span class="pre">&quot;ec2.amazonaws.com&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;Action&quot;</span></code> is set to <code class="docutils literal notranslate"><span class="pre">&quot;sts:AssumeRole&quot;</span></code>.</p>
+<blockquote>
+<div><img alt="../../_images/STS_Auth_AssignRoleToInstance.png" class="with-border" src="../../_images/STS_Auth_AssignRoleToInstance.png" />
+</div></blockquote>
+</li>
+<li><p>Attach this role to the EC2 instance where Alation is running: navigate to EC2, open the properties of an instance, and select <strong>Action &gt; Security &gt; Modify IAM Role &gt; Select IAM Role &gt; Update IAM Role</strong>. For more information, refer to <a class="reference external" href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#attach-iam-role">Attach an IAM role to an instance</a> in AWS documentation.</p></li>
+</ol>
+</section>
+</section>
+<section id="step-1alation-start-the-connector-access-gateway-service">
+<span id="sts-start-cag"></span><h2>Step 1—Alation: Start the Connector Access Gateway Service<a class="headerlink" href="#step-1alation-start-the-connector-access-gateway-service" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This step is required on customer-managed (on-premise) Alation instances only. If your instance is in the Alation Cloud, skip this step and start with <a class="reference internal" href="#sts-create-resource-role"><span class="std std-ref">Step 2</span></a>.</p>
+</div>
+<p>On an on-premise instance, you’ll need to start the Connector Access Gateway (CAG) service that is part of Alation Connector Manager.</p>
+<p>To start CAG:</p>
+<ol class="arabic">
+<li><p>Use SSH to connect to the Alation instance.</p></li>
+<li><p>Open the <strong>/etc/hydra/hydra.toml</strong> file for editing. (The path is outside of the Alation shell.)</p></li>
+<li><p>Add the following lines:</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>application_gateway<span class="o">]</span>
+<span class="nv">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span>
+
+<span class="o">[</span>agent<span class="o">]</span>
+<span class="nv">use_host_networking</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>If any of these sections already exist, you don’t need to add them again.</p>
+</div>
+<p>Example file:</p>
+<img alt="../../_images/STS_Auth_ModifyHydraConfig.png" class="with-border" src="../../_images/STS_Auth_ModifyHydraConfig.png" />
+</div></blockquote>
+</li>
+<li><p>Save the changes to the file.</p></li>
+<li><p>Restart Alation Connector Manager.</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>hydra
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you installed Docker in rootless mode, in this and the next command do not use <code class="docutils literal notranslate"><span class="pre">sudo</span></code>.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p>Validate that CAG is now running.</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>docker<span class="w"> </span>ps
+</pre></div>
+</div>
+<p>The output should show the <code class="docutils literal notranslate"><span class="pre">agent</span></code> and <code class="docutils literal notranslate"><span class="pre">application_gateway</span></code> services to be running:</p>
+<img alt="../../_images/STS_Auth_CAG_Running.png" class="with-border" src="../../_images/STS_Auth_CAG_Running.png" />
+</div></blockquote>
+</li>
+<li><p>Enter the Alation shell.</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>/etc/init.d/alation<span class="w"> </span>shell
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Modify the following <strong>alation_conf</strong> parameters:</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>alation_conf<span class="w"> </span>alation.ocf.cag.port<span class="w"> </span>-s<span class="w"> </span><span class="m">11000</span>
+alation_conf<span class="w"> </span>alation.ocf.cag.alation_url<span class="w"> </span>-s<span class="w"> </span>localhost:80
+</pre></div>
+</div>
+<p>For more information about <strong>alation_conf</strong>, see <a class="reference internal" href="../../admins/AdditionalConfiguration/Usingalation_conf.html"><span class="doc">Using alation_conf</span></a>.</p>
+</div></blockquote>
+</li>
+<li><p>Exit the Alation shell.</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">exit</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</section>
+<section id="step-2aws-iam-create-an-iam-role-with-access-to-amazon-resources">
+<span id="sts-create-resource-role"></span><h2>Step 2—AWS IAM: Create an IAM Role with Access to Amazon Resources<a class="headerlink" href="#step-2aws-iam-create-an-iam-role-with-access-to-amazon-resources" title="Permalink to this headline">¶</a></h2>
+<p>Perform this step in AWS IAM of the AWS account where your Amazon resources are running:</p>
+<ol class="arabic">
+<li><p>Create an IAM policy that grants access to the source you are going to connect to from Alation. Further in this instruction we’ll refer to this policy as <code class="docutils literal notranslate"><span class="pre">&lt;read-resources-policy&gt;</span></code>. The policy must fulfill the access requirements for extraction, profiling, and query log ingestion from an Amazon source you are creating this configuration for. Refer to the corresponding OCF connector documentation for recommendations as to what kind of access to give.</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can also use an existing policy if it fulfills the access requirements for a source.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p>Create an AWS IAM role, for example, <code class="docutils literal notranslate"><span class="pre">&lt;access-to-resources-role&gt;</span></code>. Further in this instruction we’ll refer to this role as <code class="docutils literal notranslate"><span class="pre">&lt;access-to-resources-role&gt;</span></code>.</p></li>
+<li><p>Attach the <code class="docutils literal notranslate"><span class="pre">&lt;read-resources-policy&gt;</span></code> to the <code class="docutils literal notranslate"><span class="pre">&lt;access-to-resources-role&gt;</span></code>.</p></li>
+<li><p>In the <strong>Summary</strong> section of the role properties page, locate the <strong>Maximum session duration</strong> value. Take a screenshot or write the value down. You will need it for reference in the configuration steps that follow.</p>
+<blockquote>
+<div><img alt="../../_images/STS_Auth_ReadResourcesRoleProperties.png" class="with-border" src="../../_images/STS_Auth_ReadResourcesRoleProperties.png" />
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you expect that extraction from your source may take more time than the current maximum session duration and if your AWS security policy allows it, you can change this value to a greater value to avoid frequent token regeneration. For details, refer to <a class="reference external" href="https://docs.aws.amazon.com/IAM/latest/UserGuide/roles-managingrole-editing-console.html#roles-modify_max-session-duration">Modifying a role maximum session duration (console)</a> in AWS documentation.</p>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</section>
+<section id="step-3alation-create-an-authentication-profile-and-get-the-alation-instance-role">
+<span id="sts-create-auth-profile"></span><h2>Step 3—Alation: Create an Authentication Profile and Get the Alation Instance Role<a class="headerlink" href="#step-3alation-create-an-authentication-profile-and-get-the-alation-instance-role" title="Permalink to this headline">¶</a></h2>
+<p>Perform this step in Alation:</p>
+<ol class="arabic">
+<li><p>Log in to Alation.</p></li>
+<li><p>Go to <strong>Admin Settings</strong> &gt; <strong>Server Admin &gt; Authentication</strong>.</p></li>
+<li><p>Under <strong>Authentication Configuration Methods for External Systems</strong>, click the <strong>Add Configuration</strong> button.</p></li>
+<li><p>In the list that opens, select <strong>AWS_IAM</strong>. The AWS_IAM authentication profile editor will open in a new browser tab.</p></li>
+<li><p>Add these values:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Config Name</strong>—Provide a name for the profile you are creating. The name is required for you to identify it among all other existing methods and manage its settings.</p></li>
+<li><p><strong>STS Duration</strong>—Provide the STS token duration in seconds. The value should be less than or equal to the maximum session duration of the IAM role that provides access to the Amazon resource(s). (See <a class="reference internal" href="#sts-create-resource-role"><span class="std std-ref">Step 2</span></a>).</p></li>
+<li><p><strong>Region</strong>—Provide the AWS region of the AWS account where the Amazon resources are running.</p></li>
+<li><p><strong>Cred Type</strong>—Select the value <code class="docutils literal notranslate"><span class="pre">instance_profile</span></code>.</p></li>
+<li><p><strong>SAML authenticate request XML</strong>—Leave clear.</p></li>
+<li><p><strong>Multi role flow</strong>—Leave this checkbox selected (default).</p></li>
+<li><p><strong>Encode Relay State</strong>—Leave clear.</p></li>
+<li><p><strong>Redirect URI</strong>—Leave clear.</p></li>
+<li><p><strong>Entity Id</strong>—Leave clear.</p></li>
+<li><p><strong>Token Buffer time</strong>—Leave clear.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information on each field, refer to <a class="reference internal" href="../../admins/AdminSettings/AuthConfigMethodsForExternalSystems.html#create-aws-iam-profile"><span class="std std-ref">Authentication Configuration Methods for External Systems: AWS IAM</span></a>.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p>Click <strong>Save</strong>.</p></li>
+<li><p>Click the <strong>Get Alation Role ARN</strong> button to fetch the role ARN of Alation’s EC2 instance.</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Alation calls the <a class="reference external" href="https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html">AWS GetCallerIdentity</a> endpoint which returns the Role ARN attached to the instance.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p>A pop-up will appear with the role ARN. Click the <strong>Copy to clipboard</strong> button to copy the role ARN.</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For an on-premise instance, this will be the ARN of the role you assigned to the instance.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p>Save the ARN in a secure location. You will need it during other configuration steps.</p></li>
+<li><p>Click <strong>Close</strong> to close the pop-up.</p></li>
+</ol>
+</section>
+<section id="step-4aws-iam-create-a-resource-tag-and-define-the-trust-relationship">
+<span id="sts-create-tag"></span><h2>Step 4—AWS IAM: Create a Resource Tag and Define the Trust Relationship<a class="headerlink" href="#step-4aws-iam-create-a-resource-tag-and-define-the-trust-relationship" title="Permalink to this headline">¶</a></h2>
+<p>Perform this step in the AWS IAM user interface under the AWS account where your Amazon resources are running and where you created the role providing access to Amazon resources (<a class="reference internal" href="#sts-create-resource-role"><span class="std std-ref">Step 2</span></a>, <code class="docutils literal notranslate"><span class="pre">&lt;access-to-resources-role&gt;</span></code>).</p>
+<p>You will need to define a tag and modify the trust relationship on this role.</p>
+<ol class="arabic">
+<li><p>Prepare the ARN of the Alation instance role. This is the ARN you saved as the result of Step 2. From the ARN, you can find out the name of the instance role: it’s the value that comes after the forward slash after the numeric ID. For example, if the ARN looks like this: <code class="docutils literal notranslate"><span class="pre">arn:aws:iam::248135293344:role/test_instance_role</span></code>, then <code class="docutils literal notranslate"><span class="pre">test_instance_role</span></code> is the name of the role.</p></li>
+<li><p>In AWS IAM, under the AWS account where your Amazon resources are running, open your <code class="docutils literal notranslate"><span class="pre">&lt;access-to-resources-role&gt;</span></code>.</p></li>
+<li><p>Select the <strong>Tags</strong> tab.</p>
+<blockquote>
+<div><img alt="../../_images/STS_Auth_AddTag.png" class="with-border" src="../../_images/STS_Auth_AddTag.png" />
+</div></blockquote>
+</li>
+<li><p>Click <strong>Add new tag</strong> or <strong>Manage tags</strong> to create a new tag. The <strong>Tags</strong> page will open.</p></li>
+<li><p>Click <strong>Add new tag</strong>.</p></li>
+<li><p>In the <strong>Key</strong> field, provide a name for the tag, for example <code class="docutils literal notranslate"><span class="pre">AlationStsAssumeRoleName</span></code>.</p></li>
+<li><p>In the <strong>Value</strong> field, enter the name of the Alation instance role.</p>
+<blockquote>
+<div></div></blockquote>
+</li>
+<li><p>Click <strong>Save changes</strong> to save the tag. The tag will be displayed in the <strong>Tags</strong> table on the <strong>Tags</strong> tab of the role properties page.</p></li>
+<li><p>Copy the tag key and save it in a secure location. You will need it for the next configuration step.</p></li>
+<li><p>Click on <strong>Trust relationships</strong> and then on <strong>Edit trust policy</strong>.</p></li>
+<li><p>Click on the <strong>Add button</strong> next to <strong>Add a principal</strong>.</p>
+<img alt="../../_images/STS_Auth_EditPolicy_AddPrincipal.png" class="with-border" src="../../_images/STS_Auth_EditPolicy_AddPrincipal.png" />
+</li>
+<li><p>Click on the <strong>Principal type</strong> dropdown and select <strong>IAM Roles</strong> as the principal type since we want to allow another IAM Role to assume this role.</p></li>
+<li><p>Provide the ARN of the other role that will be allowed to assume this role. This should be the ARN of the Alation instance role that you prepared (see item 1 in this Step).</p></li>
+<li><p>After providing the ARN, click <strong>Add principal</strong>.</p>
+<img alt="../../_images/STS_Auth_EditPolicy_AddPrincipalPopup.png" class="with-border" src="../../_images/STS_Auth_EditPolicy_AddPrincipalPopup.png" />
+</li>
+<li><p>You will see that in the trust policy JSON, the ARN of the instance role is reflected under the <strong>Principal</strong> object.</p>
+<img alt="../../_images/STS_Auth_EditPolicy_PrincipalJSON.png" class="with-border" src="../../_images/STS_Auth_EditPolicy_PrincipalJSON.png" />
+</li>
+<li><p>Next, we’ll define an External ID for this trust relationship. Click the <strong>Add</strong> button next to <strong>Add a condition</strong>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>External ID configuration is an optional but recommended step that can help avoid the “confused deputy problem”.</p>
+<p>Refer to <a class="reference external" href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html">How to use an external ID</a> in AWS documentation for more details.</p>
+</div>
+</li>
+<li><p>In the <strong>Add condition</strong> dialog that opens, click on the dropdown for <strong>Condition key</strong>.</p></li>
+<li><p>In the search bar type <code class="docutils literal notranslate"><span class="pre">externalid</span></code>. You will see the result <code class="docutils literal notranslate"><span class="pre">sts:ExternalId</span></code>. Select it.</p></li>
+<li><p>Click on the <strong>Operator</strong> dropdown and from the list that opens, select <code class="docutils literal notranslate"><span class="pre">StringEquals</span></code>. A new field <strong>Value</strong> will appear.</p></li>
+<li><p>In the <strong>Value</strong> field, provide a unique value. The value can be a random string generated by a third party. You can use a site like <a class="reference external" href="https://www.uuidgenerator.net/version4">UUID Generator</a> to generate a value. Do not select the <strong>If exists</strong> checkbox.</p>
+<blockquote>
+<div><a class="with-border reference internal image-reference" href="../../_images/STS_Auth_AddCondition.png"><img alt="../../_images/STS_Auth_AddCondition.png" class="with-border" src="../../_images/STS_Auth_AddCondition.png" style="width: 400px;" /></a>
+</div></blockquote>
+</li>
+<li><p>Save the External ID value to a secure location. You’ll need it during one of the next configuration steps.</p></li>
+<li><p>Click <strong>Add condition</strong>. You will see the condition added to the policy JSON.</p>
+<blockquote>
+<div></div></blockquote>
+</li>
+<li><p>On the <strong>Edit trust policy</strong> page, click <strong>Update policy</strong>.</p></li>
+<li><p>If your Alation instance is an Enterprise Edition of the Alation Cloud Service, go to <a class="reference internal" href="#sts-configure-connectors"><span class="std std-ref">Step 6</span></a>.</p>
+<p>If your Alation instance is on-premise or an Alation Cloud Service instance that has not been migrated to the cloud native architecture, perform <a class="reference internal" href="#sts-configure-assume-role"><span class="std std-ref">Step 5</span></a> and then <a class="reference internal" href="#sts-configure-connectors"><span class="std std-ref">Step 6</span></a>.</p>
+</li>
+</ol>
+</section>
+<section id="step-5aws-iam-allow-the-alation-instance-role-to-assume-another-role">
+<span id="sts-configure-assume-role"></span><h2>Step 5—AWS IAM: Allow the Alation Instance Role to Assume Another Role<a class="headerlink" href="#step-5aws-iam-allow-the-alation-instance-role-to-assume-another-role" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This step applies if your Alation instance is:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>An on-premise instance—Perform this step in the AWS IAM user interface under the AWS account where your Alation instance is running.</p></li>
+<li><p>An Alation Cloud Service instance that has not been migrated to the cloud native architecture—Contact Alation Support to perform this step for you.</p></li>
+</ul>
+</div></blockquote>
+<p>If your instance is an Enterprise Edition of Alation Cloud Service on the cloud native architecture, skip this step and go to <a class="reference internal" href="#sts-configure-connectors"><span class="std std-ref">Step 6</span></a>. On this type of instances, the configuration described below is already available by default.</p>
+</div>
+<p>To allow the Alation instance role to assume another role:</p>
+<ol class="arabic">
+<li><p>Prepare the ARN of the role that provides access to the Amazon resources (<a class="reference internal" href="#sts-create-resource-role"><span class="std std-ref">Step 2</span></a>, <code class="docutils literal notranslate"><span class="pre">&lt;access-to-resources-role&gt;</span></code>).</p></li>
+<li><p>Prepare the tag key you created in <a class="reference internal" href="#sts-create-tag"><span class="std std-ref">Step 4</span></a>.</p></li>
+<li><p>Prepare the ARN of the Alation instance role. This is the ARN you saved as the result of <a class="reference internal" href="#sts-create-auth-profile"><span class="std std-ref">Step 3</span></a>. From this ARN, you can find out the name of the instance role: it’s the value that comes after the forward slash after the numeric ID. For example, if the ARN looks like this: <code class="docutils literal notranslate"><span class="pre">arn:aws:iam::248135293344:role/test_instance_role</span></code>, then <code class="docutils literal notranslate"><span class="pre">test_instance_role</span></code> is the name of the role.</p></li>
+<li><p>Log in to the AWS console of the AWS account where you deployed the Alation instance.</p></li>
+<li><p>Navigate to the user interface of the AWS IAM service.</p></li>
+<li><p>Use the ARN of the Alation instance role to find this role and open its properties.</p></li>
+<li><p>Select the <strong>Permissions</strong> tab.</p></li>
+<li><p>Click <strong>Add permissions</strong> and from the dropdown, select <strong>Create inline policy</strong>. You should see a screen similar to the following:</p>
+<blockquote>
+<div><img alt="../../_images/STS_Auth_SpecifyPermissions.png" class="with-border" src="../../_images/STS_Auth_SpecifyPermissions.png" />
+</div></blockquote>
+</li>
+<li><p>Under <strong>Select a service</strong>, click on the Search field and type <strong>STS</strong>.</p></li>
+<li><p>From the list of services that appears, select <strong>STS</strong>.</p>
+<img alt="../../_images/STS_Auth_AddPolicy_SelectSTS.png" class="with-border" src="../../_images/STS_Auth_AddPolicy_SelectSTS.png" />
+</li>
+<li><p>In the search field under <strong>Actions allowed</strong>, type <em>assume</em>. You will see a number of results, including <code class="docutils literal notranslate"><span class="pre">AssumeRole</span></code>. Select the checkbox for <code class="docutils literal notranslate"><span class="pre">AssumeRole</span></code>.</p>
+<img alt="../../_images/STS_Auth_AddPolicy_SelectAction.png" class="with-border" src="../../_images/STS_Auth_AddPolicy_SelectAction.png" />
+</li>
+<li><p>Under Resources, ensure that the radio button for <strong>Specific</strong> is selected.</p></li>
+<li><p>Click the <strong>Add ARN</strong> link.</p></li>
+<li><p>In the <strong>Add ARN(s)</strong> dialog that opens, under <strong>Resource in</strong>, select <strong>Other account</strong>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the Amazon resource you will be connecting to from Alation runs under the same AWS account as the Alation instance, select <strong>This account</strong>.</p>
+</div>
+</li>
+<li><p>Under <strong>ARN</strong>, provide the ARN of the role that gives access to the Amazon resources (<code class="docutils literal notranslate"><span class="pre">&lt;access-to-resources-role&gt;</span></code>). There is no need to populate other fields. They will be auto-populated after you provide the ARN value.</p>
+<a class="with-border reference internal image-reference" href="../../_images/STS_Auth_AddPolicy_AddARN.png"><img alt="../../_images/STS_Auth_AddPolicy_AddARN.png" class="with-border" src="../../_images/STS_Auth_AddPolicy_AddARN.png" style="width: 400px;" /></a>
+</li>
+<li><p>Click the <strong>Add ARNs</strong> button to save the ARN. You’ll be returned to the policy editor.</p></li>
+<li><p>Click on <strong>Request conditions</strong>, and then click <strong>Add another condition</strong>.</p></li>
+<li><p>The <strong>Add request condition</strong> pop-up will open. Click on the dropdown for the <strong>Condition key</strong>.</p>
+<a class="with-border reference internal image-reference" href="../../_images/STS_Auth_AddPolicy_AddCondition.png"><img alt="../../_images/STS_Auth_AddPolicy_AddCondition.png" class="with-border" src="../../_images/STS_Auth_AddPolicy_AddCondition.png" style="width: 400px;" /></a>
+</li>
+<li><p>From the list of condition keys, select <code class="docutils literal notranslate"><span class="pre">aws:ResourceTag</span></code>. More fields will appear.</p>
+<a class="with-border reference internal image-reference" href="../../_images/STS_Auth_AddPolicy_AddTagKey.png"><img alt="../../_images/STS_Auth_AddPolicy_AddTagKey.png" class="with-border" src="../../_images/STS_Auth_AddPolicy_AddTagKey.png" style="width: 400px;" /></a>
+</li>
+<li><p>In the <strong>TagKey</strong> field, provide the tag key you created in <a class="reference internal" href="#sts-create-tag"><span class="std std-ref">Step 4</span></a>.</p></li>
+<li><p>Click on the dropdown for <strong>Operator</strong> and from the list, select <code class="docutils literal notranslate"><span class="pre">StringEquals</span></code>. This will add the <strong>Value</strong> field. Leave the <strong>If exists</strong> checkbox clear.</p></li>
+<li><p>Populate the <strong>Value</strong> field with the name of the <strong>Alation instance</strong> role you retrieved in <a class="reference internal" href="#sts-create-auth-profile"><span class="std std-ref">Step 3</span></a>.</p></li>
+<li><p>In the dialog, click <strong>Add condition</strong>. You’ll return to the policy editor.</p>
+<img alt="../../_images/STS_Auth_AddPolicy_AllFields.png" class="with-border" src="../../_images/STS_Auth_AddPolicy_AllFields.png" />
+</li>
+<li><p>Click <strong>Next</strong>. The <strong>Review and create</strong> screen will open.</p></li>
+<li><p>Provide the <strong>Name</strong> for the policy and then click <strong>Create policy</strong> to create it. You will see your policy in the <strong>Permissions policies</strong> table.</p></li>
+</ol>
+</section>
+<section id="step-6alation-configure-your-source-to-use-iam-role-authentication">
+<span id="sts-configure-connectors"></span><h2>Step 6—Alation: Configure Your Source to Use IAM Role Authentication<a class="headerlink" href="#step-6alation-configure-your-source-to-use-iam-role-authentication" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p>Prepare the information you collected from your AWS configuration:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The ARN of the role that gives access to Amazon resources (<a class="reference internal" href="#sts-create-resource-role"><span class="std std-ref">Step 2</span></a>, <code class="docutils literal notranslate"><span class="pre">&lt;access-to-resources-role&gt;</span></code>)</p></li>
+<li><p>The ARN of the Alation instance role (<a class="reference internal" href="#sts-create-auth-profile"><span class="std std-ref">Step 3</span></a>)</p></li>
+<li><p>The STS Duration value (<a class="reference internal" href="#sts-create-auth-profile"><span class="std std-ref">Step 3</span></a>)</p></li>
+<li><p>The External ID from the trust relationship of the <code class="docutils literal notranslate"><span class="pre">&lt;access-to-resources-role&gt;</span></code> (<a class="reference internal" href="#sts-create-tag"><span class="std std-ref">Step 4</span></a>)</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Use the information in the relevant OCF connector documentation to configure authentication with the IAM Role. You will need to provide the values listed above on the <strong>General Settings</strong> tab of the settings page of an Amazon source:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="AthenaOCFConnector/AthenaOCFConnectorInstallConfigure.html#athena-configure-sts-with-role"><span class="std std-ref">Amazon Athena</span></a></p></li>
+<li><p><a class="reference internal" href="AWSGlue/AWSGlueOCFConnectorInstallConfigure.html#glue-configure-sts-with-role"><span class="std std-ref">AWS Glue</span></a></p></li>
+<li><p><a class="reference internal" href="Redshift/RedshiftConnectorInstallandConfigure.html#redshift-configure-sts-with-role"><span class="std std-ref">Amazon Redshift</span></a></p></li>
+<li><p><a class="reference internal" href="AWSS3/S3OCFConnectorInstallandConfigure.html#s3-configure-sts-with-role"><span class="std std-ref">Amazon S3</span></a></p></li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  
+<div class="navigation-bar">
+
+    <div class="navigation navigation--prev">
+        
+        <a class="navigation__link" href="ConfigureSecretsforOCFConnectors/OCFIntegrationWithAzureKeyVault.html">
+            <button class="navigation__button">
+                <i class="icon icon-left"></i>
+            </button>
+            <div class="navigation__title">
+                <span class="heading">Previous</span> <br />Integration with Azure Key Vault for Data Source Authentication Using OCF Connector
+            </div>
+        </a>
+        
+    </div>
+
+    <div class="navigation navigation--next">
+        
+        <a class="navigation__link" title="Accesskey Alt(+Shift)+p" accesskey="p" href="ConfigureMDEforOCFDataSources.html">
+            <div class="navigation__title">
+                <span class="heading">Next</span> <br />Configure Metadata Extraction for OCF Data Sources
+            </div>
+            <button class="navigation__button" title="Accesskey Alt(+Shift)+n" accesskey="n">
+                <i class="icon icon-right"></i>
+            </button>
+        </a>
+        
+    </div>
+
+</div>
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+    <div class="wy-nav-side wy-nav-secondary">
+      <div class="wy-side-scroll">
+        <div class="wy-side-scroll__content">
+          <div class="wy-menu-secondary">
+              <div class="comments">
+    <a href="mailto:no-reply-docs-feedback@alation.com?subject=Documentation Feedback on sources/OpenConnectorFramework/ConfigureAuthWithIAMRole&body=Alation%20welcomes%20your%20comments%20on%20typos,%20content%20accuracy%20and%20completeness,%20and%20whether%20you%20found%20this%20page%20helpful.%20You%20will%20not%20receive%20a%20reply%20to%20this%20email.">
+        <i class="icon icon-envelope" aria-hidden="true"></i>Request docs changes
+    </a>
+    <a href="#open-modal-pdf">
+        <i class="icon icon-pdf" aria-hidden="true"></i>Download PDF
+    </a>
+</div>
+              
+                <p class="wy-menu-secondary-header">On this page</p>
+                <ul>
+<li><a class="reference internal" href="#">Configure Authentication via AWS STS and an IAM Role</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#workflow">Workflow</a></li>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a><ul>
+<li><a class="reference internal" href="#how-to-assign-an-aws-iam-role-to-the-alation-instance">How to Assign an AWS IAM Role to the Alation Instance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#step-1alation-start-the-connector-access-gateway-service">Step 1—Alation: Start the Connector Access Gateway Service</a></li>
+<li><a class="reference internal" href="#step-2aws-iam-create-an-iam-role-with-access-to-amazon-resources">Step 2—AWS IAM: Create an IAM Role with Access to Amazon Resources</a></li>
+<li><a class="reference internal" href="#step-3alation-create-an-authentication-profile-and-get-the-alation-instance-role">Step 3—Alation: Create an Authentication Profile and Get the Alation Instance Role</a></li>
+<li><a class="reference internal" href="#step-4aws-iam-create-a-resource-tag-and-define-the-trust-relationship">Step 4—AWS IAM: Create a Resource Tag and Define the Trust Relationship</a></li>
+<li><a class="reference internal" href="#step-5aws-iam-allow-the-alation-instance-role-to-assume-another-role">Step 5—AWS IAM: Allow the Alation Instance Role to Assume Another Role</a></li>
+<li><a class="reference internal" href="#step-6alation-configure-your-source-to-use-iam-role-authentication">Step 6—Alation: Configure Your Source to Use IAM Role Authentication</a></li>
+</ul>
+</li>
+</ul>
+
+              
+            </div>
+          </div>
+      </div>
+    </div>
+
+  </div>
+
+  
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+  
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../../_static/copybutton.js"></script>
+      <script type="text/javascript" src="../../_static/js/rtd_sphinx_search.min.js"></script>
+  
+  <script type="text/javascript" src="../../_static/searchtools.js"></script> <script type="text/javascript" id="idPiwikScriptPlaceholder"></script><script type="text/javascript" src="../../_static/js/main.bundle.js"></script>
+  <script type="text/javascript" src="../../_static/js/runtime.bundle.js"></script>
+
+  
+  
+
+  
+    <div id="open-modal-pdf" class="modal-window">
+<div>
+  <a href="#" title="Close" class="modal-close">Close</a>
+  <h4>Alation Documentation PDF</h4>
+  <p>This PDF contains all our documentation and is more than <b>120 MB</b> in size. We recommend using an ethernet or Wi-Fi connection for downloading.</p>
+  <br>
+  <div class="modal-buttons">
+    <a href="https://pdf-docs.alation.com/AlationUserDocs.pdf" class="btn-cta btn-cta--primary" target="_blank">
+      Download PDF
+    </a>
+    <a href="#" title="Close" class="btn-cta">Cancel</a>
+  </div>
+</div>
+  
+
+</body>
+</html>
+<!--3.6.17-->

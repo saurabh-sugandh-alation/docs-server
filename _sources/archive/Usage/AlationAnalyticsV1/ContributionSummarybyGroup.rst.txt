@@ -1,0 +1,213 @@
+Contribution Summary by Group
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query aims at providing a better view of the value that Alation delivers to organizations.
+
+Use this query to find out how Alation users in your organization are
+contributing to their Alation instance summarized by the Group they
+belong to.
+
+.. code-block:: console
+
+    DROP TABLE IF EXISTS user_summary;
+    CREATE TEMP TABLE user_summary AS (
+    WITH
+    -- users visiting the catalog
+      active_users AS (
+      SELECT
+        DISTINCT av.user_id
+      FROM
+        public.alation_visits av
+      WHERE
+        timestamp >= ${start_date type: date help: Start of date window}
+    ),
+    -- users editing queries
+    queries_recently_edited AS (
+      SELECT
+        object_uuid,
+        object_type_id,
+        fv.datetime_value AS last_saved_at
+      FROM
+        public.object_field_value ofv
+        INNER JOIN public.object_field of ON ofv.field_id = of.field_id
+        INNER JOIN public.field_value fv ON fv.value_fp = ofv.value_fp
+      WHERE
+        object_type_id = 16 -- query
+        AND of.field_name = 'last_saved_at'
+        AND fv.datetime_value >= ${start_date type: date help: Start of date window}
+    ),
+    query_editors AS (
+      SELECT
+        DISTINCT fv.integer_value AS user_id
+      FROM
+        public.object_field_value ofv
+        INNER JOIN public.object_field of ON ofv.field_id = of.field_id
+        INNER JOIN public.field_value fv ON fv.value_fp = ofv.value_fp
+      WHERE
+        object_type_id = 16
+        AND object_uuid IN (
+          select
+            object_uuid
+          from
+            queries_recently_edited
+        )
+        AND of.field_name = 'author_id'
+    ),
+    -- users running queries (contributor)
+    users_running_queries AS (
+      SELECT
+        DISTINCT cql.user_id
+      FROM
+        public.compose_query_log cql
+      WHERE
+        executed_at_ts >= ${start_date type: date help: Start of date window}
+    ),
+    -- users flagging (consumer)
+    users_flagging AS (
+      SELECT
+        DISTINCT of.user_id
+      FROM
+        public.object_flags of
+      WHERE
+        of.ts_created >= ${start_date type: date help: Start of date window}
+    ),
+    -- users tagging (consumer)
+    users_tagging AS (
+      SELECT
+        DISTINCT ot.tagger_id as user_id
+      FROM
+        public.object_tags ot
+      WHERE
+        ot.ts_tagged >= ${start_date type: date help: Start of date window}
+    ),
+    -- users editing metdata
+    recent_metadata_editors AS (
+      SELECT
+        ofv.user_id,
+        count(case when object_type_id = 0 then user_id end) as article_edits,
+        count(
+          case when object_type_id IN (15, 32, 75) then user_id end
+        ) as conversations,
+        count(
+          case when object_type_id NOT IN (0, 15, 32, 33, 34, 75) then user_id end
+        ) as metadata_edits
+      FROM
+        public.object_field_value ofv
+      WHERE
+        ofv.timestamp >= ${start_date type: date help: Start of date window }
+      GROUP BY
+        user_id
+    ),
+    -- admins (contributor, if active)
+    catalog_admins AS (
+      SELECT
+        DISTINCT user_id
+      FROM
+        public.alation_group ag
+        INNER JOIN public.user_group_membership ugm ON ag.group_id = ugm.group_id
+      WHERE
+        group_name IN ('Catalog Admins')
+    )
+    SELECT
+      users.user_id,
+      users.user_name,
+      users.display_name,
+      group_name,
+      alation_group.display_name as group_display_name,
+      case when active_users.user_id IS NOT NULL then 1 else 0 end as is_active,
+      case when query_editors.user_id IS NOT NULL then 1 else 0 end as query_editor,
+      case when users_running_queries.user_id IS NOT NULL then 1 else 0 end as querier,
+      case when users_flagging.user_id IS NOT NULL then 1 else 0 end as flagger,
+      case when users_tagging.user_id IS NOT NULL then 1 else 0 end as tagger,
+      case when article_edits > 0 then 1 else 0 end as article_editor,
+      case when conversations > 0 then 1 else 0 end as conversation_participant,
+      case when metadata_edits > 0 then 1 else 0 end as metadata_editor
+    FROM
+      public.alation_user users
+      LEFT JOIN active_users USING (user_id)
+      LEFT JOIN query_editors USING (user_id)
+      LEFT JOIN users_running_queries USING (user_id)
+      LEFT JOIN users_flagging USING (user_id)
+      LEFT JOIN users_tagging USING (user_id)
+      LEFT JOIN recent_metadata_editors USING (user_id)
+      LEFT JOIN catalog_admins USING (user_id)
+      LEFT JOIN public.user_group_membership USING (user_id)
+      LEFT JOIN public.alation_group USING (group_id)
+    WHERE
+      coalesce(
+        active_users.user_id,
+        query_editors.user_id,
+        users_running_queries.user_id,
+        users_flagging.user_id,
+        users_tagging.user_id,
+        recent_metadata_editors.user_id
+      ) IS NOT NULL
+    ORDER BY
+      users.user_id desc
+  );
+  --
+  -- User-Group Level Summary of Usage Tier (Approximation)
+  -- Users will show up multiple times if they are in multiple groups
+  SELECT
+    DISTINCT user_id,
+    user_name,
+    display_name,
+    group_name,
+    is_active,
+    query_editor,
+    querier,
+    flagger,
+    tagger,
+    article_editor,
+    conversation_participant,
+    metadata_editor
+  FROM
+    user_summary
+  ORDER BY
+    user_id,
+    group_name;
+    -- Summary of all users, by group
+    WITH full_summary AS (
+      SELECT
+        ' Total (Note: Users May Be Members of Multiple Groups)'::varchar(60) as group_name,
+        sum(is_active) as catalog_visitors,
+        sum(query_editor) as query_editors,
+        sum(querier) as queriers,
+        sum(flagger) as flaggers,
+        sum(tagger) as taggers,
+        sum(article_editor) as article_editors,
+        sum(conversation_participant) as conversation_participants,
+        sum(metadata_editor) as metadata_editors
+      FROM
+        user_summary
+    ),
+    group_summary AS (
+      SELECT
+        COALESCE(group_name, 'No Group Assigned') as group_name,
+        sum(is_active) as catalog_visitors,
+        sum(query_editor) as query_editors,
+        sum(querier) as queriers,
+        sum(flagger) as flaggers,
+        sum(tagger) as taggers,
+        sum(article_editor) as article_editors,
+        sum(conversation_participant) as conversation_participants,
+        sum(metadata_editor) as metadata_editors
+      FROM
+        user_summary
+      GROUP BY
+        group_name
+      ORDER BY
+        group_name
+    )
+
+    SELECT *
+    FROM
+      (SELECT * from full_summary
+      UNION
+      SELECT * from group_summary) combo
+    ORDER BY
+      group_name;

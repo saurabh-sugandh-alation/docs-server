@@ -1,0 +1,251 @@
+Migrate Native RDBMS Data Sources to OCF Connectors
+==========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Use the instructions on this page to migrate your native data sources to Open Connector Framework (OCF) Connector. A native data source is an RDBMS source that is cataloged in Alation using one of the native (built-in) connectors. On the latest version of Alation, all native connectors have the corresponding OCF connector alternative. You need to check connector availability for older versions. Find more information in the :doc:`/releases/supportmatrices/20231SupportMatrices/index` for your Alation release.
+
+Native data sources can be migrated to the OCF connector using one of the following methods:
+    - `Bulk Data Source Migration`_ (recommended)
+    - `Single Data Source Migration`_
+
+What Is Migrated
+----------------------
+
+The following information will be migrated from the native (built-in) data source to the OCF data source:
+
+    - Source ID—The data source ID will remain the same as before the migration.
+
+    - Data source settings—Connection, metadata extraction (MDE), profiling, query log ingestion (QLI), and Compose configurations.
+
+    - Physical metadata of the source such as schemas, tables, attributes, projects, and other previously extracted metadata. If needed, a Data Source
+
+    - Admin can re-run extraction after migrating to the OCF connector.
+
+    - Logical metadata such as values of the custom fields, data quality flags, @-mentions in the custom fields, @-mentions in articles, the title and description, stewards, tags, top users, and fields shared through catalog sets.
+
+    - Saved searches.
+
+    - Sampling and profiling data.
+
+    - Catalog information generated from QLI (Top Users, Popularity, and JOIN and filter information).
+
+    - Lineage information.
+
+    - Querystatements ingested from Compose.
+
+Prerequisites
+------------------
+
+Before performing the migration, ensure you fulfill these prerequisites:
+
+    - We do not recommend migrating your data sources before you upgrade Alation to 2023.1.5 or newer.
+
+    - Install the required OCF connector on your Alation instance. See :doc:`/sources/OpenConnectorFramework/ManageConnectors` (on-premise) or :doc:`/cloud/AlationAgent/ManagingConnectors` (Alation Cloud Services) for directions. Make sure you are installing the latest available version of the connector.
+
+    - We recommend saving the information in all sections of the data source settings (Access, General Settings, Metadata Extraction,  Data Sampling, Per-Object Parameters, and Query Log Ingestion) or taking screenshots of the corresponding tabs. You can use this information after the migration to validate that all the values were migrated correctly.
+
+    - Make sure that the MDE, Profiling, and QLI jobs are not running while you perform the migration.
+
+    - SSL certificates for data sources that were previously uploaded to Alation are not migrated if you migrate your data sources in bulk. You will need to re-upload them after the migration. Make sure you have the SSL certificate files for your data sources at the ready. However, if you migrate a single data source, the SSL certificate should be migrated and re-uploading will not be required.
+
+    .. note::
+
+          User certificates for Google BigQuery data sources will not be migrated. Make sure you have the user certificate at the ready.
+
+Limitations
+-----------------
+
+  - Data sources with Kerberos authentication cannot be migrated using the bulk migration method. Even if you include such a data source into the migration payload, it will be skipped.
+  - SSL certificates will not be migrated during bulk migration. Users need to upload the SSL certificate manually post migration.
+  - User certificates for  Google BigQuery data sources will not be migrated. Users need to set up the OAuth configuration manually after the migration.
+  - Sampling in Query Log Ingestion is not supported in OCF. If **Sampling in QLI** is enabled in the native source, the QLI will fail after migration.
+  - Sampling fails after migration to OCF. To workaround this issue, run the Metadata Extraction before Sampling.
+  - For Alation version **2023.3.4 and prior**:
+      - Data sources with Kerberos authentication cannot be migrated. You must manually enable the Kerberos authentication in OCF.
+      - Synonym extraction scope is not migrated. It is enabled by default in the OCF.
+      - System schema extraction scope (default schema objects) is not migrated.
+
+
+Bulk Data Source Migration
+--------------------------------
+
+Supported Data Sources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The data sources listed in the table below are supported for bulk migration to OCF connectors:
+
++---------------------------+---------------------------------+
+| Native Data Source Name   | Equivalent OCF Connector        |
++===========================+=================================+
+| Azure SQL Data Warehouse  | Synapse OCF Connector           |
++---------------------------+---------------------------------+
+| Google BigQuery           | Google BigQuery OCF Connector   |
++---------------------------+---------------------------------+
+| DB2                       | DB2 OCF Connector               |
++---------------------------+---------------------------------+
+| Databricks                | Databricks OCF Connector        |
++---------------------------+---------------------------------+
+| Greenplum                 | Greenplum OCF Connector         |
++---------------------------+---------------------------------+
+| Hive2                     | Hive OCF Connector              |
++---------------------------+---------------------------------+
+| Impala                    | Impala OCF Connector            |
++---------------------------+---------------------------------+
+| MemSQL                    | MemSQL OCF Connector            |
++---------------------------+---------------------------------+
+| MySQL                     | MySQL OCF Connector             |
++---------------------------+---------------------------------+
+| Oracle                    | Oracle OCF Connector            |
++---------------------------+---------------------------------+
+| PostgreSQL                | PostgreSQL OCF Connector        |
++---------------------------+---------------------------------+
+| Redshift                  | Redshift OCF Connector          |
++---------------------------+---------------------------------+
+| SAP Hana                  | SAP HANA OCF Connector          |
++---------------------------+---------------------------------+
+| SAS                       | SAS OCF Connector               |
++---------------------------+---------------------------------+
+| Snowflake                 | Snowflake OCF Connector         |
++---------------------------+---------------------------------+
+| SQL Server                | SQL Server OCF Connector        |
++---------------------------+---------------------------------+
+| Sybase IQ                 | Sybase IQ OCF Connector         |
++---------------------------+---------------------------------+
+| Sybase ASE                | SybaseASE OCF Connector         |
++---------------------------+---------------------------------+
+| Teradata                  | Teradata OCF Connector          |
++---------------------------+---------------------------------+
+| Vertica                   | Vertica OCF Connector           |
++---------------------------+---------------------------------+
+
+Perform Bulk Data Source Migration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/BulkMigration.rst
+
+Single Data Source Migration
+-----------------------------------
+
+Supported Data Sources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The data sources listed in the following table are supported for single data source migration of the data source to OCF connector:
+
++---------------------------+---------------------------------+
+| Native Data Source Name   | Equivalent OCF Connector        |
++===========================+=================================+
+| Azure SQL Data Warehouse  | Synapse OCF Connector           |
++---------------------------+---------------------------------+
+| Google BigQuery           | Google BigQuery OCF Connector   |
++---------------------------+---------------------------------+
+| DB2                       | DB2 OCF Connector               |
++---------------------------+---------------------------------+
+| Databricks                | Databricks OCF Connector        |
++---------------------------+---------------------------------+
+| Greenplum                 | Greenplum OCF Connector         |
++---------------------------+---------------------------------+
+| Hive2                     | Hive OCF Connector              |
++---------------------------+---------------------------------+
+| Impala                    | Impala OCF Connector            |
++---------------------------+---------------------------------+
+| MemSQL                    | MemSQL OCF Connector            |
++---------------------------+---------------------------------+
+| MySQL                     | MySQL OCF Connector             |
++---------------------------+---------------------------------+
+| Oracle                    | Oracle OCF Connector            |
++---------------------------+---------------------------------+
+| PostgreSQL                | PostgreSQL OCF Connector        |
++---------------------------+---------------------------------+
+| Redshift                  | Redshift OCF Connector          |
++---------------------------+---------------------------------+
+| SAP HANA                  | SAP HANA OCF Connector          |
++---------------------------+---------------------------------+
+| SAS                       | SAS OCF Connector               |
++---------------------------+---------------------------------+
+| Snowflake                 | Snowflake OCF Connector         |
++---------------------------+---------------------------------+
+| SQL Server                | SQL Server OCF Connector        |
++---------------------------+---------------------------------+
+| Sybase IQ                 | Sybase IQ OCF Connector         |
++---------------------------+---------------------------------+
+| Sybase ASE                | SybaseASE OCF Connector         |
++---------------------------+---------------------------------+
+| Teradata                  | Teradata OCF Connector          |
++---------------------------+---------------------------------+
+| Vertica                   | Vertica OCF Connector           |
++---------------------------+---------------------------------+
+
+Perform Single Data Source Migration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/SingleDataSourceMigration.rst
+
+
+Post Migration Activity
+------------------------------
+
+  - Upload the SSL certificates in the **General Settings** page of your OCF data source if the native data source is authenticated with SSL.
+
+  - For **Google BigQuery** data sources, if you use the User Account Certificate,  you need to set up the OAuth configuration manually post-migration. See :doc:`Create an OAuth Configuration for Extraction </sources/OpenConnectorFramework/GBQOCFConnector/GBQOCFConnectorInstallConfigure>` and :doc:`Compose </sources/OpenConnectorFramework/GBQOCFConnector/GBQOCFConnectorInstallConfigure>` for more details.
+
+  - For **SQL Server** data sources, if it is connected using Basic or NTLM authentication, append ``encrypt=false`` to the JDBC URI of the OCF data source.
+
+Use Native QLI Table Name
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Applies from version 2023.1.4*
+
+For some data source types that were migrated from their respective native connectors to OCF, you can reuse the existing query log ingestion (QLI) configuration. If the OCF connector that a data source  was migrated to supports this capability, you will see the checkbox **Use Native QLI Table Name** on the **Query Log Ingestion** tab of the data source Settings page.
+
+The Use Native QLI Table Name functionality is available with these OCF connectors:
+
+  +----------------------+--------------------------+---------------------+
+  | Native Data Source   | OCF Connector Name       | Available from      |
+  |                      |                          | Connector Version   |
+  +======================+==========================+=====================+
+  | Greenplum            | Greenplum OCF connector  | 1.0.5.4329          |
+  +----------------------+--------------------------+---------------------+
+  | MySQL                | MySQL OCF connector      | 1.3.0.3139          |
+  +----------------------+--------------------------+---------------------+
+  | Oracle               | Oracle OCF connector     | 1.4.0.3146          |
+  +----------------------+--------------------------+---------------------+
+  | PostgreSQL           | PostgreSQL OCF connector | 1.1.2.3886          |
+  +----------------------+--------------------------+---------------------+
+  | SAP ASE (Sybase ASE) | Sybase ASE OCF connector | 1.1.1.3246          |
+  +----------------------+--------------------------+---------------------+
+  | Snowflake            | Snowflake OCF connector  | 1.1.2.4595          |
+  +----------------------+--------------------------+---------------------+
+  | SQL Server           | SQL Server OCF connector | 1.2.0.3185          |
+  +----------------------+--------------------------+---------------------+
+  | Vertica              | Vertica OCF connector    | 1.2.1.3246          |
+  +----------------------+--------------------------+---------------------+
+
+After you migrate your native data source, you'll see that the checkbox **Use Native QLI Table Name** checkbox is already auto-selected. You should also see the name of the existing QLI table was transferred into the **Table Name** field.
+
+    .. image:: ../../../_static/OCF_NativeToOCFMigration_CheckboxSelected.png
+        :class: with-border
+
+Note that for a completely new OCF data source, this is different. The checkbox **Use Native QLI Table Name** and the **Table Name** field will be present but clear.
+
+    .. image:: ../../../_static/OCF_NativeToOCFMigration_CheckboxClear.png
+        :class: with-border
+
+.. note::
+
+    For a newly added OCF data source, you can still use this feature if you previously set up QLI for the same database and the corresponding native connector.
+
+For a number of data sources, the QLI configuration done on the native connector automatically applies after the data source migration. For such data sources, the QLI table or view name will be migrated into the **Table Name** field, but the checkbox **Use Native QLI Table Name** checkbox will not be present. These data sources are:
+
+  +------------------------------+--------------------------------+
+  | Native Data Source           | OCF Connector Name             |
+  |                              |                                |
+  +==============================+================================+
+  | Amazon Redshift              | Redshift OCF connector         |
+  +------------------------------+--------------------------------+
+  | SAP HANA                     | SAP HANA OCF connector         |
+  +------------------------------+--------------------------------+
+  | Teradata                     | Teradata OCF connector         |
+  +------------------------------+--------------------------------+
+
+You can test the QLI configuration after migrating the data source by running QLI for the next available date range.

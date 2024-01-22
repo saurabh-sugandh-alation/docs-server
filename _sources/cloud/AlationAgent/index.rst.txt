@@ -1,0 +1,201 @@
+Alation Agent
+=============
+
+.. toctree::
+  :hidden:
+
+  AgentReleaseNotes
+  InstallingTheAlationAgent
+  ConnectingTheAgentToDataSources
+  ManagingConnectors
+  WorkingWithTheAgentsCertificates
+  UpgradingTheAgent
+  UpdateAgentDnsAddress
+  DeletingAndReconnectingTheAgentInAlation
+  UninstallingAndReinstallingTheAgentSoftware
+  StartingAndStoppingTheAgent
+  TroubleshootingTheAgent
+  AlationAgentVersionHistory
+
+.. include:: /shared/ProductLabels/Cloud_Label.rst
+
+The Alation Agent (or simply the Agent) is optional software you can install on your network to securely connect :doc:`Alation Cloud Service </cloud/CloudOverview/index>` to your on-premise data sources. After connecting the Agent to data sources that are behind your firewall, you can securely catalog metadata from those data sources to your Alation Cloud instance.
+
+When considering use of the Agent, keep in mind the following:
+
+-  Each Alation Cloud Service instance can support multiple Agents in different geographical locations, network segments, or security zones.
+
+-  Each Agent can support multiple connectors and data sources.
+
+-  The Agent only works with connectors based on the :doc:`Open Connector Framework </sources/OpenConnectorFramework/OCFOverview>` (OCF). It doesn’t support native or custom DB connectors.
+
+-  The Agent supports RDBMS, BI, and file system connectors.
+
+-  Newer versions of the Alation Agent now support Compose. See `Compose Compatibility`_ below for more details.
+
+This page includes information about:
+
+-  `Agent System Requirements`_
+-  `Architecture`_
+-  `Security`_
+
+.. _Agent System Requirements:
+
+Agent System Requirements
+-------------------------
+
+Alation recommends running the Agent on a dedicated physical or virtual Linux machine with no other software installed. A virtual machine can be set up in a shared server environment as long as the required CPU, RAM, and HDD are allocated for the Agent.
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-multiple-agents
+   :end-before: .. end-multiple-agents
+
+Operating System
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation Agent versions 1.5.0.2541 and later support the following operating systems:
+
+- Debian based:
+   -  Debian 9, 10, and 11
+   -  Ubuntu 16, 18, 20, and 22
+- Red Hat based:
+   -  AWS Linux 2
+   -  CentOS 7.x (x86 64-bit)
+   -  Fedora 33 and 34
+   -  Oracle Linux 7, 8, and 8.5 (on Red Hat Compatible Kernel)
+   -  Red Hat 7.x, 8.x, and 9.x (x86 64-bit)
+
+Alation Agents *before* version 1.5.0.2541 support the following operating systems:
+
+- Debian based:
+   -  Debian 9 and 10
+   -  Ubuntu 16, 18, and 20
+- Red Hat based:
+   -  AWS Linux 2
+   -  CentOS 7.x (x86 64-bit)
+   -  Fedora 33 and 34
+   -  Oracle Linux 7, 8, and 8.5 (on Red Hat Compatible Kernel)
+   -  Red Hat 7.x and 8.x (x86 64-bit)
+
+Hardware
+~~~~~~~~~~~~~~~~~~~~~
+
+The hardware requirements for the Agent depend on how many objects per data source you will be cataloging. Larger data sources require more hardware resources.
+
+The Agent has been certified on the following hardware at the specified scale. For cases with more objects, connectors, or Agents, contact Alation.
+
++----------------------+--------------------------------------+-----------------+-----------------+
+|                                                             | **Small**       | **Large**       |
++======================+======================================+=================+=================+
+| **Scale**            | **# of objects per data source**     | 5 Million       | 15 million      |
++                      +--------------------------------------+-----------------+-----------------+
+|                      | **# of Agents per Alation instance** | 5               | 5               |
++                      +--------------------------------------+-----------------+-----------------+
+|                      | **# of connectors per Agent**        | 5               | 10              |
++----------------------+--------------------------------------+-----------------+-----------------+
+| **System Component   | **CPU**                              | 2 or more cores | 4 or more cores |
+| Requirements**       |                                      |                 |                 |
+|                      |                                      | 2.5-3.1 GHz     | 2.5-3.1 GHz     |
++                      +--------------------------------------+-----------------+-----------------+
+|                      | **RAM**                              | 8 GB            | 16 GB           |
++                      +--------------------------------------+-----------------+-----------------+
+|                      | **HDD**                              | 20 GB           | 40 GB           |
++----------------------+--------------------------------------+-----------------+-----------------+
+
+The number of Agents per Alation instance may apply if you have data sources in different geographical locations, network segments, or security zones and need to install and connect multiple Agents to your Alation Cloud Service.
+
+.. _Agent Compatibility Matrix:
+
+Alation Cloud Service Compatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the table below, find the version of Alation you’re currently using. To get the latest Alation Agent features and fixes, we recommend :doc:`upgrading <UpgradingTheAgent>` to the latest version of the Alation Agent that’s compatible with your version of Alation Cloud Service.
+
+Alation provides downloads for the latest two versions of the Alation Agent on the Customer Portal. Older versions of the Agent will become unavailable as newer versions are released.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Alation Agent Version
+     - Compatible Versions of Alation Cloud Service
+   * - 1.5.1.2863
+     - 2023.3.2, 2023.3.1, 2023.1.7
+   * - 1.5.0.2541
+     - 2023.3, 2023.1.7
+
+See the :doc:`AlationAgentVersionHistory` page for a full listing of historical Agent releases and compatible Alation Cloud Service versions.
+
+Checking the Agent Version
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-check-agent-version
+   :end-before: .. end-check-agent-version
+
+Compose Compatibility
+~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-agent-compose-support
+   :end-before: .. end-agent-compose-support
+
+.. _Agent Architecture:
+
+Architecture
+------------
+
+The Agent has three parts:
+
+-  **Alation Connector Manager:** This Docker container manages all data source connectors installed on the Agent. Management requests include actions like starting, stopping, updating, and deleting connectors.
+
+-  **Reverse proxy:** This handles communication between your Alation Cloud instance, the Alation Connector Manager, and connectors. The reverse proxy initiates an outbound connection to your Alation Cloud instance using mutual authentication (mTLS). Subsequent two-way communication occurs via this encrypted, persistent tunnel.
+
+-  **Connectors:** Each data source connector installed on the Agent lives in its own Docker container. Data requests from your Alation Cloud instance are forwarded through the reverse proxy to the relevant connector. From there, the connector communicates with the individual data sources.
+
+.. image:: ../../_static/AgentArchitectureDiagram.png
+
+The Alation Connector Manager, the reverse proxy, and the OCF connectors each reside in their own Docker container. The Docker containers are installed by the Alation Container Service, which is part of the Agent installer.
+
+Security
+--------
+
+Alation designed the agent to comply with security policies that only allow outbound connections. It uses mutual TLS and end-to-end encryption to secure communications between the Agent and Alation Cloud Service.
+
+Establishing a Secure Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation uses digital certificates to provide end-to-end encryption between the Agent and Alation Cloud Service. After installing the Agent software in your network, you’ll generate a certificate signing request (CSR) on the Agent machine. You then upload the certificate signing request to the Alation Cloud Service. Alation Cloud uses the CSR to create a TLS certificate that is used to establish a trusted relationship between the Agent and Alation Cloud Service. You’ll install this TLS certificate on the Agent to finalize the trusted connection.
+
+Alation uses the AWS Certificate Manager (ACM) Private Certificate Authority for generating all Agent certificates. ACM is a highly-available private certificate authority service. Using ACM as the root certificate ensures that only certificates generated from that certificate authority can establish trusted communication with the Alation Cloud Service.
+
+You can renew or revoke the certificate at any time. See :doc:`/cloud/AlationAgent/WorkingWithTheAgentsCertificates`.
+
+Once the required certificate is in place, the Agent will initiate an outbound TLS v1.3 connection to Alation Cloud Service. The Agent and Alation Cloud Service will mutually authenticate.
+
+-  Alation Cloud Service validates that the Agent’s certificate was signed by the ACM Private Certificate Authority.
+
+-  The Agent validates Alation Cloud Service’s certificate authority trust chain, the certificate’s expiration and revocation status, and the ID of your Alation Cloud instance.
+
+Continuing Communication
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+This TLS connection ensures that all subsequent communication is fully encrypted and allows Alation Cloud Service and the Agent to transfer metadata during metadata extraction and query log ingestion. The connection is persistent, so future queries or extraction requests can be executed immediately.
+
+.. include:: ../../shared/Agent_TextFragments.rst
+   :start-after: .. start-automatic-reconnect
+   :end-before: .. end-automatic-reconnect
+
+Further Reading
+---------------
+
+Explore the following topics for help with:
+
+-  :doc:`/cloud/AlationAgent/InstallingTheAlationAgent`
+-  :doc:`/cloud/AlationAgent/ConnectingTheAgentToDataSources`
+-  :doc:`/cloud/AlationAgent/ManagingConnectors`
+-  :doc:`/cloud/AlationAgent/WorkingWithTheAgentsCertificates`
+-  :doc:`/cloud/AlationAgent/UpgradingTheAgent`
+-  :doc:`/cloud/AlationAgent/DeletingAndReconnectingTheAgentInAlation`
+-  :doc:`/cloud/AlationAgent/UninstallingAndReinstallingTheAgentSoftware`
+-  :doc:`/cloud/AlationAgent/StartingAndStoppingTheAgent`
+-  :doc:`/cloud/AlationAgent/TroubleshootingTheAgent`

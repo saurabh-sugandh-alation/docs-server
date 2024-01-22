@@ -1,0 +1,311 @@
+Azure Power BI OCF Connector (Legacy): Install and Configure
+===================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from release 2020.4*
+
+Follow these steps to perform the necessary configuration for the Azure Power BI connector on the Power BI side and in Alation.
+
+Preliminaries
+-----------------
+
+Firewall Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Open outbound TCP port 443 on Power BI Server for Rest API communication.
+
+Authentication Requirements
+-----------------------------
+
+- Azure App registration
+- Power BI application registration credentials
+
+I. Azure Power BI Setup and Authentication
+-----------------------------------------------
+
+STEP 1: Register an Application in Azure Portal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Navigate to `App registrations <https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade>`_ in Microsoft Azure Portal.
+
+2. Click **New registration**:
+
+      .. image:: ../../../_static/PowerBI_07.png
+          :width: 600px
+
+3. Provide the following information:
+
+      - a name for the application
+      - select the account types **Accounts in this organizational directory only (<Org Name> only - Single tenant)**
+      - the Power BI URL as **Redirect URI**
+
+      .. image:: ../../../_static/PowerBI_08.png
+          :width: 600px
+
+4. Click **Register**.
+
+5. On the next screen, note down **Application (client) ID**, **Directory (tenant) ID**, and **Object ID**:
+
+      .. image:: ../../../_static/PowerBI_09.png
+          :width: 600px
+
+6. On left-hand side of the page, click **Certificates & secrets** to generate the client secret:
+
+      .. image:: ../../../_static/PowerBI_33.png
+          :width: 300px
+
+7. Click **New client secret** under the **Client secrets** section and in the pop-up dialog provide the description for the client secret and click **Add**:
+
+      .. image:: ../../../_static/PowerBI_34.png
+          :width: 300px
+
+8. Note down the newly generated client secret. You will need it for the next configuration steps.
+
+STEP 2: Create a Security Group for Azure Power BI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Navigate to the `Groups management section of Azure Portal <https://portal.azure.com/#blade/Microsoft_AAD_IAM/GroupsManagementMenuBlade/AllGroups>`_.
+
+2. Add a new group and enter the following details:
+
+      - Select **Security** for **Group Type**
+      - Enter a **Group Name** and **Description**:
+
+    .. image:: ../../../_static/PowerBI_15.png
+        :width: 400px
+
+3. Under **Members**, add the app created in Step 1 as the Member of the group.
+
+4. Click **Create**.
+
+
+STEP 3: Enable Azure Power BI Service Admin Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For an Azure application to be able to access the Power BI content and APIs, a Power BI admin needs to set **Enable service principal access** and **Export Data** flags in the Power BI admin portal.
+
+1. Login to `Power BI <https://app.powerbi.com/>`_.
+
+2. From the **Settings** menu, select the Admin portal:
+
+    .. image:: ../../../_static/PowerBI_17.png
+        :width: 600px
+
+3. Navigate to **Tenant Settings > Developer Settings** and perform the following configuration:
+
+      - Enable **Allow service principals to use Power BI APIs**
+      - Choose **Specific security groups** and select the security group created in Step 2.
+      - Click **Apply** to apply the settings:
+
+    .. image:: ../../../_static/PowerBI_18.png
+          :width: 600px
+
+4. Go to **Export Settings** under **Tenant Settings**:
+
+    .. image:: ../../../_static/PowerBI_35.png
+        :width: 400px
+
+5. If Export Data is already enabled for the entire organization, leave it as it is. If not, enable it for the security group created in Step 2:
+
+    .. image:: ../../../_static/PowerBI_36.png
+        :width: 400px
+
+6. Click **Apply** to apply the settings.
+
+
+STEP 4: Add the Service Principal to Workspace
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the Azure app to access the content of a workspace, add the Service Principal as its member.
+
+1. Select a workspace and choose **Workspace access**:
+
+    .. image:: ../../../_static/PowerBI_19.png
+        :width: 600px
+
+2. Select the app in the dialog:
+
+    .. image:: ../../../_static/PowerBI_20.png
+        :width: 600px
+
+3. Add the app as a **Member** and click **Close**.
+
+II. Alation Setup and Authentication
+--------------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. important::
+
+    Installation of an OCF connector requires Alation Connector Manager to be installed as a prerequisite.
+
+1. If this has not been done on your instance, install Alation Connector Manager using the steps in: :doc:`Install Alation Connector Manager <../../../sources/OpenConnectorFramework/OCFInstallAlationConnectorManager>`.
+
+2. Make sure that the OCF connector Zip file that you received from Alation is available on your local machine.
+
+3. Install the connector on the Connectors Dashboard page: refer to :doc:`Manage Connector Dashboard <../../../sources/OpenConnectorFramework/ManageConnectors>`.
+
+STEP 2: Create and Configure a New BI Server Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a New BI Server Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Log in to the Alation instance and add a new BI Server source: **Apps > Sources > Add > BI Server**. The **Register a Business Intelligence Server** screen will open.
+
+2. On this screen, from the **Select a Business Intelligence Server type** list, select the Power BI connector name (**POWERBI**) and enter a **Title** and a **Description**.
+
+    .. image:: ../../../_static/PowerBI_22.png
+        :width: 400px
+
+3. Click **Add**. You will be navigated to your BI Server source Settings page.
+
+Configure the Azure Power BI Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **Settings** page:
+
+1. Specify **Application Settings**:
+
+	  .. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | **Parameter**              | **Description**                                                                                                      |
+      +============================+======================================================================================================================+
+      | Disable Hard Sync          | Leave this checkbox **unselected**.                                                                                  |
+      |                            |                                                                                                                      |
+      |                            | Selecting it will disable synchronization of BI                                                                      |
+      |                            | objects between Alation and Power BI.                                                                                |
+      |                            |                                                                                                                      |
+      |                            | .. note::                                                                                                            |
+      |                            |                                                                                                                      |
+      |                            |       This is not applicable from version 2021.2                                                                     |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Disable Automatic Lineage  | Select the **Disable Automatic Lineage Generation** checkbox to                                                      |
+      | Generation                 | skip the creation of automatic Lineage after extraction.                                                             |
+      |                            | When automatic Lineage generation is disabled, during                                                                |
+      |                            | extraction Alation does not calculate Lineage data for this                                                          |
+      |                            | BI source.                                                                                                           |
+      |                            |                                                                                                                      |
+      |                            | For more information, see                                                                                            |
+      |                            | :doc:`Automatic Lineage Generation FAQ <../../../bisources/AddBISources/DisableAutomaticLineageGenerationFAQ>`.      |
+      |                            |                                                                                                                      |
+      |                            |                                                                                                                      |
+      |                            | .. note::                                                                                                            |
+      |                            |                                                                                                                      |
+      |                            |       This is applicable from version 2021.3                                                                         |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Disable Permission         | Leave this checkbox **selected**.                                                                                    |
+      | Enforcement                |                                                                                                                      |
+      |                            | **Permission enforcement is not supported between Power BI                                                           |
+      |                            | and Alation.**                                                                                                       |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Disable Certification      | Leave this checkbox selected.                                                                                        |
+      |                            |                                                                                                                      |
+      |                            | **Certification of BI objects in Power BI from Alation                                                               |
+      |                            | is not supported**.                                                                                                  |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+      | Server URI                 | Enter the server URI used to access Power BI                                                                         |
+      +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+
+2. Click **Save** to save the information you have entered.
+
+3. Specify **Connector Settings**:
+
+      .. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Description**                                               |
+      +============================+===============================================================+
+      | Power BI Base URL          | Enter the URL to access Power BI.                             |
+      |                            | Default value is ``https://app.powerbi.com/``                 |
+      +----------------------------+---------------------------------------------------------------+
+      | Power BI API URL           | Enter the API URL to access Power BI APIs.                    |
+      |                            | Default value is ``https://api.powerbi.com/v1.0/myorg/``      |
+      +----------------------------+---------------------------------------------------------------+
+      | Power BI Client ID         | Enter the Power BI Client ID.                                 |
+      +----------------------------+---------------------------------------------------------------+
+      | Power BI Client Secret     | Enter the Power BI Client Secret.                             |
+      +----------------------------+---------------------------------------------------------------+
+      | Power BI Tenant ID         | Enter the Power BI Tenant ID.                                 |
+      +----------------------------+---------------------------------------------------------------+
+
+4. Click **Save**.
+
+5. Under **Test Connection**, click **Test** to validate network connectivity.
+
+6. Under **Extraction Settings**, configure the metadata extraction. Turn on **Selective Extraction**, if required. Selective extraction settings are used to apply a filter to include or exclude a list of Workspaces.
+
+7. Click **Get List of Projects** to first fetch the list of Workspaces from Power BI.
+
+8. The status of the Get Projects action is logged in the **Job History** table at the bottom of the Settings page.
+
+9. If the folder synchronization is successful, a drop-down list of Workspaces will become enabled. Select one or more Workspaces to extract.
+
+10. Check the selected filter option. Available filter options are described below:
+
+    +-----------------------------+-----------------------------------------------------------------+
+    | **Filter Option**           | **Description**                                                 |
+    +=============================+=================================================================+
+    | Extract all Project except  | Extract metadata from all Workspaces except from the workspaces |
+    |                             | selected.                                                       |
+    +-----------------------------+-----------------------------------------------------------------+
+    | Extract only these Projects | Extract metadata from only the selected Workspaces.             |
+    +-----------------------------+-----------------------------------------------------------------+
+
+11. Click **Run Extraction Now** to extract metadata. The status of the Extraction action is also logged in the Job History table at the bottom of the page.
+
+12. If you wish to automatically update the metadata in the Catalog, under **Automated and Manual Extraction**, turn on **Enable Automated Extraction** and select the day and time when metadata must be extracted. The metadata extraction will be automatically scheduled to run at the selected day and time.
+
+Upto 2021.1:
+
+    .. image:: ../../../_static/PowerBI_23.png
+
+From 2021.2:
+
+    .. image:: ../../../_static/PowerBI_37.png
+
+From 2021.3:
+
+    .. image:: ../../../_static/PowerBI_38.png
+
+Troubleshooting
+----------------------
+
+Untitled Reports
+~~~~~~~~~~~~~~~~~
+
+**Issue**: Reports are cataloged in Alation as ``Untitled``
+
+**Resolution**: Edit the specific report visual in Power BI Desktop, make sure the **Title** bar is enabled, and provide a title for the visual. Publish the report to Azure.
+
+Limitations
+~~~~~~~~~~~~~~
+
+The Azure Power BI Connector extracts the measures and dimensions of a Report by exporting the PBIX file. There are some limitations to this export functionality from Microsoft: `Considerations and troubleshooting <https://docs.microsoft.com/en-us/power-bi/create-reports/service-export-to-pbix#considerations-and-troubleshooting>`_.
+
+The main limitations are summarized below:
+
+    - If the administrator has turned off the ability to download data, the connector cannot download reports.
+    - Datasets with incremental refresh cannot be downloaded to a PBIX file.
+    - Datasets enabled for large models cannot be downloaded to a PBIX file: `Large datasets in Power BI Premium <https://docs.microsoft.com/en-us/power-bi/admin/service-premium-large-models>`_.
+    - Datasets modified by using the XMLA Endpoints cannot be downloaded.
+    - If a Power BI report is based on a dataset in one workspace but is published to a different workspace, users will not be able to download it.
+    - Parsing fails if the report size exceeds 500 MB.
+
+FAQ
+~~~~~~~~
+
+Is it possible to provide "Popularity" for Power BI objects, similar to the way this is provided for Tableau?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Power BI does not have an API that provides this information.
+
+Is it possible to identify the report owner from Power BI?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Power BI does not have an API that provides this information.

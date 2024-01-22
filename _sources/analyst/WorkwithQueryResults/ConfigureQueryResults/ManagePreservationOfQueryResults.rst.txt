@@ -1,0 +1,69 @@
+Manage Preservation of Query Results
+====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+By default Alation allows users to permanently save query results. You may want to disable this ability in order to comply with your organization's security and privacy policies.
+
+When this ability is disabled, the **Preserve Data** button and link will no longer be available on the Results tab in Compose or on query results pages in the catalog. Results that have already been permanently saved will not be deleted. To delete previously saved results, see :doc:`/admins/AdditionalConfiguration/PurgingQueryResults`.
+
+In 2023.3 and newer, Data Source Admins can disable permanent saving of query results for individual data sources. In 2023.1.7 and older, Server Admins can disable permanent saving of query results for the entire catalog.
+
+The steps for enabling or disabling this feature depends on the version of Alation.
+
+.. _manage-preservation-2023-3-and-newer:
+
+2023.3 and Newer
+----------------
+
+Data Source Admins can control the ability to permanently save query results for individual data sources:
+
+1. Go to the data source settings page:
+
+   a. Click on **Apps** > **Sources**.
+
+   b. Click **Manage Settings**, then click the wrench icon for the data source.
+
+2. Click the **Compose** tab if there is one (OCF data sources), otherwise click the **General Settings** tab (native data sources).
+
+3. Find the **Allow Preserve Query Execution Results** toggle and click it to enable or disable it.
+
+2023.1.7 and Older
+------------------
+
+Server Admins can disable permanent saving of query results for the entire catalog.
+
+Alation Cloud Service customers can request this change by submitting a ticket to Alation Support.
+
+Server Admins for on-premises (customer managed) instances of Alation can use the instructions below:
+
+.. include:: /shared/AccessingAlationShell.rst
+
+#. To disable the ability to permanently save query results, enter the following command:
+
+   .. code-block:: bash
+
+      alation_conf alation.compose.results.caching.enabled -s false
+
+   To enable the ability to permanently save query results, enter the following command:
+
+   .. code-block:: bash
+
+      alation_conf alation.compose.results.caching.enabled -s true
+
+#. Exit the Alation shell:
+
+   .. code-block:: bash
+
+      exit
+
+Upgrading to 2023.3
+-------------------
+
+Upon upgrading to 2023.3 or later, the ``alation.compose.results.caching.enabled`` setting in **alation_conf** will no longer be used. All data sources will have the **Allow Preserve Query Execution Results** toggle automatically set based on the value of ``alation.compose.results.caching.enabled`` at the time of the upgrade:
+
+-  If set to ``true`` (this is the default), then **Allow Preserve Query Execution Results** will be enabled for all data sources.
+
+-  If set to ``false``, then **Allow Preserve Query Execution Results** will be disabled for all data sources.
+
+After the upgrade, Data Source Admins can freely enable or disable **Preserve Query Execution Results** for each of their data sources. See :ref:`above <manage-preservation-2023-3-and-newer>` for instructions.

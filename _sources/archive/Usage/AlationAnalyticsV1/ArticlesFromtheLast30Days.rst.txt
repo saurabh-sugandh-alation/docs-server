@@ -1,0 +1,56 @@
+Articles From the Last 30 Days
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query finds articles created in the last 30 days.
+
+.. code-block:: sql
+
+    SELECT
+      n1.object_url,
+      n1.title,
+      n2.created_ts,
+      n1.object_uuid
+    FROM
+      (
+        --  Get all articles
+        SELECT
+          AO.object_url,
+          FV.text_value AS title,
+          FV.datetime_value AS created_ts,
+          AO.object_uuid
+        FROM
+          public.object_field_value AS OFV
+          INNER JOIN public.field_value FV ON FV.value_fp = OFV.value_fp
+          INNER JOIN public.object_field OV ON OV.field_id = OFV.field_id
+          INNER JOIN public.alation_object AO ON AO.object_uuid = OFV.object_uuid
+          INNER JOIN public.alation_object_type AOT ON AOT.object_type_id = OFV.object_type_id
+        WHERE
+          AOT.object_type_name = 'article'
+          AND OV.field_name = 'title'
+          AND AO.object_url ~ 'article' --filtering on object urls otherwise we pull back all sorts of odd data
+      ) n1
+      INNER JOIN (
+        -- Get when the article was created using the field
+        SELECT
+          AO.object_url,
+          AO.object_uuid,
+          FV.datetime_value AS created_ts
+        FROM
+          public.object_field_value AS OFV
+          INNER JOIN public.field_value FV ON FV.value_fp = OFV.value_fp
+          INNER JOIN public.object_field OV ON OV.field_id = OFV.field_id
+          INNER JOIN public.alation_object AO ON AO.object_uuid = OFV.object_uuid
+          INNER JOIN public.alation_object_type AOT ON AOT.object_type_id = OFV.object_type_id
+        WHERE
+          AOT.object_type_name = 'article'
+          AND OV.field_name = 'ts_created'
+          AND AO.object_url ~ 'article'
+        ORDER BY
+          AO.object_uuid
+      ) n2 ON (n2.object_uuid = n1.object_uuid)
+    WHERE
+      n2.created_ts > CURRENT_DATE - INTERVAL '30' day;

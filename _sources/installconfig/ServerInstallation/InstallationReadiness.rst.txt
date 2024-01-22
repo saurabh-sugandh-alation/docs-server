@@ -1,0 +1,179 @@
+Installation Readiness
+======================
+
+Setup
+-----
+
+-  Confirm `Customer Portal <https://customerportal.alationdata.com>`_ access
+-  Download build and transfer to system
+-  Download the license file
+
+System
+------
+
+-  Verify Root access
+-  Verify whether global users exist in the domain.  PostgreSQL is the
+   most frequently found conflict.  If any Linux user already exists in
+   the domain, pre-create the conflicting users.  Check using the command:
+
+   .. code-block:: bash
+
+      id postgres
+
+-  CPU: Check the number of cores
+
+   .. code-block:: bash
+
+      grep -i processor /proc/cpuinfo
+
+-  CPU: Check the architecture (64/32-bit)
+
+   .. code-block:: bash
+
+      sudo lscpu | grep -E Architecture
+
+-  CPU: Check the CPU MHz
+
+   .. code-block:: bash
+
+      sudo lscpu | grep -E "CPU|Hz"
+
+-  RAM: Check the RAM size
+
+   .. code-block:: bash
+
+      free -g
+
+-  Disks and File Systems
+
+   -  Root filesystem
+
+      -  Verify enough space to install under **/opt**
+
+         .. code-block:: bash
+
+            df -hT /opt
+
+   -  Data and Backup Disks:
+
+      -  Check that data and backup disks are mounted,
+      -  check sizes, verify enough space to backup (backup >= data size)
+
+         .. code-block:: bash
+
+            df -hT
+            mount -l
+
+   -  Check mount settings in **/etc/fstab**
+
+      -  Verify data and backup mounts are entered
+      -  Verify nosuid and noexec option are not used
+
+         .. code-block:: bash
+
+            cat /etc/fstab | grep nosuid
+
+         -  Edit **/etc/fstab** to remove **nosuid** if found.
+
+            .. code-block:: bash
+
+               cat /etc/fstab | grep noexec
+
+         -  Edit ``/etc/fstab`` to remove ``noexec`` if found.
+
+-  Check OS version
+
+   .. code-block:: bash
+
+      cat /etc/centos-release
+
+   (or)
+
+   .. code-block:: bash
+
+      cat /etc/os-release
+
+-  DNS
+
+   -  Confirm that Alation has access to the DNS
+
+-  Authentication Mechanism
+
+   -  Confirm port 80 is open
+
+-  Email
+
+   -  Confirm ports are open
+   -  Confirm connectivity to corp email server (``telnet`` or ``dig`` can be used)
+
+-  Confirm Unix users are created, if necessitated by environment
+   requirements
+
+   -  Check ``/etc/passwd``, ``/etc/group``
+
+-  LDAP/LDAPS
+
+   -  Confirm access to server on port **389/636**
+   -  Confirm LDAP credentials and setup
+
+-  Usage Stats
+
+   -  Confirm connectivity to outbound TCP connection to **IP 52.4.59.229** port **443**
+
+Connectivity
+------------
+
+Verify that the new system can access the data sources, (per ports listed for each Data Source type.
+
+1. Verify connectivity over ports listed in the Network Requirements section. Use the following command to check the functioning of ports:
+
+    .. code-block:: bash
+
+        curl -v telnet://<IP>:<PORT>
+
+    .. note::
+
+        You can alternatively use the **nc** command if it is installed on the host:
+
+            .. code-block:: bash
+
+                nc -zv <IP> <PORT>
+
+        For UDP ports:
+
+            .. code-block:: bash
+
+                nc -zv <IP> <PORT>-u
+
+        In cloud environments, the LDAP ports get closed. A quick way to check multiple ports at one time is by adding space between ports:
+
+            .. code-block:: bash
+
+                nc -zv 127.0.0.1 22 80 8080
+
+2. Use the following command to return all services and the ports they are listening on:
+
+    .. code-block:: bash
+
+        netstat -plnt
+
+3. Confirm handling of usage stats.
+
+Data Source Checks
+------------------
+
+For each data source:
+
+-  Verify connectivity from Alation system to data source
+-  Verify authentication type
+-  Confirm service account uses the same authentication type as users
+-  Verify service account creation with appropriate permissions to run
+   MDE, Profiling (if desired), and QLI
+-  Verify that the Query Log Ingestion setup is completed
+
+
+BI and Other Tool Checks
+------------------------
+
+-  Verify connectivity from Alation system to source
+-  Confirm service account setup

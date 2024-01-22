@@ -1,0 +1,41 @@
+========================================
+Compose SSO for Azure Data Sources
+========================================
+
+*Applies from release 2021.4*
+
+For a number of Azure cloud data sources, Alation users can authenticate with Azure AD in order to run and schedule queries in Compose and perform Dynamic Profiling in the catalog. Data sources that support Compose SSO with Azure AD are Azure SQL databases, Dedicated SQL pools, and Serverless SQL Pools under Azure Synapse Analytics cataloged in Alation as **Custom DB**.
+
+When Compose SSO with Azure AD is set up for an Azure data source:
+
+1. Alation users are redirected to Azure AD for authentication when they establish a connection to an Azure data source from Compose.
+
+2. Azure AD will either use an existing session if one is open in the browser or require the user to sign in with their Azure AD credentials.
+
+3. The user provides the credentials. Azure AD generates an authentication code and sends it to the callback endpoint of Alation's *AuthService*.
+
+4. AuthService will pass the authentication code, the client ID, and secret to Azure AD to certify that Alation is granted access to the Azure resource.
+
+5. Azure AD responds with an access token and a refresh token.
+
+6. Compose will use the access token to run SQL queries on behalf of the user, using the refresh token to request a new access token when the existing access token is about to expire.
+
+The same OAuth authentication flow will apply if Dynamic Profiling is enabled for an Azure data source. Users who attempt to profile a table or a column from the Alation catalog will need to authenticate with their Azure AD credentials before retrieving the results.
+
+With SSO enabled, Compose users are able to schedule Compose queries. A new access token will be requested automatically after an existing token expires when a query is triggered based on schedule.
+
+You can configure Compose SSO after adding your Azure data source to Alation:
+
+1. :doc:`Compose SSO for Azure Data Sources: Register an Application in Azure AD <../../datasources/ComposeSSOAzureDataSources/RegisterAADappForComposeSSO>`.
+
+      - This app registration will be used to authorize Compose against Azure AD
+
+2. :doc:`Compose SSO for Azure Data Sources: Configure Compose SSO in Alation <../../datasources/ComposeSSOAzureDataSources/ConfigureComposeSSOwithAAD>`.
+
+
+.. toctree::
+  :hidden:
+
+  RegisterAADappForComposeSSO
+  ConfigureComposeSSOwithAAD
+  OAuthPluginCRUDOperations

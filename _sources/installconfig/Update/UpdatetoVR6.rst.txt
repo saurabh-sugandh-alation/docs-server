@@ -1,0 +1,222 @@
+Update Alation to V R6 (5.10.x)
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+The process of updating Alation to V R6 (5.10.x) from an older release
+depends on your current release number.
+
+If you want to update from versions:
+
+-  V R2 (5.4.x)
+-  V R3 (5.6.x)
+-  V R4 (5.8.x)
+-  V R5 (5.9.x)
+
+then first refer to `Updating from V R2, V R3, V R4, V R5`_.
+
+If you want to update from versions before V R2 (5.4.x), and namely:
+
+-  4.8.x
+-  V R1 (5.0.x)
+
+Read the information in `Updating from Before V R2`_.
+
+Updating from V R2, V R3, V R4, V R5
+------------------------------------
+
+-  `V R5 To V R6`_
+-  `V R2, V R3, VR4  To V R6`_
+-   After you have updated Alation to V R6, you can also :doc:`upgrade the Alation internal PostgreSQL instances <../../installconfig/Update/UpgradeInternalPostgreSQLInstances>` to PostgreSQL version 9.6.
+
+V R5 To V R6
+~~~~~~~~~~~~
+
+Update from V R5 (5.9.x) to V R6 (5.10.x) follows the `Regular Update Scenario`_.
+
+also see `PostgreSQL Upgrade to 9.6`_  .
+
+V R2, V R3, VR4  To V R6
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+In *V R6 (5.10.x)*, Alation no longer includes the MongoDB component. In a
+regular scenario, migration off Mongo DB has already been completed in
+the background on your instance, and you can update to R6 following
+the `Regular Update Scenario`_.
+
+If the V R6 updater quits with the following error:
+
+`The installer will abort until migration job from MongoDB to Postgres
+has succeeded` -
+
+then follow `Irregular Scenario: MongoDB Migration is Not Complete`_.
+
+also see `PostgreSQL Upgrade to 9.6`_. You can upgrade
+PostgreSQL on a separate schedule after you have updated Alation to V
+R6.
+
+If you are updating from V R4 and earlier, see `Scheduled Query Migration: V R6 Changes`_
+
+Regular Update Scenario
+------------------------
+
+Plan your update from V R2, V R3, V R4, and V R5 using the following information:
+
+- General Alation update information: :doc:`Update Alation <../../installconfig/Update/index>`
+
+- Important :doc:`Update Safety Best Practice <../../installconfig/Update/UpdateSafetyBestPractice>`
+
+- Update instructions for your instance type:
+
+      -  :doc:`Manual Software Update - Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+      -  :doc:`Update on HA Pair (4.7 and Above) <../../installconfig/Update/updateHAPair>`
+
+- PostgreSQL upgrade from 9.3 to 9.6: :doc:`Upgrade Internal PostgreSQL Instances </installconfig/Update/UpgradeInternalPostgreSQLInstances>`.
+
+Irregular Scenario: MongoDB Migration is Not Complete
+-----------------------------------------------------
+
+Incomplete off-Mongo DB migration causes the following error during the attempted update to V R6:
+
+`The installer will abort until migration job from MongoDB to Postgres
+has succeeded.`
+
+Updating from Before V R2
+--------------------------
+
+If your current release is 4.8.x or V R1 (5.0.x), then updating to V R6 will have to be achieved in three steps.
+
+Step 1: Update to V R4 (latest patch version)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You will need to update to:
+
+-  V R4 (latest available patch version)
+
+.. note::
+
+   In your Alation version, one of the internal components is *MongoDB* .  It is used for storing Alation server data, such
+   as, for example, the results of Compose queries.
+   Starting with version V R2 (5.4.x), Alation began to migrate the
+   server data off MongoDB to a PostgreSQL database. This transition has
+   been happening in the background and is complete in *V R5
+   (5.9.x)* where the MongoDB component is no longer present in the
+   Alation package.
+
+   This transition is a major architectural change in the Alation
+   application, and, unfortunately, it does not allow us to support a
+   seamless update from your version to V R6.
+
+   The intermediary stage is updating to V R4 (latest available patch),
+   which is required for Alation to start and complete the transition
+   from MongoDB to PostgreSQL as the internal server data repository.
+
+
+Plan your update to V R4 using the following information in Help
+Center:
+
+- General Alation update information: :doc:`Update Alation <../../installconfig/Update/index>`
+
+- Important :doc:`Update Safety Best Practice <../../installconfig/Update/UpdateSafetyBestPractice>`
+
+- :doc:`Release Specific Update Pre-checks <../../installconfig/Update/ReleaseUpdatePrechecks>` : this instruction ``does`` apply to your Alation instance, perform those checks to prepare for the update.
+
+- The update instructions for your instance type:
+
+      -  :doc:`Manual Software Update - Standalone Systems <../../installconfig/Update/ManualSWUpdate>`
+      -  :doc:`Update on HA Pair (4.7 and Above) <../../installconfig/Update/updateHAPair>`
+
+When you successfully update Alation to V R4, you can move to the next
+step.
+
+Step 2: Allow Time For MongoDB Transition to Complete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Let your updated R4 instance run over at least one weekend. In the
+background, Alation will start and complete the server data migration
+off MongoDB to PostgreSQL.
+
+After the migration is complete, you can go to the next stage and update
+to V R6.
+
+.. note::
+
+   On a Saturday after the update, Alation will automatically trigger the MongoDB migration script that copies the Alation server data from MongoDB to PostgreSQL. In a regular scenario, this migration should be completed over one weekend. If it requires a longer time, the process will be working until the migration is finished successfully.
+
+   You can check *mongo-data-migration.log* at **/opt/alation/site/logs** after the weekend to make sure that migration is complete.
+
+Step 3:Update to V R6
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Plan your update to V R6 using the information in Help Center and
+then update your instance: `Regular Update Scenario`_.
+
+.. note::
+
+    You might see the following message:
+
+    *The installer will abort until migration job from MongoDB to Postgres has succeeded.*
+
+    This means the data migration may have completed with errors.
+    assistance.
+
+PostgreSQL Upgrade to 9.6
+-------------------------
+
+*Applies to instances UPDATED to V R6 from prior releases*
+
+*Does not apply to new installations of V R6*
+
+After you have updated Alation to V R6 you can choose to upgrade its
+internal PostgreSQL databases to version 9.6. This PostgreSQL upgrade
+can be done on a schedule independent from updating the Alation
+application.
+
+.. note::
+
+   Releases before V R6 use PostgreSQL 9.3.
+   PostreSQL 9.3 is at end of life and no longer receives updates or bug
+   fixes.
+
+We recommend that you upgrade to PostgreSQL 9.6. Alation will stop using
+the PostgreSQL 9.3 in one of the releases that will follow V R6, and
+upgrading PostgreSQL to 9.6 will become a requirement.
+
+See :doc:`Upgrade Internal PostgreSQL Instances <../../installconfig/Update/UpgradeInternalPostgreSQLInstances>` for steps.
+
+.. _Update_VR6-Scheduled_Query_Migration:
+
+Scheduled Query Migration: V R6 Changes
+---------------------------------------
+
+There are some important changes to the behavior of scheduled queries in
+V R6 compared to previous releases. Be prepared for the
+following:
+
+R4 and earlier
+~~~~~~~~~~~~~~
+
+If you have UNPUBLISHED SCHEDULED queries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In R6, you can no longer schedule unpublished queries.
+
+During update to V R6, your UNPUBLISHED SCHEDULED queries will be
+automatically PUBLISHED to keep your query schedule. You will
+receive an email notification informing you about this change and
+having the list of auto-published queries.
+
+Note that this auto-publishing will create a major version in the query
+version history.
+
+If you have PUBLISHED SCHEDULED queries that include changes you haven’t published yet
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In R6, only the published part of the query can run on schedule. During
+update to V R6, such queries will be automatically republished in full
+so that there are no unpublished edits in these queries. You will
+receive an email notification informing you about this change and
+having the list of auto-republished queries.
+
+Note that auto-republishing will create a major version in the query
+version history.

@@ -1,0 +1,155 @@
+Case Study: Combining Lineage from Fivetran and dbt
+==============================================================
+
+You can combine lineage data from Fivertran and dbt to show both upstream source lineage from Fivetran and downstream transformations lineage from dbt on one Lineage chart for a table. 
+This configuration can be performed for data sources that support both Fivetran and dbt add-on connectors.
+In this case study, we'll walk through such a configuration from start to end and analyze the result on the Lineage diagram.
+
+Prerequisites
+-----------------
+
+1. You have cataloged your Fivetran destination data source in Alation using an OCF connector. This data source supports both Fivetran and dbt add-on OCF connectors.
+    -  Which :ref:`Supported Fivetran Destinations` are supported?
+    - `Which data sources support the dbt add-on OCF connector <https://docs.alationdata.com/en/latest/sources/OpenConnectorFramework/DBT/DBTAddOnOCFConnectorOverview.html#supported-data-sources>`_?
+2. You have cataloged the data source that was configured as a source in Fivetran. Currently, you have ELT pipelines in Fivetran that extract data from this source and load it into the data warehouse (destination data source). 
+   So the data in the destination data source originates from the source data source.
+3. You have a dbt project that stores transformations you have performed on the data in your destination data source. 
+4. You have enabled the Fivetran and dbt add-on OCF connectors on your Alation instance in Admin Settings > Feature Configuration:
+    - :ref:`Enable Fivetran Add-On Connector`.
+    - `Enable dbt Add-On Connector <https://docs.alationdata.com/en/latest/sources/OpenConnectorFramework/DBT/DBTAddOnOCFConnectorInstallandConfigure.html#enable-the-dbt-connector>`_.
+
+Steps
+-------
+
+We're starting with a state where the destination data source we're going to work with is already in Alation but does not have the Fivetran or dbt add-on connectors configured.
+
+Step 1: Configure Fivetran Add-On Connector 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We'll start with configuring the Fivetran add-on connector, which will allow us to retrieve source lineage information that should appear on the Lineage diagram as upstream lineage for the tables in the destination data source.
+
+To configure the Fivetran add-on:
+
+1. In the settings of the destination data source, click on the **Fivetran** tab and enable the toggle **Configure Fivetran OCF Connector**.
+
+    .. image:: ../../../_static/Fivetran_Configure.png
+      :width: 600px 
+
+    .. note::
+
+        The toggles for the add-on connectors become available in connector settings after the corresponding add-on is enabled in Admin Settings.
+
+2. Enabling the toggle will display the Fivetran connector properties. We'll configure them using the information in :ref:`Configure Fivetran Add-On` for a Data Source and save.
+
+    .. image:: ../../../_static/Fivetran_Authentication.png
+      :width: 600px
+
+This configuration allows Alation to send calls to the Fivetran API and retrieve Fivetran metadata.
+
+.. note::
+
+    Extraction from Fivetran will not bring in the transformation information from Fivetran into Alation.
+
+Step 2: Link Source and Destination Data Sources in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Next, we'll need to make sure that the data sources cataloged in Alation “recognize” one another as Fivetran source and destination. 
+We'll do this by performing an additional configuration in the settings of the data source that is connected as a source in Fivetran.
+
+First, we'll need to find out the source connection details from Fivetran. 
+We can do it using the information in :ref:`Finding Connection Information in Fivetran`.
+
+Keeping the host and port information ready, we'll update a field in the settings of the data source that represents the source database using the information in :ref:`Configure Lineage Across Data Sources` and save it.
+
+.. image:: ../../../_static/Fivetran_Advance_Settings.png
+      :width: 600px
+
+At this point, we have configured everything we need to extract metadata from Fivetran. Next, we'll configure the dbt part.
+
+Step 3: Configure dbt Add-On Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To configure the dbt add-on:
+
+1. In the settings of the destination data source (the same data source for which we have already configured extraction from Fivetran), click on the **DBT** tab, and enable the toggle **Configure DBT OCF Connector**.
+
+    .. image:: ../../../_static/Fivetran_DBT_Configure.png
+      :width: 600px
+
+    .. note::
+
+        The toggles for the add-on connectors become available in connector settings after the corresponding add-on is enabled in Admin Settings and the connector is installed.
+
+2. Enabling the toggle will display the dbt connector properties. We'll configure them using the information in `Configure dbt Connector <https://docs.alationdata.com/en/latest/sources/OpenConnectorFramework/DBT/DBTAddOnOCFConnectorInstallandConfigure.html#general-settings>`_ and save.
+
+    .. image:: ../../../_static/Fivetran_DBT_Cloud.png
+      :width: 600px
+
+This configuration will allow Alation to send calls to the dbt API and retrieve metadata from dbt.
+
+.. note::
+
+    Extraction from dbt will bring in information on data transformations.
+
+Step 4: Perform Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Next, we'll perform metadata extraction (MDE) from the destination data source to retrieve metadata into Alation. You can find more information about metadata extraction in `Configure Metadata Extraction <https://docs2.alationdata.com/en/latest/sources/OpenConnectorFramework/ConfigureMDEforOCFDataSources.html>`_ for OCF Data Sources.
+
+As part of MDE, Alation will perform two dependent, or downstream, jobs that will extract metadata from Fivetran and dbt and calculate lineage. Metadata from Fivetran will be used to calculate the upstream lineage from source to destination, and metadata from dbt will be used to calculate the downstream stream lineage based on transformations in dbt.
+
+Alation uses the direct lineage extraction feature to generate lineage from Fivetran and dbt metadata. Direct lineage extraction happens during MDE and does not require query log ingestion (QLI). 
+
+We can see all downstream jobs logged in the extraction detail log that you can open from the **Extraction Job Status** table at the bottom of the **Metadata Extraction** tab.
+
+.. image:: ../../../_static/Fivetran_Metadata_Sync_Info.png
+      :width: 600px
+
+When metadata extraction completes, we'll be able to view the lineage information on the **Lineage** diagram.
+
+Step 5: View Lineage Diagram
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Next, we'll analyze the lineage generated based on the metadata from Fivetran and dbt.
+
+.. _Compound Layout View:
+
+Compound Layout View
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Let's open the Lineage diagram for a table in the destination data source that we know should have such lineage and enable the :ref:`Compound Layout View` to view lineage information grouped by source. 
+
+The screenshot below shows such a Lineage view.
+
+
+On this Lineage diagram:
+
+1—The upstream lineage (TEST POSTGRES SOURCE group) comes from Fivetran and reveals that the data in the current table originates in a Postgres data source. This is the source we linked to the current data source using the Additional Datasource Configuration field.
+
+2—The Fivetran metadata-based dataflow objects are grouped under the group FIVETRAN. Each of these dataflows stores information about the object at source that was used to create the corresponding object at destination.
+
+3—The preview area under the diagram displays the catalog page for the currently selected object, providing you with the ability to view its properties. You can select any object on the Lineage diagram—a table or a dataflow object—by clicking it. 
+
+4—The current data source is represented by a group of lineage objects (TEST SNOWFLAKE DESTINATION group).
+
+5—The dbt metadata-based dataflow objects are grouped under the group DBT. These lineages represent the transformations that Alation extracted with the dbt add-on connector. You can click on the dbt data flow object to view the corresponding Jinja code in the preview. (Find more information in `dbt Lineage <https://docs.alationdata.com/en/latest/sources/OpenConnectorFramework/DBT/DBTAddOnOCFConnectorInstallandConfigure.html#lineage>`_).
+
+6—More downstream lineage is available that was calculated during extraction from BI sources that use data from this data source.
+
+.. image:: ../../../_static/Fivetran_Compound_Layout_View.png
+      :width: 600px
+
+
+Standard Lineage View
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+When we turn off the Compound Layout view, the Lineage diagram returns to the standard view. 
+Currently, column-level lineage can be seen using this view only. 
+In the standard view, you will need to click on an object and read the preview to understand the source of the lineage. 
+For example, the screenshot below shows the same lineage data as the screenshot described in :ref:`Compound Layout View`. 
+You can switch between views to analyze different levels of lineage detail.
+
+.. image:: ../../../_static/Fivetran_Standard_Lineage_View.png
+      :width: 600px
+

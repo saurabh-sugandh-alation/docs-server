@@ -1,0 +1,75 @@
+OCF Connector for Amazon Athena: Query Log Ingestion
+=======================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+.. include:: ../../../shared/OCF/Athena_QLI.rst
+
+QLI Configuration in Alation
+--------------------------------
+
+On the **Query Log Ingestion** tab, you can select the QLI options for your data source and schedule the QLI job if necessary.
+
+Table-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~
+
+Table-based QLI uses the view created from the external QLI table.
+
+In the **Table Name** field under **Connector Settings > Query Extraction**, specify the name of the view in which the query logs are available. Make sure that the service account has permissions to select from this view. The table name must be provided in the following format: ``database.schema.view_name``.
+
+Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_QLI_CustomQueryQLI.rst
+
+QLI Query Template
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: SQL
+
+    SELECT (
+      CASE CAST(useridentity.type AS VARCHAR)
+        WHEN 'AssumedRole'
+        THEN SUBSTR(useridentity.principalid, position(':' IN useridentity.principalid)+1)
+        WHEN 'IAMUser'
+        THEN useridentity.username
+        ELSE useridentity.username
+      END
+      ) AS userName
+      ,'' AS defaultDatabases
+      ,json_extract_scalar(responseElements, '$.queryExecutionId') AS sessionId
+      ,replace(eventtime, 'T', ' ') AS sessionStartTime
+      ,replace(eventtime, 'T', ' ') AS startTime
+      ,json_extract_scalar(requestParameters, '$.queryString') AS queryString
+      ,0 AS seconds
+      ,false as cancelled
+    FROM default.alation_qli
+    WHERE eventname = 'StartQueryExecution'
+      AND CAST(ErrorCode AS VARCHAR) IS NULL
+      AND daterange>=date_format(cast(STARTTIME as timestamp),'%Y/%m/%d')
+      AND daterange<date_format(cast(ENDTIME as timestamp),'%Y/%m/%d');
+
+
+Perform QLI
+-----------------
+
+To perform QLI on demand:
+
+1. Under the **Automated and Manual Query Log Ingestion** section on the **Query Log Ingestion** tab, make sure that the **Enable Automated Query Log Ingestion** toggle is off.
+
+2. Click **Preview** to get a sample of the query history data to be ingested.
+
+3. Click the **Import** button to begin QLI.
+
+Schedule QLI
+-------------------
+
+You can schedule QLI to be performed automatically on the schedule you set:
+
+1. Under the **Automated and Manual Query Log Ingestion** section on the **Query Log Ingestion** tab, enable the **Enable Automated Query Log Ingestion** toggle.
+
+2. Under **Automated Query Log Ingestion Time**, set a schedule by specifying values in the *week*, *day* and *time* fields. The next QLI job will run on the schedule you have specified.
+
+    .. note::
+
+        The hourly schedule for automated QLI is not supported.

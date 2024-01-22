@@ -1,0 +1,689 @@
+Oracle Connector: Install and Configure
+============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from release 2021.3*
+
+Prerequisites
+-------------------
+
+Firewall Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - Open outbound TCP port **1521** to the Oracle server
+
+  - If connecting over LDAP, open outbound LDAP port **389** to the Oracle LDAP server
+
+  - Kerberos authentication requires the Alation server hostname to be resolvable. Add a DNS record for the Alation server or edit the **/etc/hosts** file on the Alation server.
+
+Create Service Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sample SQL to create an account:
+
+    .. code-block:: SQL
+
+        CREATE USER alation IDENTIFIED BY [password];
+        GRANT CREATE SESSION TO alation;
+
+
+Permissions
+~~~~~~~~~~~~~~~~
+
+Metadata Extraction
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      GRANT SELECT ON DBA_OBJECTS TO alation;
+      GRANT SELECT ON DBA_TAB_COLUMNS TO alation;
+      GRANT SELECT ON DBA_CONS_COLUMNS TO alation;
+      GRANT SELECT ON DBA_CONSTRAINTS TO alation;
+      GRANT SELECT ON DBA_VIEWS TO alation;
+      GRANT SELECT ON DBA_MVIEWS TO alation;
+      GRANT SELECT ON DBA_IND_COLUMNS TO alation;
+      GRANT SELECT ON DBA_INDEXES TO alation;
+      GRANT SELECT ON DBA_SYNONYMS TO alation;
+      GRANT SELECT ON DBA_COL_COMMENTS TO alation;
+      GRANT SELECT ON DBA_MVIEW_COMMENTS TO alation;
+      GRANT SELECT ON DBA_TAB_COMMENTS TO alation;
+      GRANT SELECT ON DBA_SEGMENTS TO alation;
+      GRANT SELECT ON DBA_LOBS TO alation;
+      GRANT SELECT ON DBA_ARGUMENTS to alation;
+      GRANT SELECT ON DBA_USERS to alation;
+
++----------------------------------------+------------------------------------------+
+| Permission                             | Purpose                                  |
++========================================+==========================================+
+| GRANT SELECT ON DBA_OBJECTS            | Required for table extraction            |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_TAB_COLUMNS        | Required for table and column extraction |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_CONS_COLUMNS       | Required for column extraction           |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_CONSTRAINTS        | Required for primary key and foreign key |
+|                                        | extraction                               |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_VIEWS              | Required for view extraction             |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_MVIEWS             | Required for view extraction             |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_IND_COLUMNS        | Required for index extraction            |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_INDEXES            |  Required for index extraction           |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_SYNONYMS           | Required for synonym extraction          |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_COL_COMMENTS       | Required for source comments extraction  |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_MVIEW_COMMENTS     | Required for view comments extraction    |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_TAB_COMMENTS       | Required for table comments extraction   |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_SEGMENTS           | Required for table iteration             |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_LOBS               | Required for table extraction            |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_ARGUMENTS          | Required for function and function       |
+|                                        | definition extraction                    |
++----------------------------------------+------------------------------------------+
+| GRANT SELECT ON DBA_USERS              | Required for schema extraction           |
++----------------------------------------+------------------------------------------+
+
+
+Table Profiles
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      GRANT SELECT on [SCHEMA or TABLE]
+
+Authentication
+-----------------------------
+
+Alation supports the following authentication types for the Oracle data source:
+
+    - Basic authentication (database username and password)
+
+    - LDAP authentication
+
+    - Kerberos authentication
+
+    - SSL authentication
+
+Kerberos Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kerberos authentication requires the **krb5.conf** file to be uploaded in the **General Settings > Connector Settings** section of the data source settings. Authentication with Kerberos and a keytab is supported too.
+
+Have the **krb5.conf** and the keytab files ready for upload when configuring the data source in Alation.
+
+LDAP Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are using LDAP authentication, check the following settings on your `Oracle LDAP server <https://docs.oracle.com/en/operating-systems/oracle-linux/7/userauth/userauth-AuthenticationConfiguration.html#ol7-s7-auth>`_:
+
+    - Check that the file ``$ORACLE_HOME/network/admin/ldap.ora`` exists on the LDAP server. See an example below:
+
+        .. code-block:: Bash
+
+            # ldap.ora
+            # Place this file in the network/admin subdirectory of your
+            # $ORACLE_HOME location
+
+            DIRECTORY_SERVERS = (ip-10-13-52-95.alation-test.com:389:636)
+            DEFAULT_ADMIN_CONTEXT = "dc=alation-test,dc=com"
+            DIRECTORY_SERVER_TYPE = OID
+
+        In this example:
+
+            - ``ip-10-13-52-95.alation-test.com``—Hostname(s) and port number(s) of the LDAP directory server(s).
+
+            - ``"dc=alation-test,dc=com"``—Default directory entry.
+
+        You should use your specific values instead.
+
+For more details about the ``ldap.ora file``, refer to the Oracle documentation: `Directory Usage Parameters in the ldap.ora File <https://docs.oracle.com/en/database/oracle/oracle-database/19/netrf/directory-usage-parameters-in-ldap-ora-file.html>`_.
+
+If you don't have the ``ldap.ora`` file in the directory ``$ORACLE_HOME/network/admin/``, then create it and add the content based on the example above. Use your specific property values in the file.
+
+Testing LDAP Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can test the connection over LDAP to your Oracle database from the Alation host using an ``ldapsearch`` tool, for example:
+
+    .. code-block:: Bash
+
+        ldapsearch -x -h ip-10-13-52-95.alation-test.com -p 389 -b dc=alation-test,dc=com
+
+You should receive a control response similar to the following:
+
+    .. image:: ../../../_static/OCF_Oracle_LDAP_Control_Response.png
+        :width: 500px
+        :class: with-border
+
+JDBC URI
+------------------------------
+
+When building the URI, include the following information:
+
+    - Hostname or IP of the instance
+    - Port number
+    - Service name
+    - Service account username
+    - Password
+
+URI Format
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: Bash
+
+      oracle:thin:@//<Hostname_or_IP>:<Port_Number>/<Service_Name>
+
+Example
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      oracle:thin:@//ifac-orcl.ceeyrlqdpprr.us-west-2.rds.amazonaws.com:1521/orcl
+
+.. note::
+
+    You may need to adjust the URI depending on your Oracle configuration, for example, in case of the TCPS protocol, the following format may be required:
+
+    ``oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcps)(HOST=http://t-prabhus-al-o19.ccrb7zzsxmzo.us-east-1.rds.amazonaws.com)(PORT=1521))(CONNECT_DATA=(SID=ALATION)))``
+
+JDBC URI for LDAP Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+URI Format
+^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      oracle:thin:@ldap://<Hostname or IP >:<Port>/<servicename>,<LDAP Context>
+
+Example
+^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      oracle:thin:@ldap://ip-10-13-52-95.test.com:389/alation,cn=OracleContext,dc=alation-test,dc=com
+
+Connect via Native Network Encryption (NNE)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NNE encrypts database connections without the need to configure TCP/IP and SSL/TLS and to open and listen on different ports. There are multiple configuration options for NNE. You may come across different scenarios where you need to pass different parameters in the JDBC URI to connect, depending on how NNE was configured on your Oracle database.
+For more information, refer to the `Oracle official documentation on NNE <Oracle official documentation on NNE - https://docs.oracle.com/en/database/oracle/oracle-database/19/dbseg/configuring-network-data-encryption-and-integrity.html#GUID-7F12066A-2BA1-476C-809B-BB95A3F727CF>`_.
+
+Consider the following scenarios for NNE:
+
+
+Scenario 1 (Default):
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+No settings done on the Oracle server.
+
+- Pass extra parameters in JDBC URI as shown below:
+
+    .. code-block:: Bash
+
+        oracle:thin:@//10.13.80.110:1521/alation?
+        oracle.net.encryption_client=REQUIRED
+        &oracle.net.encryption_types_client=AES256
+        &oracle.net.crypto_checksum_client=REQUIRED
+        &oracle.net.crypto_checksum_types_client=SHA256
+
+
+    This will allow Oracle to enable the NNE encryption.
+
+Scenario 2:
+^^^^^^^^^^^^^^^^^^^^^
+
+This scenario applies if you are using one algorithm for encryptions and another for checksum.
+
+This corresponds to the following configuration in the sqlnet.ora file on the Oracle server:
+
+    .. code-block:: Bash
+
+        SQLNET.ENCRYPTION_SERVER = ACCEPTED
+        SQLNET.CRYPTO_CHECKSUM_SERVER = ACCEPTED
+        SQLNET.CRYPTO_CHECKSUM_TYPES_SERVER= (SHA256)
+        SQLNET.ENCRYPTION_TYPES_SERVER= (AES256)
+
+    In the above configuration, AES256 is used for encryption and SHA256 is used for checksum.
+
+If this is your case, you need to add the following parameters to the JDBC URI you provide in Alation:
+
+    .. code-block:: Bash
+
+        oracle:thin:@//10.13.80.110:1521/alation?
+        oracle.net.encryption_client=REQUIRED
+        &oracle.net.encryption_types_client=<Encryption mechanism allowed on Oracle server>
+        &oracle.net.crypto_checksum_client=REQUIRED
+        &oracle.net.crypto_checksum_types_client=<Checksum mechanism allowed on Oracle server>
+
+
+Configuration in Alation
+-----------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The connector name for Oracle is **Oracle OCF Connector**.
+
+    .. image:: ../../../_static/OracleOCF_01.png
+        :width: 400px
+        :class: with-border
+
+Access
+--------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+--------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Populate the data source connection information and save the values by clicking **Save** in this section.
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^
+
++---------------------------------+---------------------------------------------------+
+| Parameter                       | Description                                       |
++=================================+===================================================+
+| JDBC URI                        | Specify the JDBC URI in the required format.      |
++---------------------------------+---------------------------------------------------+
+| Username                        | Specify the service account username.             |
++---------------------------------+---------------------------------------------------+
+| Password                        | Specify the service account password.             |
++---------------------------------+---------------------------------------------------+
+| Enable Kerberos authentication  | Select this checkbox if using Kerberos            |
+|                                 | authentication and upload the **krb5.conf** file  |
+|                                 | using the **upload** link under the checkbox.     |
++---------------------------------+---------------------------------------------------+
+| Use keytab                      | Select this checkbox if using keytabs and upload  |
+|                                 | the keytab file for the service account using     |
+|                                 | the **upload** link under the checkbox.           |
++---------------------------------+---------------------------------------------------+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+You can view the connector logs in **Admin Settings** > **Manage Connectors** > **Oracle OCF connector**.
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Obfuscate Literals**—Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^^^^
+
+After specifying the connector settings, under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+-----------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+.. note::
+
+    Synonyms extraction is not supported for Oracle E-Business Suite version 12.2.5 or below. Clear the Extract Synonyms checkbox before running metadata extraction (MDE).
+
+
+.. image:: ../../../_static/OracleOCF_03.png
+    :width: 700px
+    :class: with-border
+
+Query-Based Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Provide SQL custom queries to extract metadata. Custom queries in Query Based Extraction will return below result set:
+
+SCHEMA
+^^^^^^^^^^^^
+
+Make sure that  your query has a column labelled as ``SCHEMA`` in the SELECT list.
+
+TABLE
+^^^^^^^^^^^^^
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``TABLE_NAME``, ``TABLE_TYPE``, ``REMARKS`` in the SELECT list.
+
+VIEW
+^^^^^^^^^^^^^
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``VIEW_NAME``, ``VIEW_CREATE_STATEMENT``, ``'VIEW' AS VIEW_TYPE``, ``REMARKS`` in the SELECT list.
+
+COLUMN
+^^^^^^^^^^^^^^
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``TABLE_NAME``, ``TYPE_NAME``, ``DATA_TYPE``, ``COLUMN_NAME``, ``ORDINAL_POSITION``, ``IS_NULLABLE``, ``REMARKS``, ``COLUMN_DEFAULT`` in the SELECT list.
+
+PK
+^^^^^^^^^^^^^^^
+
+Make sure that your query has columns labelled as ``TABLE_NAME``, ``COLUMN_NAME``, ``OWNER`` in the SELECT list.
+
+FK
+^^^^^^^^^^^^^^^
+
+Make sure that your query has columns labelled as ``PK_CATALOG``, ``PK_SCHEMA``, ``PK_TABLE``, ``PK_COLUMN``, ``FK_CATALOG``, ``FK_SCHEMA``, ``FK_TABLE``, ``FK_COLUMN`` in the SELECT list.
+
+INDEX
+^^^^^^^^^^^^^^^^
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``TABLE_NAME``, ``COLUMN_NAME``, ``REMARKS`` in the SELECT list.
+
+FUNCTION
+^^^^^^^^^^^^^^^^^^
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``FUNCTION_NAME``, ``REMARKS`` in the SELECT list.
+
+FUNCTION_DEF
+^^^^^^^^^^^^^^^^^^^
+
+Make sure that your query has columns labelled as ``SCHEMA``, ``FUNCTION_NAME``, ``ARG_NAME``, ``TYPE_NAME``, ``ARG_TYPE``, ``ARG_DEF`` in the SELECT list.
+
+SYNONYM
+^^^^^^^^^^^^^^^^^^
+
+Make sure that your query has columns labelled as ``SYNONYM_CATALOG``, ``SYNONYM_SCHEMA``, ``SYNONYM_NAME``, ``TABLE_CATALOG``, ``TABLE_SCHEMA``, ``TABLE_NAME``, ``REMARKS`` in the SELECT list.
+
+Sampling and Profiling
+-------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Query Log Ingestion
+-------------------------
+
+For Oracle data sources added using the Oracle OCF connector, Alation supports two QLI configuration options: table-based QLI or custom query-based QLI. Depending on the option you choose, you will either need to create a QLI view in your database or write a query using the template expected by Alation.
+
+Before you can configure QLI in Alation, perform the required configuration in your Oracle database.
+
+If your Oracle data source is deployed on AWS RDS, refer to :doc:`/sources/OpenConnectorFramework/OracleOCFConnector/OracleConnectorQLI_RDS` for information on configuring QLI.
+
+For Oracle on AWS EC2 or on-premise, you can either use `audit trail <https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/AUDIT_TRAIL.html#GUID-BD86F593-B606-4367-9FB6-8DAB2E47E7FA>`_ or `Active Session History <https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/V-ACTIVE_SESSION_HISTORY.html#GUID-69CEA3A1-6C5E-43D6-982C-F353CD4B984C>`_ to configure QLI. You can also reuse the QLI view created using recommendations for Oracle data sources on the native (built-in) connector if you already have this view.
+
+    .. note::
+
+        The capability to reuse the native QLI view is available from connector version **1.4.0** and Alation version **2023.1**.
+
+Using Audit Trail
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This configuration assumes your Oracle database has the database audit trail enabled. We recommend including these statements into auditing:
+
+    - CREATE TABLE
+    - CREATE VIEW
+    - SELECT TABLE
+    - UPDATE TABLE
+    - INSERT TABLE
+    - DELETE TABLE
+    - ALTER TABLE
+
+Configure Table-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable QLI in Alation, in a schema of your choice, create a view on top of the ``SYS.AUD$`` table using the template below. Grant the service account you are using in Alation the SELECT permissions for this QLI view.
+
+In the example below, we're creating a view ``ALATION_QLI_VIEW``. The ``<SCHEMA>`` placeholder represents a schema where the view is created.
+
+.. code-block:: SQL
+
+    CREATE OR REPLACE VIEW <SCHEMA>.ALATION_QLI_VIEW AS
+    SELECT
+        q.userid AS userName,
+        q.NTIMESTAMP# AS startTime,
+        q.sqltext AS queryString,
+        q.sessionid AS sessionId,
+        q.NTIMESTAMP# AS sessionStartTime,
+        0 AS milliseconds,
+        'N' AS cancelled,
+        (SELECT * FROM Global_name) AS defaultDatabases
+    FROM sys.aud$ q
+    WHERE q.sqltext IS NOT NULL
+        AND q.OBJ$CREATOR = q.USERID
+    ORDER BY
+        sessionId,
+        startTime;
+
+Configure Query-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you cannot create the view for QLI, for example, due to access restrictions, you can use a custom QLI query to extract query history into Alation. If you opt for query-based QLI, every time you run QLI, Alation will query the ``SYS.AUD$`` table to get query history information. If you choose this option, ensure that the service account you are using in Alation is allowed to query the ``SYS.AUD$`` table.
+
+The template for the QLI query is given below. You can customize it by adding, removing, or changing the filter, but the columns and their aliases must remain as is since Alation expects this query structure.
+
+    .. note::
+
+        When using the QLI query template, do not substitute the ``STARTTIME`` and ``ENDTIME`` parameters in the WHERE filter. These parameters are not actual column names and should stay as is. They are expected by the connector and will be substituted with the start and end date of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+QLI Query Template
+''''''''''''''''''''''''
+
+.. code-block:: SQL
+
+      SELECT q.userid AS userName,
+          q.NTIMESTAMP# AS startTime,
+          q.sqltext AS queryString,
+          q.sessionid AS sessionId,
+          q.NTIMESTAMP# AS sessionStartTime,
+          0 AS milliseconds,
+         'N' AS cancelled,
+          (SELECT * FROM Global_name) AS defaultDatabases
+      FROM sys.aud$ q
+      WHERE q.sqltext IS NOT NULL
+          AND q.OBJ$CREATOR = q.USERID
+          AND q.NTIMESTAMP# BETWEEN TO_DATE(STARTTIME,'YY-MM-DD HH24:MI:SS')
+          AND TO_DATE(ENDTIME,'YY-MM-DD HH24:MI:SS')
+      ORDER BY
+          sessionId,
+          startTime;
+
+Using Active Session History
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Active session history (ASH) is recorded by default. ASH only records some of the queries, as it samples them on an interval (one every ten seconds). This means that the auto-generated Lineage feature will not be fully supported when using ASH. Some lineage links may be missing as they were not captured. Popularity will not be as accurate with ASH compared to audit trail, but over many samples it can still be a good approximation. Oracle Enterprise Edition and the Diagnostics and Tuning option are required for Active Session History.
+
+ASH query ingestion requires access to a view on top of the tables:
+
+    - ``dba_hist_active_sess_history``
+    - ``dba_users``
+    - ``dba_hist_sqltext``
+    - ``dba_hist_snapshot``
+
+In a schema of your choice, create the view using the template below. In the example below, we're creating a view ``ALATION_QLI_VIEW``. The ``<SCHEMA>`` placeholder represents a schema where the view is created. Make sure the service account you are using in Alation is allowed to query this view.
+
+.. code-block:: SQL
+
+      CREATE OR REPLACE VIEW <SCHEMA_NAME>.ALATION_QLI_VIEW AS
+      SELECT
+          b.username AS userName,
+          b.username ||'/'|| r.session_id ||'/'|| r.session_serial# ||'/'|| r.instance_number AS sessionId,
+          s.sql_text AS queryString,
+          r.start_time AS startTime,
+          r.time_ms AS milliseconds,
+          NULL AS sessionStartTime,
+          'N' as cancelled,
+          (SELECT * FROM Global_name) as defaultDatabases
+      FROM
+          (
+            SELECT
+              a.DBID, a.user_id, a.session_id, a.session_serial#,
+              a.sql_id, a.instance_number,
+              MIN(a.sample_time) AS start_time,
+              SUM(a.tm_delta_time) AS time_ms
+            FROM dba_hist_active_sess_history a
+            JOIN dba_hist_snapshot s ON a.dbid = s.dbid
+              AND a.snap_id = s.snap_id
+              AND a.instance_number = s.instance_number
+            GROUP BY
+              a.dbid, a.user_id, a.session_id, a.session_serial#,
+              a.sql_id, s.begin_interval_time, a.instance_number
+              ) r
+          JOIN dba_users b ON r.user_id = b.user_id
+          JOIN dba_hist_sqltext s ON r.dbid = s.dbid
+            AND r.sql_id = s.sql_id
+      WHERE
+        s.command_type NOT IN (6, 7, /* system cmds */ 47, /* declare cmd */ 170, 189)
+          AND b.username NOT IN ('SYSTEM', 'SYS', 'OLAPSYS', 'LBACSYS',
+              'OWBSYS', 'OWBSYS_AUDIT', 'APPQOSSYS', 'SYSMAN', 'WMSYS',
+              'EXFSYS', 'CTXSYS', 'ORDSYS', 'MDSYS');
+
+
+Reusing QLI View for Native Oracle Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you already have an Oracle data source that was cataloged using the native (built-in) connector, you can reuse the QLI view that you created for this data source after you migrate it to OCF Oracle connector. This configuration is done in Alation, on the data source settings page. See `Reuse Native QLI View`_ below.
+
+Alternatively, you can choose the query-based QLI approach to QLI and create a query that retrieves data from the QLI view created for the native connector.
+
+.. code-block:: SQL
+
+      SELECT user_name AS userName,
+          start_time AS startTime,
+          sql_text AS queryString,
+          session_id AS sessionId,
+          session_start_time AS sessionStartTime,
+          time_ms AS milliseconds,
+          'N' AS cancelled,
+          (SELECT * from Global_name) AS defaultDatabases
+      FROM <SCHEMA>.NATIVE_QUERY_LOG_VIEW
+      WHERE sql_text is not NULL
+          AND start_time BETWEEN TO_DATE(STARTTIME,'YY-MM-DD HH24:MI:SS')
+          AND TO_DATE(ENDTIME,'YY-MM-DD HH24:MI:SS')
+      ORDER BY
+          session_id,
+          start_time;
+
+Configuration in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In Alation, you can configure QLI on the **Query Log Ingestion** tab. Before you set up QLI in Alation, perform the configuration on the database as is described in `Using Audit Trail`_ or `Using Active Session History`_. If you go with the query-based QLI option, make sure that the Alation service account has access to the system tables that are queried.
+
+Table-Based QLI
+^^^^^^^^^^^^^^^^^^^^
+
+To configure table-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, in the **Table Name** field, specify the name of the QLI view where the query logs are available. Make sure that the service account has the permissions to access this view. The view name must be provided in the following format: ``database.schema.view_name``.
+
+3. Click **Save**.
+
+Reuse Native QLI View
+''''''''''''''''''''''''''''''
+
+If you migrated your Oracle data source from the native (built-in) connector to the OCF Oracle connector, you can reuse the QLI view created for the native data source when configuring table-based QLI.
+
+    .. note::
+
+        The QLI view is the view specified in the **Query Log Privileges** section on the **General Settings** page of a data source added using the native (built-in) connector. The QLI view for native Oracle data sources can be created following an example in :ref:`QLI view <Appendix_4>`.
+
+        For information about migrating data sources, see :doc:`/sources/OpenConnectorFramework/MigrateNativeSourcestoOCF/MigrateNativeDataSourcestoOCFConnector`.
+
+To reuse the QLI view for the native data source:
+
+1. On the **Query Log Ingestion** tab, under **Connector Settings** > **Query Extraction**, select the checkbox **Use Native QLI Table Name**.
+2. In the **Table Name** field located under this checkbox, specify the name of the native QLI view.
+3. Click **Save**.
+
+Custom Query-Based QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To configure query-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, in the **Custom QLI Query** field, provide the QLI query.
+
+3. Click **Save**.
+
+Perform QLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst
+
+
+Troubleshooting
+----------------------
+
+Log Location
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting`.
+
+Oracle Default Schema objects are not extracted into Alation[HR schema]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SDK **3.2.0** does not pull the default schema. However, OCF has query-based MDE capability which can be used to extract these schemas.
+
+
+Connection via Native Network Encryption (NNE) fails
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Make sure that you have the required permissions.
+
+1. Grant permission on tables **v_$session_connect_info** and **v_$mystat** to the user as these are the corresponding synonyms too.
+
+
+    If you can’t grant permissions directly, run the following commands:
+
+    .. code-block:: Bash
+
+                GRANT SELECT ON v_$mystat TO <user>
+                GRANT SELECT ON v_$session_connect_info TO <user>
+
+2. Run the following commands:
+
+    .. code-block:: Bash
+
+        select network_service_banner from v$session_connect_info where sid in (select distinct sid from v$mystat);
+
+
+3. Verify the output for the queries mentioned above.
+
+    If encryption or checksum is enabled:
+
+        .. code-block:: Bash
+
+            TCP/IP NT Protocol Adapter for Linux: Version 19.0.0.0.0 - Production
+            Encryption service for Linux: Version 19.0.0.0.0 - Production
+            AES256 Encryption service adapter for Linux: Version 19.0.0.0.0 - Production
+            Crypto-checksumming service for Linux: Version 19.0.0.0.0 - Production
+            SHA1 Crypto-checksumming service adapter for Linux: Version 19.0.0.0.0 - Production
+
+
+    If encryption or checksum is disabled:
+
+        .. code-block:: Bash
+
+            TCP/IP NT Protocol Adapter for Linux: Version 19.0.0.0.0 - Production
+            Encryption service for Linux: Version 19.0.0.0.0 - Production
+            Crypto-checksumming service for Linux: Version 19.0.0.0.0 - Production

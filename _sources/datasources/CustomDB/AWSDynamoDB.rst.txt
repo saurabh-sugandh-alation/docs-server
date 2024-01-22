@@ -1,0 +1,223 @@
+Amazon DynamoDB
+===================
+
+**Supported as Custom DB from version 2020.3**
+
+Scope of Support
+-------------------
+
+- Supported as a Custom DB data source type with the **CData DynamoDB Driver 2020**. Contact your AWS account manager to find out if this driver is included into your AWS solution.
+- Basic authentication with the AWS access key and secret key
+- Both local and cloud deployments are supported
+- SSL is supported using the URL parameter in the URI; no SSL certificate is required to be added to Alation.
+- MDE
+
+    - Regular (automatic)
+
+- Sampling and Profiling
+
+    - Regular (automatic)
+
+- Compose
+
+    - Alation supports SSO connection to Amazon DynamoDB for end-users: :doc:`Compose SSO for Amazon Data Sources <../../datasources/ComposeSSOAWSDataSources/index>`
+
+        .. note::
+
+            Compose SSO authentication does not apply to the service account used for MDE, automatic profiling, and QLI.
+
+Limitations
+~~~~~~~~~~~~
+
+- The Amazon DynamoDB URI is not accepted by Alation in the **Add Data Source** wizard, and a workaround has to be used to move through the wizard screens.
+- The **Connection Status** on the Settings > **General Settings** page of the data source displays an error and the *No connection* state, which can be disregarded.
+- Table properties (Table Type, Owner, Partitions, Bucket keys, etc) are not captured in the catalog after MDE.
+- QLI is not supported. Only the query data from Compose is ingested. Lineage and Popularity are based on Compose queries only.
+- "Explain" in Compose is not supported.
+- If new tables are added to Amazon DynamoDB after the data source is added to Alation, these new tables are not immediately accessible for querying from Compose. They become available only after MDE is rerun in the catalog.
+- Role-based authentication is not supported.
+
+AWS Billing
+-------------
+
+Billable by Amazon on your AWS account:
+
+- The queries Alation runs on the connected Amazon DynamoDB instance during MDE and profiling
+- The queries users run in Alation Compose.
+
+Required Information
+-----------------------
+
+- JDBC driver used to connect to the database: **CData DynamoDB Driver 2020**
+- JDBC URI for the Amazon DynamoDB data source. See `URI Format`_.
+- An IAM user with the required set of permissions and the access key and secret key to authenticate on the Amazon DynamoDB.
+- Alation server-side access to place the custom driver on the Alation system.
+
+URI Format
+-------------------
+
+The JDBC URI must be entered without the "JDBC" tag at the beginning. The parameters to be included:
+
+    - Access Key=<your_access_key>
+    - Secret Key=<your_secret_key>
+    - SupportsCatalogsInTableDefinitions=True
+    - SupportsSchemasInTableDefinitions=True
+    - AWSRegion=<your_AWS_region> - may be required for MDE to work with your Amazon DynamoDB instance
+    - AuthScheme=AwsIamRoles - may be required for MDE to work with your Amazon DynamoDB instance
+    - RTK - Use the RTK parameter only if you have the RTK provided by Alation.
+
+Examples
+~~~~~~~~~~~~~~~
+
+**Minimal set of required parameters**:
+
+.. code-block:: Bash
+
+    amazondynamodb:URL=<DynamoDB_URL>;Access Key=<access_key>;Secret Key=<secret_key>;SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;RTK=<RTK_Code>
+
+**Example for a cloud instance**:
+
+.. code-block:: Bash
+
+      amazondynamodb:URL=https://dynamodb.us-east-1.amazonaws.com;Access Key=AKIATTRQEDGQE2OHM7RVFD;Secret Key=StokWo0dn79vPXBg7GxPu1X0SqUwx23f3d0J3HiX;SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;RTK=444752465641535552425641454E545042424D333236323900000000000000000000000000000000414C4154494F4E5800005559475655474E4E464242370000
+
+**Example for a local instance**:
+
+.. code-block:: Bash
+
+    amazondynamodb:URL=http://10.13.47.194:8000;Access Key=AKIATTRQEDGQE2OHM72D;Secret Key=StokWo0dn79vPXBg7GxPu1X0SqUwxKbN5a0J3Hax;SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;RTK=444752465641535552425641454E545042424D333236323900000000000000000000000000000000414C4154494F4E5800005559475655474E4E464242370000
+
+**Additional parameters**:
+
+If MDE does not work with the minimal set of required parameters in the URI, you may need to additionally include the following parameters:
+
+    - AWSRegion=<your_AWS_region>
+    - AuthScheme=AwsIamRoles
+
+.. code-block:: Bash
+
+    amazondynamodb:URL=https://<dynamodb.eu-east-1.amazonaws.com>;Access Key=<access_key>;Secret Key=<secret_key>;SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;AuthScheme=AwsIamRoles;AWSRegion=<your_AWS_region>;RTK=<RTK_Code>
+
+If you have included the ``Tables`` parameter into the URI and the table names include dashes, use the following format to list the tables: ``Tables=[table-1-name],[table-2-name]``.
+
+.. code-block:: Bash
+
+    amazondynamodb:URL=https://<dynamodb.eu-east-1.amazonaws.com>;Access Key=<access_key>;Secret Key=<secret_key>;SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;AuthScheme=AwsIamRoles;AWSRegion=<your_AWS_region>;Tables=[table-1-name],[table-2-name];RTK=<RTK_Code>
+
+
+For the other URI parameters that support specific cases, refer to the CData driver documentation: `Connection <http://cdn.cdata.com/help/DDE/jdbc/Connection.htm>`_.
+
+Authentication
+-----------------
+
+Use an Existing IAM User Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can use an existing Amazon DynamoDB account as the service account for Alation.
+
+- Note that the billing for queries run by Alation during MDE and Profiling and the billing for queries run by this account in Amazon DynamoDB UI and in Compose will be combined;
+- The existing account must be assigned the managed policies required by Alation.
+
+Create New IAM User Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create a new IAM user account that can operate the Amazon DynamoDB.
+
+ .. important::
+
+     Take note of the AWS access and secret keys. If you lose the secret key you will have to create another account.
+
+Permissions for Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The IAM user needs to be able to access the tables and metadata to complete the extraction process.
+
+Permissions for Profiling and Sampling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Amazon DynamoDB operation permissions are required for IAM user.
+
+Add the CData Driver to Alation
+----------------------------------
+
+Refer to :doc:`Add the CData Driver into Alation Instance <../../datasources/CustomDB/CDataDrivers>`.
+
+Steps in Alation
+--------------------
+
+To add an Amazon DynamoDB data source to the catalog:
+
+1. On the **Sources** page, add a new data source to Alation. Provide a title and proceed to the **Add Data Source** wizard.
+2. On the **Add a Data Source** screen of the wizard, specify:
+
+    - **Database Type**: select Custom DB
+    - **JDBC URI**: enter **any valid** JDBC URI
+
+        .. important::
+
+              The JDBC URI for Amazon DynamoDB is not accepted by the Add Data Source wizard even if it is a valid URI. To move through the wizard, please enter any valid JDBC URI, for example: **http://10.13.23.33:8080**
+
+              This allows you to move through the wizard.
+
+              You will add the JDBC URI for Amazon DynamoDB on the **Settings** > **General Settings** page after completing the steps of the wizard.
+
+    - **Select Driver**: select the CData driver for Amazon DynamoDB that you have added to Alation:
+
+    ``cdata.jdbc.amazondynamodb.AmazonDynamoDBDriver.cdata.jdbc.amazondynamodb``
+
+    - **Privacy**: select **Public** or **Private**.
+
+3. Click **Save and Continue**. You will get an error message for the JDBC URI you entered.
+
+    .. image:: ../../_static/DS_DynamoDB01.png
+        :width: 350px
+
+4. Click **Continue with Errors** in order to move to the next screen.
+
+5. On the next screen - **Set Up a Service Account** - select **Yes**, and in the **Username** field, type ``User`` (or any other string). Then click **Save and Continue**. As the access key and the secret key will need to be included into the URI, there is no need to provide this information on this screen.
+
+6. On the next screen - **Configure Data Source** - click **Skip This Step**.
+
+After this step, you are navigated to the **Settings** page of the new data source.
+
+Configure the Amazon DynamoDB Data Source
+----------------------------------------------
+
+Complete the configuration on the Settings page and perform MDE and profiling.
+
+Access
+~~~~~~
+Verify the Privacy settings. Add Data Source Admins.
+
+General Settings
+~~~~~~~~~~~~~~~~~
+
+Under **Network Connection**, edit the **JDBC URI**: click the **Edit** icon next to the URI and in a dialog that opens, provide the correct URI for Amazon DynamoDB. See `URI Format`_.
+
+  .. important::
+
+      After you provide the correct URI, both the **Network Connection** status and the **Service Account** status will still be in red. This is a known limitation. Disregard this error and proceed to metadata extraction.
+
+.. image:: ../../_static/DS_DynamoDB02.png
+    :width: 500px
+
+Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~
+
+Configure and perform metadata extraction.
+
+
+Sampling and Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See :doc:`Sampling and Profiling <../../datasources/CustomDB/ProfilingForCustomDB>`.
+
+
+Troubleshooting
+------------------
+
+Logs to collect/review:
+
+- For logs related to MDE: **taskserver.log**, **taskserver_err.log**
+- For logs related to Compose: **connector.log**, **connector_err.log**
+- For any other errors: **alation-error.log**, **alation-debug.log**

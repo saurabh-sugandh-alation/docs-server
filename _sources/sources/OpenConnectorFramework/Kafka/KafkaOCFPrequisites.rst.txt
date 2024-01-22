@@ -1,0 +1,94 @@
+Prerequisites
+====================
+
+Before you install the Kafka OCF connector, ensure that you have performed the following:
+
+    - `Enable Network Connectivity`_
+    - `Create a Service Account`_
+    - `Authentication Schemes`_
+
+Enable Network Connectivity
+---------------------------------
+
+Open the outbound TCP port 443 to the Confluent Kafka server.
+
+Create a Service Account
+------------------------------
+
+Create a service account for Kafka. Refer to `Service Accounts for Confluent Cloud <https://docs.confluent.io/cloud/current/access-management/service-account.html>`_.
+
+Permissions
+~~~~~~~~~~~~~~~~
+
+Make sure that the service account has the following permissions:
+
+    - Cluster resource permissions:
+
+        - Create
+        - Describe
+        - IdempotentWrite: For producers in Idempotent mode
+        - InitProducerId(idempotent): To initialize the producer(Optional)
+
+    - Topics resource permissions:
+
+        - Alter
+        - Create
+        - Describe
+        - Read
+        - Write
+
+Authentication Schemes
+---------------------------
+
+This section describes the prerequisites for the authentication schemes the Kafka OCF connector supports.
+
+
+Azure Service Principal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use Azure Service Principal authentication, you must set up the ability to assign a role to the authentication application and then register an application with the Azure AD tenant to create a new Service Principal. That new Service Principal can then leverage the assigned role-based access control to access resources in your subscription.
+
+In portal.azure.com:
+
+  1. Create a custom OAuth AD application; see `Register a Custom OAuth Application`_.
+  2. Open the **Subscriptions** page.
+  3. Select the subscription to assign the application.
+  4. Open **Access control (IAM)**.
+  5. Select **Add > Add role assignment**.
+  6. In the **Add role assignment** page, assign the **Owner** role to your custom Azure AD application.
+
+Register a Custom OAuth Application
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  1.Log in to ``https://portal.azure.com``.
+
+  2. Go to **Azure Active Directory > applicationRegistrations** in the left navigation pane.
+
+  3. Click **New Registration**.
+
+  4. Provide a name for the application.
+
+  5. Select the desired tenant setup:
+
+        - Single-tenant or multi-tenant
+        - Public or private use
+        - If you select the default option, "Accounts in this organizational directory only", you must set the AzureTenant connection property to the ID of the Azure AD Tenant when establishing a connection with the Alation OCF Connector for Apache Kafka. Otherwise, the authentication attempt fails with an error.
+        - If your application is private, specify **Accounts in this organization directory only**.
+        - If you want to distribute your application, choose one of the multi-tenant options.
+
+  6. Set the redirect URL to ``http://localhost:33333`` (default) or specify a different port and set CallbackURL to the exact reply URL you defined.
+
+  7. Click **Register** to register the new application. An application management screen displays.
+
+     Copy the value in the Application (client) ID as the OAuthClientId and the Directory (tenant) ID as the AzureTenant to your local machine.
+
+  8. Navigate to Certificates & Secrets and define the application authentication type:
+
+        - For certificate authentication: Select **Upload certificate**, then upload the certificate from your local machine.
+        - For creating a new client secret: Select **New Client Secret** for the application and specify its duration. After saving the client secret, Kafka displays the **OAuthClientSecret** as a key value. Copy the OAuthClientSecret to your local machine, which is displayed only once.
+
+  9. Select **API Permissions > Add > Delegated permissions**.
+
+  10. Save your changes.
+
+  11. If you have specified the use of permissions that require admin consent (such as the Application Permissions), you can grant them from the current tenant on the API Permissions page.

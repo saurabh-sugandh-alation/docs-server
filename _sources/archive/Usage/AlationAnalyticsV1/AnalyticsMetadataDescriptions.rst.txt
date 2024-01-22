@@ -1,0 +1,860 @@
+Analytics Metadata Descriptions
+=====================================================================
+
+.. note::
+
+    This section is for **Alation Analytics Version 1 (V1)**. Please see :doc:`Alation Analytics V2 </installconfig/AlationAnalyticsV2/index>` for information about Version 2 (available from release *2020.3*).
+
+Alation Analytics data model features one multi-fact star schema that
+includes 22 tables.
+
+Alation Analytics Schematic
+
+.. image:: ../../../_static/AA_Schema.png
+
+alation_visits
+--------------
+
+FACT table that registers User visits to Alation. The grain of this
+table is a Visit: the event of a User opening the designated catalog
+page of a specific Alation Object.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+=============== =================== === =====================
+id              int                 PK  Unique identifier
+                                        of a particular
+                                        Visit.
+
+user_id         int                 FK  Unique identifier
+                                        of a specific User
+                                        who visited the
+                                        Object catalog
+                                        page.
+
+object_uuid     uuid                FK  UUID of the Object
+                                        that is visited.
+
+object_type_id  int                 FK  Unique identifier
+                                        of the Object
+                                        Type.
+
+time_period_id  bigint              FK  Unique identifier
+                                        of the Time Period
+                                        for a given Visit.
+                                        Time Period can be
+                                        used for grouping
+                                        data by a specific
+                                        period (day,
+                                        week, month,
+                                        quarter, year).
+
+timestamp       timestamp with          Timestamp when the
+                time zone               object is visited.
+=============== =================== === =====================
+
+alation_user
+------------
+
+DIMENSION table that stores attributes of a User.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+================ ================ ================ =============================
+user_id          int              PK               Unique
+                                                   identifier of a
+                                                   specific User.
+
+user_name        varchar                           Username to log
+                                                   in to Alation.
+
+email            varchar                           Email address
+                                                   associated with
+                                                   the User.
+
+is_active        boolean                           Boolean
+                                                   indicating
+                                                   whether the
+                                                   User’s account
+                                                   is currently
+                                                   active in
+                                                   Alation (vs.
+                                                   suspended)
+
+date_joined      timestamp with                    Date when the
+                 time zone                         account of the
+                                                   User was
+                                                   created.
+
+last_login       timestamp with                    Timestamp when
+                 time zone                         the user last
+                                                   logged into
+                                                   Alation (does
+                                                   not imply that
+                                                   this user used
+                                                   Alation after
+                                                   login).
+
+display_name     text                              Display name of
+                                                   the user as it
+                                                   appears in
+                                                   Alation UI.
+
+user_type        int                               Code of the
+                                                   User’s role in
+                                                   Alation. Can
+                                                   assume values: |br|
+                                                   0 - RESERVED |br|
+                                                   1 - BUSINESS |br|
+                                                   2 - IT |br|
+                                                   3 - OFFICER |br|
+                                                   4 - ANALYST |br|
+                                                   5 - STEWARD
+
+is_admin         boolean                           Boolean value
+                                                   indicating
+                                                   whether the
+                                                   user is an
+                                                   Admin.
+================ ================ ================ =============================
+
+alation_object
+--------------
+
+DIMENSION table that stores attributes of Alation Objects.
+
+
+.. important::
+
+     ``object_uuid`` is not unique across all Objects. It is unique in
+     its Object Type, but Objects of different types may have the same
+     ``object_uuid`` s.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+=============== ======== === =============================
+id              int      PK  Unique identifier of a
+                             specific Object.
+
+object_uuid     uuid         UUID of the Object.
+
+object_type_id  int      FK  Unique identifier of
+                             the Object Type for the
+                             Object.
+
+object_url      varchar      URL of the Object:
+                             Relative URI for the
+                             Object that can be used
+                             from Alation UI to
+                             visit this Object.
+=============== ======== === =============================
+
+alation_object_type
+-------------------
+
+DIMENSION table storing the attributes of the Object Type. Join this
+table if you want to use the name of the Object Type instead of the ID.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+================ ======= == =====================================
+object_type_id   int     PK Unique identifier of the Object Type.
+object_type_name varchar    Name of the Object Type.
+================ ======= == =====================================
+
+time_period
+-----------
+
+DIMENSION table that stores details of a Time Period. Time Period
+is stored for several events that can be qualified by a timestamp.
+For example, the events of Visit or Query Execution. Time Period
+is the date of the event fragmented into time components, such as
+day, week, or year. This table exists to facilitate grouping by
+time in reports.
+
+.. |br| raw:: html
+
+   <br />
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+================ ================ ================ ================================
+id               int              PK               Unique
+                                                   identifier of
+                                                   the Time
+                                                   Period.
+
+date             date                              Date of the
+                                                   event.
+
+week             int                               Week of the
+                                                   event. Can take
+                                                   values 1 to 52,
+                                                   representing
+                                                   each week in
+                                                   the year.
+
+month            int                               Month of the
+                                                   event. Can take
+                                                   values 1 to 12,
+                                                   representing
+                                                   Jan to Dec.
+
+quarter          int                               Quarter in
+                                                   which the event
+                                                   took place. Can
+                                                   take values
+                                                   from 1 to 4,
+                                                   where:  |br|
+                                                   1 -  represents Jan - Mar  |br|
+                                                   2 -  represents Apr - June  |br|
+                                                   3 - represents July - Sept  |br|
+                                                   4 -  represents Oct - Dec.
+
+year             int                               Year in which
+                                                   the event took
+                                                   place.
+
+day_of_week      int                               Day of the week
+                                                   on which the
+                                                   event took
+                                                   place. Can
+                                                   assume values 1
+                                                   to 7,
+                                                   representing
+                                                   Monday (1)  to
+                                                   Sunday(7).
+================ ================ ================ ================================
+
+user_group_membership
+---------------------
+
+FACT table that registers the fact of a User belonging to a Group. Each
+User-Group relationship existing in Alation is given an ID in this
+table. This table links User and Group dimensions. One User
+can belong to multiple Groups.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+======== === == ========================================================
+id       int PK Unique identifier of a specific User-Group relationship.
+user_id  int FK Unique identifier of the User.
+group_id int FK Unique identifier of the Group.
+======== === == ========================================================
+
+alation_group
+-------------
+
+DIMENSION table that stores attributes of the Group.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+============ ======= == ========================================
+group_id     int     PK Unique identifier of a specific Group.
+group_name   varchar    Name of the Group.
+email        varchar    Email address associated with the Group.
+display_name text       Display name of the Group in Alation UI.
+============ ======= == ========================================
+
+alation_object_popularity
+-------------------------
+
+FACT table that registers Object Popularity at the current time.  Each
+Object - Popularity association is given an ID in this table to link the
+Popularity value and the specific Object.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+=============== ====== === =============================
+id              int    PK  Unique identifier of
+                           popularity for a
+                           specific Object.
+
+object_uuid     uuid   FK  Unique identifier of the
+                           object.
+
+object_type_id  int    FK  Unique identifier of the
+                           Object Type.
+
+popularity      float      Actual current
+                           popularity value for the
+                           Object.
+=============== ====== === =============================
+
+compose_query_log
+-----------------
+
+FACT table tracking the events of Query Execution in Compose (event
+of a User running a Query).
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+====================== ================ === =================================
+query_execution_id     int              PK  Unique identifier
+                                            of the event of
+                                            Query Execution.
+
+user_id                int              FK  Unique identifier
+                                            of the User who
+                                            executed this
+                                            query. Can be
+                                            joined with
+                                            alation_user on
+                                            alation_user.user_id
+                                            field.
+
+db_username            text                 Username used for
+                                            connection to the
+                                            database for the
+                                            given Query
+                                            Execution. Null,
+                                            if unavailable.
+
+datasouce_uuid         uuid                 Unique identifier
+                                            of the Data
+                                            Source. Can be
+                                            joined with
+                                            alation_object.object_uuid
+                                            using object_type_id
+                                            for Data Source.
+
+mentioned_tables_uuids uuid[]               Array of UUID
+                                            fields to identify
+                                            the Tables used in
+                                            the current query.
+                                            Can be joined with
+                                            alation_object.object_uuid
+                                            using object_type_id
+                                            for Table.
+
+executed_period_id     int                  Unique identifier
+                                            of the time period
+                                            of the Query
+                                            Execution.
+
+executed_at_ts         timestamp with       Timestamp value at
+                       time zone            which the query
+                                            started to
+                                            execute.
+
+execution_duration     double-precision     Time taken, in
+                                            seconds, for the
+                                            query to finish
+                                            execution.
+
+is_query_published     boolean              Boolean indicator
+                                            of whether this
+                                            query text is
+                                            published.
+
+is_scheduled_execution boolean              Boolean indicator
+                                            of whether this
+                                            Query Execution is
+                                            as the result of
+                                            automatic
+                                            scheduling.
+
+query_statement_fp     bigint           FK  Unique identifier
+                                            for query_statement
+                                            table. Can be
+                                            joined with it for
+                                            getting the  SQL
+                                            statement of the
+                                            Query.
+
+client_ip_address      text                 IP Address from
+                                            which the
+                                            execution
+                                            originated.
+====================== ================ === =================================
+
+query_statement
+---------------
+
+DIMENSION table storing Query Statements. Can be used to pull out the
+SQL body of the Query.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+============== ====== == ===============================================
+statement_fp   bigint PK Unique identifier for the Query Statement text.
+statement_text text      Plain text SQL statements.
+============== ====== == ===============================================
+
+object_field_value
+------------------
+
+FACT table that tracks setting Values to Object Fields and links a
+specific Object Field with a specific Value. Each Object Field - Value
+association is given an id in this table. This id can be used for
+finding specific values for specific Fields on specific Objects. Object
+Field is an element of the metadata of an Object that holds a property
+qualifying this Object.
+
+This is one of the most important tables in Alation Analytics if you
+want to evaluate metadata.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+================ ================ ================ =============================
+id               int              PK               Unique
+                                                   identifier of
+                                                   the Object
+                                                   Field - Value
+                                                   association.
+
+object_uuid      uuid             FK               UUID of the
+                                                   Object
+                                                   corresponding
+                                                   to the current
+                                                   row.
+
+object_type_id   int              FK               Unique
+                                                   identifier of
+                                                   the Object
+                                                   Type.
+
+field_id         int              FK               Unique
+                                                   identifier of
+                                                   the Object
+                                                   Field.
+
+value_fp         int              FK               Unique
+                                                   identifier of
+                                                   field_value
+                                                   dimension
+                                                   table. Can be
+                                                   used to get the
+                                                   actual value of
+                                                   the field.
+
+value_source     bigint                            How the current
+                                                   value is
+                                                   applied to the
+                                                   field on the
+                                                   specific
+                                                   object:  |br|
+                                                   1 - External
+                                                   Source  |br|
+                                                   2 - Set
+                                                   explicitly on
+                                                   the object in
+                                                   Alation  |br|
+                                                   3 - Applied
+                                                   based on the
+                                                   rules from a
+                                                   Catalog Set.
+
+user_id          int              FK               Unique
+                                                   identifier of
+                                                   the User who
+                                                   set this value.
+                                                   Null, if not
+                                                   applicable.
+
+timestamp        timestamp with                    Timestamp when
+                 time zone                         the value was
+                                                   set to the
+                                                   given field
+
+time_period_id   int              FK               Unique
+                                                   identifier of
+                                                   the time_period
+                                                   for the event.
+================ ================ ================ =============================
+
+field_value
+-----------
+
+DIMENSION table that stores specific Field Values. Field Value is a
+specific Value set to a Field.
+
+Sometimes a field is a pointer to another object, in which case you
+need public.field_value.object_type_uuid_value and public.field_value.object_type_id_value to
+find it.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+====================== ================ === ==============================
+value_fp               int              PK  Unique identifier
+                                            of the Field
+                                            Value.
+
+bigint_array_value     bigint[]             Value of the field
+                                            as bigint array,
+                                            if applicable.
+                                            Otherwise, null
+
+bigint_value           bigint               Value of the field
+                                            as a bigint, if
+                                            applicable.
+                                            Otherwise, null
+
+boolean_value          boolean              Value of the field
+                                            as a boolean, if
+                                            applicable.
+                                            Otherwise, null
+
+datetime_value         timestamp with       Value of the field
+                       time zone            as datetime entry,
+                                            if applicable.
+                                            Otherwise, null
+
+float_value            double-precision     Value of the field
+                                            as decimal
+                                            floating value, if
+                                            applicable.
+                                            Otherwise, null
+
+hstore_value           hstore               Value of the field
+                                            as hstore entry,
+                                            if applicable.
+                                            Otherwise, null
+
+interger_array_value   int[]                Value of the field
+                                            as integer array,
+                                            if applicable.
+                                            Otherwise, null
+
+interger_value         int                  Value of the field
+                                            as integer value,
+                                            if applicable.
+                                            Otherwise, null
+
+text_array_value       text[]               Value of the field
+                                            as text array, if
+                                            applicable.
+                                            Otherwise, null
+
+text_value             text                 Value of the field
+                                            as text value, if
+                                            applicable.
+                                            Otherwise, null
+
+uuid_value             uuid                 Value of the field
+                                            as a UUID value,
+                                            if applicable.
+                                            Otherwise, null
+
+object_type_id_value   int                  Value of the field
+                                            if its data type is
+                                            Alation Object.
+                                            Unique identifier
+                                            of the Object
+                                            Type, can be used
+                                            to join with
+                                            alation_object_type
+                                            table.
+
+object_type_uuid_value uuid                 Value of the field
+                                            if its data type is
+                                            Alation Object.
+                                            Unique identifier
+                                            of the Object. Can
+                                            be used along with
+                                            object_type_id_value
+                                            to join on the
+                                            alation_object
+                                            table.
+====================== ================ === ==============================
+
+object_field
+------------
+
+DIMENSION table that stores attributes that describe each Object Field.
+
+This table is useful in queries if you want to use the field names
+instead of field IDs.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+================= ============= === =========================
+field_id          int           PK  Unique identifier of
+                                    the Object Field.
+
+field_name        text              Title of the field or
+                                    property of the
+                                    object.
+
+field_datatype    varchar(255)      Data type of the
+                                    field.
+
+added_in_alation  boolean           Boolean indicating
+                                    whether this property
+                                    is created in
+                                    Alation.
+================= ============= === =========================
+
+object_type_field
+-----------------
+
+FACT table that links Object Type and Field. For the Field Values, join
+to the table public.object_field_value.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+=============== ==== === ===========================
+id              int  PK  Unique identifier of each
+                         valid Object Type - Field
+                         combination when a Field,
+                         represented as a record
+                         in object_field table is
+                         supported for the objects
+                         of a given Object Type.
+
+object_type_id  int  FK  Unique identifier of the
+                         Object Type. Can be used
+                         to join with
+                         alation_object_type
+                         table.
+
+field_id        int  FK  Unique identifier of the
+                         field. Can be used to
+                         join with object_field
+                         table.
+=============== ==== === ===========================
+
+catalog_set_membership
+----------------------
+
+FACT table that tracks the fact of an Object belonging to a Catalog Set.
+Each Object - Catalog Set relationship is given an identifier.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+=============== ===== === ==========================
+id              int   PK  Unique identifier of the
+                          Catalog Set Membership.
+
+object_uuid     uuid  FK  UUID of the Object that
+                          is a member of the
+                          Catalog Set.
+
+object_type_id  int   FK  Unique identifier of the
+                          Object Type of the Object
+                          which is a member of the
+                          Catalog Set.
+
+catalog_set_id  int       Unique identifier of the
+                          Catalog Set.
+=============== ===== === ==========================
+
+object_parent_relationship
+--------------------------
+
+FACT table that registers Alation Objects that have Parent
+Objects. Parent Object is an Object nesting other Objects as
+children. For example, a Schema has Tables as children, and a Table
+has Columns.
+
+If you search for a Column, this table will tell you not only the Table,
+but also the Schema and the Data Source.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+====================== ===== === ==========================
+id                     int   PK  Unique identifier of the
+                                 Object - Parent
+                                 relationship.
+
+object_uuid            int   FK  UUID of the Object.
+
+object_type_id         int   FK  Unique identifier of the
+                                 Object Type.
+
+parent_object_uuid     uuid      UUID of the parent Object
+
+parent_object_type_id  int       Unique identifier of the
+                                 Object Type of the parent
+                                 Object.
+====================== ===== === ==========================
+
+metadata_change
+---------------
+
+FACT table that tracks the events of Metadata Change.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+================ ================ === ===================================
+id               int              PK               Unique
+                                                   identifier of
+                                                   the Metadata
+                                                   Change event.
+
+object_uuid      uuid             FK               UUID of the
+                                                   Object that
+                                                    affected by
+                                                   the Metadata
+                                                   Change.
+
+object_type_id   int              FK               Unique
+                                                   identifier of
+                                                   the Object
+                                                   Type.
+
+action_performed int                               Type of
+                                                   Metadata Change
+                                                   event that took
+                                                   place:  |br|
+                                                   0 - UNKNOWN  |br|
+                                                   1 - ADDED  |br|
+                                                   2 - DELETED  |br|
+                                                   3 - RESTORED  |br|
+                                                   4 - MODIFIED  |br|
+                                                   5 - REFRESHED  |br|
+                                                   6 - NO_CHANGE
+
+field_old_value  text                              Old value of
+                                                   the field.
+
+field_new_value  text                              New value of
+                                                   the field.
+
+time_period_id   int              FK               Unique
+                                                   identifier of
+                                                   the
+                                                   time_period.
+
+timestamp        Timestamp with                    Timestamp when
+                 time zone                         the Metadata
+                                                   Change event
+                                                   took place.
+================ ================ === ===================================
+
+
+alation_object_lineage
+----------------------
+
+FACT table that registers Object Lineage of Objects.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+=============== ==== == ====================================
+id              int  PK Unique identifier of the Lineage.
+source_uuid     uuid FK UUID of the source Object.
+source_otype_id int  FK Object Type id of the source Object.
+target_uuid     uuid    UUID of the target Object.
+target_otype_id int     Object type id of the target Object.
+=============== ==== == ====================================
+
+object_tags
+-----------
+
+FACT table that registers the fact of a Tag added to an Object. Each
+Object - Tag relationship is given an ID in this table.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+=============== =================== === ========================
+id              int                 PK  Unique identifier
+                                        of Object - Tag
+                                        relationship.
+
+object_uuid     uuid                FK  Unique identifier
+                                        of the tagged
+                                        Object, can be
+                                        used to join with
+                                        alation_object
+                                        table.
+
+object_type_id  int                 FK  Unique identifier
+                                        of the
+                                        Object_Type. Can
+                                        be used to join on
+                                        the
+                                        alation_object_type
+                                        table.
+
+tag_uuid        uuid                    Unique identifier
+                                        of the Tag. Can be
+                                        used to join on
+                                        the alation_object
+                                        table and
+                                        alation_object_type
+                                        table.
+
+tagger_id       int                     Unique identifier
+                                        of the User who
+                                        added this Tag to
+                                        the Object.
+
+time_period_id  int                 FK  Unique identifier
+                                        of the time period
+                                        of tagging the
+                                        Object.
+
+ts_tagged       timestamp with          Timestamp when the
+                time zone               Object was tagged.
+=============== =================== === ========================
+
+object_flags
+------------
+
+FACT table that registers the fact of a Flag being applied to an Object.
+
+.. tabularcolumns:: |p{5cm}|p{3cm}|p{2cm}|p{5cm}|
+
+=============== =================== === ===========================
+id              int                 PK  Unique identifier
+                                        of the Flag
+                                        applied to the
+                                        given Object.
+
+object_uuid     uuid                FK  Unique identifier
+                                        of the Object; can
+                                        be used to join
+                                        with
+                                        alation_object
+                                        table.
+
+object_type_id  int                 FK  Unique identifier
+                                        of the
+                                        Object_Type. Can
+                                        be used to join on
+                                        the
+                                        alation_object_type
+                                        table.
+
+value           text                    Any additional
+                                        information
+                                        provided by the
+                                        User when applying
+                                        the Flag.
+
+flag_type       int                     Enum integer
+                                        representing the
+                                        type of the
+                                        Flag: ENDORSEMENT
+                                        = 1, WARNING = 2,
+                                        DEPRECATION = 3
+
+user_id         int                     Unique identifier
+                                        of the User who
+                                        added this Flag to
+                                        the object.
+
+time_period_id  int                     Unique identifier
+                                        of the time
+                                        period.
+
+ts_created      timestamp with          Timestamp when the
+                time zone               Flag is applied to
+                                        the object.
+
+is_propagated   boolean                 Boolean indicating
+                                        if Flag is
+                                        propagated to the
+                                        children of the
+                                        Object.
+=============== =================== === ===========================
+
+django_migrations
+-----------------
+
+Internal table used by the system to maintain the database schema.
+
+etl_checkpoint
+--------------
+
+Internal table used for tracking the ETL job progress.

@@ -1,0 +1,119 @@
+All Tableau Workbook Attributes
+===============================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query retrieves selected attributes for Tableau workbooks.
+
+
+Get the following attributes for tableau workbooks:
+
+- object_url
+- owner
+- created timestamp
+- last modified timestamp
+- number of sheets
+- number of views
+- dashboard name
+- last visited timestamp
+
+.. code-block:: sql
+
+    SELECT
+      DISTINCT AO.object_uuid,
+      AO.object_url,
+      AOT.object_type_name,
+      FV_owner.text_value AS "owner",
+      FV_created_at.datetime_value AS "created_ts",
+      FV_updated_at.datetime_value AS "updated_ts",
+      FV_num_sheets.integer_value AS "number_of_sheets",
+      FV_num_views.integer_value AS "number_of_views",
+      FV_name.text_value AS "object_name",
+      MAX(AV.timestamp) AS "last_visit"
+    FROM
+      public.alation_object AS AO -- Get deletion information
+      -- First grab the object UUID (uuid + type_id) and get the value_fp
+      (value pointer)
+      JOIN public.object_field_value AS OFVD ON AO.object_uuid = OFVD.object_uuid
+      AND AO.object_type_id = OFVD.object_type_id -- Get field value
+      JOIN public.field_value AS FVD ON OFVD.value_fp = FVD.value_fp
+      -- Match on field id to get deletion flag
+      JOIN public.object_field AS OBF ON OFVD.field_id = OBF.field_id
+      JOIN public.alation_visits AS AV ON AO.object_uuid = AV.object_uuid
+      AND AO.object_type_id = AV.object_type_id
+      JOIN public.alation_object_type AS AOT ON AV.object_type_id = AOT.object_type_id
+      -- Get owner
+      JOIN public.object_field_value AS OFV_owner ON AO.object_uuid = OFV_owner.object_uuid
+      AND AO.object_type_id = OFV_owner.object_type_id -- Get field value
+      JOIN public.field_value AS FV_owner ON OFV_owner.value_fp = FV_owner.value_fp
+      -- Match on field id
+      JOIN public.object_field AS OBF_owner ON OFV_owner.field_id = OBF_owner.field_id
+      -- Get created timestamp
+      JOIN public.object_field_value AS OFV_created_at ON AO.object_uuid = OFV_created_at.object_uuid
+      AND AO.object_type_id = OFV_created_at.object_type_id -- Get field value
+      JOIN public.field_value AS FV_created_at ON OFV_created_at.value_fp = FV_created_at.value_fp
+      -- Match on field id
+      JOIN public.object_field AS OBF_created_at ON OFV_created_at.field_id = OBF_created_at.field_id
+      -- Get updated_at, last updated ts
+      JOIN public.object_field_value AS OFV_updated_at ON AO.object_uuid = OFV_updated_at.object_uuid
+      AND AO.object_type_id = OFV_updated_at.object_type_id -- Get field value
+      JOIN public.field_value AS FV_updated_at ON OFV_updated_at.value_fp = FV_updated_at.value_fp
+      -- Match on field id
+      JOIN public.object_field AS OBF_updated_at ON OFV_updated_at.field_id = OBF_updated_at.field_id
+      -- Get tableau object name
+      JOIN public.object_field_value AS OFV_name ON AO.object_uuid = OFV_name.object_uuid
+      AND AO.object_type_id = OFV_name.object_type_id -- Get field value
+      JOIN public.field_value AS FV_name ON OFV_name.value_fp = FV_name.value_fp
+      -- Match on field id
+      JOIN public.object_field AS OBF_name ON OFV_name.field_id = OBF_name.field_id
+      -- Get num_sheets in the workbooks
+      JOIN public.object_field_value AS OFV_num_sheets ON AO.object_uuid = OFV_num_sheets.object_uuid
+      AND AO.object_type_id = OFV_num_sheets.object_type_id -- Get field value
+      JOIN public.field_value AS FV_num_sheets ON OFV_num_sheets.value_fp = FV_num_sheets.value_fp
+      -- Match on field id
+      JOIN public.object_field AS OBF_num_sheets ON OFV_num_sheets.field_id = OBF_num_sheets.field_id
+      -- Get num_views
+      JOIN public.object_field_value AS OFV_num_views ON AO.object_uuid = OFV_num_views.object_uuid
+      AND AO.object_type_id = OFV_num_views.object_type_id -- Get field value
+      JOIN public.field_value AS FV_num_views ON OFV_num_views.value_fp = FV_num_views.value_fp
+      -- Match on field id
+      JOIN public.object_field AS OBF_num_views ON OFV_num_views.field_id = OBF_num_views.field_id
+    WHERE
+      -- get only workbooks
+      AOT.object_type_id = 31
+      AND
+      -- ensure only field_name = 'deleted' field values are
+      extracted OBF.field_name = 'deleted'
+      AND
+      -- Get only objects which are not deleted
+      FVD.boolean_value IS False
+      AND
+      -- get only field_id = '3234', owner
+      OBF_owner.field_id = 3234
+      AND
+      -- get only field_id = '3239', created_at timestamp
+      OBF_created_at.field_id = 3039
+      AND
+      -- get only field_id = 3361, updated_at
+      OBF_updated_at.field_id = 3361
+      AND
+      -- get only field_id = 3193, name
+      OBF_name.field_id = 3193
+      AND
+      -- get only field_id = 3216, num_sheets
+      OBF_num_sheets.field_id = 3216
+      AND
+      -- get only field_id = 3219, num_views
+      OBF_num_views.field_id = 3219
+    GROUP BY
+      AO.object_uuid,
+      AO.object_url,
+      AOT.object_type_name,
+      FV_owner.text_value,
+      FV_created_at.datetime_value,
+      FV_updated_at.datetime_value,
+      FV_num_sheets.integer_value,
+      FV_num_views.integer_value,
+      FV_name.text_value;

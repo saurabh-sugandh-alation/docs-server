@@ -1,0 +1,110 @@
+SAP Hana
+============
+
+.. important::
+
+      Starting **August 30, 2023**, we will remove the ability to create new data sources using the SAP Hana Native Connector. Support for the SAP Hana Native Connector will cease on **December 1, 2023**, as set out in Alation’s `Support Policy <https://www.alation.com/tscs/support/>`_. See the `Transition from Native to OCF Connectors <https://community.alation.com/communityhubmicrosite/blogs/diby-malakar/2023/07/12/transition-from-native-to-ocf-connectors>`_ announcement in Alation Community (requires login to Community).
+
+Required Information
+------------------------
+
+To configure SAP Hana in Alation, you will need the following information:
+
+-  Hostname or IP address of your server
+-  Port number
+-  Service account with privileges listed below
+-  Query Log Ingestion setup: Expensive Statements Trace
+
+.. image:: ../../_static/DS_SAPHANA01.png
+    :width: 3.5in
+    :align: center
+
+Preliminaries
+--------------------
+
+Firewall Configuration:
+
+-  Open outbound TCP port **30015**
+
+Create Service Account
+--------------------------
+
+This account is used for extraction from SYS tables (``alation`` and ``password`` are for reference):
+
+.. code-block:: sql
+
+    CREATE USER alation PASSWORD password;
+
+Metadata Extraction
+-----------------------
+
+.. code-block:: sql
+
+    GRANT CATALOG READ TO alation;   --- read system views
+
+The following views will be queried by the Alation service account during the Metadata Extraction process:
+
+-  VIEWS
+-  TABLES
+-  M_TABLES
+-  SYNONYMS
+-  INDEX_COLUMNS
+-  TABLE_COLUMNS
+-  INDEXES
+-  INDEX_COLUMNS
+-  FUNCTIONS
+-  FUNCTION_PARAMETERS
+-  AFL_FUNCTIONS
+-  AFL_FUNCTION_PARAMETERS
+-  PROCEDURES
+-  PROCEDURE_PARAMETERS
+-  REFERENTIAL_CONSTRAINTS
+
+Calculation View
+~~~~~~~~~~~~~~~~
+
+A SAP HANA view is used to select data, analyze data, or perform
+calculations with data from the SAP HANA database. The types of view are
+Attribute view, Analytic view, and Calculation View. The calculation
+view is a powerful and flexible information view, which is used to
+define advanced logic or complex calculations on the tables or
+information views available in SAP HANA. Calculation views can be
+created in two ways: Graphical or SQL Script.
+To enable Alation to extract metadata (Lineage, view definition SQL)
+from Calculation View, manually run metadata extraction on ``_SYS_BIC`` schema.
+**Alation can only extract metadata of "graphical" calculation
+view**.
+
+.. note::
+
+   The data source administrator will need to always provide an include
+   list and must include ``_SYS_BIC`` to extract Calculated Views. The **Include**
+   list will look something like: schema1, schema2, _SYS_BIC
+
+Table Profiling
+-----------------
+
+Run for all schemas:
+
+.. code-block:: sql
+
+    GRANT SELECT ON SCHEMA  [schema] TO alation;
+
+Or run for all tables in all schemas:
+
+.. code-block:: sql
+
+    GRANT SELECT ON [schema].[table] TO alation;
+
+Query History
+------------------
+
+Query History logs are read from the **Expensive Statements Trace**. The
+Expensive Statements Trace is off by default; for information on
+activation and configuration options, refer to the corresponding `SAP HANA help center article <https://help.sap.com/doc/6b94445c94ae495c83a19646e7c3fd56/2.0.00/en-US/5faf04f17830464eacdb7938b383d2ab.html>`_.
+
+To enable Alation to read logs:
+
+.. code-block:: sql
+
+    GRANT SELECT ON "SYS"."M_EXPENSIVE_STATEMENTS" TO alation;

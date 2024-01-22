@@ -1,0 +1,380 @@
+Configure Connection to Data Source
+=====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+After you install the Snowflake OCF connector, you must configure the connection to the Snowflake data source. 
+
+The various steps involved in configuring the Snowflake data source connection setting are:
+
+    1. `Provide Access`_
+
+    2. `Connect to Data Source`_
+
+    3. Configure Add-On OCF Connector
+
+    
+     .. image:: ../../../_static/Snowflake_OCF_New_Config_Conn_to_Data_Source_Workflow.png
+        :width: 600px  
+
+    
+Provide Access
+----------------
+
+Go to the **Access** tab on the Settings page of your Snowflakes data source, set the data source visibility using these options:
+
+    - **Public Data Source** — The data source is visible to all users of the catalog.
+
+    - **Private Data Source** — The data source is visible to the users allowed access to the data source by Data Source Admins.
+
+You can add new Data Source Admin users in the **Data Source Admins** section.
+
+Connect to Data Source
+-------------------------
+
+To connect to the data source, you must perform these steps:
+
+    1. `Provide the JDBC URI`_
+
+    2. `Configure Authentication`_
+
+    3. `Test the Connection`_
+
+    4. `Configure Additional Connection Settings`_
+
+    5. `Configure Logging`_
+
+.. important::
+
+    The Alation user interface displays standard configuration settings for credentials and connection information stored in the Alation database. If your organization has configured Azure KeyVault or AWS Secrets Manager to hold such information, the user interface will change to include the following buttons adjacent to the respective fields:
+
+     .. image:: ../../../_static/SnowflakeOCF_New_Vault_Button.png
+        :width: 150px       
+    
+    By default, you see the user interface for **Standard**. In the case of Vault, instead of the actual credential information, you must select the source and provide the corresponding key. For details, see :doc:`Configure Secrets for OCF Connector Settings </sources/OpenConnectorFramework/ConfigureSecretsforOCFConnectors/index>`.
+
+Provide the JDBC URI
+---------------------
+
+To provide to the JDBC URI in the Alation UI, perform these steps:
+
+    1. On the Settings page of your Snowflake data source, go to the **General Settings** tab.
+
+    2. In the **Provide the JDBC URI** section, enter the JDBC URI. 
+       
+       Follow the correct `JDBC URI`_ format (*snowflake://<host_name>:<port_number>/?warehouse=<warehouse_name>&db=<db_name>*).
+
+    3. Click **Save**.
+
+JDBC URI
+~~~~~~~~~~
+
+URI Format
+^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    snowflake://<hostname>:<port>/?warehouse=<warehouse_name>&db=<db_name>&role=<role_name>
+
+**Example**
+
+
+.. code-block:: Bash
+
+    snowflake://my_account.us-east-1.snowflakecomputing.com:443/?warehouse=TEST&db=TEST_DB&role=alation-role
+
+
+URI Paramaters
+^^^^^^^^^^^^^^^^
+
+When building the URI, include the following components:
+
+    - `Hostname`
+
+    - `Port`
+
+    - `Role`
+
+    - `Warehouse Name`
+
+    - `Database Name`
+
+Hostname
+''''''''''
+
+Mandatory.
+
+    - For instances on AWS: 
+    
+        ``<account_name>.<region_id>.snowflakecomputing.com``
+
+      **Example:**
+
+      ``my_account.us-east-1.snowflakecomputing.com``
+
+    - For instances on Azure: 
+        
+        ``<account_name>.<region_id>.azure.snowflakecomputing.com``
+
+      **Example:**
+
+      ``lj17605.east-us-2.azure.snowflakecomputing.com``
+
+    - For instances on Google Cloud: 
+    
+        ``<account_name>.<region_id>.gcp.snowflakecomputing.com``
+
+      **Example:**
+
+      ``mj27441.europe-west2.gcp.snowflakecomputing.com``
+
+Port
+''''''''''
+
+Mandatory.
+
+Specify port number **443**.
+
+Warehouse Name
+''''''''''''''''
+
+``warehouse``
+
+The currently active warehouse in your account for which the service account has access privileges.
+
+Optional if a default warehouse has been assigned to the role of the service account. If not, mandatory.
+
+Role
+''''''''''
+
+``role``
+
+Optional.
+
+Provide the role of the service account user.
+
+Database Name
+''''''''''''''''
+
+``db``
+
+Optional but recommended.
+
+If you don't include this parameter, Alation will extract metadata from all databases that the service account can access. The same applies to policies. If you are going to extract policies, this parameter is recommended as it limits policy extraction to a specific database.
+
+When users run DDL queries in Compose, Alation can incrementally ingest the corresponding metadata into the catalog. Both the service account connection JDBC URI and the Compose connection URI must include the database name (``db``) parameter to enable Alation to ingest metadata from objects created through Compose.
+
+  .. important::
+
+      The value of the parameter ``db`` is case sensitive, as Snowflake supports case sensitive database names. Ensure that you use the right case when adding this parameter.
+
+      For example, you can have a database with the name test and a database with the name TEST in Snowflake.
+
+        - For the database with the name in the lower case, the URI will look like this: ``snowflake://alation_partner.us-east-1.snowflakecomputing.com:443/?warehouse=compute_wh&db=test``.
+
+        - For the database with the name in the upper case, the URI will look like this: ``snowflake://alation_partner.us-east-1.snowflakecomputing.com:443/?warehouse=compute_wh&db=TEST``.
+
+      To determine the correct casing of the database name, you can use this query:
+
+      .. code-block:: sql
+
+          SELECT DATABASE_NAME AS CATALOG
+          FROM SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+          WHERE DELETED IS NULL
+          ORDER BY DATABASE_NAME;
+
+Configure Authentication
+--------------------------
+
+For metadata extraction (MDE), profiling and sampling, and query log ingestion (QLI), the connector supports the following authentication types:
+
+    - Basic authentication (username and password)
+
+    - Key pair authentication
+
+Both Basic and Key pair authentication require a service account (see :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOCFConnectorPrerequisites`).
+
+In Compose, users can authenticate using:
+
+    - Basic authentication (username and password)
+
+    - OAuth 2.0 authentication flow
+
+You can find more information about Compose authentication in :doc:`/analyst/UserAuthenticationForDataSources/index`. 
+
+Configure Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To configure Basic authentication, perform these steps:
+
+    1. On the Settings page of Snowflake data source, go to the **General Settings** tab.
+
+    2. On the **Connect to the data source** section, select the **Basic** tab under the **Configure authentication** step.
+
+    3. Enter the username and password for basic authentication.
+
+    4. Click **Save**.
+
+Configure Key Pair Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation supports the key pair authentication method for metadata extraction, profiling and sampling, and query log ingestion.
+
+.. note::
+
+    - Alation does not support key pair authentication for individual user account connections from Compose.
+
+    - Alation does not support key pair authentication for Snowflake OAuth in Compose. Snowflake OAuth uses authentication based on a client ID and secret.
+
+Prerequisite
+^^^^^^^^^^^^^^
+
+Before you configure the key pair authentication in Alation, ensure that you:
+
+    -  Create a service account and grant the required permissions.
+
+    - `Generate the Key Pair on Snowflake`_.
+
+Generate the Key Pair on Snowflake
+'''''''''''''''''''''''''''''''''''''
+
+To generate a key pair:
+
+1. Generate a private key and a public key. 
+    
+   Refer to `Key Pair Authentication & Key Pair Rotation <https://docs.snowflake.com/en/user-guide/key-pair-auth>`_ in Snowflake documentation for details. Optionally, you can generate a private key with a passphrase.
+
+2. Assign the public key to the service account you created for Alation.
+
+3. Store the private key and its passphrase securely on your local machine. 
+    
+   Use these credentials when configuring key pair authentication on the Settings page of your Snowflake data source in Alation.
+
+
+Configure Key Pair in Alation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    1. On the Settings page of your Snowflake data source, go to the **General Settings** tab.
+
+    2. On the **Connect to the data source** section, select the **Key pair** tab under **Configure authentication** step.
+
+    3. Enter the following details:
+
+       .. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+      +----------------------------+---------------------------------------------------------------+
+      | **Parameter**              | **Description**                                               |
+      +============================+===============================================================+
+      | Username                   | Provide the username of the service account that has the      |
+      |                            | public key assigned to it.                                    |
+      |                            |                                                               |
+      +----------------------------+---------------------------------------------------------------+
+      | Private Key Passphrase     | Provide the passphrase of the private key that you created.   |
+      +----------------------------+---------------------------------------------------------------+
+      | Upload Private Key File    | Click the **Upload** button to upload the private key file.   |
+      +----------------------------+---------------------------------------------------------------+
+
+    4. Click **Save**.
+
+Test the Connection
+--------------------
+
+The connection test checks database connectivity. Alation uses the JDBC URI to connect to the database and to confirm when the connection is established.
+
+After specifying the JDBC URI and configuring authentication, test the connection.
+
+To validate the network connectivity, go to **General Settings** > **Test Connection** of the Settings page of your Snowflake data source and click **Test**.
+
+A dialog box appears confirming the status of the connection test. 
+
+Troubleshoot Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You may see the errors below while connecting to Snowflake using key pair authentication. The errors are specific to OpenSSL version 1.1.1g on Windows or Ubuntu.
+
+Error messages:
+
+    - *Private key provided is invalid or not supported: rsa_key.p8: ObjectIdentifier() -- data isn't an object ID (tag = 48) null*
+
+    - *Exception in thread "main" java.security.NoSuchAlgorithmException: 1.2.840.113549.1.5.13 SecretKeyFactory not availableWhen run from JDBC application.*
+
+To resolve this issue, use the following command to generate the private key:
+
+    .. code-block:: bash
+
+        openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -v1 PBE-SHA1-RC4-128 -out rsa_key.p8
+
+Configure Additional Connection Settings
+-----------------------------------------
+   
+Apart from the mandatory configurations that you perform to connect to the data source in the General Settings tab, you can configure the following additional settings:
+
+    - `Configure Additional Data Source Connections`
+
+    - `Disable Obfuscate Literals`
+
+    - `Disable automatic lineage generation`
+
+Configure Additional Data Source Connections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation can associate objects in a data source with objects in another source in the catalog through lineage. For example, you can show lineage between your data source and BI sources that use its data. 
+
+Provide additional connection information for the data source to see lineage across multiple sources on the Lineage chart. 
+
+To enter additional data source connection details, go to **General Settings** > **Advanced settings** of the Settings page of your Snowflake connector and enter the connection URL.
+
+Use the following format: ``<host>:<port>``
+
+You can provide multiple values as a comma-separated list:
+ 
+ ``<host1>:<port1>,<host2>:<port2>``
+
+For example:
+
+``10.13.71.216:1541,sever.com:1542``
+
+For more details, see :doc:`/sources/OpenConnectorFramework/BIConnectionInfoField`.
+
+Enable or Disable Automatic Lineage Generation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can enable or disable the lineage for the data source to be generated automatically during metadata extraction, query log ingestion, and from Data Definition Language queries run by users in Compose. 
+
+Go to **General Settings** > **Advanced settings** of the Settings page of your Snowflake data source and enable or disable the **Disable automatic lineage generation** toggle.
+
+Disable the **Disable automatic lineage generation** toggle when you want to automatically generate the lineage.  
+
+Enable this option when you do not want lineage to be automatically generated and prefer to create lineage manually or using an API.
+
+By default, automatic lineage generation is enabled.
+
+Enable or Disable Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can hide literal values from queries ingested with query log ingestion and displayed on the Queries tab of a schema and table catalog objects. 
+
+Go to **General Settings** > **Advanced settings** of the Settings page of your Snowflake data source and enable or disable the **Obfuscate literals** toggle.
+
+When enabled, literal values are substituted with placeholder values. Disable this option when you want literal values in queries to be visible to users.
+
+By default, this option is disabled.
+
+Configure Logging
+-------------------
+
+To set the logging level for your Snowflake OCF data source logs, perform these steps:
+
+    1. On the Settings page of your Snowflake OCF data source, go to **General Settings** > **Connector logs**.
+
+    2. Select a logging level for the connector logs and click **Save**. 
+        
+       The available log levels are based on the Log4j framework.
+
+You can view the connector logs in **Admin Settings** > **Server Admin** > **Manage Connectors** > **Snowflake OCF connector**.
+
+Configure Add-On OCF Connector for dbt
+---------------------------------------
+
+The dbt connector can be used as an add-on with another OCF connector to extract and catalog descriptions and lineage from dbt models, sources, and columns in dbt Core or dbt Cloud. See :doc:`Add-On OCF Connector for dbt </sources/OpenConnectorFramework/DBT/index>` on how to use this connector.
+

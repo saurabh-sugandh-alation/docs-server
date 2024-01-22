@@ -1,0 +1,482 @@
+Tableau OCF Connector: Install and Configure
+===================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The Tableau OCF connector can be used to catalog objects from Tableau Server or Tableau Cloud. Follow these steps to perform the required configuration on the Tableau side and in Alation.
+
+Prerequisites
+----------------------------
+
+Enable Metadata API for Tableau Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Refer to `Enable metadata-services <https://help.tableau.com/current/api/metadata_api/en-us/docs/meta_api_start.html#enable-the-tableau-metadata-api-for-tableau-server>`_. Enabling Metadata API may take up to 48 hours depending on the volume of metadata.
+
+.. note::
+
+    The Metadata API is enabled by default for Tableau Cloud.
+
+Enable Sensitive Lineage Data Setting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In Tableau:
+
+  1. Go to **Site Settings > General > Sensitive Lineage Data**.
+  2. Make sure that Show complete lineage (default) is selected.
+
+    .. note::
+
+        If this option is not selected, some Tableau objects will not be extracted.
+
+This setting is applicable for both Tableau Server and Tableau Cloud.
+
+Required Information
+-----------------------
+
+URI
+~~~~~~~~
+
+Use the URL of Tableau Server or Tableau Cloud.
+
+**Example**: ``https://tableau2021.alationcatalog.com``
+
+Site ID
+~~~~~~~~~~~~~
+
+A site ID is the text after the ``#/site/`` part of the URL of a Tableau page, in front of the next slash. In the example below ``Sales`` is the site ID:
+
+``https://prod-useast-a.online.tableau.com/#/site/Sales/explore``
+
+You can specify multiple site IDs separated with commas.
+
+Tableau Server
+^^^^^^^^^^^^^^^^^^^^^
+
+The Tableau Server site ID information is used for authentication. You can provide a single valid site ID and the connector will discover all the other sites that the service account has access to. If the field is left empty, the connector will use the `default site <https://help.tableau.com/current/server/en-us/sites_intro.htm#the-default-site>`_.
+
+Tableau Cloud
+^^^^^^^^^^^^^^^^^^^^^^^
+
+For Tableau Cloud, Alation will only extract metadata from the sites with the IDs you have specified. If the field is left empty, the test connection will fail and no metadata will be extracted.
+
+SSL Certificate
+~~~~~~~~~~~~~~~~~~~~~~
+
+If connecting over SSL, obtain the SSL certificate. It will need to be uploaded in the Tableau BI source settings in Alation.
+
+Authentication
+----------------------
+
+The Tableau OCF connector requires a service account with site administrator privileges. Authentication can be configured on the BI source Settings page.
+
+The following authentication types are supported by Alation:
+
+      - Basic authentication with a username and password
+
+        .. note::
+
+             Basic authentication is supported only on Tableau Server.
+
+      - Personal access token
+
+          - Each token can only be used for a single metadata extraction. If the token is used for multiple extractions in parallel, only the first extraction will work; for others an authentication error message will be displayed.
+
+The Tableau OCF connector does not support SSO authentication to Tableau.
+
+      .. note::
+
+          For Tableau Cloud, if multi-factor authentication (MFA) is enabled, personal access token authentication is the only choice.
+
+Authentication with Active Directory
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Authentication with Active Directory is supported through basic authentication (username and password). Use the following format for the username when configuring the Tableau BI source settings in Alation:
+
+      - For **Username**, use ``domain_name\ADusername``, where ``ADusername`` stands for the Active Directory username.
+      - For **Password**, use the Active Directory password of the Active Directory username.
+
+Extracting User Permissions Information from Multiple Domains
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When permissions mirroring is enabled for a Tableau BI data source, Alation can extract user permissions information from multiple domains. To make extraction from multiple domains possible, perform the following configuration in Tableau and Active Directory:
+
+      - In Active Directory, make sure that the domains you will extract from have bi-directional trust with the AD server that has Tableau installed. Users must be able to log into the Tableau instance using the credentials from another AD server.
+
+      - Ensure that the Active Directory groups are imported and set up in Tableau.
+
+
+Configuration in Alation
+-----------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+.. _step-2-create-and-configure-a-new-bi-server-source:
+
+STEP 2: Create and Configure a New BI Server Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This configuration requires the role of Server Admin.
+
+To add a new BI server source:
+
+1. Log in to the Alation instance.
+
+2. From the **Apps** menu on top right, select **Sources**. The Sources page will open.
+
+3. On the upper right, click **Add** and in the list that opens, select **BI Server**. The **Register a Business Intelligence Server** screen will open.
+
+4. From the **Select a Business Intelligence Server type** list, select the OCF connector for Tableau. The connector name appears in this list only after it was installed.
+
+    .. image:: ../../../_static/TableauOCF_02.png
+        :width: 400px
+        :class: with-border
+
+5. Specify a **Title** and a **Description** (optional) for your Tableau OCF BI source.
+
+    .. image:: ../../../_static/TableauOCF_03.png
+        :width: 400px
+        :class: with-border
+
+4. Click **Add**. You will be navigated to your new BI Server source Settings page.
+
+Configure Tableau OCF BI Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **Settings** page. Save the values in each section of the settings by clicking **Save**.
+
+Application Settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+  | **Parameter**              | **Description**                                                                                                      |
+  +============================+======================================================================================================================+
+  | Enable Raw Dump or Replay  | The options in this drop list can be used to dump the extracted metadata into files in order to debug extraction     |
+  |                            | issues before ingesting the metadata into Alation. This feature can be used during testing in case there are issues  |
+  |                            | with extraction. It breaks extraction into two steps: first, the extracted metadata is dumped into files and can be  |
+  |                            | viewed; and second, it can be ingested from the files into Alation. We recommend to use this feature for             |
+  |                            | debugging only.                                                                                                      |
+  |                            |                                                                                                                      |
+  |                            | - **Enable Raw Metadata Dump**: Select this option to save extracted metadata into a folder for debugging purposes.  |
+  |                            |   The dumped data will be saved in four files (**attribute.dump**, **function.dump**,                                |
+  |                            |   **schema.dump**, **table.dump**) in folder **opt/alation/site/tmp/** inside Alation shell.                         |
+  |                            | - **Enable Ingestion Replay**: Select this option to ingest the metadata from the dump files into Alation.           |
+  |                            | - **Off**: Disable the **Raw Metadata Dump** or **Replay** feature. Extracted metadata will be ingested into Alation.|
+  +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+  | Disable Automatic Lineage  | Select the **Disable Automatic Lineage Generation** checkbox to skip the creation of lineage data automatically.     |
+  | Generation                 |                                                                                                                      |
+  |                            | When automatic lineage generation is disabled, during extraction Alation does not calculate lineage data for this    |
+  |                            | BI source during extraction.                                                                                         |
+  |                            |                                                                                                                      |
+  |                            | For more information, see                                                                                            |
+  |                            | :doc:`Automatic Lineage Generation FAQ <../../../bisources/AddBISources/DisableAutomaticLineageGenerationFAQ>`.      |
+  +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+  | Disable Permission         | Select this checkbox to disregard user permissions on Tableau server and to not perform permission enforcement. This |
+  | Enforcement                | setting does not disable permission extraction by the connector.                                                     |
+  |                            | By default this checkbox is selected, and Alation will not mirror Tableau permissions.                               |
+  +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+  | Disable Certification      | Select this checkbox to disable the Tableau Certification feature. If selected, Alation will not propagate flag      |
+  |                            | information to the Tableau server.                                                                                   |
+  +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+  | Server URI                 | Enter the server URI to access the Tableau objects.                                                                  |
+  +----------------------------+----------------------------------------------------------------------------------------------------------------------+
+
+
+Connector Settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++----------------------------+---------------------------------------------------------------+
+| **Parameter**              | **Description**                                               |
++============================+===============================================================+
+| **Server Connection**                                                                      |
++----------------------------+---------------------------------------------------------------+
+| URI                        | Enter the URI to access the Tableau instance.                 |
++----------------------------+---------------------------------------------------------------+
+| Username                   | In case of basic authentication, specify the username         |
+|                            | of the Tableau service account.                               |
+|                            |                                                               |
+|                            | For Active Directory, specify the username in the following   |
+|                            | format:                                                       |
+|                            | ``domain_name\ADusername``                                    |
++----------------------------+---------------------------------------------------------------+
+| Password                   | In case of basic authentication, specify the password of      |
+|                            | the Tableau service account. For Active Directory,            |
+|                            | use the Active Directory password.                            |
++----------------------------+---------------------------------------------------------------+
+| Tableau site ID            | Provide site IDs separated with commas.                       |
+|                            | See `Site ID`_ for more details.                              |
++----------------------------+---------------------------------------------------------------+
+| Tableau Online/Only        | Select this checkbox if connecting to Tableau Cloud or        |
+| Extract from SiteIDs above | if you want to limit extraction from Tableau Server to the    |
+|                            | specified site IDs.                                           |
++----------------------------+---------------------------------------------------------------+
+| Enable Personal Access     | Enable this checkbox to use the Personal Access Token and     |
+| Access Token for           | Personal Access Token Secret for authentication               |
+| authentication             | instead of username and password.                             |
++----------------------------+---------------------------------------------------------------+
+| Token name                 | Provide the personal access token.                            |
++----------------------------+---------------------------------------------------------------+
+| Token secret               | Provide the personal access token secret.                     |
++----------------------------+---------------------------------------------------------------+
+
+Additional Settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++----------------------------+-------------------------------------------------------------------+
+| **Parameter**              | **Description**                                                   |
++============================+===================================================================+
+| Disable Permission         | Select this checkbox to disregard user permissions in Tableau     |
+| Extraction                 | and to not perform permission extraction. By default              |
+|                            | this checkbox is clear, and Alation will extract                  |
+|                            | Tableau permissions.                                              |
++----------------------------+-------------------------------------------------------------------+
+| Disable SSL Certification  | Select this checkbox if not connecting using SSL.                 |
++----------------------------+-------------------------------------------------------------------+
+| Server SSL Certificate     | If connecting over SSL, upload the SSL certificate for            |
+|                            | Tableau Server.                                                   |
++----------------------------+-------------------------------------------------------------------+
+| Disable preview extraction | Select this checkbox for not  to extract previews. By default     |
+|                            | this checkbox is clear, and Alation will extract previews,        |
+|                            | such as thumbnails, PNG images, and CSV files.                    |
++----------------------------+-------------------------------------------------------------------+
+| Disable high resolution    | Select this checkbox to disable extraction of PDFs for reports    |
+| preview extraction         | and dashboards.                                                   |
++----------------------------+-------------------------------------------------------------------+
+| Auto-extract               | Select this checkbox to automatically add Alation-certified       |
+| Alation-certified projects | projects to the list of projects to extract.                      |
++----------------------------+-------------------------------------------------------------------+
+| User domain name           | Domain name for Tableau users that Alation should extract         |
+|                            | the permissions for when permissions mirroring is enabled.        |
+|                            | This is the value of the name attribute of the domains table      |
+|                            | in Tableau PostgreSQL database.                                   |
+|                            |                                                                   |
+|                            | Alation supports extraction from multiple domains.                |
+|                            | When specifying multiple domains in this field, separate them     |
+|                            | with commas.                                                      |
+|                            |                                                                   |
+|                            | Ensure you have performed the required configuration in           |
+|                            | Active Directory:                                                 |
+|                            | `Extracting User Permissions Information from Multiple Domains`_. |
++----------------------------+-------------------------------------------------------------------+
+| Project extraction batch   | This parameter sets the batch size for workbook extraction.       |
+| size                       | Note that although this parameter is defined for workbooks,       |
+|                            | the batch is formed based on the number of projects. In this      |
+|                            | parameter, you are setting the number of projects for which       |
+|                            | Alation will extract ALL workbooks in one extraction batch.       |
+|                            |                                                                   |
+|                            | For example, if you set this parameter to 5, it would mean        |
+|                            | that workbooks will be extracted in several batches, each         |
+|                            | batch being "all workbooks from first five projects", then        |
+|                            | "all workbooks from the second five projects", and till the       |
+|                            | end of the list.                                                  |
++----------------------------+-------------------------------------------------------------------+
+| Published datasource       | Published data source extraction is batched by the number of      |
+| extraction batch size      | data sources that Alation processes in a single batch.            |
++----------------------------+-------------------------------------------------------------------+
+| Workbook processing batch  | This parameter sets the batch size for projects. It defines       |
+| size                       | the number of projects Alation will process in a single batch.    |
++----------------------------+-------------------------------------------------------------------+
+| Enable MDE for             | Enable this checkbox to extract auto-generated embedded data      |
+| auto-generated embedded    | sources.                                                          |
+| datasources                |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      This field is available from connector version **1.6.7**.    |
++----------------------------+-------------------------------------------------------------------+
+| Disable auto pagination    | Enable this checkbox to disable the auto pagination. By           |
+|                            | default this checkbox will be disabled.                           |
+|                            |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      This input field is removed from connector version **1.6.7** |
+|                            |      and pagination is always enabled by default.                 |
++----------------------------+-------------------------------------------------------------------+
+| Number of workbooks to     | Provide the number of workbooks to be returned per extraction.    |
+| return per request         | It is recommended to extract 30 to 80 workbooks per extraction    |
+| (Pagination)               |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      Reduce the number of workbook count if you get a             |
+|                            |      NODE_LIMIT_EXCEEDED exception for workbooks during           |
+|                            |      extraction.                                                  |
+|                            |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      This input field is removed from connector version **1.6.7** |
+|                            |      and pagination is always enabled by default.                 |
++----------------------------+-------------------------------------------------------------------+
+| Number of datasources      | Provide the number of data sources to be returned per             |
+| returned per request       | extraction. It is recommended to extract 300 data sources         |
+| (Pagination)               | per extraction.                                                   |
+|                            |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      Reduce the number of datasources count if you get a          |
+|                            |      NODE_LIMIT_EXCEEDED exception for datasources during         |
+|                            |      extraction.                                                  |
+|                            |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      This input field is removed from connector version **1.6.7** |
+|                            |      and pagination is always enabled by default.                 |
++----------------------------+-------------------------------------------------------------------+
+| Number of connections to   | Provide the number of results to return when extracting           |
+| return per request         | connections/relations/database tables. It is recommended to       |
+| (Pagination)               | extract 600 connections per extraction.                           |
+|                            |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      Reduce the number of connection count if you get a           |
+|                            |      NODE_LIMIT_EXCEEDED exception                                |
+|                            |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      This input field is removed from connector version **1.6.7** |
+|                            |      and pagination is always enabled by default.                 |
++----------------------------+-------------------------------------------------------------------+
+| Number of fields/columns to| Provide the number of results to return when extracting           |
+| return per request         | fields/columns. It is recommended to extract 1000                 |
+| (Pagination)               | fields/columns per extraction.                                    |
+|                            |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      Reduce the number of fields/columns count if you get a       |
+|                            |      NODE_LIMIT_EXCEEDED exception                                |
+|                            |                                                                   |
+|                            | .. note::                                                         |
+|                            |                                                                   |
+|                            |      This input field is removed from connector version **1.6.7** |
+|                            |      and pagination is always enabled by default.                 |
++----------------------------+-------------------------------------------------------------------+
+| Certified project suffix   | Define the suffix for the project certified by Alation. If a      |
+|                            | workbook is certified in Alation, it will be moved to a new       |
+|                            | project with the name                                             |
+|                            | <project_name - certified project suffix>, for example,           |
+|                            | **<Population Growth Analysis - Alation Certified>**.             |
++----------------------------+-------------------------------------------------------------------+
+| Enable view data extraction| Enable the checkbox to extract the sample of the distinct         |
+|                            | values of all report columns. Extraction will become              |
+|                            | considerably slow if this checkbox is enabled.                    |
+|                            |                                                                   |
+|                            | For example, if the report column names are **Connector**,        |
+|                            | **Connector Type**, and **Case Data** and the CSV headers are     |
+|                            | **Connector**, **Connector Type**, and **Date/Time Opened**, only |
+|                            | **Connector** and **Connector Type** data will be extracted.      |
++----------------------------+-------------------------------------------------------------------+
+| View data sample size      | Provide the data sample size.                                     |
++----------------------------+-------------------------------------------------------------------+
+| Request timeout in seconds | Provide the download timeout for CSV, low resolution previews,    |
+|                            | and high resolution previews.                                     |
++----------------------------+-------------------------------------------------------------------+
+
+**Cross-System Lineage:**
+
+Cross-System Lineage is to generate lineage between this Tableau BI source and any supported data source by this connector. To generate the cross-system Lineage, specify the host name and the port number of this BI source on the RDBMS connector’s  **General Settings > Application Settings > BI Connection Info** field in the format mentioned below:
+
+``Host_Name:Port_Number``
+
+Example: ``adb-8443049157651279.19.azuredatabricks.net:443``
+
+.. image:: ../../../_static/powerb17.png
+    :width: 400px
+    :align: center
+
+.. note::
+
+     This image is from the supported data source **General Settings** page.
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^^^^
+
+After specifying the connector settings, under **Test Connection**, click **Test** to validate network connectivity.
+
+    .. image:: ../../../_static/TableauOCF_06.png
+        :width: 500px
+        :class: with-border
+
+Extraction
+--------------------------
+
+To configure extraction:
+
+1. Under **Extraction Settings**, turn on **Selective Extraction**, if required. Selective extraction settings are used to apply a filter to include or exclude a list of projects.
+
+    .. image:: ../../../_static/TableauOCF_07.png
+        :width: 500px
+        :class: with-border
+
+2. Click **Get List of Projects** to first fetch the list of projects from Tableau.
+
+3. The status of the Get Projects action is logged in the **Job History** table at the bottom of the Settings page.
+
+4. Once the folder synchronization is successful, a drop-down list of projects will become enabled. Select one or more projects to apply the filter.
+
+5. Check if you are using the desired filter option. Available filter options are described below:
+
+      +-----------------------------+-----------------------------------------------------------------+
+      | Filter Option               | Description                                                     |
+      +=============================+=================================================================+
+      | Extract all Folders except  | Extract metadata from all Folders except from the workspaces    |
+      |                             | selected.                                                       |
+      +-----------------------------+-----------------------------------------------------------------+
+      | Extract only these Folders  | Extract metadata only from the selected Folders.                |
+      +-----------------------------+-----------------------------------------------------------------+
+
+6. Click **Run Extraction Now** to extract metadata. The status of the extraction action is also logged in the **Job History** table at the bottom of the page.
+
+7. If you wish to automatically update the metadata in the catalog, under **Automated and Manual Extraction**, turn on **Enable Automated Extraction** and select the day and time when metadata must be extracted. The metadata extraction will be automatically scheduled to run at the selected day and time.
+
+Lineage
+--------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/TableauOCFConnector/TableauServerandOnlineConnectorConfigureLineage`.
+
+Limitations
+----------------
+
+    - Personal access token can only be used for a single metadata extraction. If the token is used for multiple extractions in parallel, only the first extraction will work; for others an authentication error message will be displayed.
+    - If Permission Mirroring and Preview features are enabled, they are expected to considerably  increase the Metadata Extraction job duration.
+    - Metadata Extraction will fail if the Tableau Metadata APIs are re-indexing post the Tableau instance upgrade.
+    - Column Sampling may not fully extract the column sample data of all the views. The connector tries to match the CSV headers from Tableau Rest API with the column metadata received from the graphQL query response. If a column name does not have a corresponding CSV header, the data will not be extracted.
+    - Cross-System Lineage is not supported for data sources created from  **HYPER (.hyper)** files. The database hostname and/or port information is not returned from Tableau Metadata API for such data sources.
+    - Cross-System Lineage is not supported for data sources created using Oracle synonyms due to an API limitation from Tableau.
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`Troubleshooting </sources/OpenConnectorFramework/OCFTroubleshooting>`.
+
++--------------------------+--------------------------------------+-----------------------------------+
+| Type of Error            | Reason                               | Solution                          |
++==========================+======================================+===================================+
+| NODE_LIMIT_EXCEEDED      | Connector logs show this message:    | Reduce the number of results      |
+|                          | Showing partial results. The request | returned for the object we were   |
+|                          | exceeded the ‘n’ node limit. Use     | processing before extraction      |
+|                          | pagination, additional filtering, or | failed. Example:                  |
+|                          | both in the query to adjust results. | Error while processing/extracting |
+|                          |                                      | Database Tables (Connections).    |
+|                          |                                      | Error message: NODE_LIMIT_EXCEEDED|
+|                          |                                      |                                   |
+|                          |                                      | In this case, reduce results for  |
+|                          |                                      | Connections in the pagination     |
+|                          |                                      | field specific to it.             |
++--------------------------+--------------------------------------+-----------------------------------+
+| ApolloNetworkException   | When a request takes longer than the | Increase the **Request timeout in |
+|                          | configured timeout in seconds.       | seconds** input field in the      |
+|                          |                                      | **Additional Settings** section   |
+|                          |                                      | from default 20 to a higher value.|
++--------------------------+--------------------------------------+-----------------------------------+
+| BACKFILL_RUNNING         | Still creating the Metadata API      | Wait for the process to complete. |
+|                          | Store. Results from the query may be |                                   |
+|                          | incomplete at this time.             |                                   |
++--------------------------+--------------------------------------+-----------------------------------+

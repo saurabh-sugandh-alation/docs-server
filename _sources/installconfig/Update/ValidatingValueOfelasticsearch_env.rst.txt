@@ -1,0 +1,75 @@
+Validating the Value of Parameter elasticsearch.env.es_java_opts
+====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Use the steps in this section to check and set the required value for the parameter ``elasticsearch.env.es_java_opts``:
+
+    - before updating Alation to version 2021.4.4 or a later 2021.4 patch if skipping 2021.4.4
+
+In case of HA configuration, this step should be performed on the primary server.
+
+Before the update, check and, if necessary, update the value of the **alation_conf** parameter ``elasticsearch.env.es_java_opts`` using the steps given below.
+
+To check and update the values:
+
+1. On the Alation host, from the Alation shell, run the following command:
+
+    .. code-block:: Bash
+
+        alation_conf elasticsearch.env.es_java_opts
+
+    This will print the current values of the parameter to the console.
+
+2. Analyze the output. If you find the value ``-Dlog4j2.formatMsgNoLookups=true`` in the list of values, you need to modify this parameter. If this value is not present, no further action is required and you can exit the Alation shell.
+
+3. If you see the value ``-Dlog4j2.formatMsgNoLookups=true`` in the output, you need to remove this value. Note that this value may be the only value or one of several values of this parameter. If it is the only value, use **step 4** to change it. If it is one of several values, use **step 5**.
+
+4. If ``-Dlog4j2.formatMsgNoLookups=true`` is the only value, your output will look like this:
+
+    .. code-block:: Bash
+
+        (env) PROD [alationadmin@ip-177-71-77-74 /]$ alation_conf elasticsearch.env.es_java_opts
+        elasticsearch.env.es_java_opts = -Dlog4j2.formatMsgNoLookups=true
+
+    Set a new value ``-Djava.security.policy=file:/usr/share/elasticsearch-7.14/log4j.policy`` using the following command:
+
+    .. code-block:: Bash
+
+        alation_conf elasticsearch.env.es_java_opts -s=" -Djava.security.policy=file:/usr/share/elasticsearch-7.14/log4j.policy"
+
+    .. important::
+
+        Note the space between the first quote and the value. Make sure to include this space when changing the value:
+
+        ``" -Djava.security.policy=file:/usr/share/elasticsearch-7.14/log4j.policy"``
+
+5. If ``-Dlog4j2.formatMsgNoLookups=true`` is not the only value but one of several values, you will see an output similar to the following example:
+
+    .. code-block:: Bash
+
+        (env) PROD [alationadmin@ip-177-71-77-74 /]$  elasticsearch.env.es_java_opts = -Dlog4j2.formatMsgNoLookups=true -Djavax.net.ssl.trustStore=/opt/alation/site/site_data/jssecacerts -Djavax.net.ssl.trustStorePassword=changeit
+
+    In this case, update the parameter by removing the value ``-Dlog4j2.formatMsgNoLookups=true``, adding the value ``-Djava.security.policy=file:/usr/share/elasticsearch-7.14/log4j.policy``, and keeping the other values as they were. Use the following example:
+
+    .. code-block:: Bash
+
+        (env) PROD [alationadmin@ip-177-71-77-74 /]$ alation_conf elasticsearch.env.es_java_opts -s=" -Djava.security.policy=file:/usr/share/elasticsearch-7.14/log4j.policy -Djavax.net.ssl.trustStore=/opt/alation/site/site_data/jssecacerts -Djavax.net.ssl.trustStorePassword=changeit"
+
+    .. important::
+
+        Note the space between the first quote and the value. Make sure to include this space when changing the value:
+
+        ``" -Djava.security.policy=file:/usr/share/elasticsearch-7.14/log4j.policy"``
+
+6. If you are updating from 2021.4.0 or 2021.4.1 , restart the Elasticsearch service. If you are performing a major release update from 2021.1.x, 2021.2.x or 2021.3.x, then no restart is required: skip this step. To restart (2021.4.x only):
+
+    .. code-block:: Bash
+
+        alation_supervisor restart java:elasticsearch-7.14
+
+7. Exit the Alation shell:
+
+    .. code-block:: Bash
+
+        exit

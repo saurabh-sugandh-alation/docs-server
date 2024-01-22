@@ -1,0 +1,276 @@
+NetSuite
+===========
+
+*Applies from 2022.2*
+
+Alation has certified the NetSuite data source with the following CData driver:
+
+    - cdata.jdbc.netsuite.NetSuiteDBDriver.cdata.jdbc.netsuite
+
+Alation can provide a license for the NetSuite CData driver. Refer to :doc:`How to get a CData Driver <../../datasources/CustomDB/CDataDrivers>` and use the scenario appropriate to your case.
+
+Scope of Support
+---------------------
+
+    - Supported as Custom DB with the CData driver for NetSuite
+    - Metadata Extraction (MDE)
+
+        - Automated MDE
+
+    - Compose
+    - Data Profiling
+    - Sampling
+    - Query log ingestion (QLI) - not applicable
+    - Lineage - not applicable
+
+Required Information
+-------------------------
+
+    - JDBC driver to connect to the database: CData JDBC driver for NetSuite
+    - JDBC URI for the NetSuite data source
+
+Prerequisites
+~~~~~~~~~~~~~~~~~~~
+
+In order to obtain the values of the required parameters for the JDBC URI and service account, perform the  steps in `Creating an Access Token in NetSuite <https://cdn.cdata.com/help/DNG/jdbc/pg_createinui.htm>`_. This will generate the values for parameters:
+
+    - OAuth Client ID
+    - OAuth Client Secret
+    - OAuth Access Token
+    - OAuth Access Token Secret
+
+Construct the JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation supports following authentication types for NetSuite:
+
+    - Basic authentication
+    - Token-based authentication
+    - OAuth authentication
+
+Refer to `Authenticating to NetSuite <https://cdn.cdata.com/help/DNG/jdbc/pg_connectionj.htm#authenticating-to-netsuite>`_ for more information.
+
+When building the URI, include the following minimal list of required parameters:
+
+**Basic Authentication:**
+
+    - **AccountId** - The company account your username is associated with on NetSuite.
+    - **Schema** - The type of schema to use.
+    - **User** - The user of the NetSuite account used to authenticate.
+    - **Password** - The password of the NetSuite user used to authenticate.
+    - **RTK Key** - when you purchase a CData driver from Alation, you are provided an RTK that needs to be included into the URI. If you purchased the driver from CData, you should have a license file that needs to be placed on the Alation server together with the driver .jar file.
+
+**Token Based Authentication:**
+
+    - **AccountId** - The company account your username is associated with on NetSuite.
+    - **Schema** - The type of schema to use.
+    - **OAuthClientId** - The client id assigned when you register your application with an OAuth authorization server.
+    - **OAuthClientSecret** - The client secret assigned when you register your application with an OAuth authorization server.
+    - **OAuthAccessToken** - The access token for connecting using OAuth.
+    - **OAuthAccessTokenSecret** - The OAuth access token secret for connecting using OAuth.
+    - **RTK Key** - when you purchase a CData driver from Alation, you are provided an RTK that needs to be included into the URI. If you purchased the driver from CData, you should have a license file that needs to be placed on the Alation server together with the driver .jar file.
+
+**OAuth Authentication:**
+
+    - **AccountId** - The company account your username is associated with on NetSuite.
+    - **InitiateOAuth** - Set this property to initiate the process to obtain or refresh the OAuth access token when you connect.
+    - **OAuthClientId** - The client id assigned when you register your application with an OAuth authorization server.
+    - **OAuthClientSecret** - The client secret assigned when you register your application with an OAuth authorization server.
+    - **RTK Key** - when you purchase a CData driver from Alation, you are provided an RTK that needs to be included into the URI. If you purchased the driver from CData, you should have a license file that needs to be placed on the Alation server together with the driver .jar file.
+
+The following optional parameters can also be included in the URI if the proxy connection is used or if using TLS/SSL:
+
+    - **ProxyServer** - The hostname or IP address of the proxy to route HTTP traffic through.
+    - **ProxyPort** - The TCP port the ProxyServer proxy is running on.
+    - **ProxyAutoDetect** - Indicates whether to use the system proxy settings or not. This takes precedence over other proxy settings, so you will need to set ProxyAutoDetect to FALSE in order to use custom proxy settings.
+    - **SSLServerCert** - The certificate to be accepted from the server when connecting using TLS/SSL.
+
+Using these values, construct the URI according to the patterns given below.
+
+CData JDBC driver for NetSuite can extract the **SuiteTalk** and **SuiteQL** schemas. The schema to use can be specified using the **Schema** parameter in the JDBC URI. Select a  JDBC URI format depending on the schema type that you want to extract as shown in the table below:
+
+  +--------------------+----------------------------------------------------+
+  | SCHEMA             | URI Formats                                        |
+  +====================+====================================================+
+  | SuiteTalk          | Basic authentication or token-based authentication |
+  +--------------------+----------------------------------------------------+
+  | SuiteQL            | Token-based authentication or OAuth authentication |
+  +--------------------+----------------------------------------------------+
+
+Use the format that is relevant to the authentication method that you are using:
+
+Basic Authentication Format
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      netsuite://AccountId="<Account_ID>”;Password=<Password>;User=<User>;Schema=<schema>;RTK=<RTK_Key>;
+
+**Example:**
+
+.. code-block:: Bash
+
+      netsuite://AccountId="TSTDRV1189931";Password=Password;User=admin;Schema=SuiteTalk;RTK=444752465641535552425641454E545042424D33323632390000000000000000000000000000414C5800005559475655474E4E464242370000
+
+Token-Based Authentication Format
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      netsuite://AccountId="<Account_ID>”;OAuthClientId=”<Client_ID>”;OAuthClientSecret=”<Client_Secret>”;Schema=<schema>;RTK=<RTK_Key>;
+
+.. note::
+
+      OAuth access token and OAuth access token secret will be provided in the **General Settings > Properties** Field.
+
+**Example:**
+
+.. code-block:: Bash
+
+      netsuite://AccountId="TSTDRV1189931";OAuthClientId=”5aa125dd4937303122f45f2bfktke75935f6kk4fge52je8fj”;OAuthClientSecret=”a1452460bffa93bfh74nglls8jdmnsje8kgksg9qwsdsde6”;Schema=SuiteTalk;RTK=444752465641535552425641454E545042424D33323632390000000000000000000000000000414C5800005559475655474E4E464242370000
+
+OAuth Authentication Format
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      netsuite://AccountId="<Account_ID>”;InitiateOAuth=REFRESH;OAuthClientId=”<Client_ID>”;OAuthClientSecret=”<Client_Secret>”;Schema=<schema>;RTK=<RTK_Key>;
+
+**Example:**
+
+.. code-block:: Bash
+
+      netsuite://AccountId="TSTDRV1189931";InitiateOAuth=REFRESH;OAuthClientId=”5aa125dd4937303122f45f2bfktke75935f6kk4fge52je8fj”;OAuthClientSecret=”a1452460bffa93bfh74nglls8jdmnsje8kgksg9qwsdsde6”;Schema=SuiteTalk;RTK=444752465641535552425641454E545042424D33323632390000000000000000000000000000414C5800005559475655474E4E464242370000
+
+Service Account
+-------------------
+
+Provide an OAuth Client ID (Username) and OAuth Client Secret (Password) generated in `Prerequisites`_ section.
+
+Set Up in Alation
+-----------------------
+
+Step 1: Add the CData Driver for NetSuite to Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Depending on how you purchased the CData driver, from Alation or from CData, the driver installation process will be different. Refer to :doc:`Add the CData Driver into Alation Instance <../../datasources/CustomDB/CDataDrivers>` and use the scenario appropriate to your case.
+
+Step 2: Add a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a new Data Source on the **Sources** page.
+
+Step 3: Set up the Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ 1. On the **Add a Data Source screen** of the wizard, specify:
+
+      - **Database Type:** Custom DB
+      - **JDBC URI:** Provide any valid URI with port number 443. This is only a temporary URI to move through the Add Data Source wizard.
+
+        **Example:**
+
+        .. code-block:: Bash
+
+              Jira://jira.atlassian.net:443
+
+        .. note::
+
+              The correct JDBC URI must be provided on the **General Settings** tab of the data source **Settings** page.
+
+      - **Select Driver:** select the JDBC driver for NetSuite from the **Select Driver** drop-down list:
+
+          **cdata.jdbc.netsuite.NetSuiteDBDriver.cdata.jdbc.netsuite**
+
+      - Do not select the **Use Kerberos** checkbox
+
+ 2. Click **Save and Continue**. The next wizard screen - **Set Up a Service Account** - will open.
+
+      .. image:: ../../_static/Netsuite_01.png
+
+Step 4: Enter Service Account Credentials
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  1. Select **Yes**.
+  2. Provide an OAuth Client ID as Username and OAuth Client Secret as Password generated in `Prerequisites`_ section. OAuth Client ID and OAuth Client Secret can be used as Username and Password for Basic Authentication and Token Based Authentication as well.
+  3. Click **Save and Continue**. The next wizard screen, **Configure Your Data Source**, will open.
+  4. An error message will appear. Click **Continue with Errors** to navigate to the next wizard screen, **Configure Your Data Source**.
+
+  .. image:: ../../_static/Netsuite_02.png
+
+Step 5: Configure Your Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Click **Skip this Step**. After this step, you are navigated to the **Settings** page of your data source.
+
+Step 6: General Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once you successfully create a connection, you will land on the **General Settings** page. On the **General Settings** tab:
+
+  1. Change the temporary URI to the correct URI:
+
+      - If you are using basic authentication, use `Basic Authentication Format`_.
+      - If you are using OAuth, use `OAuth Authentication Format`_.
+      - If you are using token-based authentication, use `Token-Based Authentication Format`_.
+
+  2. In the **Properties** field, provide the OAuth access token and OAuth access token secret generated in Prerequisites section. Click **Save**.
+
+      .. note::
+
+            OAuth access token and OAuth access token secret must be provided only if `Token-Based Authentication Format`_ JDCB URI is used.
+
+
+  3. Click the **Test** button to test the connection. An error message will appear.
+
+  .. image:: ../../_static/Netsuite_03.png
+
+Metadata Extraction
+--------------------------
+
+Configure and perform metadata extraction and verify the results:
+
+  - In **Settings > Custom Settings**, set the **Catalog Object Definition** to **Schema.Table**:
+
+    .. image:: ../../_static/Netsuite_04.png
+
+  - Automatic MDE is supported.
+
+Profiling
+---------------
+
+Configure and perform :doc:`Profiling <../../datasources/CustomDB/ProfilingForCustomDB>` :
+
+    - Users can run a sample for an individual table on the **Samples** tab of the Table Catalog page or profile an individual column on the **Overview** tab of the Column page.
+    - Automatic full and selective Profiling is supported.
+    - Use the **Per-Object Parameters** tab of the Settings to specify which objects to profile.
+
+      .. note::
+
+          Make sure that the **Skip Views** checkbox of the respective schemas is unchecked to perform the Profiling.
+
+    - Custom query-based Sampling is supported. :ref:`Custom Query-Based Sampling <Sampling_Profiling-Custom_Query_Based_Sampling_for_Tables>` allows you to provide a custom query for profiling each specific table.
+    - Deep Column Profiling (:ref:`Profiling V2 <profilingV2-label>` ) is supported.
+
+Sampling
+--------------
+
+Perform Sampling: refer to :ref:`Sampling <Sampling_Profiling-Sampling>`.
+
+Query Log Ingestion
+-------------------------
+
+Not applcable.
+
+Compose
+-----------
+
+Log into Compose:
+
+    - Authenticate in Compose with your NetSuite credentials.
+    - Use **Schema.Table** format for writing queries.
+
+Troubleshooting
+-----------------
+
+Refer to :doc:`Troubleshooting for CData Data Sources <../../datasources/CustomDB/ToubleshootingForCDataDataSources>`.

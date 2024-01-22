@@ -1,0 +1,257 @@
+Azure Databricks OCF Connector: Install and Configure
+==============================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Network Connectivity
+--------------------------
+
+Open outbound TCP port **443** to the Azure Databricks server.
+
+Service Account
+--------------------------
+
+In Azure Databricks, create a service account for Alation. Refer to `Manage users - Azure Databricks <https://docs.microsoft.com/en-us/azure/databricks/administration-guide/users-groups/users>`_.
+
+Permissions for Metadata Extraction and Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The service account must have the following permissions to perform MDE and profiling:
+
+  - **Can Attach** permission to connect to the cluster. Refer to `Permission Requirements <https://learn.microsoft.com/en-us/azure/databricks/integrations/bi/jdbc-odbc-bi#permission-requirements>`_ in Microsoft documentation for more details.
+
+  - Optionally, **Can Restart** permission to automatically trigger the cluster to start if its state is terminated while connecting.
+
+  - Workspace access—Refer to `Manage users <https://docs.databricks.com/administration-guide/users-groups/users.html#manage-user-entitlements>`_.
+
+  - Cluster-level access—Refer to `Cluster access control <https://docs.databricks.com/security/access-control/cluster-acl.html>`_.
+
+By default, all cluster users have access to all data stored in a cluster's managed tables unless table access control is enabled for that cluster. The table access control option is only available for high-concurrency clusters. Refer to `Table Access Control <https://docs.databricks.com/security/access-control/table-acls/table-acl.html#create-a-cluster-enabled-for-table-access-control>`_ for more information.
+
+If the **Table Access Control** option is enabled on the cluster:
+
+    - Grant the SELECT privilege on all schemas and all their tables and views in a catalog.
+
+      .. code-block:: Bash
+
+            GRANT USAGE ON CATALOG <catalog-name> TO `<user>@<domain-name>`;
+            GRANT SELECT ON CATALOG <catalog-name> TO `<user>@<domain-name>`;
+
+    - Grant the SELECT privilege on a specific schema and all its tables and views.
+
+      .. code-block:: Bash
+
+            GRANT USAGE ON SCHEMA <schema-name> TO `<user>@<domain-name>`;
+            GRANT SELECT ON SCHEMA <schema-name> TO `<user>@<domain-name>`;
+
+    - Grant the SELECT privilege on specific tables and views in a schema.
+
+      .. code-block:: Bash
+
+            GRANT USAGE ON SCHEMA <schema-name> TO `<user>@<domain-name>`;
+            GRANT SELECT ON TABLE <schema-name>.<table-name> TO `<user>@<domain-name>`;
+            GRANT SELECT ON VIEW <schema-name>.<view-name> TO `<user>@<domain-name>`;
+
+Refer to `Data object privileges <https://docs.databricks.com/security/access-control/table-acls/object-privileges.html#data-governance-model>`_ for more information.
+
+Authentication
+--------------------
+
+The connector supports `token-based authentication <https://learn.microsoft.com/en-us/azure/databricks/administration-guide/access-control/tokens#overview-of-personal-access-token-management>`_. Follow the steps in Databricks documentation to generate a personal access token for the service account and save it in a secure location:
+
+    - `Databricks personal access tokens for workspace users <https://learn.microsoft.com/en-us/azure/databricks/dev-tools/auth#--azure-databricks-personal-access-tokens-for-workspace-users>`_
+
+You will use the personal access token as password when configuring your data source connection from Alation.
+
+JDBC URI
+------------
+
+The JDBC URI string you provide in Alation depends on the connector version:
+
+    - Newer versions 2.0.0 and later use the :ref:`Databricks JDBC driver <uri-databricks-driver>`.
+
+    - Older versions below version 2.0.0 use the :ref:`JDBC Spark driver <uri-spark-driver>`.
+
+If you are using a Databricks cluster, get the JDBC URI as documented in `Azure Databricks: Get connection details for a cluster <https://learn.microsoft.com/en-us/azure/databricks/integrations/jdbc-odbc-bi#--get-connection-details-for-a-cluster>`_.
+
+If you are using a Databricks SQL warehouse (SQL endpoints), get the JDBC URI as documented in `Azure Databricks: Get connection details for a SQL warehouse <https://learn.microsoft.com/en-us/azure/databricks/integrations/jdbc-odbc-bi#----get-connection-details-for-a-sql-warehouse>`_.
+
+When specifying the JDBC URI in Alation, remove the ``jdbc:`` prefix.
+
+    .. note::
+
+        The property ``UseNativeQuery=0`` is required for custom query-based sampling and profiling. Without this property in the JDBC URI, custom query-based sampling or profiling will fail. If you are not using custom query-based sampling and profiling in your implementation of this data source type, you can omit this property from the JDBC URI string.
+
+        Find more information in `ANSI SQL-92 query support in JDBC <https://learn.microsoft.com/en-us/azure/databricks/integrations/jdbc-odbc-bi#--ansi-sql-92-query-support-in-jdbc>`_ in Azure Databricks documentation.
+
+
+.. _uri-databricks-driver:
+
+Connection String for Databricks JDBC Driver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Find more information in `Databricks JDBC driver <https://learn.microsoft.com/en-us/azure/databricks/integrations/jdbc-odbc-bi#--jdbc-driver>`_ in Azure Databricks documentation.
+
+Format
+^^^^^^^^^^^^^
+
+``databricks://<hostname>:443/default;transportMode=http;ssl=1;httpPath=<databricks_http_path_prefix>/<databricks_cluster_id>;AuthMech=3;UseNativeQuery=0``
+
+Example
+^^^^^^^^^^^^^^
+
+``databricks://adb-900784758547414.14.azuredatabricks.net:443/default;transportMode=http;ssl=1;httpPath=sql/protocolv1/o/900734538547414/1012-1275722-nju5lmv8;AuthMech=3;UseNativeQuery=0``
+
+.. _uri-spark-driver:
+
+Connection String for Spark JDBC Driver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Find more information in `JDBC Spark driver <https://learn.microsoft.com/en-us/azure/databricks/integrations/jdbc-odbc-bi#--building-the-connection-url-for-the-legacy-spark-driver>`_ in Databricks documentation.
+
+Format
+~~~~~~~~~~~~~
+
+``spark://<hostname>:443/default;transportMode=http;ssl=1;httpPath=<HTTP_Path>;AuthMech=3;UseNativeQuery=0``
+
+
+Example
+~~~~~~~~~~~~~
+
+``spark://adb-900784758547414.14.azuredatabricks.net:443/default;transportMode=http;ssl=1;httpPath=sql/protocolv1/o/900734538547414/1012-1275722-nju5lmv8;AuthMech=3;UseNativeQuery=0``
+
+
+
+Configuration of Query Log Ingestion
+---------------------------------------
+
+Query log ingestion (QLI) requires configuration in both Databricks and Alation. See :doc:`/sources/OpenConnectorFramework/AzureDatabricks/AzureDatabricksOCFConnectorQLI` on how to configure QLI.
+
+Connector Installation and Creating a Data Source
+-------------------------------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **Azure Databricks OCF Connector**.
+
+Next, configure the settings of your data source:
+
+    - `Access`_
+    - `General Settings`_
+    - `Add-On OCF Connector for dbt`_
+    - `Metadata Extraction`_
+    - `Sampling and Profiling`_
+    - `Query Log Ingestion`_
+
+Access
+----------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+-----------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab:
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Populate the data source connection information and save the values by clicking **Save** in this section.
+
+  +----------------------------+---------------------------------------------------------------+
+  | **Parameter**              | **Description**                                               |
+  +============================+===============================================================+
+  | JDBC URI                   | Specify the `JDBC URI`_ in the required format.               |
+  +----------------------------+---------------------------------------------------------------+
+  | Username                   | Use the value ``token``.                                      |
+  +----------------------------+---------------------------------------------------------------+
+  | Password                   | Paste the personal access token for the service account.      |
+  +----------------------------+---------------------------------------------------------------+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Select the logging level for the connector logs and save the values you provided  by clicking **Save** in this section. The available log levels are based on the Log4j framework.
+
+  +----------------------------+---------------------------------------------------------------+
+  | **Parameter**              | **Description**                                               |
+  +============================+===============================================================+
+  | Log Level                  | Select the log level to generate logs. The available options  |
+  |                            | are INFO, DEBUG, WARN, TRACE, ERROR, FATAL, ALL.              |
+  +----------------------------+---------------------------------------------------------------+
+
+Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Obfuscate Literals**—Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+  .. image:: ../../../_static/AzureDatabricksOCF_02.png
+      :class: with-border
+
+Add-On OCF Connector for dbt
+-------------------------------------
+
+.. include:: ../../../shared/OCF/OCF_AddonDBTConnector.rst
+
+Metadata Extraction
+---------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+.. image:: ../../../_static/AzureDatabricksOCF_03.png
+    :class: with-border
+
+
+Compose
+-----------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+If you want to configure OAuth authentication for Compose, additionally see :doc:`/sources/OpenConnectorFramework/AzureDatabricks/AzureDatabricksOCFConnectorComposeOAuth`.
+
+  .. image:: ../../../_static/AzureDatabricksOCF_04.png
+      :class: with-border
+
+Sampling and Profiling
+-------------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+    .. important::
+
+        If you are going to use custom query-based sampling and profiling, ensure that the `JDBC URI`_ includes the ``UseNativeQuery=0`` property.
+        If you enable dynamic profiling, then users should ensure that their individual connections also include this property.
+
+
+Query Log Ingestion
+------------------------
+
+On the **Query Log Ingestion** tab, you can select the QLI options for your data source and schedule the QLI job if necessary. Refer to :doc:`/sources/OpenConnectorFramework/AzureDatabricks/AzureDatabricksOCFConnectorQLI` for details about QLI from Azure Databricks.
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting`.

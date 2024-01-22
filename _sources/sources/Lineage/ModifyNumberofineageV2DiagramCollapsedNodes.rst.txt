@@ -1,0 +1,84 @@
+Modifying the Number of Nodes Displayed in Lineage Diagrams
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Lineage diagrams can become unwieldy as the number of nodes expands both vertically and horizontally. This can lead to performance problems both in computing the graph and rendering the diagram in the Alation user interface. 
+
+Modifying the Default Number of Nodes Displayed
+------------------------------------------------
+
+Beginning with Alation release 2022.4, server and catalog admins can modify the default number of nodes displayed in lineage graphs using the **Initial Lineage Graph Load Settings** page of the **Customize Catalog** menu:
+
+.. image:: ../../_static/Lineage_InitialGraphLoadSettings.png
+
+This page has controls to specify the number of nodes to display by default in both the horizontal and vertical directions. The horizontal control is labeled **Initial Horizontal Levels (Distance)**. By default, the horizontal control is set to **Show All**. You can select **Set Limit** to specify a limit in the range from one to ten. The vertical control, labeled **Initial Vertical Nodes (Depth)**, is by default set to the maximum of ten nodes. You can modify this, again using a limit in the range of one to ten.
+
+The horizontal control corresponds to the **alation_conf** parameter ``lineage_service.filters.max_depth``, while the vertical control corresponds to the **alation_conf** parameter ``lineage_service.max_nodes_in_subgraph``. Both controls require that :doc:`Lineage V3 be enabled </installconfig/LineageV3/EnablingLineageV3>`; the horizontal control also requires that the :doc:`pagination feature be enabled </admins/AdditionalConfiguration/EnablePaginationForLineage>`.
+
+Modifying the Number of Nodes Collapsed in Lineage V2 Diagrams
+--------------------------------------------------------------
+
+Since Alation release V R6 (5.10.x) it has been possible for server admins to control the number of nodes displayed vertically using **alation_conf**. This requires SSH access to the Alation instance.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+You can change the number of data nodes collapsed under the **More nodes…** element of the Lineage diagram for Lineage V2:
+
+**Table level:**
+
+.. image:: ../../_static/More_nodes.png
+    :width: 5.5in
+    :align: center
+
+**Column level:**
+
+.. image:: ../../_static/More_nodes_Column.png
+    :width: 5.5in
+    :align: center
+
+There are two parameters in **alation_conf** that allow you to set the number of parent and child nodes to collapse:
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+========================================= =========================================
+Parameter                                 Description
+========================================= =========================================
+``num_max_parent_level_nodes_to_display`` The number of nodes on the level
+                                          of *Table*, *BIReport*,
+                                          *BIDataSource*, or *Dashboard* to be
+                                          displayed on the diagram without
+                                          collapsing. The default value is
+                                          30. Overflowing data objects
+                                          will be collapsed under **More nodes...**
+
+``num_max_child_level_nodes_to_display``  The number of nodes in the
+                                          child column level for
+                                          each parent data object. The
+                                          default value is 10. Overflowing
+                                          column objects will be collapsed
+                                          under **More nodes...**
+========================================= =========================================
+
+To change the parameter values,
+
+1. SSH to the Alation instance.
+
+2. Enter the Alation shell:
+
+  .. code-block:: bash
+
+     sudo /etc/init.d/alation shell
+
+3. Using the **alation_conf** command, set the desired values for either (or both) of the parameters:
+
+   .. code-block:: bash
+
+        alation_conf alation.lineage.num_max_parent_level_nodes_to_display -s <value>
+        alation_conf alation.lineage.num_max_child_level_nodes_to_display -s <value>
+
+4. Exit the shell when done:
+
+  .. code-block:: console
+
+     exit

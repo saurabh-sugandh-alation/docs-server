@@ -1,0 +1,437 @@
+Release Notes V R1 (General Availability)
+==============================================
+
+Check out a high-level :doc:`overview </archive/ReleaseNotes/ReleaseNotesVersionV/WhatsNewinAlationV>` of Alation V. For more comprehensive and detailed information, read on.
+
+Release 5.0.0
+--------------
+
+New Features
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Alation now provides a public API to interact with Articles. The API
+   provides an interface for all CRUD operations, allowing for
+   programmatic management of articles. For further details and code
+   samples, refer to the `API documentation <https://developer.alation.com/dev>`__.
+
+-  Alation now exposes a public API to get the database accounts that
+   have queried an object. This information used to be exposed only in
+   the Top Users field, and only for a certain number of users. The
+   documentation for this feature can be found `here <https://developer.alation.com/dev/reference/queriers-apis>`__. 
+
+-  Users of Advanced Search can now filter conversations based on
+   whether or not there are responses, allowing for the rapid
+   identification of any lingering questions or comments.
+
+-  Users can now perform searches based on the contents of Rich Text
+   fields. This is enabled for both quick and advanced search. Please
+   note that after upgrading, it will likely take several hours to
+   re-index objects and see this change come into effect.
+
+-  Customize Catalog now includes a new Custom Field type: Multi-Select
+   Picker. Similar to Picker, it provides a dropdown menu to select from
+   predefined values, but with a checklist for multiple value
+   selection. Advanced Search allows faceting by values in these fields.
+
+-  On Table Catalog Pages for Hive Data Sources, Alation now shows a
+   link in Properties to the Catalog page to the HDFS file or directory
+   that backs the Hive Table. The HDFS File System must also be
+   cataloged in Alation for this feature to work. On HDFS File System
+   catalog pages, Alation now shows a link in Properties to the Catalog
+   page to the Hive Table if this file backs the Hive Table. To enable
+   this, the alation.feature_flags.enable_hive_links feature flag must
+   be set to True.
+
+-  Catalog sets now allow users to pick and choose specific
+   objects(Datasource, Database Catalog, Schema, Table, Column) through
+   the "Manual" set tab (accessible through Admin -> Catalog Sets). This
+   is helpful when simple conditional rules can't express the group. In
+   addition, users now have the ability to sync fields
+   (title/description, custom fields, flags and tags) across the
+   children of the manual set members. Once the manual set is created,
+   the fields that have to be synced can fully be customized through the
+   "Sync Children" tab on the catalog set page. This is useful when
+   there are duplicate items (with the same name) across different
+   schemas or datasources and fields would normally have to be copied
+   manually to the duplicates. When syncing is enabled for the first
+   time or the sync settings are modified, the metadata is copied from
+   the children in the order of how their parents were added in the set.
+   Metadata is synced across the children when one of the children is
+   modified (through catalog UI / API / data dictionary upload). More
+   details on how syncing works is present on the "Sync Children" tab.
+   With Manual Catalog Sets enabled, Object Equivalence feature is
+   deprecated, as Manual Catalog Sets support synchronization of tags,
+   flags, and custom fields, in addition to title and description.
+   Existing Schema Equivalences defined on the Object Equivalence tab in
+   Admin Settings have been migrated to Schema Manual Catalog Sets with
+   children syncing (for tables and columns) on title and description.
+   Object Equivalence can still be used when Manual Catalog Sets is
+   disables. As Object Equivalence is a deprecated feature, it will be
+   removed from Alation in the near future. The new catalog set features
+   can be enabled by \`alation_conf
+   alation.feature_flags.enable_cognates -s True`. Any user can
+   create/view manual sets but field synchronization settings can be
+   enabled/modified only by admins.
+
+-  For users of Compose, Trust Check is now available in conjunction
+   with Compose Previews to trust the data they're querying. With Trust
+   Check, flags added to the catalog are shown to the right users at the
+   right time, so they have more impact with less effort. The data
+   objects documented in the catalog are now brought forward in Compose
+   through color coded highlights or underlines in the query text as you
+   type. Users have control over the indicators in Compose. They can
+   choose whether to get indicators for depreciations, warnings, and
+   endorsements, or for objects without any quality flags.
+
+-  For customers with Tableau Server 10.4 or later connected to Alation.
+   Data Sources in Tableau will now be certified when the equivalent
+   data source is endorsed in Alation. For Admins: Enable this feature
+   by setting these two flags to True in alation_conf. Run these commands
+   from the Alation Shell: alation_conf
+   alation.feature_flags.enable_tableau_alation_integration -s True
+   alation_conf
+   alation.feature_flags.enable_tableau_certified_datasource - True
+
+-  For Admins of PostgreSQL environments, Alation now supports Behavior
+   I/O using EDB audit logs. To take advantage of this, enable Query Log
+   Ingestion from a Postgres Data Source Settings page.
+
+-  Alation now supports a Lineage GET API that will return a list of all
+   relevant lineages for a given table key and table type. For details,
+   refer to the `API documentation <https://developer.alation.com/dev/>`__.
+   Note: The lineage results do not currently include query or script
+   text for performance reasons.
+
+Admin Release Notes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _new-features-1:
+
+New Features
+^^^^^^^^^^^^^
+
+-  Alation now supports authentication with HttpFS or WebHDFS using
+   kerberos with SSL encryption. This should enable QLI, HDFS
+   extraction, and upload to HDFS functionality if your WebHDFS or
+   HttpFS service is configured with kerberos and SSL. On QLI settings
+   page, ensure the WebHDFS Server has the value like
+   "https://YOUR_WEBHDFS_HOSTNAME" and that the port is correct. If
+   there are self-signed certificates, those need to be imported into
+   Alation. See installation guide for details on installing
+   certificates.
+
+-  Admin can now toggle feature flags on/off via a new feature flag
+   admin page, reducing the need to use the alation shell. Changing
+   flags will cause all users' pages to reload
+
+-  Alation can now collect query logs for PostgreSQL data sources.
+   Admins can configure Query Log Ingestion through CSV Logs (by
+   default) or Audit Logs in the Data Source Settings page. Features
+   such as Popularity, Top Users, Joins, Filters, and Lineage are driven
+   by this data. For PostgreSQL data sources, Alation previously took
+   into account only queries run in Compose. Now Alation can take
+   advantage of query logs for a more comprehensive picture of usage.
+
+-  Alation now supports Metadata Extraction from Salesforce Einstein
+   Analytics. This can be configured by following the steps in the Add
+   New BI Server page in Admin Settings. Due to limitations of the
+   Salesforce APIs, Lineage is only available to datasets, and is
+   unavailable between datasource and datatable. This feature is enabled
+   by alation_conf Set the generic bi flag (if not already set)
+   alation_conf alation.feature_flags.enable_generic_bi -s True Set the
+   salesforce flag alation_conf
+   alation.feature_flags.enable_salesforce_bi -s True
+
+-  Alation now supports Metadata Extraction from Salesforce DB as a
+   datasource, further expanding the array of datasources accessible
+   through Alation. SObjects are extracted as tables, using Fields as
+   columns. These are all extracted under one schema, "sobjects," and
+   schema filtering has been disabled as a result. Also note that
+   Compose, Sampling, and Usage data are disabled. Admin users can
+   enable this feature through the UI by going to Settings > Admin
+   Settings > Labs -> and toggling "Enable SFDC Database Type"
+
+-  Alation now supports Metadata Extraction from IBM Cognos as a BI
+   Server. In Admin Setting, Add New Bi Server, register a Business
+   Intelligence Server IBM cognos Limitation: Usage stats are currently
+   only supported when Cognos is configured to use Oracle or SQL Server
+   database types to store usage This feature is enabled by alation_conf
+   Set the generic bi flag alation_conf
+   alation.feature_flags.enable_generic_bi -s True Set the cognos flag
+   alation_conf alation.feature_flags.enable_cognos -s True
+
+-  Alation now supports Azure SQL Data Warehouse as a data source. To
+   use this feature, navigate to Settings, Add a new data source and
+   choose Azure SQL DW as the DB type. This feature is enabled by
+   toggling the following Labs Setting: Settings -> Admin Settings ->
+   Labs -> Enable Azure SQL Data Warehouse Database Type
+
+-  Support for Execution Engines has been improved. The Add Datasource
+   wizard now allows adding "Presto" as a multi-catalog datasource. The
+   previous support as a single Hive Catalog is supported through the
+   datasource type "Presto on Hive". Existing Presto datasources will
+   continue to work as a Presto on Hive single catalog data sources.
+   This feature is enabled through a Labs Setting Settings -> Admin
+   Settings -> Labs -> Enable Presto Database Type with multiple
+   catalogs
+
+-  For HDFS Users, Alation now supports the extraction of filesystem
+   metadata from HDFS instances. Any distribution/version of HDFS that
+   supports the WebHDFS REST protocol is supported. Path filters, along
+   with connection and authentication parameters are specified in the
+   settings page. The catalog pages for folders and files that match the
+   path filters are displayed in the Alation UI.
+
+-  For SAS DB Users, Alation now supports the extraction of metadata
+   from SAS DB instances. To enable this, please run "alation_conf
+   alation.feature_flag.enable_datasource_sas -s True" from the Alation
+   shell.
+
+-  For Cassandra users, Alation now supports cataloging Cassandra as a
+   data source. Note that Compose and Query Log Ingestion is currently
+   disabled. To use this, please run "alation_conf
+   alation.feature_flags.enable_datasource_cassandra -s True" from the
+   Alation shell.
+
+-  For Users of Amazon S3, Alation now supports the cataloging of S3 as a
+   Filesystem. Alation will display each S3 bucket as a hierarchy of
+   directories and files representing the keys in S3. To use this, run "
+   alation_conf alation.feature_flags.enable_filesystems -s True" from
+   the Alation shell.
+
+-  Alation BI Support has been reworked to accomidate a significantly
+   wider array of tools. Currently, this framework supports
+   Microstrategy, IBM Cognos, and Salesforce Einstein Analytics, but
+   users can expect to see support for a wide array of BI solutions in
+   future releases. To use this framework, turn on the feature flag by
+   running "alation_conf alation.feature_flags.enable_generic_bi -s
+   True" from the Alation shell.
+
+-  For SAP HANA users, Alation now supports the ingestion of SAP HANA
+   Query logs.
+
+Release 5.0.1
+--------------
+
+Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  On Table Catalog Pages for Hive, Alation now shows a clickable link
+   in Properties to the underlying location that backs the Hive Table
+   for Amazon S3 (in 5.0.0 we released this for HDFS-backed tables). To enable
+   this, the alation.feature_flags.enable_hive_links feature flag must
+   be set to True.
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Resolved an issue introduced in 4.20.0 where Compose scheduled
+   queries at monthly, weekly, or daily intervals would fail to execute
+   with an error about being outside the delay tolerance (could be
+   addressed by lengthening the delay tolerance).  These schedules now
+   work with the standard delay tolerance.
+-  Resolved an issue where Compose results would sometimes not render
+   until the user switched tabs and switched back.
+-  Resolved an issue where Compose SmartSuggest would not return a full
+   list of matching objects when the data source has objects with
+   uppercase characters in the name.  SmartSuggest should now show up to
+   10 matching items, regardless of case.
+-  Resolved an issue where Compose SmartSuggest did not suggest tables
+   in order of popularity.  Now SmartSuggest should suggest the most
+   popular tables first.
+-  Fixed a bug where enabling "Tableau Data Source Certification" in the
+   Labs admin tab only worked if Tableau Workbook Certification was also
+   enabled from the backend. Now they can be enabled independently. Also
+   added the option to enable "Tableau Workbook Certification" from the
+   Labs tab.
+
+Admin Release Notes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Improvements
+^^^^^^^^^^^^^^
+
+-  Further improvements to Snowflake support.  Alation now supports
+   metadata extraction, sampling, and Compose access for Snowflake Data
+   Warehouse.  Query Log Ingestion is not yet supported.
+-  Alation now supports nonstandard system home directory and shell for
+   UNIX accounts used by Alation on the server.
+
+Release 5.0.2
+--------------
+
+Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Alation Installation no longer depends on the "which" command,
+   allowing for installation on "minimal" Linux distributions.
+-  Improved support for Tableau release 10.5.
+
+ Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Fixed a bug introduced in 4.18 which would prevent the "Shared With
+   Me" section of the Compose Query Browser from loading.
+-  Fixed an issue with upgrades where very long table names would cause
+   the underlying migrations to fail
+-  Fixed an issue where Alation would strip all comments from scheduled
+   queries and queries run through Excel Live Report. These comments
+   could contain semantic content, such as hints to the database engine.
+   Alation now sends the comments along with the query, but will not
+   send them as a statement by themselves (i.e. a comment that is the
+   last line in a query)
+-  Fixed an issue where, in some enterprise environments, Alation was
+   unable to provision linux system users with the right permissions in
+   the Alation Shell environment, which would result in a failure during
+   software upgrade. Alation will now check and reset the permissions if
+   necessary.
+-  Fixed a bug introduced in 4.18.0 where killing an in-progress Tableau
+   Extraction or Virtual Data Source upload job would hide the status of
+   any current or past jobs of that type. The actual jobs would continue
+   to run on schedule, but not be visible in the settings pages. This
+   could happen if the machine or server was restarted in the middle of
+   one of these jobs or they were killed by the OS or a sysadmin. Now,
+   current and past Tableau Extraction and Virtual Data Source upload
+   jobs will show on settings pages.
+-  This release disables a control for video uploads to the rich text
+   editor (used in Articles). Previously, video files were being
+   uploaded to an external website for staging purposes. We have
+   verified that any uploaded videos were deleted from the external
+   server shortly after upload. Users can continue to embed video from
+   YouTube, Vimeo and other sources.
+
+Release 5.0.3
+--------------
+
+New Features
+~~~~~~~~~~~~
+
+-  For customers with Salesforce Einstein Analytics connected to
+   Alation, Analytics dashboards will now be certified with a prefix
+   when the equivalent dashboard is endorsed in Alation. If a user
+   manually edits the title in Salesforce and removes the prefix, when
+   the next metadata extraction job runs in Alation we will correct the
+   title back. Users of Salesforce Einstein Analytics can enable this
+   integration from Alation Labs. The service account associated with
+   the Salesforce Einstein Analytics instance in Alation needs to have
+   "Manage Dashboards" permissions in Salesforce for all the
+   folders(shared, private, etc). When dashboards in Alation are
+   endorsed, warned or deprecated we propagate the information to
+   Salesforce Einstein Analytics as follows:
+
+   -  If a dashboard has been marked as deprecated by at least a single
+      user we will prefix (DO NOT USE) to the dashboard title in
+      Salesforce.
+   -  If a dashboard has not been deprecated or warned by anyone, and if
+      it is endorsed by at least a single user we will prefix
+      (CERTIFIED) to the dashboard title in Salesforce.
+
+Improvements
+~~~~~~~~~~~~
+
+-  Dashboard titles for Salesforce in Alation will now synchronize with
+   the corresponding titles on the Salesforce website.
+-  Previously, the DataDog reporting agent was run by its own user. To
+   improve the installation process, the DataDog agent is now run by the
+   Alation user
+
+Bug Fixes
+~~~~~~~~~
+
+-  Fixed an issue where, starting in 4.20, Alation would strip
+   authentication information from the URI used for Hive/Impala QLI.
+   This information is now properly passed to the server.
+-  In some cases Microstrategy extraction would exhaust available memory
+   before completion. Users can now disable permission mirroring as a
+   workaround for this problem. Note that this a fix for a specific
+   customer issue and not generally recommended to disable permission
+   mirroring.
+-  Fixed an issue where Impala QLI would fail while attempting to parse
+   log files that have a slightly different timestamp format than
+   expected. Alation is now able to handle the new timestamp format.
+-  Fixed a bug where database identifiers that began with unicode
+   characters would cause Metadata Extraction to fail.
+-  Fixed a bug where upgrading to a higher version of alation with a
+   lower build number would leave Alation in an inconsistent state.
+
+Release 5.0.4
+--------------
+
+Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Added metadata extraction support for SQL Server instances configured
+   with case-sensitive collation.
+
+Release 5.0.9
+--------------
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Previously, Amazon S3 extraction worked if a folder is specified, but failed
+   for full extraction. The recursion technique used in the call to S3
+   for bucket objects has been replaced by the do-while loop. So,
+   Alation can now support more than 10 million objects of a S3 bucket.
+-  Previously, Alation would not be able to parse encrypted assertion
+   when authenticating a user with SAML. Now, this has been resolved.
+   SAML HTTP POST binding is not supported now.
+
+Release 5.0.10
+--------------
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  After upgrading to 5.0.8, NullPointerExceptions were occurring on
+   running Microstrategy extraction for some projects with shortcut.
+   This fix handles the exception and the extraction now runs
+   successfully.
+-  Metadata extraction was failing for Greenplum due to a filter value
+   in the metadata extraction query. To resolve this issue, the pattern
+   to exclude the system schema has been corrected to ensure that user
+   schema names with prefix "pg" do not get excluded during metadata
+   extraction.
+
+Release 5.0.11
+--------------
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Previously, the multi-picker fields on the article page were
+   displaying wrong values on page refresh. This issue has been
+   resolved. Now, the correct value of multi-picker fields is displayed
+   on the article page on page refresh.
+
+Release 5.0.12
+--------------
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Previously, Alation Restore would fail when the recovery config file
+   was not present. This issue is now fixed.
+-  Alation has discovered a serious updater issue in V R1 builds below
+   5.0.12. In case /opt or /opt/alation were symlinks, the updater could
+   potentially remove the dataset. This problem has been fixed. All
+   upgrades to V R1 must only use builds 5.0.12 and above.
+-  Alation now enforces SAML signature validation to avoid potential
+   privilege escalation attack in SAML authentication.
+-  We used to have an issue when scripts could be injected into certain
+   fields in Alation and then executed when users visited their User
+   Profile page. This issue has been addressed and any injected script
+   execution is no longer possible in Alation.
+-  Previously, if the user drags and drops a file into an article while
+   editing it, the file was temporarily saved outside Alation. Now,
+   these files are stored inside Alation. The size of image inserted in
+   an article should not exceed
+   ALATION_MAX_UPLOADED_ATTACHMENT_FILE_BYTES size. This limitation is
+   enforced now for images inserted into an article using the
+   corresponding widget.
+
+ 
+
+ 
+
+ 

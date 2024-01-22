@@ -1,0 +1,35 @@
+Table Titles and Descriptions
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query indicates if table objects have titles and descriptions.
+
+.. code-block:: sql
+
+    SELECT
+      ao.object_url,
+      MAX(CASE WHEN field_id = 3 then 1 else 0 end) AS has_title,
+      MAX(CASE WHEN field_id = 4 then 1 else 0 end) AS has_description
+    FROM
+      public.alation_object AO
+      INNER JOIN public.object_field_value OFV ON OFV.object_uuid = AO.object_uuid
+      AND OFV.object_type_id = AO.object_type_id
+    WHERE
+      (
+        ofv.user_id IS NOT NULL
+        AND ofv.field_id IN (3, 4)
+        /* title or description */
+      )
+      AND ao.object_type_id IN (
+        SELECT
+          object_type_id
+        FROM
+          public.alation_object_type
+        WHERE
+          object_type_name = 'table'
+      )
+    GROUP BY
+      ao.object_url

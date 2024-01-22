@@ -1,0 +1,64 @@
+Role Switching with Snowflake OAuth
+=======================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Snowflake Built-In OAuth
+-----------------------------
+
+Role switching is not supported with Snowflake built-in OAuth. With built-in OAuth, Compose users can connect with either of the following:
+
+    - The role they provided in the Connection URI
+
+    - The role specified in the Default Scope in the OAuth configuration parameters in Alation
+
+    - If neither of the above is specified, then the connection will be established with the default role assigned to them in Snowflake. If no default role is assigned, the connection uses the role ``PUBLIC``.
+
+Snowflake External OAuth
+----------------------------
+
+Role switching is supported with the External OAuth configuration. This means the ``USE ROLE`` statement in Compose can be used to switch to any role accessible to the Snowflake user.
+
+    .. note::
+
+        Role switching needs the Default Scope to be set to ``SESSION:ROLE-ANY``.
+
+        To apply the Default Scope ``SESSION:ROLE-ANY``, ensure that the ``EXTERNAL_OAUTH_ANY_ROLE_MODE`` field is set to ``ENABLE`` in the Snowflake security integration used in the External OAuth configuration.
+
+Even if the Default Scope for the data source includes ``SESSION:ROLE-ANY``, any role specified by the user in the connection URI will still validly result in additional scope specified in the authorization request. For example, Okta issues an access token valid for both scopes.
+
+If the Default Scope for the data source includes a specific Snowflake role, the more permissive role is assigned as the current role when the connection is initiated even if the user's default role is less permissive. In this case, role switching is not allowed as it is only enabled with the ``SESSION:ROLE-ANY`` value specified in the Default Scope.
+
+Case-Sensitive Roles or Roles with Special Characters
+--------------------------------------------------------
+
+*Applies from version 2021.3*
+
+Snowflake roles that are case-sensitive or contain special characters require double-quoted identifiers in order to be resolved. An example can be a role defined in Snowflake as ``role.name``:
+
+    .. code-block:: SQL
+
+        CREATE ROLE IF NOT EXISTS "role.name"
+
+A user may have such a role assigned as their default role. If not, they should follow the recommendations below to switch to such a role.
+
+External OAuth
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Switch roles with the ``USE ROLE`` statement and using the double-quoted identifiers.
+
+Built-in Snowflake OAuth
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Specify the role in the connection URI, using URL-encoding for the role name, for example:
+
+    .. code-block:: SQL
+
+          role=%22role.name%22
+
+URI Example
+~~~~~~~~~~~~~~
+
+    .. code-block:: bash
+
+          snowflake://your_domain.snowflakecomputing.com:443/?warehouse=DEMO&authenticator=oath&role=%22role.name%22

@@ -1,0 +1,426 @@
+Configure Connection to Data Source
+=====================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+After you install the Redshift OCF connector, you must configure the connection to the Redshift data source.
+
+The various steps involved in configuring the Redshift data source connection setting are:
+
+    1. `Provide Access`_
+
+    2. `Connect to Data Source`_
+
+    .. image:: ../../../_static/Oracle2.0_General_Settings.png
+        :width: 600px
+
+Provide Access
+----------------
+
+Go to the **Access** tab on the Settings page of your Redshift data source, set the data source visibility using these options:
+
+    - **Public Data Source** — The data source is visible to all users of the catalog.
+
+    - **Private Data Source** — The data source is visible to the users allowed access to the data source by Data Source Admins.
+
+You can add new Data Source Admin users in the **Data Source Admins** section.
+
+Connect to Data Source
+-------------------------
+
+To connect to the data source, you must perform these steps:
+
+    1. `Provide the JDBC URI`_
+
+    2. `Configure Authentication`_
+
+    3. `Test the Connection`_
+
+    4. `Configure Additional Connection Settings`_
+
+    5. `Configure Logging`_
+
+.. important::
+
+    The Alation user interface displays standard configuration settings for credentials and connection information stored in the Alation database. If your organization has configured Azure KeyVault or AWS Secrets Manager to hold such information, the user interface will change to include the following buttons adjacent to the respective fields:
+
+     .. image:: ../../../_static/SnowflakeOCF_New_Vault_Button.png
+        :width: 150px       
+    
+    By default, you see the user interface for **Standard**. In the case of Vault, instead of the actual credential information, you must select the source and provide the corresponding key. For details, see :doc:`Configure Secrets for OCF Connector Settings </sources/OpenConnectorFramework/ConfigureSecretsforOCFConnectors/index>`.
+
+Provide the JDBC URI
+----------------------
+
+JDBC URI
+~~~~~~~~~~~~~
+
+When building the URI, include the following information:
+
+    - Hostname or IP of the instance
+    - Port number
+    - Database name
+    - Client ID
+    - Region
+
+URI Format for Basic Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      redshift://<Hostname_or_IP>:<Port_Number>/<Database_Name>
+
+**Example**
+
+
+.. code-block:: Bash
+
+      redshift://redshift-nlb-adc13e6232ccee56.elb.us-east-1.amazonaws.com:5439/test_alation_database
+
+
+URI Format for STS Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      redshift:iam://<ClusterID>:<AWS_Region>/<Database_Name>
+
+**Example**
+
+
+.. code-block:: Bash
+
+      redshift:iam://redshift-nlb-adc13e6232ccee56.elb.us-east-1.amazonaws.com:5439/test_alation_database?ClusterID=redshift-cluster-private&Region=us-east-1
+
+
+.. code-block:: Bash
+
+      redshift:iam://<Hostname_or_IP>:<Port_Number>/<Database_Name>
+
+
+**Example**
+
+
+.. code-block:: Bash
+
+      redshift:iam://redshift-nlb-adc13e6232ccee56.elb.us-east-1.amazonaws.com:5439/test_alation_database
+
+
+Provide the JDBC URI in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To provide to the JDBC URI in the Alation UI, perform these steps:
+
+.. tabs::
+
+    .. tab:: Connector Version 1.7.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.7.0**
+
+            1. On the Settings page of your Oracle data source, go to the **General Settings** tab.
+
+            2. In the **Provide the JDBC URI** section, based on the type of authentication you want to use, enter the JDBC URI. For details, see `Provide the JDBC URI`_ . 
+
+            3. **Save** the configuration.
+
+    .. tab:: Connector Versions Prior to 1.7.0
+
+            1. On the Settings page of your Oracle data source, go to the **General Settings** tab.
+
+            2. Go to the **Connector Settings** > **Datasource connection** section and based on the type of authentication you want to use, enter the JDBC URI. For details, see `Provide the JDBC URI`_ . 
+
+            3. **Save** the configuration.
+
+
+Configure Authentication
+--------------------------
+
+Alation supports the following authentication types for the Redshift data source:
+
+    - Basic authentication (database username and password)
+
+    - STS Authentication
+
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Basic authentication requires a service account username and password.
+
+
+Configure Basic Authentication 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. tabs::
+
+    .. tab:: Connector Version 1.7.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.7.0**
+
+            1. On the Settings page of Redshift data source, go to the **General Settings** tab.
+
+            2. In the **Configure authentication** step, click on the **Basic** tab. 
+
+            3. Provide the service account username and password. 
+
+            4. To use SSL with Basic authentication, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate. 
+
+            5. **Save** the configuration.
+
+    .. tab:: Connector Versions Prior to 1.7.0
+
+            1. On the Settings page of your Redshift data source, click on the **General Settings** tab.
+
+            2. Go to the **Connector Settings** > **Datasource connection** section and provide the following information: 
+
+                +----------------------------+---------------------------------------------------------------+
+                | **Parameter**              | **Description**                                               |
+                +============================+===============================================================+
+                | Username                   | Specify the service account username.                         |
+                +----------------------------+---------------------------------------------------------------+
+                | Password                   | Specify the service account password.                         |
+                +----------------------------+---------------------------------------------------------------+
+                | Enable SSL                 | Enable or disable SSL authentication by selecting or clearing |
+                |                            | the **Enable SSL** checkbox.                                  |
+                |                            |                                                               |
+                |                            | If the **Enable SSL** checkbox is enabled, upload the SSL     |
+                |                            | certificate using the **upload** link below.                  |
+                +----------------------------+---------------------------------------------------------------+
+                | Truststore Password        | Provide the password for the SSL certificate.                 |
+                |                            |                                                               |
+                |                            | .. note::                                                     |
+                |                            |                                                               |
+                |                            |      The password will be deleted if the data source          |
+                |                            |      connection is deleted.                                   |
+                +----------------------------+---------------------------------------------------------------+
+                     
+            
+            3. **Save** the configuration.   
+
+STS Authentication with an AWS IAM User
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Connector Version 1.7.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.7.0**
+
+            1. On the Settings page of Redshift data source, go to the **General Settings** tab.
+
+            2. In the **Configure authentication** step, click on the **STS - IAM User** tab. Refer to :ref:`STS Authentication with an IAM User <redshift-sts-auth-user>` for more information about this authentication method.
+
+            3. To use AWS STS Regional endpoint, turn on the **Region-Specific Endpoint** toggle and specify your AWS region.
+
+            4. Specify the user name in **DB username** to log in to the cluster database.
+
+            5. If you are authenticating with an AWS user, specify the access key ID of the service account under **AWS Access Key**.
+
+            6. If you are authenticating with an AWS user, specify the access key secret of the service account under **AWS Secret Key**.
+
+            7. Specify the ARN of the role you created following the steps in `STS Authentication with an AWS IAM User`.
+
+            8. Specify the STS duration value, in seconds. The default value is 3600 seconds.
+
+            9. To use SSL with Basic authentication, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate.
+            
+            10. **Save** the configuration.
+
+    .. tab:: Connector Versions Prior to 1.7.0
+
+            1. On the Settings page of your Redshift data source, click on the **General Settings** tab.
+
+            2. Go to the **Connector Settings** > **STS Authentication** section and provide the following information: 
+
+                +----------------------------+---------------------------------------------------------------+
+                | **Parameter**              | **Description**                                               |
+                +============================+===============================================================+
+                | Region-Specific Endpoint   | Select this checkbox if you prefer to use the STS endpoint    |
+                |                            | specific to your AWS region. The regional endpoint has to be  |
+                |                            | active under your AWS account.                                |
+                |                            | Leave this checkbox clear to use the global endpoint.         |
+                +----------------------------+---------------------------------------------------------------+
+                | Region                     | Specify your AWS region.                                      |
+                +----------------------------+---------------------------------------------------------------+
+                | DB username                | Specify the user name to use to log in to the cluster         |
+                |                            | database.                                                     |
+                +----------------------------+---------------------------------------------------------------+
+                | STS: AWS Access Key ID     | If you are authenticating with an AWS user, specify the       |
+                |                            | access key ID of the service account.                         |
+                +----------------------------+---------------------------------------------------------------+
+                | STS: AWS Access Key Secret | If you are authenticating with an AWS user, specify           |
+                |                            | the access key secret of the service account.                 |
+                +----------------------------+---------------------------------------------------------------+
+                | Role ARN                   | Specify the ARN of the role you created following the steps   |
+                |                            | in `STS Authentication with an AWS IAM User`                  |
+                +----------------------------+---------------------------------------------------------------+
+                | STS Duration               | Specify the STS duration value, in seconds. The default       |
+                |                            | value is 3600 seconds.                                        |
+                +----------------------------+---------------------------------------------------------------+
+
+                Refer to :ref:`STS Authentication with an IAM User <redshift-sts-auth-user>` for more information about this authentication method.
+
+            3. To use SSL with Basic authentication, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate.
+            
+            4. **Save** the configuration.
+
+
+.. _redshift-configure-sts-with-role:
+
+STS Authentication with an AWS IAM Role
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+
+    .. tab:: Connector Version 1.7.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.7.0**
+
+            1. On the Settings page of Redshift data source, go to the **General Settings** tab.
+
+            2. In the **Configure authentication** step, click on the **STS - IAM Role** tab. Refer to :ref:`STS Authentication with an IAM Role <redshift-sts-auth-role>` for more information about this authentication method.
+
+            3. Specify the user name in **DB username** to log in to the cluster database.
+
+            4. Select the authentication profile you created in Admin Settings.
+
+            5. Provide the ARN of the role that gives access to the Amazon resource.
+
+            6. Provide the External ID you added to the role that gives access to the Amazon resource.
+
+            7. Provide the STS token duration in seconds. This value must be less than or equal to the **Maximum session duration** of the IAM role that provides access to the Amazon resource(s).
+
+            8. To use SSL with Basic authentication, turn on the **Enable SSL** toggle, provide the Truststore password, and upload the SSL certificate.
+            
+            9. **Save** the configuration.
+
+    .. tab:: Connector Versions Prior to 1.7.0
+
+            1. On the Settings page of your Redshift data source, click on the **General Settings** tab.
+
+            2. Go to the **Connector Settings** > **STS Authentication** section.
+
+                .. include:: ../../../shared/OCF/OCF_STS_Auth_with_Amazon_sources.rst
+                    :start-after: .. start-configure-sts-with-role
+                    :end-before: .. end-configure-sts-with-role
+
+
+Test the Connection
+--------------------
+
+The connection test checks database connectivity. Alation uses the JDBC URI to connect to the database and to confirm when the connection is established.
+
+After specifying the JDBC URI and configuring authentication, click **Test Connection**.
+
+A dialog box appears confirming the status of the connection test. 
+
+
+Configure Additional Connection Settings
+-----------------------------------------
+   
+Apart from the mandatory configurations that you perform to connect to the data source in the General Settings tab, you can configure the following additional settings:
+
+    - `Configure Additional Data Source Connections`
+
+    - `Disable Obfuscate Literals`
+
+    - `Disable automatic lineage generation`
+
+Configure Additional Data Source Connections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation can associate objects in a data source with objects in another source in the catalog through lineage. For example, you can show lineage between your data source and BI sources that use its data. 
+
+Provide additional connection information for the data source to see lineage across multiple sources on the Lineage chart. 
+
+.. tabs::
+
+    .. tab:: Connector Version 1.7.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.7.0**.
+
+            To enter additional data source connection details, go to **General Settings** > **Advanced settings** of the Settings page of your Redshift connector and enter the connection URL.
+
+            Use the following format: ``<host>:<port>``
+
+            You can provide multiple values as a comma-separated list:
+            
+            ``<host1>:<port1>,<host2>:<port2>``
+
+            For example:
+
+            ``10.13.71.216:1541,sever.com:1542``
+
+
+    .. tab:: Connector Versions Prior to 1.7.0
+
+            On the **Application Settings** section of **General Settings** tab, provide the host and port information in the **Additional data source connections** field.
+            
+            This parameter is used to generate lineage between the current data source and another source in the catalog, for example a BI source that retrieves data from the underlying database. 
+            The parameter accepts host and port information of the corresponding BI data source connection.
+
+            Use the following format: ``<host>:<port>``
+
+            You can provide multiple values as a comma-separated list:
+            
+            ``<host1>:<port1>,<host2>:<port2>``
+
+            For example:
+
+            ``10.13.71.216:1541,sever.com:1542``
+
+
+For more details, see :doc:`/sources/OpenConnectorFramework/BIConnectionInfoField`.
+
+Enable or Disable Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can hide literal values from queries ingested with query log ingestion and displayed on the Queries tab of a schema and table catalog objects. 
+
+.. tabs::
+
+    .. tab:: Connector Version 1.7.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.7.0**.
+
+            Go to the **General Settings** tab and turn on or off the **Obfuscate literals** toggle under the **Advanced settings** section.
+
+
+    .. tab:: Connector Versions Prior to 1.7.0
+
+        Go to the **General Settings** tab and turn on or off the **Obfuscate literals** toggle.
+               
+
+When enabled, literal values are substituted with placeholder values. Disable this option when you want literal values in queries to be visible to users.
+
+By default, this option is disabled.
+
+Configure Logging
+-------------------
+
+To set the logging level for your Oracle data source logs, perform these steps:
+
+.. tabs::
+
+    .. tab:: Connector Version 1.7.0 and Newer
+
+        From Alation version **2023.3.4** and connector version **1.7.0**.
+
+            
+            1. On the Settings page of your Redshift data source, go to **General Settings** > **Connector logs**.
+
+            2. Select a logging level for the connector logs and **Save** the settings. 
+        
+                The available log levels are based on the Log4j framework.
+
+
+    .. tab:: Connector Versions Prior to 1.7.0
+
+            1. On the Settings page of your Redshift data source, go to **Logging configuration** section of **General Settings** tab.
+
+            2. Select a logging level for the connector logs and **Save** the settings. 
+        
+                The available log levels are based on the Log4j framework.
+
+
+You can view the connector logs in **Admin Settings** > **Server Admin** > **Manage Connectors** > **Redshift OCF connector**.

@@ -1,0 +1,54 @@
+Compose Analytics
+=================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query provides a day level resolution information on user query behaviors. The aggregation is at a table set level.
+
+.. code-block:: sql
+
+    WITH query_tables AS (
+      SELECT
+        CQL.query_execution_id,
+        STRING_AGG(DISTINCT FV.text_value, ', ') AS tables_mentioned
+      FROM
+        public.compose_query_log AS CQL
+        JOIN public.object_field_value AS OFV ON OFV.object_uuid = ANY(CQL.mentioned_tables_uuids)
+        AND OFV.object_type_id = 27
+        JOIN public.field_value AS FV ON OFV.value_fp = FV.value_fp
+      WHERE
+        OFV.field_id = 3192
+      GROUP BY
+        CQL.query_execution_id
+    )
+    SELECT
+      DATE(CQL.executed_at_ts) AS date,
+      CQL.user_id,
+      AU.user_name,
+      CQL.db_username,
+      FV_DS.text_value AS datasource_name,
+      QT.tables_mentioned,
+      CQL.is_query_published,
+      CQL.is_scheduled_execution,
+      SUM(CQL.execution_duration) total_execution_time,
+      COUNT(query_statement_fp) total_query_runs,
+      COUNT(DISTINCT query_statement_fp) distinct_query_runs
+    FROM
+      public.compose_query_log AS CQL
+      LEFT OUTER JOIN query_tables AS QT ON CQL.query_execution_id = QT.query_execution_id
+      JOIN public.object_field_value AS OFV_DS ON CQL.datasource_uuid = OFV_DS.object_uuid
+      AND OFV_DS.object_type_id = 7
+      AND OFV_DS.field_id = 3
+      JOIN public.field_value AS FV_DS ON OFV_DS.value_fp = FV_DS.value_fp
+      JOIN public.alation_user AS AU ON CQL.user_id = AU.user_id
+    GROUP BY
+      DATE(CQL.executed_at_ts),
+      CQL.user_id,
+      AU.user_name,
+      CQL.db_username,
+      FV_DS.text_value,
+      QT.tables_mentioned,
+      CQL.is_query_published,
+      CQL.is_scheduled_execution;

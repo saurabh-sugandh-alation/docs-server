@@ -1,0 +1,391 @@
+Enable SCIM Integration for User and Group Management
+=========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Available from release 2021.3*
+
+When SAML is in use as the authentication method in Alation, it is also possible to enable SCIM integration to auto-synchronize groups and group members between the identity provider (IdP) and Alation. With groups synchronized over SCIM, group membership does not need to be managed manually as the groups and group members will be automatically pushed to Alation from the IdP by the SCIM provisioning process. Changes to group membership and user properties will be picked up and applied automatically.
+
+.. note::
+
+   The System for Cross-domain Identity Management (SCIM) 2.0 is an open specification that facilitates automated management of user identities and groups between identity providers and applications using REST API. Alation supports SCIM 2.0 (RFC7643 and RFC7644) to integrate with identity providers that support SCIM.
+
+*From version 2021.3*, Alation supports basic authentication (username and password) for user and group synchronization with SCIM.
+
+*From version 2021.4*, Alation supports both basic authentication and token authentication.
+
+SCIM 2.0 is used by Alation for managing user account properties and groups but not for authentication. SAML must be configured as the authentication method before enabling SCIM.
+
+Depending on the capabilities of the IdP, you may be able to use one application on the IdP side to configure both SAML authentication and SCIM provisioning or two applications specialized for these two functions.
+
+If using two applications, note that user and group assignments should be consistent in both of them so that all group members synced over SCIM are able to log in to Alation. If a user is assigned to the SAML app but not to the SCIM app, this account will be created in Alation but the user will not be managed with SCIM: the automatic sync process will not be able to update user information or deactivate this user in Alation. On the other hand, if a user is assigned to the SCIM app but not to the SAML app, this user's information will be synced to Alation, but the user will not be able to log in.
+
+We recommend getting the assistance of your IdP admin to perform end-to-end configuration for SCIM.
+
+How Does Group Sync Over SCIM Work?
+-------------------------------------
+
+Let's assume that an admin has enabled SCIM integration for an Alation instance, and now users and groups are auto-synchronized between Alation and the IdP. SCIM enablement makes specific manual admin actions unavailable as users and groups will now be provisioned from an external application. See the table below for comparison of Alation user and group management capabilities with SCIM integration enabled vs. disabled:
+
++---------------------------------------+-----------------------------+-----------------------------+
+| Actions                               | SAML, SCIM disabled         | SAML, SCIM enabled          |
++=======================================+=============================+=============================+
+| Users can sign up for an Alation      | No                          | No                          |
+| account on the Alation login screen   |                             |                             |
++---------------------------------------+-----------------------------+-----------------------------+
+| Users log in from their IdP login     | Yes                         | Yes                         |
+| screen or from their IdP dashboard    |                             |                             |
++---------------------------------------+-----------------------------+-----------------------------+
+| Admins can choose to moderate account | Yes                         | No                          |
+| sign-ups                              |                             |                             |
++---------------------------------------+-----------------------------+-----------------------------+
+| Admins can manually activate users    | Yes                         | No\*                        |
+|                                       |                             |                             |
+|                                       |                             | \* With the exception of    |
+|                                       |                             | users whose accounts are not|
+|                                       |                             | pushed from the IdP, for    |
+|                                       |                             | example, accounts created   |
+|                                       |                             | before enabling SCIM sync   |
++---------------------------------------+-----------------------------+-----------------------------+
+| Admins can manually suspend users     | Yes                         | No \*                       |
+|                                       |                             |                             |
+|                                       |                             | \* With the exception of    |
+|                                       |                             | users whose accounts are not|
+|                                       |                             | pushed from the IdP, for    |
+|                                       |                             | example, accounts created   |
+|                                       |                             | before enabling SCIM sync   |
++---------------------------------------+-----------------------------+-----------------------------+
+| Users can manually change the Display | Yes                         | No                          |
+| Name under User Profile               |                             |                             |
+|                                       |                             | On hover-over, users see a  |
+|                                       |                             | message that the Display    |
+|                                       |                             | Name is supplied using an   |
+|                                       |                             | automatic process           |
++---------------------------------------+-----------------------------+-----------------------------+
+| Users can manually change the email   | Yes                         | No                          |
+| under User Profile                    |                             |                             |
+|                                       |                             | On hover-over, users see a  |
+|                                       |                             | prompt to contact their     |
+|                                       |                             | directory admin to change   |
+|                                       |                             | the email                   |
+|                                       |                             |                             |
++---------------------------------------+-----------------------------+-----------------------------+
+| Admins can manually create, edit, and | Yes                         | Yes                         |
+| delete a group that is Defined in     |                             |                             |
+| Alation                               |                             |                             |
++---------------------------------------+-----------------------------+-----------------------------+
+| Admins can manually create or delete  | No                          | No                          |
+| a SCIM group                          |                             |                             |
++---------------------------------------+-----------------------------+-----------------------------+
+| Admins can manually assign roles to   | Yes                         | Yes                         |
+| groups                                |                             |                             |
++---------------------------------------+-----------------------------+-----------------------------+
+| Admin can toggle on feature **Use**   | Yes                         | No                          |
+| **Custom Groups to manage user**      |                             |                             |
+| **suspension and activation** on the  |                             | This feature cannot be      |
+| **Groups** page                       |                             | enabled when the automatic  |
+|                                       |                             | identity management process |
+|                                       |                             | is in use                   |
++---------------------------------------+-----------------------------+-----------------------------+
+
+Role Assignment Using Custom Groups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++----------------------------------+--------------------------------+--------------------------------+
+| SAML, SCIM enabled or disabled   | **Use Groups to Assign Roles** | **Use Groups to Assign Roles** |
+|                                  | disabled                       | enabled                        |
++==================================+================================+================================+
+| Admins can manually assign roles | Yes                            | Yes                            |
+| to groups                        |                                |                                |
++----------------------------------+--------------------------------+--------------------------------+
+| Admins can manually assign roles | Yes                            | No                             |
+| to users                         |                                |                                |
++----------------------------------+--------------------------------+--------------------------------+
+
+With SCIM integration enabled, Alation supports the push of users and groups from the IdP to Alation. Any consequent changes in the IdP directory will be picked up immediately or after a short period of time depending on the configuration of the provisioning process on the IdP side.
+
+
+.. _Enable_SCIM_Integration-Configure_SCIM_Integration:
+
+Configure SCIM Integration
+------------------------------
+
+Configuration for SCIM integration has to be performed on both the Alation server and the IdP side. Start with configuring Alation and then perform the required configuration in your IdP.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+SCIM integration is configured using the Django shell of the Alation server. The configurations are saved in the corresponding **alation_conf** parameter values and can be later viewed using **alation_conf**. See :doc:`View SCIM Configuration in alation_conf </installconfig/ServerInstallation/UserAuthenticationSetup/ViewSCIMConfiguration>` for more information.
+
+.. note::
+
+   SCIM configuration must not be performed by modifying the **alation_conf** parameters directly.
+
+Prerequisites
+~~~~~~~~~~~~~~~~~
+
+1. Your Alation instance uses SAML as the authentication method. SAML has been successfully configured and enabled. See :doc:`User Authentication With SAML </installconfig/ServerInstallation/UserAuthenticationSetup/UserAuthenticationSAML>` about configuring SAML authentication in Alation.
+
+2. Your IdP supports SCIM 2.0, basic or token authentication for SCIM 2.0, and has a way to enable SCIM for integrations with service providers.
+
+3. The admin configuring SCIM must have or know a user account in Alation with the Server Admin role. This account will be used to log in, test, and complete the configuration. This account should be assigned to the SAML application integration to enable the admin user to log in. Plan which Server Admin user account you are going to test with.
+
+4. Check if the feature **Use Custom Groups to Assign User Roles** is enabled on your instance. If yes, make sure that the Server Admin account you plan to use for testing the SCIM setup is in a custom group with the Server Admin role mapped to it. When SCIM is enabled, this user must be able to log in as a Server Admin.
+
+Network Configuration
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The SCIM protocol requires that your IdP should be able to access the network hosting your Alation instance. For example, if your Alation instance is installed in a network provided by AWS, GCP, or MS Azure, you may have to allow the IP address range of the IdP on your network so that the IdP can reach the Alation server using SCIM.
+
+The configuration will differ for each network provider and each IdP. You can use the following examples:
+
+- :ref:`Allowing Okta IP Addresses <TroubleShooting_SCIM-Allow_Okta>`
+- :ref:`Allowing Azure AD IP Addresses <TroubleShooting_SCIM-Allow_Azure>`
+
+
+Configuration Steps
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To configure SCIM integration on customer-managed instances of Alation:
+
+Step 1: Set the SCIM Client
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The SCIM client is the application that pushes user identity and group data to the target service provider (Alation) using SCIM API. The client initiates SCIM HTTP requests for the push. 
+
+.. include:: /shared/AccessingAlationShell.rst
+
+2. Enter the Django shell:
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+3. Run the command given below to set the SCIM client. Supported values for the SCIM client are:
+
+        - okta (default)
+        - pingfederate
+        - one_identity
+        - azure_active_directory
+
+    Values should be provided in single quotes.
+
+    .. code-block:: Bash
+
+        from rosemeta.utils.users_and_groups.configuration_utils import update_scim_client
+
+        update_scim_client('<identity_provider>')
+
+
+    **Example 1: Okta**
+
+    .. code-block:: Bash
+
+        from rosemeta.utils.users_and_groups.configuration_utils import update_scim_client
+
+        update_scim_client('okta')
+
+    **Example 2: Azure AD**
+
+    .. code-block:: Bash
+
+        from rosemeta.utils.users_and_groups.configuration_utils import update_scim_client
+
+        update_scim_client('azure_active_directory')
+
+Step 2: Set Up SCIM Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Set either basic authentication credentials or the access token for SCIM.
+
+.. note::
+
+   Okta supports both basic authentication and token authentication.
+   Azure AD requires token authentication.
+
+-  `Token Authentication (2023.3.2 and Later)`_
+-  `Token Authentication (2021.4 to 2023.3.1)`_
+-  `Basic Authentication`_
+
+Token Authentication (2023.3.2 and Later)
+"""""""""""""""""""""""""""""""""""""""""
+
+Starting in 2023.3.2, you can create a SCIM token using the Alation UI. The token’s expiration can be anywhere from one to six months. You can create a new token at any time, which will immediately revoke the old token.
+
+#. In Alation, go to **Admin Settings**, then **Authentication**.
+
+#. Find the **SCIM Token** section.
+
+   .. image:: /_static/ScimToken_NoTokenGeneratedYet.png
+      :class: with-border
+
+#. To create a new token, click the dropdown to select how long the token will be valid.
+
+   .. image:: /_static/ScimToken_Expiration.png
+
+#. Click **Generate Token**. A popup window appears with the new token.
+
+   .. image:: /_static/ScimToken_Created.png
+      :class: with-border
+
+#. Click **Copy** and save the token in a secure location. It will be required later when you configure SCIM integration on the IdP side.
+
+   .. include:: /shared/TokenNeverShownAgain.rst
+
+#. Once you’ve saved the token, click **Close**.
+
+Token Authentication (2021.4 to 2023.3.1)
+"""""""""""""""""""""""""""""""""""""""""
+
+The SCIM bearer token has an expiry period of 6 months. The expiry period cannot be customized. If security policies at your organization require that the tokens should be updated more often than every 6 months, set a new token after the required period of time. See :doc:`Managing Token Authentication for SCIM Sync </installconfig/ServerInstallation/UserAuthenticationSetup/TokenAuthForSCIMSync>`.
+
+Use the command below in the Alation Django shell to set the SCIM bearer token:
+
+.. code-block:: Bash
+
+   from rosemeta.utils.users_and_groups.configuration_utils import set_scim_bearer_token
+
+   set_scim_bearer_token()
+
+After setting the token, retrieve its value with the following command:
+
+.. code-block:: Bash
+
+   from rosemeta.utils.users_and_groups.configuration_utils import get_scim_bearer_token
+
+   get_scim_bearer_token()
+
+Note down the token and store it safely. It will be required later when you configure SCIM integration on the IdP side.
+
+Basic Authentication
+""""""""""""""""""""
+
+Run the commands given below from the Alation Django shell to set basic authentication credentials for the SCIM service account to be used by the IdP to authenticate with Alation. Values should be provided in single quotes.
+
+.. important::
+
+   The password must be longer than 16 characters. It must contain alphanumeric characters and at least one special character.
+   Setting up this service account does not create a user in Alation. These credentials cannot access Alation and will only be used for authentication by the SCIM client. They do not have to map to an existing Alation user.
+
+
+.. code-block:: Bash
+
+   from rosemeta.utils.users_and_groups.configuration_utils import set_scim_basic_auth_username
+
+   from rosemeta.utils.users_and_groups.configuration_utils import set_scim_basic_auth_password
+
+   set_scim_basic_auth_username('your_username')
+
+   set_scim_basic_auth_password('your_password')
+
+**Example**:
+
+.. code-block:: Bash
+
+   set_scim_basic_auth_username('scim_account_username@alation.com')
+
+   set_scim_basic_auth_password('scim_account_password_12345&&')
+
+
+Note down the username and password and store them safely. They will be required later when you configure SCIM integration on the IdP side.
+
+.. note::
+
+   Alation does not enforce changing the password of the SCIM service account. If necessary, change the password at regular intervals according to the security policy at your company.
+
+Step 3: Enable SCIM Sync
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+SCIM sync is an automatic process that keeps groups and users in the IdP and Alation synchronized. Enabling it means that user and group management in Alation will be controlled by this automatic process. It will turn off sign-up moderation and some other admin features: see `How Does Group Sync Over SCIM Work?`_
+
+.. code-block:: Bash
+
+   from rosemeta.utils.users_and_groups.configuration_utils import enable_scim_user_and_group_sync
+
+   enable_scim_user_and_group_sync()
+
+Step 4: Review the Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Review your configuration settings and verify that they’re correct.
+
+#. Review the configurations:
+
+   .. code-block:: Bash
+
+      from rosemeta.utils.users_and_groups.configuration_utils import check_if_scim_sync_is_enabled
+
+      check_if_scim_sync_is_enabled()
+
+      from rosemeta.utils.users_and_groups.configuration_utils import get_scim_client
+
+      get_scim_client()
+
+
+#. To review the basic authentication credentials:
+
+   .. code-block:: Bash
+
+      from rosemeta.utils.users_and_groups.configuration_utils import get_scim_basic_auth_info
+
+      get_scim_basic_auth_info()
+
+#. To review the token:
+
+   .. code-block:: Bash
+
+      from rosemeta.utils.users_and_groups.configuration_utils import get_scim_bearer_token
+
+      get_scim_bearer_token()
+
+#. Exit the Django shell: ``exit``
+
+#. Exit the Alation shell: ``exit``
+
+Step 5: Set Up the IdP and Test
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Complete the setup on the IdP side:
+
+- :doc:`Set Up SCIM Integration in Okta </installconfig/ServerInstallation/UserAuthenticationSetup/SetUpSCIMIntegrationInOkta>`
+- :doc:`Set Up SAML and SCIM Integration in PingFederate </installconfig/ServerInstallation/UserAuthenticationSetup/SetUpSAMLandSCIMIntegrationInPingFederate>`
+- :doc:`Set Up SAML and SCIM Integration in Azure AD </installconfig/ServerInstallation/UserAuthenticationSetup/SetUpSAMLandSCIMwithAAD>`
+
+Once the IdP is set up, test the configuration: :doc:`Testing SCIM Configuration </installconfig/ServerInstallation/UserAuthenticationSetup/TestingSCIMConfiguration>`.
+
+Disable SCIM Sync
+-----------------------
+
+You can stop syncing users and groups over SCIM at any time.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+For customer-managed instances of Alation, you can stop syncing users and groups over SCIM by following these steps:
+
+1. On the Alation host, enter the Alation shell and enter the Django shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+        alation_django_shell
+
+2. In the Django shell, run the code given below to disable SCIM sync on the Alation instance:
+
+    .. code-block:: Bash
+
+        from rosemeta.utils.users_and_groups.configuration_utils import disable_sync_from_directory_provider
+
+        disable_sync_from_directory_provider()
+
+Disabling SCIM sync does not revert any synced user and Group data. It only stops the automatic synchronization between Alation and the IdP.
+
+Troubleshooting
+-------------------------------
+
+For error messages and troubleshooting tips, see :doc:`Troubleshooting SCIM Configuration </installconfig/ServerInstallation/UserAuthenticationSetup/TroubleshootingSCIMConfiguration>`.
+
+Changing SCIM Provider
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An Admin may need to switch to a different IdP. The user and group records synced from the previous IdP will have to be cleaned up before changing the SCIM client configuration on the Alation server. User and group records will not be cleaned-up automatically. Alation can provide a script to clean the old records. Contact Alation Support for assistance.

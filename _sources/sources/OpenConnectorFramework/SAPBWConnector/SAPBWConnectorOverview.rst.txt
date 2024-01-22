@@ -1,0 +1,270 @@
+SAP BW Connector: Overview
+==================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+The OCF connector for SAP BW is developed by Alation and is available as a Zip file that can be uploaded and installed in the Alation application. This connector supports cataloging SAP BW and SAP BW/4HANA data sources.
+
+To download the SAP BW OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+Extraction from an SAP BW data source requires the use of a separate tool—Alation Rala. Cataloging metadata from SAP BW in Alation includes two stages:
+
+  - Using Alation Rala to extract metadata and export it to JSON files
+  - Using the OCF Connector for SAP BW to extract metadata from the source JSON files into the Alation catalog.
+
+      .. image:: ../../../_static/SAPBW_01.png
+          :width: 500px
+          :class: with-border
+
+
+The exported JSON files that you want ingested into the Alation catalog will need to be placed onto a supported storage system. The connector can work with three storage systems:
+
+    - Amazon S3
+    - Azure Storage
+    - Windows SMB file share.
+
+Create a ticket with Alation Support about receiving the SAP BW connector package and the Alation Rala package.
+
+
+Team
+---------
+
+You may need the assistance of your SAP administrator and your storage system administrator to configure the use of the SAP BW connector end to end, which involves the following activities:
+
+    - Install Alation Rala in your network
+
+    - Provide a database as the Alation Rala Repository
+
+    - Grant the appropriate access rights for Alation Rala to connect to SAP ECC
+
+    - Extract metadata from SAP ECC into Alation Rala Repository
+
+    - Export metadata from Alation Rala to the JSON format
+
+    - Procure storage for the exported JSON files and collect access information for Alation.
+
+
+Scope
+----------
+
+The table below describes which metadata objects are extracted by the connector and which catalog functionality is supported.
+
++-------------------------------+---------------------------------------------------------------+-------------+
+| Feature                       | Scope                                                         | Availability|
++===============================+===============================================================+=============+
+| **Authentication**                                                                                          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Depends on the storage        |                                                               | Yes         |
+| system                        | - Azure Storage                                               |             |
+|                               |                                                               |             |
+|                               |      - Azure Storage account name                             |             |
+|                               |      - Azure Storage key                                      |             |
+|                               |                                                               |             |
+|                               | - Windows SMB                                                 |             |
+|                               |                                                               |             |
+|                               |      - SMB file share user                                    |             |
+|                               |      - SMB file share password                                |             |
+|                               |                                                               |             |
+|                               | - Amazon S3                                                   |             |
+|                               |                                                               |             |
+|                               |      - User access key ID                                     |             |
+|                               |      - User secret access key                                 |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+| SSL                           |                                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Metadata extraction (MDE)**                                                                               |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Default MDE                   | Extraction of metadata from JSON exports available            | Yes         |
+| (full extraction)             | on a supported storage system                                 |             |
+|                               |                                                               |             |
+|                               | Selective MDE is not supported                                |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Custom query-based MDE        |  Not applicable                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Extracted metadata objects**                                                                              |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Data Source                   | Data source object in Alation that is parent to extracted     | Yes         |
+|                               | metadata                                                      |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Schemas                       | List of schemas                                               | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Tables                        | List of tables                                                | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Columns                       | List of columns                                               | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Views                         | List of views                                                 | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Source comments               | Some asset attributes are extracted as source                 | Yes         |
+|                               | comments                                                      |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Primary keys                  | Primary key information for extracted tables                  | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Foreign keys                  | Foreign key information for extracted tables                  | Yes         |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Sampling and Profiling**    |                                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Query Log Ingestion (QLI)** |                                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Compose**                   |                                                               | No          |
++-------------------------------+---------------------------------------------------------------+-------------+
+| **Lineage**                                                                                                 |
++-------------------------------+---------------------------------------------------------------+-------------+
+| Direct lineage based          | Alation calculates lineage based on the relationship files    | Yes         |
+| on MDE \*                     | exported from SAP BW.  The relations represent references     |             |
+|                               | between SAP BW assets. Alation extracts the source            |             |
+|                               | asset names, target asset names, and relationship type,       |             |
+|                               | and builds lineage between source tables, target tables, and  |             |
+|                               | dataflow objects. The name of the relationship is added to    |             |
+|                               | the dataflow content. Lineage data is available on the        |             |
+|                               | **Lineage** tab on catalog pages of tables                    |             |
++-------------------------------+---------------------------------------------------------------+-------------+
+
+\* The direct lineage feature is enabled by default from Alation version 2023.1. On earlier versions, you can enable it by setting the **alation_conf** parameter ``alation.ocf.mde.direct_lineage.enable_extraction`` to ``True``. With this setting in ``True``, Alation will calculate the direct lineage data for your BW data source during MDE.
+
+
+Object Mapping Between SAP BW and Alation
+-----------------------------------------------
+
+See the table below for more details on object mapping between SAP BW and Alation:
+
+    - Asset types are represented as schemas.
+
+    - Tables are mapped to asset names. For example, an object ``CUB: DCABWCJC1`` will be a table in Alation in a schema mapped onto a ``SapBwCube`` asset. The logical name and the full path to a table-level object will be extracted into the **Source Comments** field available on the catalog page of this object.
+
+    - Some asset types are fields to other asset types. These atomic field level asset types are represented as columns.
+
+
++--------------------------------------+-----------------------------+
+| SAP Asset Type                       | Alation Object              |
++======================================+=============================+
+| SapBwCube                            | Schema                      |
+|                                      |                             |
+| SapBwHcpr                            |                             |
+|                                      |                             |
+| SapBwDso                             |                             |
+|                                      |                             |
+| SapBwAdso                            |                             |
+|                                      |                             |
+| SapBwDsource                         |                             |
+|                                      |                             |
+| SapBwISource                         |                             |
+|                                      |                             |
+| SapBwOHub                            |                             |
+|                                      |                             |
+| SapBwAggrLv                          |                             |
+|                                      |                             |
+| SapBwOpenOdsV                        |                             |
+|                                      |                             |
+| SapBwQuery                           |                             |
+|                                      |                             |
+| SapBwInfoObject                      |                             |
+|                                      |                             |
+| SapBwFieldGroup                      |                             |
+|                                      |                             |
+| SapBwReusableComp                    |                             |
+|                                      |                             |
+| SapBwInfoArea                        |                             |
++--------------------------------------+-----------------------------+
+| SapBwField                           | Column                      |
+|                                      |                             |
+| SapBwInfoObjectAttribute             |                             |
++--------------------------------------+-----------------------------+
+
+Supported Relationships
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++------------------------------------+-------------------------------+
+| Relationships Metadata             | Used for                      |
++====================================+===============================+
+| ViewComposedOfView                 | Table-level lineage           |
+|                                    |                               |
+| ViewComposedOfTable                |                               |
+|                                    |                               |
+| SapBwInfoObjectDerivedRef          |                               |
+|                                    |                               |
+| SapBwDataStructureReusableCompRef  |                               |
+|                                    |                               |
+| SapBwDataStructureNavAttributeRef  |                               |
+|                                    |                               |
+| SapBwDataStructureFieldGroup       |                               |
+|                                    |                               |
+| SapBwDataStructureBasedOnRef       |                               |
+|                                    |                               |
+| DataAssetGroupToDataStructure      |                               |
+|                                    |                               |
+| DataAssetGroupHierarchyRef         |                               |
++------------------------------------+-------------------------------+
+| SapBwFieldGroupFieldRef            | Column to table relationship  |
+|                                    |                               |
+| SapBwDataStructureField            |                               |
+|                                    |                               |
+| ColumnTable                        |                               |
++------------------------------------+-------------------------------+
+| SapBwFieldReuseableCompRef         | Foreign keys and lineage      |
+|                                    |                               |
+| SapBwFieldInfoObjectRef            |                               |
+|                                    |                               |
+| ColumnViewLinkColumn               |                               |
+|                                    |                               |
+| ColumnFKeyColumn                   |                               |
++------------------------------------+-------------------------------+
+
+Supported Asset Attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++--------------------------------+-------------------------------------+
+| Asset Attributes               | Extracted as                        |
++================================+=====================================+
+| PhysicalName                   | Name of the Alation object          |
++--------------------------------+-------------------------------------+
+| LogicalName                    | Source comments                     |
+|                                |                                     |
+| LongDescription                |                                     |
++--------------------------------+-------------------------------------+
+| ColumnPosition                 | Ordinal position of column object   |
++--------------------------------+-------------------------------------+
+| IsPrimaryKey                   | Primary key information             |
++--------------------------------+-------------------------------------+
+| DataType                       | Column properies                    |
+|                                |                                     |
+| IsNullable                     |                                     |
++--------------------------------+-------------------------------------+
+| TableType                      | Not supported                       |
+|                                |                                     |
+| RowCount                       |                                     |
+|                                |                                     |
+| Size                           |                                     |
+|                                |                                     |
+| DecimalPlaces                  |                                     |
+|                                |                                     |
+| DataElement                    |                                     |
+|                                |                                     |
+| Domain                         |                                     |
+|                                |                                     |
+| LogicalDataType                |                                     |
+|                                |                                     |
+| DbmsDataType                   |                                     |
+|                                |                                     |
+| IsMarkedColumn                 |                                     |
+|                                |                                     |
+| IsLinkedToMarkedColumn         |                                     |
+|                                |                                     |
+| IsMarkedOrLinkedColumn         |                                     |
+|                                |                                     |
+| SapBwInfoObjectType            |                                     |
+|                                |                                     |
+| SapBwInfoProviderType          |                                     |
+|                                |      |                              |
+| SapBwInfoObjectAttributeType   |                                     |
+|                                |                                     |
+| SapBwReusableCompType          |                                     |
+|                                |                                     |
+| MetaDataChanged                |                                     |
++--------------------------------+-------------------------------------+
+
+Limitations
+-----------------
+
+- The connector does not support parallel streaming and only streams from one source at a time.
+
+- You may notice a short delay in displaying lineage after successful MDE. This is due to the time required to calculate the direct lineage. The delay is proportional to the size of the extracted metadata and may vary from several seconds to a few minutes.

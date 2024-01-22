@@ -1,0 +1,58 @@
+Data Policies are Not Extracted into Policy Center
+=============================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Problem
+------------------
+
+After the metadata extraction from a Snowflake data source in Alation, the extraction job history shows the status **Success** in the Alation user interface, but the new data policy objects are not extracted and do not appear in **Policy Center**. Previously, the data policy objects were extracted successfully.
+
+The **taskserver.log** file contains an error message similar to the following:
+
+    .. code-block:: Bash
+
+        "exception_class":"net.snowflake.client.jdbc.SnowflakeSQLException",
+        "exception_message":"SQL compilation error:\nObject does not exist,
+        or operation cannot be performed."
+
+Root Cause
+-----------------------
+
+There were changes to the **INFORMATION_SCHEMA.POLICY_REFERENCES** table function in the Snowflake schema. It is likely that these changes were released by Snowflake after you set up data policy extraction views. These changes prevent the new data policy objects to be extracted and require that the view **METADATA_DB.METADATA_SCHEMA.POLICY_REFERENCES** should be recreated. For more details, see `POLICY_REFERENCES Function: New Columns <https://snowflakecommunity.force.com/s/article/POLICY-REFERENCES-Function-New-Columns>`_ in Snowflake knowledge base.
+
+Solution
+-------------------
+
+Recreate the view **METADATA_DB.METADATA_SCHEMA.POLICY_REFERENCES** set up on Snowflake for data policy extraction:
+
+1. On your Snowflake database, recreate the view using the following query:
+
+    .. code-block:: sql
+
+        CREATE OR REPLACE VIEW METADATA_DB.METADATA_SCHEMA.POLICY_REFERENCES
+          AS SELECT POLICY_DB,
+	                  POLICY_SCHEMA,
+	                  POLICY_ID,
+	                  POLICY_NAME,
+	                  POLICY_KIND,
+	                  REF_DATABASE_NAME,
+	                  REF_SCHEMA_NAME,
+	                  REF_ENTITY_NAME,
+	                  REF_ENTITY_DOMAIN,
+	                  REF_COLUMN_NAME,
+	                  REF_ARG_COLUMN_NAMES
+          FROM SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES;
+
+2. Grant the Alation service role access to the recreated policy view. Replace ``<alation_role>`` in the SQL below with your actual Alation service account role name.
+
+    .. code-block:: sql
+
+        GRANT SELECT ON METADATA_DB.METADATA_SCHEMA.POLICY_REFERENCES
+        TO <alation_role>;
+
+3. Rerun metadata extraction for your Snowflake data source in Alation. Now, data policy objects should be extracted and displayed in Policy Center.
+
+    .. note::
+
+        Refer to :doc:`Snowflake <../../datasources/AddDataSources/Snowflake>` for details about setting up Snowflake data sources in Alation.

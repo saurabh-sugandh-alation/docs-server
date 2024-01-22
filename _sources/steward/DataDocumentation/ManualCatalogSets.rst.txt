@@ -1,0 +1,269 @@
+Manual Catalog Sets
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Manual catalog sets allow you to manage data duplication in your Alation
+instance by organizing identical data objects and keeping their catalog
+metadata consistent. For example, manual sets can be useful if you are
+maintaining several similar or replicated sources in your Alation
+catalog and need the catalog field values on all the child objects of
+these sources to be the same.
+
+Creating a Manual Catalog Set
+-----------------------------
+
+1. Open the **Catalog Sets** page. See :doc:`Catalog Sets <../../steward/DataDocumentation/CatalogSets>` for details.
+2. On the **Catalog Sets** page, click the add icon on the upper right:
+
+    .. image:: ../../_static/Add_button.png
+
+    This displays,
+
+    .. image:: ../../_static/Sets_05.png
+
+3. In the new catalog set editor that opens, click **Manual**:
+
+    .. image:: ../../_static/Sets_12.png
+
+4. Specify a title for your new set.
+5. Under **Member Data Object Type**, select the type of data objects that you want to unite into this set. You can select:
+
+    -  **Data Source/Catalog**
+    -  **Schemas**
+    -  **Tables**
+    -  **Columns**
+
+6. If you want to conceal the set members from the catalog and search, select the checkbox **Hide schemas and their children from Catalog and Search**.
+7. Select the specific objects to be members of the set: click **Add** to open the list of catalog objects of the selected type and find and select the ones for this set:
+
+    .. image:: ../../_static/Sets_13.png
+
+8. Click **Save**. Your new set will be created and you will land on the**Overview and Rules** tab of its properties page:
+
+    .. image:: ../../_static/Sets_14.png
+
+9. Click the **Shared Fields** tab to bulk-edit fields on the set members. See `Bulk-Editing Shared Fields`_  for details:
+
+    .. image:: ../../_static/Sets_15.png
+
+10. Click the **Sync Children** tab to enable child objects synchronization. For details, see `Metadata Synchronization Across Children`_.
+
+Metadata Synchronization Across Children
+----------------------------------------
+
+Turning on metadata synchronization can help maintain consistency for
+identical child objects on the catalog set members. On the **Sync Children** tab, you can learn more by watching an explanatory video under the **Show more about metadata synchronization** link:
+
+.. image:: ../../_static/Sets_16.png
+
+Synchronization means sharing a common field value on all objects in
+a synchronized group of data objects. Any edits to the fields made on
+one object will be mirrored on the other object(s).
+
+Metadata synchronization potentially impacts all child objects of set
+members as you can synchronize their successive levels down to the
+column level.
+
+The names of child objects should exactly match for Alation to be
+able to synchronize them. For the second and other successive levels,
+the parent object names should also exactly match. For example, in a
+manual catalog set for schema objects, the first-level child objects
+are Tables, and the second-level child objects are Columns. The columns
+and their parent tables should both have matching names for
+synchronization to happen on the column level. If this set
+unites ``schemaA`` and ``schemaB`` and both these schemas have a
+table called ``tableC`` with a column called ``id``, then
+columns ``schemaA.tableC.id`` and ``schemaB.tableC.id`` can be
+synchronized as the names of the columns match and the names of their
+respective parent tables also match.
+
+Child objects with identical names will be synchronized on the fields
+you select for synchronization. You can select fields
+under **Synchronization Rules and Settings** on the **Sync Children** tab of the manual set page:
+
+.. image:: ../../_static/Sets_17.png
+
+When synchronization is turned on, Alation will find child objects with
+exactly matching names under the catalog set members. For these objects,
+single-value field values will be permanently overwritten by master
+values. Multi-value field values will be united across all synchronized
+child objects and display a list of values from all synchronized
+objects. **Master** in this case is the first catalog set member added to
+the set. For example, in a set like this:
+
+.. image:: ../../_static/Sets_18.png
+
+The schema that appears first in the list under **Catalog Set Members** will be treated as a master set member. The values of its child objects will overwrite the values on identical child objects under the other set members.
+
+If any field on child objects of the master object does not have a
+value, Alation will apply values from the similar child object on the
+catalog set member that is the next in this list.
+
+To enable metadata synchronization for a manual catalog set,
+
+1. Open the **Sync Children** tab of a manual catalog set page and click **Edit for Synchronization Rules & Settings** section:
+
+    .. image:: ../../_static/Sets_06.png
+
+2. Toggle the **Metadata Synchronization** switch on. This will reveal the child object settings:
+
+    .. image:: ../../_static/Sets_09.png
+
+3. Under **Children and Fields to Synchronize**, enable the child levels to be synchronized by turning on the respective switches. Note that each successive level of children will be enabled only after the parent level is enabled. For example, columns cannot be synchronized if synchronization for the table level is off. 
+4. For each of the child levels, select the fields to be synchronized. You can either use the **All Current & Future Fields** option or select specific fields by selecting their respective checkboxes:
+
+    .. image:: ../../_static/Sets_19.png
+
+    .. note::
+
+         The fields you find here are the custom and built-in
+         fields currently found on the :doc:`object template <../../steward/DataCatalogCustomization/CatalogTemplates>` of the corresponding data object type.
+
+         If you select **All Current & Future Fields**, then all current
+         fields and new fields that may be added to the template in the
+         future, will be synchronized.
+
+5. Click **Save** and, in the confirmation dialog that opens, confirm synchronization. This will trigger a new synchronization job. The history and details of such jobs are available under **Synchronization Status**:
+
+    .. image:: ../../_static/Sets_20.png
+
+The synchronization rules that you have set up will be
+displayed under **<Data Object Type> Details** section
+under **Synchronization Rules and Settings**:
+
+.. image:: ../../_static/Sets_11.png
+
+When the synchronization job has completed, identical child objects will
+become synchronized. Now, when you edit a catalog field value on one of
+the child objects, this value will be mirrored on the other objects
+synchronized with this one.
+
+.. note::
+
+     Currently in Alation UI, there is no indication of synchronized child
+     objects, and the synchronized values do not stand out.  When you edit
+     a value on a synchronized child, it will be propagated to all other
+     child objects with the same name, but on the catalog page of this
+     object, there is no "sign" of this value belonging to a synchronized
+     set.
+
+On how to turn off synchronization, see `Updating a Manual Catalog Set`_.
+
+Bulk-Editing Shared Fields
+--------------------------
+
+The **Shared Fields** tab of a manual catalog set allows you to
+bulk-edit custom field values. The values provided using the set will be
+applied to these fields on all set members.
+
+On their respective catalog pages, the values shared from a set will be
+indicated with the gear icon. The set itself will appear under
+the **Properties** field:
+
+.. image:: ../../_static/Sets_01.png
+
+Field values shared from a manual set can only be edited using this set
+and cannot be changed on the page of a member object. However, you can
+add other values directly on the catalog page of a member object.  One
+and the same field can hold values shared from catalog sets and added by
+users on the catalog page of an object.
+
+Updating a Manual Catalog Set
+-----------------------------
+
+To edit a manual catalog set, on the **Catalog Sets** page, click the settings icon to open the **Admin Settings** > **Catalog Admin** > **Catalog Sets** or from the **Curate** menu > **Catalog Sets** to find the manual set you want to edit and click its title:
+
+.. image:: ../../_static/manualSetsUpdating_01.png
+
+The settings page will open:
+
+.. image:: ../../_static/Sets_21.png
+
+On the settings page, you can change the title of the set and its
+properties on tabs:
+
+-  **Overview & Rules**
+-  **Shared Fields**
+-  **Sync Children**
+
+Title
+~~~~~
+
+Hover over the current title then click the **Edit** icon to enable editing:
+
+.. image:: ../../_static/Screen_Shot_2018-10-16_at_2.30.53_PM.png
+
+This displays:
+
+.. image:: ../../_static/Sets_22.png
+
+Overview and Rules
+~~~~~~~~~~~~~~~~~~
+
+Description
+^^^^^^^^^^^
+
+Hover of the **Description** field to reveal the **Edit** icon on the right and click it to enable field editing:
+
+.. image:: ../../_static/Screen_Shot_2019-11-18_at_7.31.21_PM.png
+
+Remember to save the changes to the field:
+
+.. image:: ../../_static/Sets_23.png
+
+Membership Rules
+^^^^^^^^^^^^^^^^
+
+1. Click **Edit** on the right to open the **Membership Rules** editor:
+
+    .. image:: ../../_static/Sets_24.png
+
+2. To change visibility settings for the set members, select or clear the **Hide schemas and their children from Catalog and Search**:
+
+    .. image:: ../../_static/Sets_25.png
+
+3. To add catalog set members, hover over the <Data Object> title to reveal the **Add** button on the right and click it to open the data object list. Select the new set members from this list:
+
+    .. image:: ../../_static/Sets_26.png
+
+4. To remove set members, hover over the data object you want to remove in the **Catalog Set Members** list, and click the remove icon **X** for this object:
+
+    .. image:: ../../_static/Sets_27.png
+
+5. Click Save on the bottom right to apply your changes to the set.
+
+Shared Fields
+~~~~~~~~~~~~~
+
+On the **Shared Fields** tab, you can edit the shared fields for the
+catalog set members. Also see `Bulk-Editing Shared Fields`_.
+
+Sync Children
+~~~~~~~~~~~~~
+
+On the **Sync Children** tab, you can enable/disable child object
+synchronization and change the sync rules by redefining the fields to
+synchronize or by changing the number of child levels you want to be in
+sync:
+
+.. image:: ../../_static/Sets_28.png
+
+To disable synchronization, turn off the **Metadata Synchronization** switch.
+
+When you disable synchronization, the child objects become independent
+of the set and can be edited individually. The values that may
+have existed before the synchronization was turned on will not be restored.
+
+For more details on synchronization rules, see `Metadata Synchronization Across Children`_.
+
+Deleting a Catalog Set
+----------------------
+
+To delete a manual set, click **Delete** on the upper right:           
+
+.. image:: ../../_static/Screen_Shot_2018-10-16_at_2.31.35_PM.png
+
+Confirm deletion:
+
+.. image:: ../../_static/manualSet_delete.png

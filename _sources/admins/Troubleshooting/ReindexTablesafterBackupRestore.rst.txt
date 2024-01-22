@@ -1,0 +1,75 @@
+How to Reindex Tables after Backup Restore
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Issue: Error 500 on Alation Pages After Restore
+-----------------------------------------------
+
+Sometimes after a backup restore, during the restore testing, users may
+encounter Error 500 on random pages in Alation. We have not discovered
+any pattern in this happening, and this issue is rare.
+
+Restoring from a backup is expected to be successful and to not produce
+any errors; however, if you run into empty pages with Error 500 after a
+restore, please collect the required logs and contact Alation Support to handle the issue and perform reindexing of individual tables that cause the error.
+
+Finding Logs
+--------------
+
+The logs with this particular error will be in the **uwsgi.log**, located inside the Alation Chroot
+at **/opt/alation/site/logs/**.
+
+**Example error text to look for in the logs**: ``...unexpected zero page at block...``.
+
+    .. code-block:: console
+
+        INFO Exception at CeleryJobLog: task_sent, task_id:
+        ace8c2c0-a9f8-4a90-999e-5bf55863ac08.
+        INFO Exception_class: <class
+        'django.db.utils.InternalError'>,Message: index
+        "celery_job_monitor_celeryjo_return_status_2495eb60d8e08f4d_like"
+        has unexpected zero page at block 1328
+        HINT: REINDEX it.
+
+
+You can tail the **uwsgi.log** while reproducing the issue in Alation UI (open the page that throws Error 500):
+
+1. Enter the Alation shell:
+
+    .. code-block:: bash
+
+        sudo service alation shell
+
+2. To tail **uwsgi.log**:
+
+    .. code-block:: bash
+
+        tail -f  /opt/alation/site/logs/uwsgi.log
+
+
+    .. image:: ../../_static/Re-indexing1.png
+        :width: 5.5in
+        :align: center
+
+.. note::
+
+    The index table name that requires reindexing will appear in the error message:
+
+    Example:
+
+      .. code-block:: console
+
+          ...Message: index "celery_job_monitor_celeryjoblog_6d99c442" has
+          unexpected zero page at block 1351…
+
+    In this example: ``Celery_job_monitor_celeryjoblog_6d99c442`` is the name of the index table that needs reindexing. There may be more than one table that require reindexing.
+
+Other Required Logs
+----------------------
+
+In addition to the **uwsgi.log**, please collect:
+
+    - the Postgres logs: inside the Alation Chroot: **/var/lib/pgsql/9.6/pgstartup.log** and **/var/lib/pgsql/9.6/data/pg_log**
+
+    - the Alation logs **alation-error.log**, **alation-info.log**, **alation-debug.log** at **/opt/alation/site/logs/** inside the Alation Chroot.

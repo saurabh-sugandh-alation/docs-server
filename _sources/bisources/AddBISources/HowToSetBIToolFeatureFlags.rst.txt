@@ -1,0 +1,94 @@
+How To Set BI Tool Feature Flags
+====================================
+
+Alation allows enablement of additional connectors using feature flags to enable use before features are made broadly available by default. These flags can be enabled from the Alation shell and in some cases from the **Labs/Feature Configuration** tab on the **Admin Settings** page.
+
+To enable feature flags from the Alation shell, follow these steps:
+
+1. SSH into your Alation instance and enter the Alation shell:
+
+   .. code-block:: Bash
+
+      sudo /etc/init.d/alation shell
+
+#. Run the command to set the feature flag value substituting the ``<flag name>`` and ``<value>`` with the required flag name and value:
+
+   .. code-block:: Bash
+
+        alation_conf <flag name> -s <value> 
+
+   For example,
+
+   .. code-block:: Bash
+
+        alation_conf alation.feature_flags.enable_mstr_for_gbm_v2 -s True
+
+4. Restart Alation:
+
+   .. code-block:: Bash
+
+        alation_supervisor restart all
+
+BI Tool Feature Flags
+-----------------------
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+=============================================================== ========================================================================
+Flag                                                            Description
+=============================================================== ========================================================================
+``alation.feature_flags.enable_generic_bi``                     A generic BI sources
+                                                                support parameter that is
+                                                                required for all BI
+                                                                connectors. As the default is ``True``,
+                                                                it is not required to change its
+                                                                value if you intend to add BI
+                                                                servers as sources to Alation.
+
+``alation.feature_flags.enable_multiple_biserver_registration`` Enables registering the same BI
+                                                                server multiple times. This can
+                                                                place additional stress on the BI
+                                                                server. This flag does not apply to GBM V2.
+                                                                When enabled,
+                                                                Alation allows you to add
+                                                                multiple BI sources for one
+                                                                server on Default (legacy) framework.
+
+``alation.feature_flags.enable_ssrs_bi``                        Enables support for SQL Server Reporting Service.
+                                                                Requires that the generic BI
+                                                                flag ``alation.feature_flags.enable_generic_bi`` 
+                                                                is also ``True`` (default).
+
+``alation.feature_flags.enable_gbm_v2``                         Together with
+                                                                ``alation.feature_flags.enable_bi_catalog_browser_redesign``,
+                                                                enables the GBM V2 framework. Has to be set in versions
+                                                                before 2020.3. ``True`` by default from version 2020.3.
+
+
+``alation.feature_flags.enable_bi_catalog_browser_redesign``    Together with
+                                                                ``alation.feature_flags.enable_gbm_v2``
+                                                                enables GBM V2.
+
+
+``alation.feature_flags.enable_lineage_v2``                     **Highly recommended by Alation**. Enables Lineage V2, dataflow
+                                                                objects, and column level lineage via API.
+
+                                                                See
+                                                                :doc:`Enabling Lineage V2 <../../installconfig/LineageV2/EnableLineageV2>`
+=============================================================== ========================================================================
+
+BI Tool Flags in Labs/Feature Configuration
+-----------------------------------------------
+
++-------------------------------------------------------+-----------------------------------------+
+| Flag                                                  | Description                             |
++=======================================================+=========================================+
+| Enable Tableau Data Source certification              | Surfaces Endorsements on                |
+|                                                       | Tableau Data Source pages in Alation as |
+|                                                       | Certification in Tableau Server 10.4.   |
++-------------------------------------------------------+-----------------------------------------+
+| Enable Tableau Workbook certification                 | Surfaces Alation Endorsements on        |
+|                                                       | Tableau Workbook pages as               |
+|                                                       | Alation-Certified projects in Tableau   |
+|                                                       | Server.                                 |
++-------------------------------------------------------+-----------------------------------------+

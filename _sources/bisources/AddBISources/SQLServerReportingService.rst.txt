@@ -1,0 +1,97 @@
+SQL Server Reporting Service (SSRS)
+===================================
+
+SSRS Feature Flags
+------------------
+
+To enable the support for SSRS in Alation, make sure these flags are set
+to ``True``. For details on settings feature flags, see :doc:`How To Set BI Tool Feature Flags <../../bisources/AddBISources/HowToSetBIToolFeatureFlags>`.
+
+================================================= ==============
+Feature Flag                                      Should be
+================================================= ==============
+alation.feature_flags.enable_generic_bi           True (default)
+alation.feature_flags.enable_ssrs_bi              True
+================================================= ==============
+
+Required Information
+----------------------------
+
+You will need the following information:
+
+-  Hostname or IP address of the SSRS server
+-  URI in the HTTP(S) format
+-  Port number: the default port number is **80**.
+
+    .. note::
+
+        From version 2020.3, the Port field is not present in Settings. If using a port other than 80, append it to the URI using the following format: ``http://<IP:port>``. For example: ``http://10.16.61.213:8080``.
+
+
+-  An Account with privileges to READ the reports
+
+Firewall Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Open an outbound TCP port on SSRS server. The default port number is 80.
+
+Configuring an SSRS Source in Alation
+---------------------------------------
+
+1. Follow the instructions for :doc:`Add a BI Server as a Source <../../bisources/AddBISources/AddingaBIServerasaSource>`  until you are on the BI server Settings Page.
+
+2. Under **Server Connection**, specify the connection settings:
+
+    - **URI**: URI to access the SSRS server.
+
+    - **Username**: username of the SSRS Windows user
+
+    - **Password**: username of the SSRS Windows user
+
+    - **Extract SSRS version**: Field that stores the version of SSRS in use.
+
+    - **Report Server virtual directory**: *available from V R7 (5.12.10)*. Configures the virtual directory value for the Report Server web service. Because an IP address and port can be shared by multiple applications, the virtual directory name specifies which application receives the request. Can be found out at **Report Server Configuration Manager > Web Service URL > Virtual Directory** in the SSRS Configuration Manager. This field is pre-populated with the value ``ReportServer``. Provide your value if it is different for your server:
+
+      .. note::
+
+        For SSRS with Sharpoint, Report Server Virtual Directory must be set to ReportServer. This is applicable from Alation version 2020.4.
+
+      .. image:: ../../_static/bi_image27.png
+          :width: 400px
+
+    - **Enable SharePoint Mode**: select this checkbox if the Report Server is installed in the SharePoint mode.
+
+3. Click **Save** to save the connection parameters.
+
+4. Click **Test Connection** to validate connectivity to the BI server.
+
+5. Under **Extraction Settings**, specify the extraction parameters:
+
+    - **Number of reports to extract**: Numeric value to specify the number of reports to extract.
+
+    - **Extract Previews**: If this checkbox is selected, preview images will be extracted for reports and dashboards.
+
+    - **Report Manager virtual directory**: *available from V R7 (5.12.10)*. Configures the browsable URL for the Report Manager (SSRS 2012) / Web Portal (SSRS 2014 and later versions). Can be found at **Report Server Configuration Manager > Report Manager/ Web portal URL > Virtual Directory**.  The default value is Reports. Provide your value if it is different for your server:
+
+        .. image:: ../../_static/bi_image28.png
+            :width: 400px
+
+6. Enable **Selective Extraction** if required: :ref:`Selective Extraction <Extracting_BI_Server_Metadata-Selective_Extraction>`.
+
+7. Enable **Automated Extraction** if required: :ref:`Schedule Extraction <Extracting_BI_Server_Metadata-Schedule_Extraction>`.
+
+8. To manually run extraction on demand, click **Run Extraction Now**. The extraction job status and details are reflected in the Job Status table at the bottom of the page. Depending on the mode of the SSRS server:
+
+        - **SharePoint Mode** disabled (default): Alation extracts all the selected projects from the SSRS server.
+
+        - **SharePoint Mode** enabled: Alation extracts all the selected sites which contain at least one report. During extraction, the first-level hierarchy is not supported. For example, if there are multiple sites, extracted metadata will not have the site information and only the folder information will be extracted.
+
+        .. image:: ../../_static/bi_image29.png
+            :width: 400px
+
+        .. note::
+
+            This metadata extraction information is applicable from Alation version 2020.4.
+
+   .. image:: ../../_static/bi_image6.png
+       :width: 500.00px

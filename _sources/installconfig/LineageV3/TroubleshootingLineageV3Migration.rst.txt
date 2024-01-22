@@ -1,0 +1,95 @@
+Troubleshooting Lineage V3 Migration
+========================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from version 2021.4*
+
+If the lineage migration failed, check if it is at the stage where it already enabled Lineage V3 and contact Alation Support.
+
+Checking the Lineage V3 Status
+------------------------------------------
+
+You can check if Lineage V3 is enabled or disabled using the **alation_conf** feature flag ``lineage-service.enabled``. To check the state of this flag, from the Alation shell, run:
+
+    .. code-block:: bash
+
+        alation_conf lineage-service.enabled
+
+The values can be:
+
+  - ``True``: Lineage V3 enabled
+  - ``False``: Lineage V3 disabled
+
+Alation does not recommend changing the value of this parameter manually.
+
+
+Lineage Service Logs
+------------------------
+
+There are two log files in the logs directory at **/opt/alation/site/logs/** that are associated with the lineage service:
+
+    - ``lineage.log``: Contains information about the service health and general logging statements for both read and write pipelines.
+
+    - ``lineage_error.log``: Logs all errors that occur in the Lineage service, for example, errors related to writing to or retrieval from the Event Bus, errors in lineage processing, request process or database access.
+
+In addition to these two dedicated log files, some other log files on are also relevant to the lineage service:
+
+    - ``alation-info.log``
+    - ``alation-debug.log``
+    - ``celery-default.log``
+    - ``celery-lineagepublishing_error.log`` (Alation versions 2022.4 and later) or ``celery-default_error.log`` (on versions before 2022.4)
+
+If you find issues with displaying lineage data after the migration, check the ``celery-lineagepublishing_error.log`` or ``celery-default_error.log`` for specific errors.
+
+Changing the Lineage Logging Level
+------------------------------------------------
+
+The lineage logs can be written in two modes: ``info`` or ``debug``. The default is ``info``. You can set it to ``debug`` in order to capture a more detailed log. To change the log level:
+
+1. From the Alation shell, run:
+
+    .. code-block:: bash
+
+        alation_conf -s debug lineage-service.logger.level
+
+2. Restart the lineage service:
+
+    .. code-block:: bash
+
+        alation_supervisor restart lineage
+
+In order to return to the ``info`` log level:
+
+1. From the Alation shell, run:
+
+    .. code-block:: bash
+
+        alation_conf -s info lineage-service.logger.level
+
+2. Restart the lineage service:
+
+    .. code-block:: bash
+
+        alation_supervisor restart lineage
+
+
+Lineage Service Status
+------------------------------------------
+
+To check the status of the Lineage service, from the Alation shell, run:
+
+    .. code-block:: bash
+
+        alation_supervisor status lineage
+
+Event Bus Status
+------------------------------------------
+
+To check the status of Event Bus, from the Alation shell, run:
+
+    .. code-block:: bash
+
+        alation_supervisor status event-bus:*
+
+Both the Lineage service and Event Bus must be in the *Running* state for Lineage V3 to function correctly.

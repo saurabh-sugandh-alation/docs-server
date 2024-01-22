@@ -1,0 +1,261 @@
+Configure Query Log Ingestion
+==================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Query log ingestion (QLI) extracts and ingests the query history of a database and powers the lineage, popularity, top user, and join and filter information in the catalog. Explore examples of ingested queries on schema and table catalog pages.
+
+The steps involved in configuring and running QLI are:
+
+    1. `Configure View-Based QLI`_ or `Configure Custom Query-Based QLI`_
+
+    2. `Test the Access and Find the Query History Size`_
+
+    3. `Preview Results`_
+
+    4. `Run QLI`_
+
+     .. image:: ../../../_static/Snowflake_OCF_New_QLI_Workflow.png
+        :width: 600px  
+
+You can configure query log ingestion on the **Query Log Ingestion** tab of the Settings page. You can choose to configure QLI in one of the following ways:
+
+    - View-Based
+
+    - Custom Query-Based
+
+.. note::
+
+    If you do not provide a view name or a custom query, Alation uses the default view ``SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY`` and performs the query ingestion.
+
+Configure View-Based QLI 
+-------------------------
+
+Prerequisite
+~~~~~~~~~~~~~~~~
+
+In Snowflake, on top of the SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY view, create a view using a specific query template as shown below. Create it in any suitable schema. You can give the view any name of your choice. 
+
+.. code-block:: SQL
+
+      CREATE VIEW alation_QLI_view AS
+      SELECT
+           user_name as "userName",
+           CASE
+              WHEN SCHEMA_NAME IS NULL
+                THEN DATABASE_NAME ||'.'|| ''
+           ELSE DATABASE_NAME ||'.'|| SCHEMA_NAME
+           END AS "defaultDatabases",
+           TRIM(QUERY_TEXT) AS "queryString",
+           TRIM(SESSION_ID) AS "sessionID",
+           ROUND(TOTAL_ELAPSED_TIME/1000,0) AS "seconds",
+           false AS "cancelled",
+           TO_CHAR(start_time,'YYYY-MM-DD HH:MI:SS.US') AS "startTime",
+           TO_CHAR(start_time,'YYYY-MM-DD HH:MI:SS.US') AS "sessionStartTime"
+      FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+      WHERE execution_status = 'SUCCESS';
+
+After creating the view, grant the Alation service account the SELECT access to this view. For more information, see the Grant Permissions for Query Log Ingestion section in :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOCFConnectorPrerequisites`.
+
+Provide the QLI View Name
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    .. important::
+
+        The Alation user interface displays standard configuration settings for credentials and connection information stored in the Alation database. If your organization has configured Azure KeyVault or AWS Secrets Manager to hold such information, the user interface will change to include the following buttons adjacent to the respective fields:
+
+         .. image:: ../../../_static/SnowflakeOCF_New_Vault_Button.png
+            :width: 150px       
+    
+        By default, you see the user interface for **Standard**. In the case of Vault, instead of the actual credential information, you must select the source and provide the corresponding key. For details, see :doc:`Configure Secrets for OCF Connector Settings </sources/OpenConnectorFramework/ConfigureSecretsforOCFConnectors/index>`.
+
+
+    1. On the Snowflake connector page, go to the **Query Log Ingestion** tab of the Settings page.
+
+    2. Under the **Provide the QLI view name** section, enter the QLI view name in the **View name** field.
+
+    3. By default, Alation queries the ``SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY`` view.
+
+        .. important::
+
+            Use the format ``schema_name.view_name or schema.view``.
+
+    4. Click **Save**.
+
+Configure Custom Query-Based QLI 
+-------------------------------------
+
+If you cannot create the view for QLI, for example, due to access restrictions, you can use a custom QLI query to extract query history into Alation. If you opt for custom query-based QLI, Alation will directly query the system view that stores the query history every time you manually run QLI or when the QLI job runs on schedule.
+
+For custom query-based QLI to succeed, ensure that the service account has enough permissions to select from the system view. For details, see Grant Permissions for Query Log Ingestion section in :doc:`/sources/OpenConnectorFramework/Snowflake_New/SnowflakeOCFConnectorPrerequisites`.
+
+The following is an example of a custom query for QLI. 
+
+    .. code-block:: sql
+
+          SELECT
+            user_name AS "userName",
+            CASE WHEN SCHEMA_NAME IS NULL
+                THEN DATABASE_NAME || '.' || ''
+            ELSE DATABASE_NAME || '.' || SCHEMA_NAME END AS "defaultDatabases",
+            TRIM(QUERY_TEXT) AS "queryString",
+            TRIM(SESSION_ID || '/' || USER_NAME) AS "sessionID",
+            ROUND(TOTAL_ELAPSED_TIME / 1000, 0) AS "seconds",
+            FALSE AS "cancelled",
+            to_char(
+                start_time, 'YYYY-MM-DD HH:MI:SS.US'
+                ) AS "startTime",
+            to_char(
+                start_time, 'YYYY-MM-DD HH:MI:SS.US'
+            ) AS "sessionStartTime"
+            FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+            WHERE START_TIME BETWEEN STARTTIME AND ENDTIME
+                AND EXECUTION_STATUS = 'SUCCESS'
+                AND NOT (
+                    QUERY_TEXT ILIKE 'SHOW%'
+                    OR QUERY_TEXT ILIKE 'CREATE%SCHEMA%'
+                    OR QUERY_TEXT ILIKE 'CREATE%DATABASE%'
+                    OR QUERY_TEXT ILIKE 'GRANT%'
+                    OR QUERY_TEXT ILIKE 'GET%'
+                    OR QUERY_TEXT ILIKE 'DROP%DATABASE%'
+                    OR QUERY_TEXT ILIKE 'REVOKE%'
+                    OR QUERY_TEXT ILIKE 'DESC%'
+                    OR QUERY_TEXT ILIKE 'CREATE%PROCEDURE%'
+                    OR QUERY_TEXT ILIKE 'LIST%'
+                    OR QUERY_TEXT ILIKE 'CALL%'
+                    OR QUERY_TEXT ILIKE 'PUT_FILES%'
+                    OR QUERY_TEXT ILIKE 'REMOVE_FILES%'
+                    OR QUERY_TEXT ILIKE 'EXPLAIN%'
+                    OR QUERY_TEXT ILIKE 'TRUNCATE%'
+                    OR QUERY_TEXT ILIKE 'COMMIT%'
+                    )
+                AND DATABASE_NAME not in ('SNOWFLAKE')
+                AND DATABASE_NAME = '<database_name>';
+
+
+You can customize it by adding, removing, or changing the filter, but the columns and their aliases must remain as is since the connector expects this query structure.
+
+The query should have ``<userName, startTime, queryString, defaultDatabases, sessionID, sessionStartTime, cancelled, seconds>`` columns in a SELECT statement.
+
+    .. note::
+
+        - When using the QLI query example, do not substitute the ``STARTTIME`` and ``ENDTIME`` parameters in the WHERE filter. These parameters are not actual column names and should stay as is. They are expected by the connector and will be substituted with the start and end date of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+        - Substitute the placeholder ``<database_name>`` with a database name.
+
+Provide the Custom Query 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    1. On the Snowflake data source, go to the **Query Log Ingestion** tab of the Settings page.
+
+    2. Under the **Provide the QLI view name** section, go to **Alternatively, use a custom SQL query**.
+    
+    3. In the **Custom QLI Query** field, provide a custom query to retrieve the query history.
+
+    4. Click **Save**.
+
+Test the Access and Find the Query History Size
+--------------------------------------------------
+
+Before you perform the QLI, you must validate that the service account has access to the QLI view and gauge the approximate size of the query history metadata. The size is estimated based on the average query volume of the last 7 days.
+
+To test the access and find out the approximate size of the query history metadata, perform these steps:
+
+    1. On the Settings page of your Snowflake data source, go to the **Query Log Ingestion** tab.
+
+    2. Under the **Test access and query history size** section, click **Test**.
+
+       A dialog box appears displaying the access validation result and upon successful validation, the size of the query history is displayed. The size is estimated based on the query volume of the last 7 days. 
+
+        .. note:: 
+
+            If the average query size for the last seven days exceeds 500k, a warning message indicates the same.
+
+
+Preview Results
+-----------------
+
+Before performing the QLI, you can preview the queries that are ingested. 
+
+
+    1. On the Settings page of your Snowflake data source, click go to the **Query Log Ingestion** tab.
+
+    2. Under the **Preview Results** section, enter the date range for which you want to generate the preview of the query history.
+
+    3. Click **Preview**.
+
+    4. Click **View Results** to view the generated preview.
+
+       The **Preview** dialog appears displaying the total number of query statements per user under the **User Queries** tab and a detailed query statement under the **Statements** tab. Click **Download** to download the detailed query statement as a JSON file.
+
+    .. note::
+
+        You can use this option to run default QLI using just the date-range without using a view-based or custom query-based QLI. 
+
+Run QLI
+----------
+
+You can either run QLI manually on demand or configure it to run automatically on a schedule.
+
+Run QLI Manually
+~~~~~~~~~~~~~~~~~~~~
+
+To perform QLI manually on demand:
+
+    1. On the Settings page of your Snowflake data source, go to the **Query Log Ingestion** tab.
+
+    2. Under the **Run QLI** section, disable the **Enable QLI Schedule** toggle.
+
+    3. Specify the desired date range using the Date Range calendar widgets. You will need to specify the start date and the end date separately.
+
+    4. Click **Import**. 
+
+       A query log ingestion job is initiated.
+
+Schedule QLI
+~~~~~~~~~~~~~~~~
+
+    1. On the Settings page of your Snowflake data source, go to the **Query Log Ingestion** tab.
+
+    2. Under the **Run QLI** section, enable the **Enable QLI Schedule** toggle.
+
+    3. Specify values for the job recurrence and time. The values are set in your local time.
+
+        .. image:: ../../../_static/Snowflake_OCF_New_ScheduleQLI.png
+            :width: 500px
+            :class: with-border        
+
+    .. note::
+
+        Here are some of the recommended schedules for better performance: 
+
+            - Schedule QLI to run for every 12 hours at the 30th minute of the hour
+
+            - Schedule QLI to run for every 2 days at 11:30 PM
+
+            - Schedule QLI to run every week on the Sunday and Wednesday of the week
+
+            - Schedule QLI to run for every 3 months on the 15th day of the month
+
+    4. Click **Import**.
+
+The next QLI runs on the set schedule.
+
+View the Job Status
+----------------------
+
+To view the QLI job status after you run the QLI manually or after Alation triggers the QLI as per the schedule, go to **Query Log Ingestion** > **QLI Job Status**.
+
+    .. image:: ../../../_static/Snowflakes_OCF_New_QLIJobHistory.png
+        :width: 600px
+        :class: with-border
+
+The Query log ingestion job status table logs the following status:
+
+    - **Succeeded** - Indicates that the query ingestion was successful. 
+
+    - **Partial Success** - Indicates that the query ingestion was successful with warnings. If Alation fails to ingest some of the objects during the QLI, it skips them and proceeds with the query ingestion, resulting in partial success.
+
+    - **Failed** - Indicates that the query ingestion failed with errors.
+
+Click the **View Details** link to view a detailed report of query ingestion. Click the **View Details** link to view a detailed report of metadata extraction. If there are errors, the **Job errors** table displays the error category, error message, and a hint (ways to resolve the issue). Follow the instructions under the **Hints** column to resolve the error. 

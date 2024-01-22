@@ -1,0 +1,24 @@
+Server and Catalog Administrators
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+Query to identify Server and Catalog Admins. To find server admin == full admin, as you can find in ``public.alation_user.is_admin`` (Boolean value indicating whether the user is an admin in Alation).
+
+.. code-block:: sql
+
+    SELECT
+      au.user_id,
+      au.user_name,
+      string_agg(group_name, ', ') AS admin_type
+    FROM
+      public.alation_group ag
+      INNER JOIN public.user_group_membership ugm ON ag.group_id = ugm.group_id
+      INNER JOIN public.alation_user au ON ugm.user_id = au.user_id
+    WHERE
+      group_name IN ('Server Admins', 'Catalog Admins')
+    GROUP BY
+      au.user_id,
+      au.user_name;

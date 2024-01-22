@@ -1,0 +1,80 @@
+How to Free Memory
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Alation jobs require a certain amount of space to complete. If that
+space becomes constrained, the jobs fail to complete. When a job fails
+due to lack of space, Alation reports that the job failed due to space
+constraints.
+
+Freeing Up Space on Alation
+---------------------------
+
+The process for freeing up space when Alation jobs fail involves two
+main steps:
+
+-  Freeing up space in the directories
+-  Running the QLI Event Archiver from the UI to archive processed QLI data
+
+Step 1: Free Up Space in Directories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To free up space for Alation jobs to run:
+
+#. Check for available space in the root and home directories.
+
+   .. code-block:: Bash
+
+      df -h
+
+#. Delete any lingering installer files if they are crowding the root or home directories.
+#. Uninstall older versions of Alation if you are running successfully on the current version:
+
+   .. code-block:: Bash
+
+        update-alternatives --display alation
+        # Remove the ones that aren't current
+        rpm -e alation-1.2.3.44444
+        alternatives --remove alation /opt/alation/alation-1.2.3.44444
+
+#. Enter the Alation shell:
+
+   .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+#. Go to the 'logs' directory:
+
+   .. code-block:: Bash
+
+      cd /opt/alation/site/logs
+
+#. Delete the older log files.
+#. If backups are not configured to be stored on a separate drive, check for older backups that can be deleted.
+
+   - Remove Dump files: Go to **/opt/alation/site/dumps** and empty the directory.
+   - Remove old backup files: Go to **/data2/backup** and delete any old backup files you do not need.
+
+#. Go to the **/opt/alation/site/tmp** directory.
+#. Delete the following directories:
+
+   - **/extract_cache**
+   - **/query_ingestion_buffer**
+   - **/log_reporting**
+
+
+Step 2: Archive Processed QLI Data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From Alation UI > **Admin Settings** > **Misc** tab > **Archive processed QLI data** section, run the Event Archiver with the appropriate settings:
+
+.. image:: ../../_static/Screen_Shot_2019-04-04_at_7.09.54_PM.png
+    :width: 5.5in
+    :align: center
+
+Related Topics
+~~~~~~~~~~~~~~~~~~~~
+
+- :doc:`Managing Space: Monitor Postgres Table Size <../../admins/AdditionalConfiguration/MonitoringPostgresTableSize>`
+- :doc:`Managing Space: Purge Query Results <../../admins/AdditionalConfiguration/PurgingQueryResults>`

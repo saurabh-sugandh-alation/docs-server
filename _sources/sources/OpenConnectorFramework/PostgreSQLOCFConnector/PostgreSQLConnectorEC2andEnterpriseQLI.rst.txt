@@ -1,0 +1,680 @@
+PostgreSQL On Amazon EC2 and Enterprise: Query Log Ingestion
+======================================================================
+
+Before performing query log ingestion (QLI), perform the QLI setup for PostgreSQL on EC2 or EDB Postgres Server (PostgreSQL Enterprise).
+Both the Amazon EC2 and EDB deployments support log rotation. You can choose one of the following ways to perform the QLI setup:
+
+    - EC2:
+
+        - `CSV Logging without Log Rotation`_
+
+        - `CSV Logging with Log Rotation`_
+
+    - EDB Postgres Server:
+
+        - `EDB Audit Logs without Log Rotation`_
+
+        - `EDB Postgres Server with Audit Log Rotation`_
+
+CSV Logging without Log Rotation
+---------------------------------
+
+To configure QLI based on CSV logging with no log rotation:
+
+
+1. Change the server configuration in **postgresql.conf** and enable CSV logging as described below.
+
+    .. code-block:: bash
+
+          # Set the logging details for postgresql.conf file and reload the file (changing logging_collector needs a restart).
+
+          log_destination ='csvlog'
+
+          log_directory = 'pg_log'
+
+          logging_collector = on
+
+          log_filename = 'postgresql' 
+
+          log_duration = on             # Should be enabled only if log_min_duration_statement is not set to 0
+
+          log_min_duration_statement = 0
+
+          log_error_verbosity = verbose      # terse, default, or verbose messages
+
+          log_hostname = on
+
+          log_statement = 'all'      # none, ddl, mod, all
+
+          log_rotation_age = 0
+
+          log_rotation_size = 0
+
+          log_min_error_statement = info
+
+2. Reload the updated **postgresql.conf**.
+
+      .. code-block:: sql
+
+          SELECT pg_reload_conf();
+
+
+  .. note::
+
+      The ``log_rotation_age = 0`` and  ``log_rotation_size = 0`` properties stop the log rotation and write all logs to the same file (table). Setting the ``log_min_duration_statement`` property to a value greater than zero forcefully logs the query text; however, the ``log_duration`` property doesn't.
+
+3. Install the ``file_fdw`` extension (``contrib`` package is required), create a foreign file server and a foreign table, and link it to the log file name provided in the **postgresql.conf** file.
+
+
+    .. code-block:: sql
+
+        CREATE EXTENSION file_fdw;
+
+        CREATE SERVER pglog FOREIGN DATA WRAPPER file_fdw;
+
+        CREATE FOREIGN TABLE public.postgres_log (
+            log_time timestamp(3) with time zone,
+            user_name text,
+            database_name text,
+            process_id integer,
+            connection_from text,
+            session_id text,
+            session_line_num bigint,
+            command_tag text,
+            session_start_time timestamp with time zone,
+            virtual_transaction_id text,
+            transaction_id bigint,
+            error_severity text,
+            sql_state_code text,
+            message text,
+            detail text,
+            hint text,
+            internal_query text,
+            internal_query_pos integer,
+            context text,
+            query text,
+            query_pos integer,
+            location text,
+            application_name text,
+            backend_type text,
+            empty_column text,
+            column_with_zeroes text
+            )
+            SERVER pglog
+            OPTIONS (filename 'pg_log/postgresql.csv', format 'csv');
+
+
+4. Create a view for Alation to retrieve query logs from.
+
+    .. code-block:: sql
+
+        CREATE VIEW public.alation_postgres_logv AS
+            SELECT
+              session_id AS sessionID,
+              user_name AS userName,
+              session_start_time AS sessionStartTime,
+              session_start_time AS startTime,
+              virtual_transaction_id AS transactionid,
+              message AS queryString,
+              'N' AS cancelled,
+              database_name AS defaultDatabases
+            FROM public.postgres_log;
+
+    .. note::
+
+        The above view applies to PostgreSQL OCF connector version 1.1.9. If you upgrade from an earlier version to version 1.1.9, create a new view using the above template or change your view with a ``CREATE OR REPLACE`` query using the above template.
+
+
+5. Grant the Alation service account access to the QLI view.
+
+    .. code-block:: console
+
+          Grant SELECT on public.alation_postgres_logv to {Alation Service Account}
+
+6. Update the **Query Log Ingestion** tab of the Settings page of your OCF data source. Refer `Configure QLI in Alation User Interface`_.
+
+
+Configure QLI in Alation User Interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To configure view-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, enter the view name as ``public.alation_postgres_logv`` in the **Table Name** field.
+
+3. Click **Save**.
+
+
+
+    .. image:: ../../../_static/PostgresSQL_QLI.png
+        :width: 5.5in
+        :align: center
+
+
+CSV Logging with Log Rotation
+-----------------------------------
+
+To conveniently retain logs for, for example, seven days only through automatic truncation, you can consider creating seven child tables for a master table. The process would typically use this workflow:
+
+
+1. Open the **postgresql.conf** file, perform the following way:
+
+    .. code-block:: Bash
+
+          log_destination = 'csvlog'
+
+          log_filename = 'postgresql-%a'  # Keep 7d of logs in files 'postgresql-Mon.csv' etc.
+
+          log_directory ='pg_log'
+
+          logging_collector = on
+
+          log_duration = on      # Should be enabled only if log_min_duration_statement is not set to 0
+
+          log_min_duration_statement = 0
+
+          log_error_verbosity = verbose     # terse, default, or verbose messages
+
+          log_hostname = on
+
+          log_statement = 'all'    # none, ddl, mod, all
+
+          log_truncate_on_rotation = on
+
+          log_rotation_age = 1440
+
+          log_rotation_size = 0
+
+          log_min_error_statement = info
+
+
+  .. note::
+
+    To maintain logs for the seven days, name one log file per day such as ``postgresql-Mon`` and ``postgresql-Tue``. To automatically overwrite last week’s log with the current week, set ``log_filename`` to ``postgresql-%a``, ``log_truncate_on_rotation`` to ``on``, and ``log_rotation_age`` to ``1440``.
+
+
+    The ``log_rotation_age = 0`` and  ``log_rotation_size = 0`` properties stop the log rotation and write all logs to the same file (table). Setting the ``log_min_duration_statement`` property to a value greater than zero forcefully logs the query text; however, the ``log_duration`` property doesn't.
+
+
+2. Reload the updated **postgresql.conf**.
+
+      .. code-block:: sql
+
+          SELECT pg_reload_conf();
+
+
+3. Install the ``file_fdw`` extension (``contrib`` package is required), create a foreign file server and a foreign table, and link it to the log file name configured in the previous step.
+
+    .. code-block:: sql
+
+          CREATE EXTENSION file_fdw;
+          CREATE SERVER pglog FOREIGN DATA WRAPPER file_fdw;
+          CREATE TABLE public.postgres_log (
+            log_time timestamp(3) with time zone,
+            user_name text,
+            database_name text,
+            process_id integer,
+            connection_from text,
+            session_id text,
+            session_line_num bigint,
+            command_tag text,
+            session_start_time timestamp with time zone,
+            virtual_transaction_id text,
+            transaction_id bigint,
+            error_severity text,
+            sql_state_code text,
+            message text,
+            detail text,
+            hint text,
+            internal_query text,
+            internal_query_pos integer,
+            context text,
+            query text,
+            query_pos integer,
+            location text,
+            application_name text
+
+    .. code-block:: sql
+
+        CREATE FOREIGN TABLE public.postgres_log_mon (
+                log_time timestamp(3) with time zone,
+            user_name text,
+            database_name text,
+            process_id integer,
+            connection_from text,
+            session_id text,
+            session_line_num bigint,
+            command_tag text,
+            session_start_time timestamp with time zone,
+            virtual_transaction_id text,
+            transaction_id bigint,
+            error_severity text,
+            sql_state_code text,
+            message text,
+            detail text,
+            hint text,
+            internal_query text,
+            internal_query_pos integer,
+            context text,
+            query text,
+            query_pos integer,
+            location text,
+            application_name text
+            ) SERVER pglog
+              OPTIONS (filename 'pg_log/postgresql-Mon.csv', format 'csv');
+        ALTER TABLE public.postgres_log_mon INHERIT public.postgres_log;
+
+4. Repeat Step 3 for the remaining days of the week (Tuesday to Sunday).
+
+5. Create a view for Alation to retrieve the query logs.
+
+    .. code-block:: sql
+
+        CREATE VIEW public.alation_postgres_logv AS
+        SELECT
+          session_id AS sessionID,
+          user_name AS userName,
+          session_start_time AS sessionStartTime,
+          session_start_time AS startTime,
+          virtual_transaction_id AS transactionid,
+          message AS queryString,
+          'N' AS cancelled,
+          database_name AS defaultDatabases
+        FROM public.postgres_log;
+
+    .. note::
+
+        The above view applies to PostgreSQL OCF connector version 1.1.9. If you upgrade from an earlier version to version 1.1.9, create a new view using the above template or change your view with a ``CREATE OR REPLACE`` query using the above template.
+
+6. Grant the Alation service account access to the QLI view.
+
+    .. code-block:: console
+
+        GRANT SELECT ON public.alation_postgres_logv TO {Alation Service Account}
+
+7. Update the **Query Log Ingestion** tab of the Settings page of your OCF data source. Refer `Configure QLI in Alation User Interface`_.
+
+
+
+EDB Audit Logs without Log Rotation
+-------------------------------------
+
+Perform these steps to configure QLI based on EDB Audit logs without log rotation:
+
+
+1. Change the server configuration (**postgresql.conf**) and enable CSV logging.
+
+    .. code-block:: bash
+
+        # set in postgresql.conf + restart/reload server (changing logging_collector needs restart)
+        #------------------------------------------------------------
+        # ERROR REPORTING AND LOGGING
+        #------------------------------------------------------------
+
+        # - Where to Log -
+
+        logging_collector = on
+
+        #------------------------------------------------------------
+        # EDB AUDIT
+        #------------------------------------------------------------
+
+        edb_audit = 'csv'                       # none, csv or xml
+
+        # These are only used if edb_audit is not none:
+        edb_audit_directory = 'edb_audit'       # Directory where the log files are written
+                                                # Can be absolute or relative to PGDATA
+
+        edb_audit_filename = 'postgresaudit'    # Audit file name pattern.
+                                                # Can include strftime() escapes
+
+        edb_audit_rotation_day = 'none'         # Automatic rotation of log files based
+                                                # on day of week. none, every, sun,
+                                                # mon, tue, wed, thu, fri, sat
+
+        edb_audit_rotation_size = 0             # Automatic rotation of log files will
+                                                # happen after this many megabytes (MB)
+                                                # of log output.  0 to disable.
+
+        edb_audit_rotation_seconds = 0          # Automatic log file rotation will
+                                                # happen after this many seconds.
+
+        edb_audit_connect = 'all'               # none, failed, all
+
+        #edb_audit_disconnect ='none'           # none, all
+
+        edb_audit_statement = 'all'             # none, dml, ddl, select, error, rollback, all
+
+        #edb_audit_tag = ''
+
+2. Reload the updated **postgresql.conf** using the following command:
+
+    .. code-block:: sql
+
+        SELECT pg_reload_conf();
+
+
+.. note::
+
+         The properties ``edb_audit_rotation_size = 0``, ``edb_audit_rotation_day = 'none'``,  and ``edb_audit_rotation_seconds = 0`` stop the rotation and write all logs to the same file (table).
+
+
+3. Install the ``file_fdw`` extension (``contrib`` package is required), create a foreign file server and a foreign table, and link it to the log file name configured in the previous step.
+
+    .. code-block:: sql
+
+        CREATE EXTENSION file_fdw;
+        CREATE SERVER pglog FOREIGN DATA WRAPPER file_fdw;
+        CREATE FOREIGN TABLE public.postgres_log (
+          user_name text,
+          database_name text,
+          process_id integer,
+          connection_from text,
+          session_id text,
+          session_line_num bigint,
+          command_tag text,
+          session_start_time timestamp with time zone,
+          virtual_transaction_id text,
+          transaction_id bigint,
+          error_severity text,
+          sql_state_code text,
+          message text,
+          detail text,
+          hint text,
+          internal_query text,
+          internal_query_pos integer,
+          context text,
+          query text,
+          query_pos integer,
+          location text,
+          application_name text,
+          extra text
+        ) SERVER pglog
+        OPTIONS (
+          filename 'edb_audit/postgresaudit.csv', format 'csv');
+
+4. Create a view for Alation to retrieve query logs from.
+
+    .. code-block:: sql
+
+        CREATE VIEW public.alation_postgres_logv AS
+        SELECT
+          session_id AS sessionID,
+          user_name AS userName,
+          session_start_time AS sessionStartTime,
+          session_start_time AS startTime,
+          virtual_transaction_id AS transactionid,
+          message AS queryString,
+          'N' AS cancelled,
+          database_name AS defaultDatabases
+        FROM public.postgres_log;
+
+    .. note::
+
+        The above view applies to PostgreSQL OCF connector version 1.1.9. If you upgrade from an earlier version to version 1.1.9, create a new view using the above template or change your view with a ``CREATE OR REPLACE`` query using the above template.
+
+5. Grant the Alation service account access to the QLI view.
+
+    .. code-block:: console
+
+        Grant SELECT on public.alation_postgres_logv to {Alation Service Account}
+
+6. Update the **Query Log Ingestion** tab of the Settings page of your OCF data source. Refer `Configure QLI in Alation User Interface`_.
+
+
+    .. note::
+
+        This log doesn't log duration.
+
+
+EDB Postgres Server with Audit Log Rotation
+---------------------------------------------
+
+(Alation version 4.16)
+
+Perform these steps to configure QLI based on EDB Postgres Server with Audit log rotation:
+
+
+1. Change the server configuration (**postgresql.conf**) and enable CSV logging.
+
+    .. code-block:: bash
+
+          # set in postgresql.conf + restart/reload server (changing logging_collector needs restart) 
+          #-----------------------------------------------------------------------------------------
+          #ERROR REPORTING AND LOGGING
+          #-----------------------------------------------------------------------------------------
+          # - Where to Log -
+          logging_collector = on
+          #-----------------------------------------------------------------------------------------
+          # EDB AUDIT
+          #-----------------------------------------------------------------------------------------
+          edb_audit = 'csv'                                   # none, csv or xml
+
+          # These are only used if edb_audit is not none:
+
+          edb_audit_directory = 'edb_audit'                  # Directory where the log files are written
+                                                            # Can be absolute or relative to PGDATA
+
+          edb_audit_filename = 'audit-%Y-%m-%dT%H:%M:%S'      # Audit file name pattern.
+                                                              # Can include strftime() escapes
+
+          edb_audit_rotation_day = 'every'                    # Automatic rotation of log files based
+                                                              # on day of week. none, every, sun,
+                                                              # mon, tue, wed, thu, fri, sat
+
+          edb_audit_rotation_size = 0                         # Automatic rotation of log files will
+                                                              # happen after this many megabytes (MB)
+                                                              # of log output.  0 to disable.
+
+          edb_audit_rotation_seconds = 0                      # Automatic log file rotation will
+                                                              # happen after this many seconds.
+
+          edb_audit_connect = 'all'                           # none, failed, all
+
+          #edb_audit_disconnect ='none'                       # none, all
+
+          edb_audit_statement = 'all'                         # none, dml, ddl, select, error, rollback, all
+
+          #edb_audit_tag = ''                                 # Audit log session tracking tag.
+
+
+    .. note::
+
+         - Setting ``edb_audit_filename = 'audit-%Y-%m-%dT%H:%M:%S'`` creates a file with name as ``audit-2017-11-26T11:04:44.csv``.
+
+         - Every file is rolled off due to the configuration ``edb_audit_rotation_day = 'every'`` 
+
+
+2. Reload the updated **postgresql.conf** using the following command:
+
+    .. code-block:: sql
+
+        SELECT pg_reload_conf();
+
+3. Create a table to copy logs from csv.
+
+.. tabs::
+
+    .. tab:: EnterpriseDB Postgres Version 9.6
+
+
+        .. code-block:: sql
+
+            CREATE TABLE public.postgres_log (
+              log_time timestamp(3) with time zone,
+              user_name text,
+              database_name text,
+              process_id integer,
+              connection_from text,
+              session_id text,
+              session_line_num bigint,
+              command_tag text,
+              session_start_time timestamp with time zone,
+              virtual_transaction_id text,
+              transaction_id bigint,
+              error_severity text,
+              sql_state_code text,
+              message text,
+              detail text,
+              hint text,
+              internal_query text,
+              internal_query_pos integer,
+              context text,
+              query text,
+              query_pos integer,
+              location text,
+              application_name text,
+              extra text
+            );
+
+
+
+    .. tab:: EnterpriseDB Postgres version 10
+
+        .. code-block:: sql
+
+            CREATE TABLE public.postgres_log (
+              log_time timestamp(3) with time zone,
+              user_name text,
+              database_name text,
+              process_id integer,
+              connection_from text,
+              session_id text,
+              session_line_num bigint,
+              command_tag text,
+              session_start_time timestamp with time zone,
+              virtual_transaction_id text,
+              transaction_id bigint,
+              error_severity text,
+              sql_state_code text,
+              message text,
+              detail text,
+              hint text,
+              internal_query text,
+              internal_query_pos integer,
+              context text,
+              query text,
+              query_pos integer,
+              location text,
+              application_name text,
+              statement_type text,
+              extra text
+            );
+
+4. Create a log rotation config file.
+
+        .. note::
+
+            - EDB_AUDIT_LOG_DIRECTORY_PATH must have read privileges.
+
+                - POSTGRES_HOME/bin/edb-psql must have execute privileges.
+
+
+
+    .. code-block:: bash
+
+        vi  postgres_audit_log_rotation_config.txt
+
+        EDB_AUDIT_LOG_DIRECTORY_PATH=/opt/edb/as<postgres version>/data/edb_audit/
+        EDB_AUDIT_LOG_FILENAME_PREFIX=audit-
+        HOST=<postgres server_host>
+        PORT=<postgres server_port>
+        USERNAME=<username of your service account>
+        PASSWORD=<username of your service password>
+        DATABASE=postgres
+        POSTGRES_HOME=/opt/edb/as<postgres_version>/
+
+
+    **Example**
+
+    .. code-block:: bash
+
+        vi  postgres_audit_log_rotation_config.txt
+
+        EDB_AUDIT_LOG_DIRECTORY_PATH=/opt/edb/as9.6/data/edb_audit/
+        EDB_AUDIT_LOG_FILENAME_PREFIX=audit-
+        HOST=10.11.21.41
+        PORT=5432
+        USERNAME=postgres
+        PASSWORD=hyperbad
+        DATABASE=postgres
+        POSTGRES_HOME=/opt/edb/as9.6/
+
+
+5. Create a log rotation script. The script will look for yesterday’s log and copies yesterday’s csv to the ``public.postgres_log`` file.
+
+6. Move both the  ``postgres_audit_log_rotation.sh`` and ``postgres_audit_log_rotation_config.txt`` files to **{Postgres Installation Directory}/edb/as9.6/bin**.
+
+    .. code-block:: bash
+
+        mv postgres_audit_log_rotation.sh opt/edb/as<postgres_version>/bin/.
+        mv postgres_audit_log_rotation_config.txt opt/edb/as<postgres_version>/bin/.
+
+
+7. Provide the execute permission on the ``postgres_audit_log_rotation.sh`` file.
+
+    .. code-block:: bash
+
+        chmod +x  {Postgres Installation Directory}/edb/as<*postgres_version*>/bin/postgres_audit_log_rotation.sh
+        chmod +x  opt/edb/as9.6/bin/postgres_audit_log_rotation.sh
+
+8. Grant the read permission on the ``postgres_audit_log_rotation_config.txt`` file.
+
+    .. code-block:: bash
+
+        chmod 444  opt/edb/as9.6/bin/postgres_audit_log_rotation_config.txt
+
+9. Create a cron job to run the script at 1 am every day.
+
+    This syncs yesterday’s log to public.postgres_log  at 1.00 AM.
+
+    .. code-block:: bash
+
+          0 1 * * *   sh {Postgres Installation Directory}/edb/as<*postgres_version*>/bin/postres_audit_log_rotation.sh
+          {Postgres Installation Directory}/edb/as<*postgres_version*>/bin/postres_audit_log_rotation_config.txt
+
+    For example, crontab -e
+
+    .. code-block:: bash
+
+          0 1 * * *   sh /opt/edb/as9.6/bin/postres_audit_log_rotation.sh
+          /opt/edb/as9.6/bin/postres_audit_log_rotation_config.txt
+
+    **For Ubuntu Users**
+
+    For example, crontab -e (Use bash instead of sh)
+
+    .. code-block:: bash
+
+          0 1 * * *   bash /opt/edb/as<postgres_version>/bin/postres_audit_log_rotation.sh
+          /opt/edb/as<postgres_version>/bin/postres_audit_log_rotation_config.txt
+
+10. Create a view for Alation to retrieve the query log from.
+
+    .. code-block:: sql
+
+        CREATE VIEW public.alation_postgres_logv AS
+        SELECT
+          session_id AS sessionID,
+          user_name AS userName,
+          session_start_time AS sessionStartTime,
+          session_start_time AS startTime,
+          virtual_transaction_id AS transactionid,
+          message AS queryString,
+          'N' AS cancelled,
+          database_name AS defaultDatabases
+        FROM
+          public.postgres_log;
+
+    .. note::
+
+        The above view applies to PostgreSQL OCF connector version 1.1.9. If you upgrade from an earlier version to version 1.1.9, create a new view using the above template or change your view with a ``CREATE OR REPLACE`` query using the above template.
+
+11. Grant the Alation service account access to the QLI view.
+
+    .. code-block:: console
+
+         Grant SELECT on public.alation_postgres_logv to {Alation Service Account}
+
+12. Update the **Query Log Ingestion** tab of the Settings page of your OCF data source. Refer `Configure QLI in Alation User Interface`_.

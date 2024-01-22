@@ -1,0 +1,262 @@
+Set up Replication on HA Pair (4.7 and Below)
+=====================================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Prerequisites
+-------------
+
+- The same Alation version must be installed on both servers.
+
+- An Alation Data disk and Backup disk must be configured on the Secondary.
+
+- Verify that the Alation Data and Backup disk are configured by running one of the following commands, depending on Alation version.
+
+      - For versions 3.12 and below:
+
+          .. code-block:: bash
+
+              tail -n +1 /usr/local/alation/.disk*
+
+
+      ``/usr/local/alation/.disk1_cache`` path is ``/data``
+
+      ``/usr/local/alation/.disk2_cache`` path is ``/backup``
+
+
+      - For versions 4.0 and above:
+
+          .. code-block:: bash
+
+              tail -n +1 /opt/alation/alation/.disk*
+
+
+      ``/usr/local/alation/.disk1_cache`` path is ``/data``
+
+      ``/usr/local/alation/.disk2_cache`` path is ``/backup``
+
+
+      If ``.disk1_cache`` or ``.disk2_cache`` have invalid paths, run the following command on the Secondary:
+
+          .. code-block:: bash
+
+              sudo/etc/init.d/alation init DATA_DISK_PATH BACKUP_DISK_PATH
+
+
+- Alation Services need to be started up on both servers. If Alation is not started on both servers run the following command:
+
+      .. code-block:: bash
+
+          sudo/etc/init.d/alation start
+
+- Alation Must be Configured as standalone mode on both servers
+
+      .. code-block:: bash
+
+          sudo /etc/init.d/alation shell
+          alation_conf alation.cluster.replication_mode
+          alation.cluster.replication_mode = standalone
+
+- If the server is not in standalone mode, run the following command on both servers:
+
+      .. code-block:: bash
+
+          sudo /etc/init.d/alation shell
+          alation_action cluster_enter_standalone_mode
+
+The Primary and Secondary must be able to communicate to each other over the following ports:
+
+=========== ==========================================================
+Port Number Port Function
+=========== ==========================================================
+5432        Postgres Replication
+27017       MongoDB Replication
+8088        KVStore
+22          SSH, used for signaling & file transfers between servers
+=========== ==========================================================
+
+Replication Setup Procedures
+-----------------------------
+
+Step 1:  Collect System Details
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To get the ip address with CIDR try running ``ip addr`` from the host.
+
+If Multiple NICS are detected select the one used to access the server:
+
+.. code-block:: console
+
+  (env) PROD [alation @ip-10-11-2-15 /]$ ip addr
+
+.. code-block:: console
+
+  lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc no queue state UNKNOWN
+      link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+      inet 127.0.0.1/8 scope host lo
+      inet6 ::1/128 scope host
+        valid_lft forever preferred_lft forever
+
+  eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9001 qdisc pfifo_fast state UP qlen 1000
+      link/ether 12:e5:2b:d0:eb:8b brd ff:ff:ff:ff:ff:ff
+      inet 10.11.2.15/24 brd 10.11.2.255 scope global eth0
+      inet6 fe80::10e5:2bff:fed0:eb8b/64 scope link
+        valid_lft forever preferred_lft forever 
+
+To get PostgreSQL disk usage, try running the following Alation shell command:
+
+.. code-block:: console
+
+  (env) PROD {alation@ip-10-11-2-15 /j$ sudo du -hs /data1/pgsql/9.3/data/ 12G /data1/pgsql/9.3/data/
+  
+Use the following chart to fill in the required information.
+
+=========== ================= ==========================================
+Role        Address with CIDR SSH Username, default: ``alationadmin``
+=========== ================= ==========================================
+Primary     10.0.11.100/24    ``alationadmin``
+Secondary   10.0.11.200/24    ``alationadmin``
+=========== ================= ==========================================
+
+Step 2:  Key Exchange
+~~~~~~~~~~~~~~~~~~~~~
+
+To get HA you need passwordless SSH between the Primary ↔ Secondary. Alation ships a python script to help set this up. The script should be run on the host outside the chroot.
+
+The script creates only an ssh key pair and place it into ``authorized_keys`` for the Alation admin user. If you want to use another user, which should not occur often, create the ``authorized_keys`` manually for that user.
+
+1. On the Primary, use the Secondary IP as the command line argument.
+
+  For versions 3.12 and below:
+
+  .. code-block:: bash
+
+    sudo python /usr/local/alation/opt/alation/ops/actions/unjailed_key_exchange 10.0.11.200
+
+  For versions 4.0 and above:
+
+  .. code-block:: bash
+
+    sudo python /opt/alation/alation/opt/alation/ops/actions/unjailed_key_exchange 10.0.11.200
+
+2. On the Secondary, use the Primary IP as the command line argument.
+
+  For versions 3.12 and below:
+
+  .. code-block:: bash
+
+    sudo python /usr/local/alation/opt/alation/ops/actions/unjailed_key_exchange 10.0.11.100
+
+  For versions 4.0 and above:
+
+  .. code-block:: bash
+
+    sudo python /opt/alation/alation/opt/alation/ops/actions/unjailed_key_exchange 10.0.11.100
+
+The script creates ``replication_rsa`` key files on the Secondary and Primary. You are asked to copy over the public key from Secondary to Primary and Primary to Secondary.  
+
+Step 3:  Verify SSH
+~~~~~~~~~~~~~~~~~~~
+
+1. From the chroot shell on the Primary, SSH to the Secondary. After you have logged in, it is a good idea to ``touch .hushlogin`` to prevent any MOTD from causing errors later. 
+
+2. From the Primary:
+
+  .. code-block:: Bash
+
+     ssh -i/home/alation/.ssh/replication_rsa -l alationadmin 10.0.11.200 touch .hushlogin 
+
+3. From the Secondary:
+
+  .. code-block:: Bash
+
+     ssh -i/home/alation/.ssh/replication_rsa -l alationadmin 10.0.11.100 touch .hushlogin
+
+Step 4:  Change Host from Standalone to Primary Mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. The ``alation_action`` command must be executed inside the Alation shell. Alation shell is entered by running:
+
+  .. code-block:: Bash
+
+    sudo/etc/init.d/alation shell
+
+2. From the Primary, run:
+
+  .. code-block:: Bash
+
+    alation_action cluster_enter_master_mode 
+
+Step 5:  Replicate to Secondary
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. The ``alation_conf`` command must be executed inside the Alation shell. Alation shell is entered by running:
+
+  .. code-block:: Bash
+
+    sudo/etc/init.d/alation shell
+
+2. From the Primary, add the Secondary IP CIDR to ``alation_conf``:
+
+  .. code-block:: Bash
+
+    alation_conf alation.cluster.hosts -s['10.0.11.200/24']
+
+3. Decide if we are going to attempt PostgreSQL replication in-line. General guidance:
+
+  - Do not try to replicate PostgreSQL in-line for installs > 100GB PostgreSQL data files
+  - If downtime needs to be minimized, do not replicate PostgreSQL in-line.
+  - If new install with minor data, replicating in-line will be OK.
+
+  If you choose not to perform replication in-line, continue to Step 5a.
+
+4. From the Primary, add the second host as Secondary:
+
+  .. code-block:: Bash
+
+     alation_action cluster_add_slaves
+
+5. If you choose not to perform replication in-line, go to step 5b.
+
+Step 5a: Disable PostgreSQL In-line Replication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. From the Secondary, set ``alation_conf`` item to not replicate postgres in-line:
+
+  .. code-block:: Bash
+
+     alation_conf alation.cluster.pg_repl_in_line -s False
+
+2. Continue to Step 6.
+
+Step 5b:  Replicate PostgreSQL
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From the Secondary, replicate postgres using the ``alation_action`` command:
+
+.. code-block:: Bash
+
+   alation_action cluster_replicate_postgres
+
+Step 6:  Verification
+~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Verify PostgreSQL Replication status.
+
+   The following query shows the Secondary instances that are attached to the Primary and any replication delay, in bytes:
+
+   .. code-block:: Bash
+
+     psql rosemeta
+     SELECT client_hostname, client_addr,
+     pg_xlog_location_diff(pg_stat_replication.sent_location,
+     pg_stat_replication.replay_location) AS byte_lag FROM pg_stat_replication;
+
+2. Verify Mongo Lag.
+
+   The following query displays the number of seconds the Secondary lags behind the Primary. It is expected for this verification to return a large number of hours when replication is the first setup. It eventually works through the backlog and catches up.
+
+   .. code-block:: Bash
+
+      mongo
+      db.printSlaveReplicationInfo()

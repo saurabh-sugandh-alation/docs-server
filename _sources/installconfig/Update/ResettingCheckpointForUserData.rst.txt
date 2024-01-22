@@ -1,0 +1,64 @@
+Resetting ETL Checkpoint for User Data
+================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Use the steps below to reset the ETL checkpoint for user data in Alation Analytics V2 after updating Alation to:
+
+      - **2022.1.4** (or a later patch release of *2022.1* if *2022.1.4* is skipped)
+      - **2021.4.10** (or a later patch release of *2021.4* if *2021.4.10* is skipped)
+
+These steps require SSH access to the Alation server.
+
+
+1. Alation provides a script for resetting the user ETL checkpoint. Download the Zip file with the script from Alation Community: `Reset ETL checkpoint for users in Alation Analytics V2 <https://community.alation.com/askalationexpertsmicrosite/viewdocument/reset-etl-checkpoint-for-users-in-a?CommunityKey=ae45134b-412a-4cff-bb26-1e9f3caa2f60&tab=librarydocuments>`_ (requires login to Community).
+
+2. Extract the script file **reset_checkpoint_for_user.py**.
+
+3. Copy the script file to the Alation server. Initially, you can place it into the **/tmp** directory on the host.
+
+4. Use SSH to connect to the Alation server.
+
+5. Copy the **reset_checkpoint_for_user.py** file to the **/tmp** directory inside the Alation chroot. For example, if you have it in the **/tmp** directory on the host, then copy it to the **/tmp** directory at **/opt/alation/alation/data2/tmp/**.
+
+    .. code-block:: Bash
+
+        sudo cp /tmp/reset_checkpoint_for_user.py /opt/alation/alation/data2/tmp/
+
+6. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+7. Change user to ``alation``:
+
+    .. code-block:: Bash
+
+        sudo su alation
+
+8. Copy the **reset_checkpoint_for_user.py** file to **/opt/alation/django/alation_analytics_v2/one_off_scripts/**.
+
+    .. code-block:: Bash
+
+        cp /data2/tmp/reset_checkpoint_for_user.py /opt/alation/django/alation_analytics_v2/one_off_scripts/
+
+9. Navigate to the **one_off_scripts** directory:
+
+    .. code-block:: Bash
+
+        cd /opt/alation/django/alation_analytics_v2/one_off_scripts/
+
+10. Run the script:
+
+    .. code-block:: Bash
+
+        python reset_checkpoint_for_user.py
+
+11. Exit from the Alation shell:
+
+    .. code-block:: Bash
+
+        exit
+
+12. Go to the Alation Analytics V2 Settings page in the Alation user interface and run the ETL.

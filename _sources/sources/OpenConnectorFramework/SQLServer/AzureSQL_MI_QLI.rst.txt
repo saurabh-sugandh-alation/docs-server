@@ -1,0 +1,150 @@
+Query Log Ingestion for Azure SQL Managed Instance
+======================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Query log ingestion (QLI) configuration for an Azure SQL Managed Instance data source uses Azure SQL Managed Instance auditing.
+
+To configure QLI for an Azure SQL Managed Instance (MI) data source, follow the steps below.
+
+Enable Auditing for your Azure SQL MI
+---------------------------------------
+
+Use the steps below to enable auditing for your instance.
+
+1. In Azure portal, go to your storage account.
+
+2. Use the steps in `Get started with Azure SQL Managed Instance auditing <https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/auditing-configure?view=azuresql>`_ in Microsoft documentation to create a container and generate a SAS token.
+
+3. Copy the container URL and the SAS token.
+
+4. Run the following queries, substituting the placeholder values with your actual values:
+
+    - ``<container_URL>``—Your storage container URL
+    - ``<your_SAS_token>``—Your SAS token
+    - ``<your_audit_name>``—Your QLI audit name
+    - ``<your_server_specification>``—Your server specification for QLI audit
+    - ``<your_db_specification>``—Your database audit specification
+    - ``<database_name>``—Your database name
+
+    .. code-block:: SQL
+
+        CREATE CREDENTIAL [<container_URL>]
+        WITH IDENTITY='SHARED ACCESS SIGNATURE',
+        SECRET = '<your_SAS_token>';
+
+        CREATE SERVER AUDIT [<your_server_audit_name>]
+        TO URL ( PATH ='<container_URL>' , RETENTION_DAYS =  5 );
+
+        CREATE SERVER AUDIT SPECIFICATION <your_specification>
+        FOR SERVER AUDIT <your_server_audit_name> WITH (STATE=ON);
+
+        CREATE DATABASE AUDIT SPECIFICATION <your_db_specification>
+        FOR SERVER AUDIT [<your_server_audit_name>]
+        ADD (INSERT, SELECT, UPDATE, DELETE ON DATABASE::[<database_name>] BY [public]) WITH (STATE = ON);
+
+    .. important::
+
+        The query that creates the database-specific audit specification has to be run on all databases in the data source. For each database you are cataloging, use the appropriate  ``<database_name>``.
+
+7. Use the following command to enable the server audit:
+
+    .. code-block:: SQL
+
+        ALTER SERVER AUDIT [<your_server_audit_name>] WITH (STATE=ON);
+
+8. To test your configuration, run some queries on the database(s) that you have enabled auditing for. After that, ensure that the **.xel** audit files have been generated in the container you specified when creating the server audit.
+
+Create View for Table-Based QLI
+-----------------------------------
+
+If you select the table-based QLI option, create a table or a view on your database to retrieve the query history data from. You will need to specify the name of this view in the Alation user interface when configuring query log ingestion in your data source settings.
+
+Use the query format below to create a view and flush the query history from the database. Substitute ``<schema.alation_qli>`` with your view name and ``<qli_URL>`` with the URL of the folder from which you want to ingest the query history.
+
+    .. note::
+
+	       For information about the supported formats of the URL, see `QLI URL Format`_ below.
+
+    .. code-block:: SQL
+
+        CREATE VIEW <schema.alation_qli> AS
+          SELECT
+            server_principal_name AS userName,
+            event_time AS startTime,
+            [statement] AS queryString,
+            session_id AS sessionID,
+            event_time AS sessionStartTime,
+            duration_milliseconds AS milliseconds,
+            'N' AS cancelled,
+            database_name AS defaultDatabases
+          FROM sys.fn_get_audit_file('<qli_URL>', default, default);
+
+QLI URL Format
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Audit files are created in separate folders for the dates on which audit logs are generated in your storage container. QLI can be configured to use a specific folder level by using the corresponding format of the audit file URL.
+
+Ingesting Query History from a Specific File
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to ingest a specific file only, use the full URL of the file.
+
+**Example:**
+
+``https://test90595.blob.core.windows.net/audit/sqlmanagedtest/master/QLI_AUDIT/2022-07-18/10_42_36_692_0.xel``
+
+Ingesting Query History for a Specific Date
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to ingest query history for a specific date only, you can truncate the full URL to the level of the folder that corresponds to this date.
+
+**Example**:
+
+``https://test90595.blob.core.windows.net/audit/sqlmanagedtest/master/QLI_AUDIT/2022-07-18/``
+
+Ingesting Query History for Multiple Dates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To ingest full query history, you can truncate the URL at the server level. Alation supports partial URL matching.
+
+**Example**:
+
+``https://test90595.blob.core.windows.net/audit/sqlmanagedtest/`` or ``https://test90595.blob.core.windows.net/audit/sql``.
+
+When this format is used, Alation will read all the audit logs from folders under ``sqlmanagedtest`` or from folders starting with ``sql``, which, in this case, are the first three letters of the server name.
+
+Configure QLI in Alation
+----------------------------------
+
+On the **Query Log Ingestion** tab, you can select QLI options for your data source and schedule the QLI job if necessary.
+
+You can choose to use table-based or custom query-based QLI.
+
+Configure Table-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the **Table Name** field, specify the name of the table or view in which the query logs are available. Make sure that the service account has the permissions to access this table or view. The table name must be provided in the following format: ``database.schema.table`` or ``database.schema.view``.
+
+Custom Query-Based QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When for some reason you cannot create a table or view on your database, you can use a custom QLI query to perform QLI. In the **Custom QLI Query** field, specify the expected query structure as shown below, substituting ``<qli_URL>`` with the URL of the storage container you created to store the audit files, and click **Save**.
+
+.. code-block:: SQL
+
+    SELECT
+      server_principal_name AS userName,
+      event_time AS startTime,
+      [statement] AS queryString,
+      session_id AS sessionID,
+      event_time AS sessionStartTime,
+      duration_milliseconds AS milliseconds,
+      'N' AS cancelled,
+      database_name AS defaultDatabases
+    FROM sys.fn_get_audit_file('<qli_URL>', default, default);
+
+Automated and Manual QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst

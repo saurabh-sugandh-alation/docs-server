@@ -1,0 +1,176 @@
+Configure Metadata Extraction for OCF Data Sources
+=========================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+On the **Metadata Extraction** tab of an OCF data source Settings page, you can configure and perform metadata extraction (MDE).
+
+Raw Metadata Dump or Replay
+------------------------------
+
+Under the **Application Settings** section of the **Metadata Extraction** tab, you can enable or disable the **Raw Metadata Dump or Replay** feature. By default, this feature is disabled. We recommend enabling it for extraction debugging only. The full use of this feature requires access to the backend of the Alation server.
+
+If **Raw Metadata Dump or Replay** is enabled, Alation will break MDE in two stages. First, it will "dump" the extracted metadata into files. You can access and review the files on the Alation server in order to debug extraction issues before attempting to ingest the metadata into the catalog. Second, you can ingest the metadata from the files into the catalog. Both stages are manually controlled from the user interface.
+
+To use the **Raw Metadata Dump or Replay** feature:
+
+1. From the **Enable Raw Metadata Dump or Replay** dropdown list, select the option **Enable Raw Metadata Dump**.
+
+2. Click **Save**. This enables the first stage of MDE where the extracted metadata will be dumped into four files—``attribute.dump``, ``function.dump``, ``schema.dump``, ``table.dump``—in a subdirectory of the directory ``opt/alation/site/tmp/`` on the Alation server (inside the Alation shell).
+
+3. `Configure MDE`_.
+
+4. `Run MDE Manually`_. Alation will perform a raw metadata dump into files. In the **Extraction Job Status** table at the bottom of the screen, click the **View Details** link to bring up the details of the MDE job. The log will list the location of the **.dump** files for this specific job, for example ``/opt/alation/site/tmp/rosemeta/170/extraction_dump/5028``.
+
+5. Access and review the metadata dump files to intercept any potential extraction issues.
+
+6. From the **Enable Raw Metadata Dump or Replay** dropdown list, select the option **Enable Ingestion Replay**.
+
+7. Click **Save**. This will enable the second stage where the metadata from the files can be ingested into the Alation catalog.
+
+8. Perform MDE. The metadata from the files will be ingested into the catalog.
+
+Disable Raw Metadata Dump or Replay
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To disable the **Raw Metadata Dump or Replay** feature:
+
+1. From the **Enable Raw Metadata Dump or Replay** dropdown list, select the option **Off**.
+
+2. Click **Save**. The next MDE job you run will extract and ingest the metadata directly into the catalog.
+
+Configure MDE
+----------------------
+
+Under the **Connector Settings** section of the **Metadata Extraction** tab, you can configure your MDE jobs. Most OCF connectors support default and custom query-based MDE:
+
+    - `Default extraction`_—MDE uses default SQL queries that are built in the connector code.
+
+    - `Custom query-based extraction`_—MDE uses custom SQL queries provided by a Data Source Admin on the **Metadata Extraction** tab of the Settings.
+
+Default Extraction
+-------------------------
+
+Default extraction will extract either all metadata that the service account can access or specific  metadata if you enabled selective extraction.
+
+To extract all metadata, `Run MDE Manually`_ or `Schedule MDE`_.
+
+To select which metadata to extract, configure `Selective Extraction`_.
+
+Selective Extraction
+---------------------------
+
+Under **Connector Settings** > **Selective Extraction**, you can select the schemas to include into extraction.
+
+    .. note::
+
+        Custom queries will not apply if you enable selective extraction. Alation runs default MDE queries when selective extraction is enabled.
+
+To configure selective extraction:
+
+1. Enable the **Selective Extraction** toggle.
+
+2. If this is not the first time you're running MDE, decide what you'd like to do with the previously extracted metadata. See `Remove schemas from the catalog that are not captured by the lists below`_.
+
+3. Click **Get List of Schemas** to first fetch a list of schemas. The status of the Get Schemas action will be logged in the **Extraction Job Status** table on the bottom of the page.
+
+4. When schema synchronization is complete, the **Select Schemas** drop-down list will become enabled. Select one or more schemas as necessary.
+
+5. Check if you are using the desired filter option:
+
+    - **Extract only these Schemas**—Extract metadata only from the selected schemas.
+    - **Extract all Schemas except**—Extract metadata from all schemas except the selected schemas.
+
+
+6. `Run MDE Manually`_ or `Schedule MDE`_.
+
+Remove Schemas from the Catalog That Are Not Captured by the Lists Below
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As you adjust the list of schemas to extract into the catalog and run consecutive MDE jobs, you include or exclude schemas using the **Select Schemas** filter. What's important is that the inclusion or exclusion of schemas only impacts the next extraction job but not the metadata that is already present in the catalog. By default, if you initially include and extract a schema but then exclude this schema and run a consecutive MDE job, the metadata from the excluded schema will not be extracted but will stay in the catalog. To remove previously extracted metadata from the catalog, you need to explicitly configure the removal before running MDE.
+
+
+You use the toggle **Remove schemas from the catalog that are not captured by the lists below** to remove old metadata:
+
+1. Before running MDE, check the state of the toggle **Remove schemas from the catalog that are not captured by the lists below** under **Selective Extraction**. Enable it to remove the old metadata during the next MDE job. Leave it disabled (default) or disable it to keep the previously extracted metadata in the catalog.
+
+    .. note::
+
+        Alation soft-deletes the metadata. It is removed from the catalog but not from the Alation database.
+
+2. Include or exclude schemas using the **Select Schemas** filter.
+
+3. :ref:`Run MDE manually <run-mde>` or :ref:`schedule MDE <schedule-mde>`.
+
+
+Custom Query-Based Extraction
+---------------------------------
+
+Query-based extraction allows users to customize metadata extraction down to the level of specific metadata types, such as tables, columns, views, and other by using custom queries:
+
+    - The extraction of schema, table, view, and column metadata is always enabled and cannot be disabled.
+
+    - The extraction of system schema information is disabled by default. All other supported metadata types are enabled by default.
+
+    - You can disable or enable the metadata types you want to extract by clearing or selecting the corresponding checkboxes.
+
+To customize the extraction scope:
+
+1. Under **Connector Settings** > **Metadata Extraction Configuration**, enable or disable the extraction of additional available metadata types, such as:
+
+    - System schemas
+    - Primary keys
+    - Foreign keys
+    - Indexes
+    - Functions
+    - Function definitions.
+
+    The list of available metadata types depends on the connector and varies for different data sources.
+
+2. Click **Save**.
+
+3. Provide custom extraction queries. See `Custom Extraction Queries`_.
+
+
+Custom Extraction Queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use query-based metadata extraction, you will need to provide custom queries. Alation expects that the queries conform to a specific format and and include all the reserved identifiers.
+
+    .. note::
+
+        For most OCF connectors, the specific connector documentation provides examples of default queries that Alation runs during MDE. Refer to these examples when writing custom queries.
+
+To configure custom query-based extraction:
+
+1. Provide custom queries in the respective fields under **Connector Settings** > **Custom Query Based Extraction**.
+
+2. Click **Save** in this section.
+
+3. :ref:`Run MDE manually <run-mde>` or :ref:`schedule MDE <schedule-mde>`.
+
+    .. note::
+
+        If you only specify a custom query for some metadata types but not all, Alation will perform extraction based on the corresponding default query for the metadata types that do not have a custom query.
+
+.. _run-mde:
+
+Run MDE Manually
+------------------
+
+Under **Automated and Manual Extraction**, click **Run Extraction Now** to extract metadata on demand. The status of the extraction action is logged in the **Extraction Job Status** table at the bottom of the page.
+
+.. _schedule-mde:
+
+Schedule MDE
+------------------
+
+To perform MDE on an automatic schedule:
+
+1. Under **Automated and Manual Extraction**, enable the **Enable Automated Extraction** toggle. This action will display the **Automated Extraction Time** section of the settings.
+
+2. Using the date and time widgets, select the recurrence period and day and time for the desired MDE schedule. The next metadata extraction job for your data source will run on the schedule you have specified.
+
+    .. note::
+
+        The schedule you set for automated extraction uses the local time zone. The MDE job will run as scheduled in your local time.

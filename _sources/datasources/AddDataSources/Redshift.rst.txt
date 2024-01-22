@@ -1,0 +1,116 @@
+Amazon Redshift
+====================
+
+Required Information
+------------------------
+
+To configure an Amazon Redshift data source in Alation, you will need the following information:
+
+-  Hostname or IP address of your server
+-  Port number
+-  Database name
+-  Service account with privileges listed
+-  Query Log Ingestion setup:  custom table
+
+.. image:: ../../_static/DS_Redshift01.png
+    :width: 3.5in
+    :align: center
+
+Preliminaries
+--------------------
+
+Firewall Configuration:
+
+-  Open outbound TCP port **5439** to Amazon Redshift
+
+.. _Redshift-Create_Service_Account:
+
+Create Service Account
+---------------------------
+
+    .. note::
+
+        From version 2021.3, you can authenticate with AWS IAM without using a service account. For details, see :doc:`Configure MDE with AWS IAM Authentication <../../datasources/AuthenticationForExtraction/ConfigureMDEwithAWS_IAM_Auth>`.
+
+
+Sample SQL to create an account:
+
+.. code-block:: bash
+
+    CREATE USER alation WITH PASSWORD '[password]';
+
+Metadata Extraction
+------------------------
+
+.. code-block:: sql
+
+    GRANT USAGE ON SCHEMA PG_CATALOG TO alation;
+    GRANT SELECT ON ALL TABLES IN SCHEMA PG_CATALOG TO alation;
+
+LOGIN as ``alation`` into the respective database; grants are eligible across that database.
+
+.. code-block:: sql
+
+    GRANT SELECT ON TABLE stv_blocklist TO alation;
+    GRANT SELECT ON TABLE stv_partitions TO alation;
+    GRANT SELECT ON TABLE STV_SLICES TO alation;
+    GRANT SELECT ON TABLE stv_tbl_perm TO alation;
+
+Table Profiles
+----------------------
+
+.. code-block:: sql
+
+    GRANT SELECT ON ALL TABLES IN SCHEMA [schema] TO alation;
+    GRANT USAGE ON SCHEMA [schema] TO alation;
+    GRANT USAGE ON SCHEMA information_schema TO alation;
+    GRANT SELECT ON ALL TABLES IN SCHEMA information_schema TO alation;
+
+Query History
+-----------------
+
+Create a custom query log table using SQL from Appendix A.3  and provide SELECT privileges to Alation DB
+account on the table.
+
+Compose
+------------------
+
+*Available from release 2021.2*
+
+Amazon Redshift data sources support SSO authentication: :doc:`SSO Authentication for Amazon Redshift Data Source <../../datasources/ComposeSSOAWSDataSources/SSOAuthenticationforAWSRedshiftDataSource>`.
+
+Lineage
+--------------
+
+From version 2022.1, column-level lineage is supported for Amazon Redshift data sources in addition to table-level lineage.
+
+  .. note::
+
+        This feature requires the Amazon Redshift Column Level Lineage parser add-on. Contact Alation Support about purchasing this add-on.
+
+
+Enable Column-Level Lineage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To enable column-level lineage:
+
+ 1. Go to **Settings > Feature Configuration**.
+
+ 2. Turn on the toggle **Automatically extracts Column Level Lineage for Redshift data sources**.
+
+ 3. Click the **Save changes** button to save the changes.
+
+     .. image:: ../../_static/DS_Redshift02.png
+         :width: 5.5in
+         :align: center
+
+ 3. In the **Verify Feature Configuration Change** dialog, click the **Save Configuration** button .
+
+      .. image:: ../../_static/DS_Redshift03.png
+           :width: 3.5in
+           :align: center
+
+View Column-Level Lineage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/ColumnLevelLineage.rst

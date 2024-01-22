@@ -1,0 +1,106 @@
+Sandbox FAQ
+=============
+
+.. include:: /shared/SandboxDeprecated.rst
+
+.. note::
+
+   In 2020.3, Alation released software for testing upgrades that was called "Scarlet". In 2020.4, this product was renamed to **Alation Sandbox**. "Scarlet" and "Sandbox" are two names of the same product. Scarlet refers to earlier versions (**prior to 2.0.0.120180**), and Alation Sandbox refers to versions from  **2.0.0.120180 and later**. Sandbox is the latest version of this product.
+
+Is the Sandbox software package part of the Alation application or is it different software?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sandbox is a separate software package that is installed independently from the Production version of the Alation application. Sandbox can communicate with the main Alation instance if this connection is allowed in the  configuration. It does not install anything on the main instance or modify it in any way.
+
+What are the costs associated with running Alation Sandbox?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation Sandbox is free to use if you are an Alation customer. The infrastructure costs associated with Alation Sandbox are the same or similar to those of the production environment you are cloning. Alation Sandbox can be run on-demand providing cost savings: run your tests and then destroy your environment.
+An admin with console access to the Alation Sandbox is required to run the Sandbox command.
+
+Does Alation Sandbox require a license?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Yes, it does. **The license is free** for Alation customers. Please contact your account manager about participation in the Alation Sandbox program to obtain a license.
+
+How does Sandbox affect Production?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It does not.
+
+In the *Connected* mode, Sandbox connects to the Replication Service on the main instance and copies the backup file at the path in the configuration file. Alation users can continue to work in their Production instance when Sandbox is running: no downtime and no special actions are expected on their part.
+
+How should the Sandbox instance be sized compared to the Production Alation instance?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Sandbox instance should have a similar specification as the Production Alation instance so that it is as close as possible to replicating the Production environment.
+
+Where should the Sandbox instance be created?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can create a Sandbox instance on the same data storage platform or computer network where your Production Alation instance is created. Alation recommends to install Sandbox on a separate machine where no Alation instance has been previously installed. Alation does not recommend installing Sandbox on a Dev/Test environment with an existing Dev/Test instance of Alation as this may result in corruption of the instance data.
+
+Does Sandbox require Internet connection?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This depends on the configuration. Sandbox requires Internet connection for the automatic logs upload (configurable) and for downloading Alation builds from the Customer Portal (configurable).
+
+How do I download Sandbox?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Alation will provide a direct link to download the latest Sandbox package.
+
+
+What data is copied from Production?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the *Connected* mode, Sandbox copies the Alation backup file and the current Alation version number.
+
+What data does Sandbox collect?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The data is limited to execution logs, Alation Sandbox performance metrics, and Alation logs:
+
+  - the command-line output from the automated commands that install, upgrade, and restore Alation.
+  - CPU, memory, and process information about the system during Sandbox run time.
+
+**No user data is logged in the Sandbox logs**.
+
+How does Alation use the collected data?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The backup file copied from the Production environment stays in the Alation Sandbox instance.
+
+The information that is sent to Alation is limited to Sandbox execution logs, Alation Sandbox performance metrics, and Alation logs. Alation uses this information to confirm that Sandbox operates as expected and to debug and troubleshoot any issues which were revealed during the Alation Sandbox run time.
+
+Customers also have an option to set the ``offline`` parameter in the configuration, in which case no logs are be sent to Alation from the Sandbox instance.
+
+Where is the Sandbox data stored?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sandbox copies the logs it collects during its run time to **/data1/site_data/alation-sandbox-{timestamp}.tar.gz** (path inside the Alation shell).
+
+
+What are the risks involved and should any risk mitigation be planned?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+No risk to the Production environment is involved as Sandbox is an isolated instance. Sandbox does not do any processing on or modification to the Production server.
+No user data is captured or logged in the Sandbox logs. Logs only capture technical information printed during the Sandbox run time.
+
+
+How long does Sandbox take to complete its run?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is relative to the size of the backup of Production. The larger the backup, the longer it may take. For example, a 13 Gb backup results in a 3-hour end-to-end Sandbox run (install, restore, and upgrade).
+
+
+Does Sandbox run any scheduled jobs or scheduled tasks during its run time?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It does not. Sandbox disables all scheduled jobs and tasks so they do not run on the Sandbox instance. They can be turned on if needed.
+
+
+Sandbox failed to upgrade, how can I find out why?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sandbox logs are written to **/var/log/alation/alation-sandbox/alation-sandbox.log**.

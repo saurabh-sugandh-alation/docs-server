@@ -1,0 +1,197 @@
+Configure the Amazon S3 File System Source
+==================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Use the information on this page to configure the settings of your Amazon S3 file system source.
+
+    .. note::
+
+        This instruction assumes that you've done the steps in
+
+            - :doc:`/sources/OpenConnectorFramework/AWSS3/S3OCFConnectorConfigureAWSResources`
+            - :doc:`/sources/OpenConnectorFramework/AWSS3/S3OCFConnectorInstall`
+            - :doc:`/sources/OpenConnectorFramework/AWSS3/S3OCFConnectorCreateSource`
+
+Configure Access
+--------------------
+
+On the **Access** tab, set the file system visibility as follows:
+
+  - **Public File System** - The file system will be visible to all users of the catalog.
+  - **Private File System** - The file system will be visible to the users allowed access to the file system by file system Admins.
+
+Add new File System Admin users in the **File System Admins** section.
+
+Configure General Settings
+------------------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the **General Settings** tab.
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+    .. note::
+
+        The proxy fields mentioned in the following table are applicable from connector version **3.7.0**. This connector supports Basic Proxy and Auth Proxy modes.
+
+File System Connection
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Specify the connection information under **File System Connection** and save it by clicking **Save**.
+
+.. image:: ../../../_static/OCF_S3_FileSystemConnection.png
+    :width: 300px
+    :class: with-border
+
+|
+
++----------------------------+---------------------------------------------------------------+
+| **Parameter**              | **Description**                                               |
++============================+===============================================================+
+|                     **File System Connection**                                             |
++----------------------------+---------------------------------------------------------------+
+| Region                     | Specify the AWS region.                                       |
+|                            |                                                               |
+|                            | Example:                                                      |
+|                            |                                                               |
+|                            | **us-east-1**                                                 |
+|                            |                                                               |
+|                            | To use FIPS endpoints for GovCloud, prefix *fips-* in region. |
+|                            |                                                               |
+|                            | Example:                                                      |
+|                            |                                                               |
+|                            | **fips-us-east-1**                                            |
++----------------------------+---------------------------------------------------------------+
+| Basic Authentication       | Default. Leave the **Basic Authentication** radio button      |
+|                            | selected if you are configuring basic authentication.         |
+|                            | See `Configure Basic Authentication`_.                        |
++----------------------------+---------------------------------------------------------------+
+| STS Authentication         | Select the **STS Authentication** button                      |
+|                            | if you are configuring STS authentication with an IAM user.   |
+|                            | See `Configure STS Authentication`_.                          |
+|                            |                                                               |
+|                            | If you are going to                                           |
+|                            | `Configure STS Authentication with an AWS IAM Role`_,         |
+|                            | disregard the **Basic Authentication** and                    |
+|                            | **STS Authentication** radio buttons. They will not apply.    |
++----------------------------+---------------------------------------------------------------+
+| Proxy Host                 | Specify the proxy host to access S3 via the proxy server. This|
+|                            | optional field should be used only if S3 is connected using a |
+|                            | proxy.                                                        |
+|                            |                                                               |
+|                            | This field is required for Basic Proxy and Auth Proxy modes.  |
++----------------------------+---------------------------------------------------------------+
+| Proxy Port                 | Specify the proxy port number. This optional field should be  |
+|                            | used only if S3 is connected using a proxy.                   |
+|                            |                                                               |
+|                            | This field is required for Basic Proxy and Auth Proxy modes.  |
++----------------------------+---------------------------------------------------------------+
+| Proxy Username             | Specify the proxy username. This optional field should be used|
+|                            | only if S3 is connected using a proxy.                        |
+|                            |                                                               |
+|                            | This field is required only for Auth Proxy mode.              |
++----------------------------+---------------------------------------------------------------+
+| Proxy Password             | Specify the proxy username. This optional field should be used|
+|                            | only if S3 is connected using a proxy.                        |
+|                            |                                                               |
+|                            | This field is required only for Auth Proxy mode.              |
++----------------------------+---------------------------------------------------------------+
+
+Configure Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you selected the **Basic Authentication** radio button, specify the information in the **Basic Authentication** section. Save the values by clicking **Save**.
+
+Refer to :ref:`Basic Authentication <s3-basic-auth>` for more information about this authentication method.
+
+.. image:: ../../../_static/OCF_S3_BasicAuth.png
+    :width: 300px
+    :class: with-border
+
+|
+
++----------------------------+---------------------------------------------------------------+
+| **Parameter**              | **Description**                                               |
++============================+===============================================================+
+| AWS Access Key ID          | Provide the AWS access key ID of the IAM user with basic      |
+|                            | authentication access. Make sure that the IAM user has access |
+|                            | to the destination bucket.                                    |
++----------------------------+---------------------------------------------------------------+
+| AWS Access Key Secret      | Provide the AWS secret access key.                            |
++----------------------------+---------------------------------------------------------------+
+
+Configure STS Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you selected the **STS Authentication** radio button, specify the information in the **STS Authentication** section. Save the values by clicking **Save**.
+
+Refer to :ref:`STS Authentication <s3-sts-auth-user>` for more information about this authentication method.
+
+.. image:: ../../../_static/OCF_S3_STSAuth.png
+    :width: 300px
+    :class: with-border
+
+|
+
++----------------------------+---------------------------------------------------------------+
+| **Parameter**              | **Description**                                               |
++============================+===============================================================+
+| STS: AWS Access Key ID     | Provide the AWS access key ID of the IAM user with STS        |
+|                            | authentication access. Make sure that the IAM user has access |
+|                            | to the destination bucket.                                    |
++----------------------------+---------------------------------------------------------------+
+| STS: AWS Access Key Secret | Provide the AWS secret access key.                            |
++----------------------------+---------------------------------------------------------------+
+| Role ARN                   | Provide the IAM role to assume with the required permissions  |
++----------------------------+---------------------------------------------------------------+
+| STS Duration               | Provide the duration of the role session.                     |
++----------------------------+---------------------------------------------------------------+
+| Region-Specific Endpoint   | Select the Region-Specific Endpoint checkbox to use regional  |
+|                            | endpoints for STS request. If this checkbox is unselected,    |
+|                            | then the global endpoints will be used for STS request.       |
++----------------------------+---------------------------------------------------------------+
+
+.. _s3-configure-sts-with-role:
+
+Configure STS Authentication with an AWS IAM Role
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_STS_Auth_with_Amazon_sources.rst
+    :start-after: .. start-configure-sts-with-role
+    :end-before: .. end-configure-sts-with-role
+
+
+Logging Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: ../../../_static/OCF_S3_Logging.png
+    :width: 300px
+    :class: with-border
+
+|
+
++----------------------------+---------------------------------------------------------------+
+| **Parameter**              | **Description**                                               |
++============================+===============================================================+
+| Log Level                  | Select the Log Level to generate logs. The available log      |
+|                            | levels are based on the log4j framework.                      |
++----------------------------+---------------------------------------------------------------+
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~
+
+.. image:: ../../../_static/OCF_S3_TestConnection.png
+    :width: 300px
+    :class: with-border
+
+Click **Test** to validate network connectivity.
+
+Deleting the Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can delete your data source from the General Settings tab. Under **Delete Data Source**, click **Delete** to delete the data source connection.
+
+Read next: :doc:`/sources/OpenConnectorFramework/AWSS3/S3OCFConnectorConfigureMDE`

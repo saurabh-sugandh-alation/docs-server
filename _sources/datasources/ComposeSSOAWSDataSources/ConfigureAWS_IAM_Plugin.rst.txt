@@ -1,0 +1,179 @@
+Compose SSO with Amazon Sources: Configure AWS IAM Plug-in
+=============================================================
+
+*Applies from release 2021.1*
+
+To use SSO authentication for Amazon data sources, configure the AWS IAM plug-in of AuthService.
+
+    .. note::
+
+        This page describes how to configure the IAM plug-in on the backend of the Alation server. Starting with version 2022.3, the AWS IAM plug-in can be configured in the Alation user interface: :doc:`Authentication Configuration Methods for External Systems <../../admins/AdminSettings/AuthConfigMethodsForExternalSystems>`.
+
+Step 1: Collect Information from AWS and the IdP
+-----------------------------------------------------------
+
+You will need:
+
+    - Your AWS region.
+
+    - The ``<config_name>`` value that you used when creating an authentication application for Alation in IdP.
+
+        - Refer to :doc:`Compose SSO for Amazon Data Sources: Create an Authentication Application <../../datasources/ComposeSSOAWSDataSources/CreateAuthenticationAppForAlationInIdP>`
+
+    - SSO login URL of the IdP that supports **HTTP-REDIRECT Binding** for the SSO SAML endpoint. This is the URL that will be used to initiate authentication from Alation. The SSO login URL can usually be found in the IdP metadata file of the authentication application.
+
+        - Example of the SSO login URL from a metadata file from Okta:
+
+        .. code-block:: Bash
+
+            <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://myidp.okta.com/app/alationtest_awsstswithoktaauthframework_1/eomf7wv8fsqdzeEVX0h3/sso/saml"/>
+
+.. _ConfigureAWS-IAM_Plugin_Step2:
+
+Step 2: Enable AuthService
+-------------------------------------------
+
+.. include:: ../../shared/EnableAuthService.rst
+
+
+Step 3: Write the Code for the IAM Configuration Object
+--------------------------------------------------------------
+
+AuthService uses *plug-ins* to route authentication requests from Alation to external authentication systems. A plug-in consumes configuration objects that are created by an admin in the Alation Django shell.
+
+SSO authentication to Amazon data sources goes through the built-in *AWS IAM plug-in* of AuthService.
+
+This section explains how to write the Python code required for configuring the AWS IAM plug-in to work with an external IdP provider integrated with AWS. You will need to provide your AWS region, the SSO login URL, and the ``<config_name>`` value:
+
+1. In an editor of your choice to write the required code using the following pattern:
+
+    .. code-block:: Bash
+
+        AuthClient('<method_name>').configure(operation='<operation>', config={'config_name':'<your_value>', 'region':'<your_value>', 'sts_duration':'<your_value>', 'redirect_url':'<your_value>'})
+
+
+Where:
+
++-------------------------+-----------------------------------------------------+------------------------------+
+| Parameter               | Description                                         | Supported Values             |
++=========================+=====================================================+==============================+
+| method_name             | Identifier for a specific Authentication plug-in    | 'aws_iam'                    |
+|                         | that is going to work with your data sources.       |                              |
+|                         | Use the value ``'aws_iam'``                         |                              |
++-------------------------+-----------------------------------------------------+------------------------------+
+| operation               | A CRUD operation that should be performed on the    | Can be either of the         |
+|                         | configuration object.                               | following values:            |
+|                         |                                                     |                              |
+|                         | To create a configuration object, use ``'create'``  |      - ``'create'``          |
+|                         |                                                     |      - ``'update'``          |
+|                         |                                                     |      - ``'read'``            |
+|                         |                                                     |      - ``'delete'``          |
+|                         |                                                     |                              |
++-------------------------+-----------------------------------------------------+------------------------------+
+| config                  | A dictionary containing configuration values.       | Supported Keys:              |
+|                         |                                                     |                              |
+|                         |                                                     |      - ``config_name``       |
+|                         |                                                     |      - ``region``            |
+|                         |                                                     |      - ``sts_duration``      |
+|                         |                                                     |      - ``redirect_url``      |
++-------------------------+-----------------------------------------------------+------------------------------+
+| config_name             | Name of the configuration object. The name will be  | A string value               |
+|                         | used to retrieve, delete, or modify this object.    |                              |
+|                         |                                                     | Provide the value of the     |
+|                         |                                                     | ``config_name`` parameter    |
+|                         |                                                     | that you added to the SSO    |
+|                         |                                                     | URL of the application       |
+|                         |                                                     | that you created in          |
+|                         |                                                     | your IdP for Alation.        |
++-------------------------+-----------------------------------------------------+------------------------------+
+| region                  | Region to be used by the AWS IAM plug-in to         | Example:                     |
+|                         | determine the service endpoint and signing region   |                              |
+|                         | for API requests.                                   | ``'us-east-2'``              |
++-------------------------+-----------------------------------------------------+------------------------------+
+| sts_duration            | Duration (in seconds) to generate the temporary     | Example:                     |
+|                         | authorization. The temporary credentials generated  |                              |
+|                         | by AWS STS service will last this number of seconds.| ``'3600'``                   |
+|                         | You can provide a value from 900 seconds (15 min)   |                              |
+|                         | up to the maximum of 43200 seconds (12 hours).      |                              |
++-------------------------+-----------------------------------------------------+------------------------------+
+| redirect_url            | The SSO login URL of the IdP that supports          | The SSO login URL can        |
+|                         | HTTP-Redirect Binding. This is the URL to which     | usually be obtained from     |
+|                         | Alation users will be redirected for authentication.| the authentication           |
+|                         |                                                     | application settings of      |
+|                         |                                                     | of the IdP metadata file     |
+|                         |                                                     | of the authentication        |
+|                         |                                                     | application.                 |
++-------------------------+-----------------------------------------------------+------------------------------+
+
+Example
+^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    AuthClient('aws_iam').configure(operation='create', config={'config_name':'aws_alation_athena', 'region':'us-east-1', 'sts_duration':'3600', 'redirect_url':'https://sso.connect.pingidentity.com/sso/sp/initsso?saasid=93dfa98a-911e-4199-a316-e76e2a464179&idpid=b1fe7d8f-70ba-4e72-9a60-7f1f6fcdc2fa'})
+
+
+This code will be used to create a configuration object with the name = ``config_name`` in the AWS IAM plug-in of AuthService.
+
+.. _ConfigureAWS-IAM_Plugin_Step4:
+
+Step 4: Configure the AWS IAM Plug-in of AuthService
+---------------------------------------------------------------
+
+Use the code you have written in Step 3 to create the configuration object in the AWS IAM plug-in:
+
+1. From the Alation shell, enter the Alation Django shell:
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+|
+
+    .. image:: ../../_static/DS_AthenaSSO_12.png
+
+2. Call the AuthService client:
+
+    .. code-block:: Bash
+
+        from auth_client.auth import Client as AuthClient
+
+3. Check the status of the AWS IAM plug-in of AuthService using the command below. It should return the status **operational**:
+
+    .. code-block:: Bash
+
+        AuthClient('aws_iam').status_check()
+
+|
+
+    .. image:: ../../_static/DS_AthenaSSO_13.png
+
+4. Paste the Python code you have written in Step 3 to create your configuration object and press Enter:
+
+    .. image:: ../../_static/DS_AthenaSSO_14.png
+
+5. To validate that the configuration object has been created, you can retrieve it with the ``read`` operation:
+
+    - ``AuthClient('aws_iam').configure(operation='read', config={'config_name':'your_value'})``
+
+    .. image:: ../../_static/DS_AthenaSSO_15.png
+
+    .. note::
+
+        Each AuthService configuration object is stored as a JSON object at **/opt/alation/site/config/authserver** inside the Alation shell. The name of the .json file uses the ``config_name`` value. You can check this location to view the list of all AuthService configuration objects that currently exist on the instance.
+
+
+6. Save the ``config_name`` value as you will need it next for the data source configuration in Alation.
+
+7. You can stay in the Django shell if you are going to continue configuring specific Amazon data sources to use SSO from Compose and the catalog:
+
+    - :doc:`SSO Authentication for Amazon Athena Data Source <../../datasources/ComposeSSOAWSDataSources/SSOAuthenticationforAWSAthenaDataSource>`
+
+    - :doc:`SSO Authentication for Amazon DynamoDB Data Source <../../datasources/ComposeSSOAWSDataSources/SSOAuthenticationforAWSDynamoDBDataSource>`
+
+    - :doc:`SSO Authentication for Amazon Redshift Data Source <../../datasources/ComposeSSOAWSDataSources/SSOAuthenticationforAWSRedshiftDataSource>`
+
+.. note::
+
+    - To exit the Django shell: ``exit``
+    - To exit the Alation shell: ``exit``

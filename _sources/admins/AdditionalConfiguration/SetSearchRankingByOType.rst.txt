@@ -1,0 +1,193 @@
+Set Search Ranking by Object Type
+==================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+From Alation release 2022.4, you can set search rankings by object type using **alation_conf**. For most object types in Search, there is a corresponding **alation_conf** setting that sets its boost factor. 
+
+By default, Data Sources, Terms, Articles, and Tags are boosted the most. If you'd like a different mix of results in your search results, adjusting the boost factor for one or more object types can help.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+Adjust the Boost Factor
+-----------------------
+
+To adjust the boost factor, use the **alation_conf** command with the appropriate setting and specify the desired new value. For example, to raise the boost factor for Domains to 3, you would use **alation_conf** as follows:
+
+.. include:: /shared/AccessingAlationShell.rst
+
+3. Run the following **alation_conf** command:
+
+   .. code-block:: bash
+
+      alation_conf alation.search.otype_boost_factor_domain -s 3
+
+.. note::
+
+  While some of the pre-set boost factors are decimal values, only integer values are accepted by **alation_conf**.
+
+Re-index the Object Type
+------------------------
+
+After adjusting the boost factor, you need to re-index the object type. You do this by running the Python command ``manage.py update_index`` from the Alation Django directory. For example, to re-index the Domain object type after raising its boost factor as above, you would do the following:
+
+1. Change the user to ``alation``.
+
+   .. code-block:: Bash
+
+      sudo su alation
+
+#. Go to **/opt/alation/django**.
+
+   .. code-block:: Bash
+
+      cd /opt/alation/django
+
+#. Run the following command to re-index domains:
+
+   .. code-block:: Bash
+
+      python manage.py update_index --using default domains.domain
+
+More generally, you will run the command ``python manage.py update_index --using default`` with one of the predicates listed in `Boost Factors and Predicates`_, which also lists the boost factor names and default values.
+
+.. note::
+
+  You can also obtain the necessary re-indexing command by calling **alation_conf** with the **-v** flag, as follows:
+
+    .. code-block:: bash
+
+      alation_conf alation.search.otype_boost_factor_domain -v
+
+  This produces the following output, which includes the re-indexing command on the ``comment`` line:
+    
+    .. code-block:: bash
+
+      alation.search.otype_boost_factor_domain = 3
+        type: <class 'int'>
+        default: 1
+        comment : Search boost factor for Domains. After modifying this value, reindexing these objects with the following update_index command is required for this change to be reflected in Search: python manage.py update_index --using default domains.domain
+
+        whitelist : True
+
+Boost Factors and Predicates
+-----------------------------
+
+.. list-table:: Boost Factors:
+    :widths: 20 70 15 40
+    :header-rows: 1
+
+    * - Object Type
+      - alation_conf Boost Setting
+      - Default Value
+      - Re-index Predicate
+    * - Data Source
+      - ``alation.search.otype_boost_factor_data_source``
+      - 5
+      - ``rosemeta.datasource``
+    * - Schema
+      - ``alation.search.otype_boost_factor_schema``
+      - 2
+      - ``rosemeta.schema``
+    * - Table
+      - ``alation.search.otype_boost_factor_table``
+      - 3
+      - ``rosemeta.table``
+    * - Column
+      - ``alation.search.otype_boost_factor_attribute``
+      - 1
+      - ``rosemeta.attribute``
+    * - Value
+      - ``alation.search.otype_boost_factor_attribute_value``
+      - 0.25
+      - ``rosemeta.attributevalue``
+    * - Glossary
+      - ``alation.search.otype_boost_factor_glossary``
+      - 1
+      - ``glossary.glossary``
+    * - Term
+      - ``alation.search.otype_boost_factor_term``
+      - 5
+      - ``glossary.term``
+    * - Article Group
+      - ``alation.search.otype_boost_factor_article_group``
+      - 1
+      - ``rosemeta.customglossary``
+    * - Article
+      - ``alation.search.otype_boost_factor_article``
+      - 5
+      - ``rosemeta.article``
+    * - BI Server
+      - ``alation.search.otype_boost_factor_bi_server``
+      - 1
+      - ``bi_metadata.biserver rosemeta.reportsource rosemeta.tableauserver``
+    * - BI View
+      - ``alation.search.otype_boost_factor_bi_view``
+      - 1
+      - ``bi_metadata.bidatasource``
+    * - BI Folder
+      - ``alation.search.otype_boost_factor_bi_folder``
+      - 1
+      - ``bi_metadata.bifolder``
+    * - Statement Template
+      - ``alation.search.otype_boost_factor_statement_template``
+      - 0.25
+      - ``rosemeta.statementtemplatetext``
+    * - Domain
+      - ``alation.search.otype_boost_factor_domain``
+      - 1
+      - ``domains.domain``
+    * - File System
+      - ``alation.search.otype_boost_factor_file_system``
+      - 1
+      - ``filesystems.filesystem``
+    * - File 
+      - ``alation.search.otype_boost_factor_file``
+      - 1
+      - ``filesystems.file``
+    * - File Attribute
+      - ``alation.search.otype_boost_factor_file_attribute``
+      - 1
+      - ``filesystems.fileattribute``
+    * - User Profile
+      - ``alation.search.otype_boost_factor_user_profile``
+      - 3
+      - ``rosemeta.userprofile``
+    * - Policy
+      - ``alation.search.otype_boost_factor_policy``
+      - 1
+      - ``policy.businesspolicy``
+    * - Data Policy
+      - ``alation.search.otype_boost_factor_data_policy``
+      - 1
+      - ``policy.policy``
+    * - Policy Group 
+      - ``alation.search.otype_boost_factor_policy_group``
+      - 1
+      - ``policy.policygroup``
+    * - User Group
+      - ``alation.search.otype_boost_factor_user_group``
+      - 1
+      - ``rosemeta.groupprofile``
+    * - Tag
+      - ``alation.search.otype_boost_factor_tag``
+      - 4
+      - ``tags.tag``
+    * - Catalog Set
+      - ``alation.search.otype_boost_factor_catalog_set``
+      - 1
+      - ``rosemeta.dynamicsetproperty``
+    * - Dataflow
+      - ``alation.search.otype_boost_factor_file_dataflow``
+      - 1
+      - ``object_lineage.dataflow``
+
+Boost is not configurable for the following object types:
+
+    - BI Report
+    - BI Field
+    - Execution Result
+    - Query
+    - Function
+    - Conversation
+

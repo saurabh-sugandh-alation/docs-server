@@ -1,0 +1,78 @@
+========================================
+Compose SSO for Amazon Data Sources
+========================================
+
+*Applies from release 2021.1*
+
+When Alation users query data sources in Compose, run table and column profiles, or upload data from the catalog, they need to authenticate against the data source they are working with.
+
+For all database types, Alation supports basic authentication with the username and password or the access key and secret. For some data source types, there are more authentication options. For **Amazon Athena**, **Amazon DynamoDB**, and **Amazon Redshift**, Alation supports SSO with a SAML 2.0-compliant IdP and AWS IAM.
+
+When SSO authentication is configured for an Amazon data source, the Alation server does not store the database credentials of users who establish connections from the catalog and Compose. Users authenticate with the IdP and receive temporary access to the AWS resources through the AWS STS API.
+
+SSO authentication for Amazon data sources goes through **AuthService**: a component that delegates authentication requests from the Alation application to external authentication systems. The image below shows this authentication flow:
+
+    .. image:: ../../_static/DS_AthenaSSO_09.png
+        :width: 650px
+        :class: with-border
+
+**1** - Alation user begins authentication to access an AWS resource
+
+**2** - Alation AuthService redirects the authentication request to the external IdP
+
+**3** - The IdP constructs a SAML assertion with information about the user and sends it back to AuthService
+
+**4** - AuthService calls the AWS STS ``AssumeRoleWithSAML`` API, passing the role ARN and the SAML assertion for a user to assume a role
+
+**5** - AWS STS generates temporary security credentials (an STS token) which are cached in memory within Alation for reuse
+
+**6** - Compose or the catalog call AuthService and retrieve the temporary security credentials to call Amazon services (such as Athena, DynamoDB or other resources) through the appropriate JDBC driver
+
+**7** - Alation user is authenticated and authorized to query the AWS resource within the scope of the assumed role
+
+
+SSO for AWS data sources is configured **for each data source** and invoked when users run queries against the data source in Compose, run Dynamic Profiles on the data source tables and columns, and perform data upload into the data source in the catalog.
+
+.. note::
+
+    It is not recommended to schedule queries and use Excel Live Reports with the connection established using SSO authentication as these features require user credentials to be valid at the time the data is refreshed on schedule. AWS STS API does not currently offer the capability to automatically renew temporary credentials. Users can schedule queries or use Excel Live Reports over connections that use an AWS IAM key ID and secret if they are available to users establishing the connection.
+
+SSO authentication for Amazon data sources requires configuration in 3 systems:
+
+    - the IdP
+    - AWS
+    - the Alation server.
+
+End-to-end configuration consists in the following steps:
+
+1. Identify Alation users who need access to the AWS resources from Compose and the Catalog. Make sure these users exist on the IdP side.
+
+2. Identify the AWS IAM roles required for these Alation users. You need to know the ARNs of these roles.
+
+3. Create an authentication application for Alation in the IdP that is integrated with AWS services of your organization:
+
+    - :doc:`Compose SSO for Amazon Data Sources: Create an Authentication Application <../../datasources/ComposeSSOAWSDataSources/CreateAuthenticationAppForAlationInIdP>`
+
+4. In Alation, enable the *AuthService* component on the Alation server and configure its AWS IAM plug-in:
+
+    - :doc:`Compose SSO with Amazon Sources: Configure AWS IAM Plug-in <../../datasources/ComposeSSOAWSDataSources/ConfigureAWS_IAM_Plugin>`
+
+5. In Alation, configure your Amazon data source to use SSO with Compose and test the configuration:
+
+    - :doc:`SSO Authentication for Amazon Athena Data Source <../../datasources/ComposeSSOAWSDataSources/SSOAuthenticationforAWSAthenaDataSource>`
+
+    - :doc:`SSO Authentication for Amazon DynamoDB Data Source <../../datasources/ComposeSSOAWSDataSources/SSOAuthenticationforAWSDynamoDBDataSource>`
+
+    - :doc:`SSO Authentication for Amazon Redshift Data Source <../../datasources/ComposeSSOAWSDataSources/SSOAuthenticationforAWSRedshiftDataSource>`.
+
+
+
+.. toctree::
+  :hidden:
+
+  CreateAuthenticationAppForAlationInIdP
+  ConfigureAWS_IAM_Plugin
+  SSOAuthenticationforAWSAthenaDataSource
+  SSOAuthenticationforAWSDynamoDBDataSource
+  SSOAuthenticationforAWSRedshiftDataSource
+  TroubleshootSSOAuthWithAWSDataSources

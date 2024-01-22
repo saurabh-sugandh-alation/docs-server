@@ -1,0 +1,299 @@
+Greenplum OCF Connector: Install and Configure
+==================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Prerequisites
+-------------------------
+
+Ports
+~~~~~~~~~~~~~~~~
+
+Open the outbound TCP port **5432** to the Greenplum server.
+
+Service Account
+~~~~~~~~~~~~~~~~~~
+
+On the Greenplum database, create a service account for Alation and grant it the permissions for metadata extraction, sampling and profiling, and query log ingestion.
+
+Example
+^^^^^^^^^^^^^^^
+
+.. code-block:: SQL
+
+    CREATE ROLE <service_account_name> LOGIN password 'passwd';
+    GRANT CONNECT ON DATABASE <database_name> TO <service_account_name>;
+
+Metadata Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Grant the service account the ``USAGE`` permission on all schemas that you want extracted and ``ALL PRIVILEGES ON ALL TABLES`` in these schemas.
+
+Example
+^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: SQL
+
+    GRANT USAGE ON SCHEMA <database.schema> TO <service_account_name>;
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA <database.schema> TO <service_account_name>;
+
+.. note::
+
+    Use fully qualified schema names.
+
+Sampling and Profiling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The permissions granted for metadata extraction are enough for sampling and profiling.
+
+Query Log Ingestion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To perform query log ingestion (QLI), the service account requires access to the ``gpperfmon`` database and the ``SELECT`` permissions on the table or view created for QLI. The details on QLI configuration are available in `Table-Based QLI Using gpperfmon`_ below.
+
+JDBC URI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Format
+^^^^^^^^^^^^^^^^
+
+The JDBC URI must use the following format:
+
+.. code-block:: Bash
+
+    postgresql://<hostname_or_ip>:<port>/<service_name>
+
+where ``<service_name>`` stands for the database that you are adding to the catalog.
+
+No additional parameters are required in the URI string when using an LDAP account and/or SSL.
+
+Example
+^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+    postgresql://10.13.92.29:5432/test_database
+
+Configuration in Alation
+-------------------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **Greenplum OCF** connector.
+
+Access
+--------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+--------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Source Connection
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ConnectorSettings_1.rst
+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Obfuscate Literals**—Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^^^^
+
+After specifying the connector settings, under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+----------------------------
+
+.. include:: ../../../shared/OCF/OCF_MDEIntroText.rst
+
+The default queries that the connector uses to extract metadata can be found in :doc:`/sources/OpenConnectorFramework/Greenplum/ExtractionQueriesforGreenplum`. You can customize these queries to adjust the extraction to your needs.
+
+Compose
+-------------------
+
+For details about configuring the **Compose** tab of the Settings, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+Sampling and Profiling
+-------------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+Query Log Ingestion
+-------------------------------
+
+The Greenplum data source supports table-based or query-based QLI.
+
+Before you can set up QLI in Alation, perform the configuration on the Greenplum database as is described below.
+
+.. note::
+
+    The parameter ``min_query_time`` sets to log queries that run longer than this value. The default is 20 seconds, which is configurable at ``$MASTER_DATA_DIRECTORY/gpperfmon/conf/gpperfmon.conf``. If you do not see many logs ingested, you may need to adjust this parameter.
+
+Table-Based QLI Using gpperfmon
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use table-based QLI, create a view for QLI using the steps below.
+
+1. Create the ``gpperfmon`` database. For steps, refer to the corresponding Greenplum documentation, for example:
+
+    - `The gpperfmon Database <https://docs.vmware.com/en/VMware-Tanzu-Greenplum/6/greenplum-database/GUID-ref_guide-gpperfmon-dbref.html>`_
+    - `gpperfmon_install <https://gpdb.docs.pivotal.io/6-3/utility_guide/ref/gpperfmon_install.html#topic1>`_.
+
+2. Give ``<service_account_name>`` the permission to access ``gpperfmon``.
+
+    .. code-block:: bash
+
+        psql postgres
+        GRANT CONNECT ON DATABASE gpperfmon TO <service_account_name>;
+        \q
+
+3. In the public schema, create a QLI view using the example SQL below.
+
+    .. code-block:: SQL
+
+          CREATE VIEW public.alation_qli_view AS
+            SELECT
+              qh.ctime,
+              qh.rows_out,
+              CASE
+                WHEN qh.tfinish IS NOT NULL AND qh.tstart IS NOT NULL
+                THEN extract(epoch FROM qh.tfinish - qh.tstart)
+              ELSE NULL
+              END AS seconds,
+              qh.tstart AS startTime,
+              qh.cpu_elapsed,
+              CASE
+                WHEN qh.status = 'abort'
+                THEN true
+              ELSE null
+              END AS cancelled,
+              qh.ssid || cast(qh.tmid as varchar(10)) AS sessionId,
+              qh.ccnt,
+              qh.username AS userName,
+              qh.application_name,
+              qh.query_text AS queryString,
+              qh.tsubmit AS sessionStartTime,
+              qh.db AS defaultDatabases,
+            FROM queries_history qh
+            WHERE
+              lower(username) NOT IN ('gpmon')
+      	       AND query_text NOT ILIKE '%jdbc_savepoint%'
+      	       AND query_text NOT ILIKE 'select current_schema()';
+
+4. On ``gpperfmon``, give ``<service_account_name>`` permissions for the QLI view.
+
+    .. code-block:: bash
+
+        psql gpperfmon
+        GRANT USAGE ON SCHEMA public TO <service_account_name>;
+        GRANT SELECT ON TABLE alation_qli_view TO <service_account_name>;
+        \q
+
+To configure table-based QLI in Alation:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, in the **Table Name** field, specify the name of the QLI view where the query logs are available. Ensure that the service account has the permissions to access this view. The view name must be provided in the format ``database.schema.view_name``.
+
+3. Click **Save**.
+
+
+Custom Query-Based QLI Using queries_history in gpperfmon
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you cannot create the view for QLI, for example, due to access restrictions, you can use a custom QLI query to extract query history into Alation. If you opt for query-based QLI, Alation will query the system table storing query history every time you manually run QLI or when the QLI job runs on schedule.
+
+For custom query-based QLI to succeed, ensure that the service account has enough permissions to query the ``queries_history`` table in ``gpperfmon``.
+
+The template for the QLI query is given below. You can customize it by adding, removing, or changing the filter, but the columns and their aliases must remain as is since Alation expects this query structure.
+
+    .. note::
+
+        When using the QLI query template, do not substitute the ``STARTTIME`` and ``ENDTIME`` parameters in the WHERE filter. These parameters are not actual column names and should stay as is. They are expected by the connector and will be substituted with the start and end date of the QLI range selected in the user interface when QLI is run manually or on schedule.
+
+To configure query-based QLI:
+
+1. Go to the **Query Log Ingestion** tab of the Settings page of your OCF data source.
+
+2. Under **Connector Settings** > **Query Extraction**, in the **Custom QLI Query** field, specify the QLI query.
+
+3. Click **Save**.
+
+
+QLI Query Template
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: SQL
+
+    SELECT
+      qh.ctime,
+      qh.rows_out,
+      CASE
+        WHEN qh.tfinish IS NOT NULL AND qh.tstart IS NOT NULL
+        THEN extract(epoch FROM qh.tfinish - qh.tstart)
+      ELSE NULL
+      END AS seconds,
+      qh.tstart AS startTime,
+      qh.cpu_elapsed,
+      CASE
+        WHEN qh.status = 'abort'
+        THEN true
+      ELSE null
+      END AS cancelled,
+      qh.ssid || cast(qh.tmid as varchar(10)) AS sessionId,
+      qh.ccnt,
+      qh.username AS userName,
+      qh.application_name,
+      qh.query_text AS queryString,
+      qh.tsubmit AS sessionStartTime,
+      qh.db AS defaultDatabases
+    FROM queries_history qh
+      WHERE
+        lower(username) NOT IN ('gpmon')
+        AND query_text NOT ILIKE '%jdbc_savepoint%'
+        AND query_text NOT ILIKE 'select current_schema()'
+        AND DATE(startTime) >= DATE(STARTTIME)
+        AND DATE(startTime) <= DATE(ENDTIME)
+        AND queryString IS NOT NULL
+        AND queryString <> ''
+    ORDER BY
+      sessionid,
+      starttime;
+
+
+Perform QLI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ManualAutomatedQLI.rst
+
+Troubleshooting
+----------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting`.

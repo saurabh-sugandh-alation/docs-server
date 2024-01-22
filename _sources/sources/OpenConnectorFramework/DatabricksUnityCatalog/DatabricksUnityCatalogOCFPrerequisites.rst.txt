@@ -1,0 +1,184 @@
+Setup Prerequisites
+========================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Prepare for configuring the Databricks Unity Catalog OCF connector by going over these recommendations:
+
+    - `Pre-checks`_
+    - `Configure Network Connectivity`_
+    - :ref:`Create a Service Account <uc-create-service-account>`
+    - `Gather the Authentication Details`_
+    - `Build the JDBC URI`_
+    - `Enable Extraction of Complex Data Types`_
+
+Pre-checks
+---------------
+
+On your Databricks instance, ensure the following:
+
+    - Unity Catalog is enabled.
+
+    - The workspaces have been assigned to the Unity Catalog metastore. There is a running Unity-compatible interactive cluster or SQL warehouse that Alation will connect to and extract the metadata.
+
+    - For :doc:`lineage extraction (beta) </sources/OpenConnectorFramework/DatabricksUnityCatalog/DatabricksUnityCatalogOCFLineageExtraction>` and :doc:`query log ingestion (beta) </sources/OpenConnectorFramework/DatabricksUnityCatalog/DatabricksUnityCatalogOCFConfigureQLI>`, the system schema ``system.access`` is enabled.
+
+Configure Network Connectivity
+----------------------------------
+
+Open inbound TCP port **443** to the Databricks Unity Catalog server.
+
+.. _uc-create-service-account:
+
+Create a Service Account
+----------------------------
+
+When configuring the connector in Alation, you will need to provide authentication details. To obtain those:
+
+    - Create a Databricks `account-level user <https://docs.databricks.com/administration-guide/users-groups/users.html#add-users-to-your-databricks-account>`_ to be used as a service account in Alation.
+
+    - Assign Alation's user the ``USAGE`` and ``SELECT`` permissions on all catalog, schema, and table objects that you want to catalog in Alation.
+
+    - Lineage extraction requires additional permissions. See `Permissions for Lineage Extraction`_ below.
+
+    - Query log ingestion (QLI) requires additional permissions. See `Permissions for QLI`_ below.
+
+    - Assign Alation's user to workspace(s) using the information in `Manage users, service principals, and groups <https://docs.databricks.com/administration-guide/users-groups/index.html>`_. It must be assigned to the same workspace(s) as the cluster or SQL warehouse.
+
+    - Assign Alation's user the ``Can Attach To``  permission on the cluster or the ``Can Use`` permission on the SQL warehouse.
+
+          - Optionally, you can grant Alation's user the ``Can Restart`` permission if auto-starting the cluster is allowed by your organization's policy.
+
+    - If you want to use authentication with a personal access token, grant Alation's user the ``Can Use`` permission on `personal access tokens <https://docs.databricks.com/en/security/auth-authz/api-access-permissions.html#personal-access-token-permissions>`_.
+
+.. _uc-permissions-for-lineage:
+
+Permissions for Lineage Extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Unity Catalog lineage feature is currently in Public Preview in Databricks and may require separate access enablement:
+
+    - `System lineage tables in Azure Databricks <https://learn.microsoft.com/en-us/azure/databricks/administration-guide/system-tables/lineage>`_
+    - `System lineage tables in Databricks on AWS <https://docs.databricks.com/en/administration-guide/system-tables/lineage.html>`_
+
+Contact your Databricks administrator about enabling access to this feature. Lineage extraction in Alation uses this functionality and is currently a beta feature.
+
+Lineage extraction requires access to the ``system`` catalog, the ``system.access`` schema, and the tables in this schema. Grant Alation's user these permissions:
+
+    - ``USE CATALOG`` on catalog ``system``
+    - ``USE SCHEMA`` on schema ``system.access``
+    - ``SELECT`` on table ``system.access.table_lineage``
+    - ``SELECT`` on table ``system.access.column_lineage``
+
+The service account does not require ``USE`` or ``SELECT`` for all catalogs, schemas, and tables captured in the lineage records in the ``system.access`` lineage tables. All lineage will be extracted. Any objects that are not cataloged but exist in the ``system.access`` tables will be marked as temporary (TMP) on lineage diagrams unless temporary objects have been disabled.
+
+.. _uc-permissions-for-qli:
+
+Permissions for QLI
+~~~~~~~~~~~~~~~~~~~~~~
+
+The Unity Catalog audit log feature is currently in Public Preview in Databricks and may require separate access enablement:
+
+    - `System audit log table in Azure Databricks <https://learn.microsoft.com/en-us/azure/databricks/administration-guide/system-tables/audit-logs>`_
+    - `System audit log table in Databricks on AWS <https://docs.databricks.com/en/administration-guide/system-tables/audit-logs.html>`_
+
+Contact your Databricks administrator about enabling access to this feature. Query log ingestion (QLI) in Alation uses this functionality and is currently a beta feature.
+
+QLI requires access to the ``system`` catalog, the ``system.access`` schema, and the ``system.access.audit`` table in this schema. Grant the Alation service account these permissions:
+
+    - ``USE CATALOG`` on catalog ``system``
+    - ``USE SCHEMA`` on schema ``system.access``
+    - ``SELECT`` on table ``system.access.audit``
+
+Gather the Authentication Details
+------------------------------------
+
+The connector supports `Basic Authentication`_ for Databricks on AWS and `Token-Based Authentication`_ for Databricks on AWS and Azure Databricks. Choose the authentication type that suits your use case.
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~
+
+Basic authentication requires the username and password of the user you created for Alation in Databricks (see :ref:`Create a Service Account <uc-create-service-account>`).
+
+Token-Based Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Token-based authentication requires a personal access token (PAT) of the user you created for Alation in Databricks. Follow the steps in `Databricks personal access token for workspace users <https://docs.databricks.com/en/dev-tools/auth/pat.html#databricks-personal-access-tokens-for-workspace-users>`_ in Databricks documentation to generate a PAT.
+
+.. _uc-build-uri:
+
+Build the JDBC URI
+----------------------------------
+
+The JDBC URI string you will need to provide in Alation depends on the connector version:
+
+    - Newer versions 2.0.0 and later use the :ref:`Databricks JDBC driver <databricks-driver>`.
+    - Older versions below version 2.0.0 use the :ref:`JDBC Spark driver <spark-driver>`.
+
+On how to get the JDBC URI for your Databricks resource, refer to Databricks documentation:
+
+    - Databricks on AWS: `Get connection details for a Databricks compute resource <https://docs.databricks.com/en/integrations/compute-details.html>`_
+    - Azure Databricks: `Get connection details for an Azure Databricks compute resource <https://learn.microsoft.com/en-us/azure/databricks/integrations/compute-details>`_
+
+When specifying the JDBC URI in Alation, remove the ``jdbc:`` prefix.
+
+    .. note::
+
+        The property ``UseNativeQuery=0`` is required for custom query-based sampling and profiling. Without this property in the JDBC URI, custom query-based sampling or profiling will fail. If you are not using custom query-based sampling and profiling in your implementation of this data source type, you can omit this property from the JDBC URI string.
+
+        Find more information in `ANSI SQL-92 query support in JDBC <https://learn.microsoft.com/en-us/azure/databricks/integrations/jdbc-odbc-bi#--ansi-sql-92-query-support-in-jdbc>`_ in Azure Databricks documentation.
+
+
+.. _databricks-driver:
+
+Connection String for Databricks JDBC Driver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Find more information in `Databricks JDBC driver <https://docs.databricks.com/en/integrations/jdbc-odbc-bi.html#building-the-connection-url-for-the-databricks-driver>`_ in Databricks documentation.
+
+Format
+^^^^^^^^^^^^
+
+``databricks://<hostname>:443/default;httpPath=<databricks_http_path_prefix>/<databricks_cluster_id>;UseNativeQuery=0;``
+
+Examples
+^^^^^^^^^^^^
+
+**Compute Cluster**
+
+``databricks://dbc-32ak8401-ac16.cloud.databricks.com:443/default;httpPath=sql/protocolv1/o/2479012801311837/0612-093241-z79vbfjk;UseNativeQuery=0;``
+
+**SQL Warehouse**
+
+``databricks://dbc-32am8401-ac16.cloud.databricks.com:443/default;httpPath=/sql/1.0/warehouses/9f5d50hhsaeb0k23;UseNativeQuery=0;``
+
+.. _spark-driver:
+
+Connection String for Spark JDBC Driver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Find more information in `JDBC Spark driver <https://docs.databricks.com/en/integrations/jdbc/legacy.html>`_ in Databricks documentation.
+
+Format
+^^^^^^^^^^^^^
+
+``spark://<hostname>:443/default;httpPath=<databricks_http_path_prefix>/<databricks_cluster_id>;``
+
+Example
+^^^^^^^^^^^^^
+
+``spark://adb-58175503737864.5.azuredatabricks.net:443/default;httpPath=/sql/1.0/endpoints/0f38f55be5cbd786;``
+
+JDBC URI Properties
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The connector adds some JDBC properties to the connection. These properties do not need to be explicitly included into the JDBC URI connection string in Alation.
+
+    - ``RowsFetchedPerBlock``—Limits the number of objects returned in each fetch call. Used to regulate the amount of memory used by the connector and prevent OOM errors. Set to ``500``. The memory utilization of the MDE job is captured in the connector logs when debug logging is enabled.
+    - ``UserAgentEntry``—Identifies driver request calls from the connector in Databricks. Set to ``alation+unity_catalog``.
+
+
+Enable Extraction of Complex Data Types
+----------------------------------------
+
+.. include:: ../../../shared/OCF/OCF_ExtractionOfComplexDataTypes.rst

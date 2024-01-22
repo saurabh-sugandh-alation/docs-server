@@ -1,0 +1,430 @@
+SSRS OCF Connector: Install and Configure
+================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Prerequisites
+------------------
+
+Ports
+~~~~~~~~~~
+
+Make sure that the connector can access ports ports **80 (HTTP)** and **443 (HTTPS)** are available for SOAP API communication on the SSRS server.
+
+Service Account
+~~~~~~~~~~~~~~~~~~
+
+Perform the steps in the following sections to create a service account and assign it the required roles.
+
+Create a Windows User
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Create a Windows user account for SSRS. For details, refer to `Microsoft Account <https://support.microsoft.com/en-us/windows/create-a-user-account-in-windows-4fac6fd5-74c0-9737-69b8-6e77e00422dc>`_ in Microsoft documentation.
+
+Assign Roles
+^^^^^^^^^^^^^^^^
+
+Perform the following steps to assign the requried roles to the Windows user:
+
+  1. Log in to the SSRS web portal with the Administrator account.
+
+  2. Go to **Settings > Site Settings**.
+
+    .. image:: ../../../_static/SSRSOCF_02.png
+        :width: 600px
+
+  3. On the **Security** tab, click **Add group or user**.
+
+    .. image:: ../../../_static/SSRSOCF_03.png
+      :width: 600px
+
+  4. In the **Group or user** field, type the Windows user name and select the **System User** role. Click **Ok**.
+
+    .. image:: ../../../_static/SSRSOCF_04.png
+      :width: 600px
+
+  5. Go to **Home > Manage Folder**.
+
+  6. On the **Security** tab, click **Add group or user**.
+
+  7. In the **Group or user** field, type the Windows user name and select the Browser role. Click **Ok**.
+
+    .. image:: ../../../_static/SSRSOCF_05.png
+      :width: 600px
+
+  8. Navigate to the folder that you want to provide access. Go to **Manage Folder > Security** tab and click **Use same security as parent folder**.
+
+    .. image:: ../../../_static/SSRSOCF_06.png
+      :width: 600px
+
+Setup SSL with SSRS
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform the following steps to set up SSL with SSRS:
+
+.. note::
+
+      This configuration is required only if SSL authentication is used.
+
+Generate a Self-Signing Certificate using Powershell
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Run the ``nslookup`` command for SSRS instance IP. From the result, note down the ``dns-name``.
+
+   ``nslookup`` command example - ``nslookup 10.12.9.76``
+   ``Dns-name`` example - ``ip-10-12-9-76.alation-test.com``
+
+2. Run the following command. Replace the ``dns-name`` parameter with the ``dns-name`` generated in the previous step.
+
+   .. code-block:: Bash
+
+          New-SelfSignedCertificate -CertStoreLocation cert:\LocalMachine\my -dnsname {dns-name}
+          $pwd=ConvertTo-SecureString "password1" -asplainText -force
+
+          $file="C:\temp\ssrs_cert.pfx" # ensure folder C:\temp exists
+
+          Export-PFXCertificate -cert cert:\LocalMachine\My\<Thumbprint produced during first command> -file $file -Password $pwd
+
+          Import-PfxCertificate -FilePath $file cert:\LocalMachine\root -Password $pwd
+
+Configure the Web Service URL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Open **Reporting Services Configuration Manager** and click **Connect**.
+
+    .. image:: ../../../_static/SSRSOCF_07.png
+        :width: 400px
+
+2. On the **Web Site URL** tab, click the **HTTPS Certificate** drop-down box and select the certificate you installed. Click **Apply**.
+
+    .. image:: ../../../_static/SSRSOCF_08.png
+        :width: 600px
+
+Update Authentication Configuration for Report Server
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Locate and open the **rsreportserver.cofig** file from the SSRS folder on the machine that has SSRS installed.
+
+    .. image:: ../../../_static/SSRSOCF_09.png
+        :width: 600px
+
+2. Make the following changes in the **rsreportserver.cofig** and restart the report server.
+
+      - Change Authentication type from the default **RSWindowsNTLM** to **RSWindowsBasic**
+      - Set **RSWindowsExtendedProtectionLevel** property to **allow**
+      - Set **RSWindowsExtendedProtectionScenario** to **Direct**
+
+  .. code-block:: Bash
+
+        <Authentication>
+                <AuthenticationTypes>
+                    <RSWindowsBasic/>
+                </AuthenticationTypes>
+                <RSWindowsExtendedProtectionLevel>allow</RSWindowsExtendedProtectionLevel>
+                <RSWindowsExtendedProtectionScenario>Direct</RSWindowsExtendedProtectionScenario>
+                <EnableAuthPersistence>true</EnableAuthPersistence>
+        </Authentication>
+
+Export Certificate
+^^^^^^^^^^^^^^^^^^^^^^
+
+1. Go to **Control Panel > Manage computer certificates**.
+
+2. Select the certificate at **Personal/Certificates**.
+
+    .. image:: ../../../_static/SSRSOCF_10.png
+        :width: 600px
+
+3. Right click on the certificate and select **All Tasks > Export**.
+
+    .. image:: ../../../_static/SSRSOCF_11.png
+        :width: 600px
+
+4. Click **Next**.
+
+    .. image:: ../../../_static/SSRSOCF_12.png
+        :width: 600px
+
+5. Select the option **No, do not export the private key** and Click **Next**.
+
+    .. image:: ../../../_static/SSRSOCF_13.png
+        :width: 600px
+
+6. Make sure that the **DER encoded binary X.509 (.CER)** is selected and click **Next**.
+
+    .. image:: ../../../_static/SSRSOCF_14.png
+        :width: 600px
+
+7. Select a location to save the certificate and click **Next**.
+
+    .. image:: ../../../_static/SSRSOCF_15.png
+        :width: 600px
+
+8. Click **Finish**.
+
+    .. Important::
+
+          Make sure your firewall is set to allow incoming connections on port **443**.
+
+JDBC URI
+~~~~~~~~~~~~
+
+BI Server URI Format
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      <Host or IP_Name>:<Port>/Report_Manager_Virtual_Directory_Name
+
+.. note::
+
+      Port number must be included in the URI only if any custom port is used apart from the default ports 80 or 443.
+
+**Example:**
+
+.. code-block:: Bash
+
+      http://10.13.81.180/reports
+
+BI Connection URI Format
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: Bash
+
+      <Host or IP_Name>:<Port>
+
+.. note::
+
+    Port number must be included in the URI only if any custom port is used apart from the default ports 80 and 443.
+
+**Example:**
+
+.. code-block:: Bash
+
+      http://10.13.81.180
+
+Installation
+-------------------------------
+
+Step 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+Step 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewBISource.rst
+
+The name of this connector is **SSRS OCF**.
+
+.. image:: ../../../_static/SSRSOCF_16.png
+    :width: 600px
+
+Settings
+--------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Perform the configuration on the Settings page.
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Specify **Application Settings** if applicable. Save the changes after providing the information by clicking **Save**.
+
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| **Parameter**              | **Description**                                                                                                      |
++============================+======================================================================================================================+
+| Enable Raw Dump or Replay  | The options in this drop list can be used to dump the extracted metadata into files in order to debug extraction     |
+|                            | issues before ingesting the metadata into Alation. This feature can be used during testing in case there are issues  |
+|                            | with MDE. It breaks extraction into two steps: first, the extracted metadata is dumped into files and can be viewed; |
+|                            | and second, it can be ingested from the files into Alation. It is recommended to keep this feature enabled only if   |
+|                            | debugging is required.                                                                                               |
+|                            |                                                                                                                      |
+|                            | - **Enable Raw Metadata Dump**: Select this option to save extracted metadata into a folder for debugging purposes.  |
+|                            |   The dumped data will be saved in four files (attribute.dump, function.dump, schema.dump, table.dump) in folder     |
+|                            |   **opt/alation/site/tmp/** inside Alation shell.                                                                    |
+|                            | - **Enable Ingestion Replay**: Select this option to ingest the metadata from the dump files into Alation.           |
+|                            | - **Off**: Disable the **Raw Metadata Dump** or **Replay** feature. Extracted metadata will be ingested into Alation.|
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Disable Automatic Lineage  | Select the **Disable Automatic Lineage Generation** checkbox to skip the creation of automatic Lineage after         |
+| Generation                 | extraction.                                                                                                          |
+|                            | When automatic Lineage generation is disabled, during extraction Alation does not calculate Lineage data for this    |
+|                            | BI source.                                                                                                           |
+|                            |                                                                                                                      |
+|                            | For more information, see                                                                                            |
+|                            | :doc:`Disable Automatic Lineage Generation <../../../bisources/AddBISources/DisableAutomaticLineageGenerationFAQ>`.  |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Disable Permission         | Not applicable. Leave the default setting (selected).                                                                |
+| Enforcement                |                                                                                                                      |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Disable Certification      | Not applicable. Leave the default setting (selected).                                                                |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+| Server URI                 | Provide the Server URI to access the SSRS server from the catalog page. Refer `BI Server URI Format`_.               |
++----------------------------+----------------------------------------------------------------------------------------------------------------------+
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~
+
+Server Connection
+^^^^^^^^^^^^^^^^^^^^^^
+
+Populate the BI source connection information and save the values by clicking **Save** in this section.
+
++----------------------------+---------------------------------------------------------------+
+| **Parameter**              | **Description**                                               |
++============================+===============================================================+
+|                     **Data Source Connection**                                             |
++----------------------------+---------------------------------------------------------------+
+| JDBC URI                   | Specify the URI in the required format.                       |
+|                            |                                                               |
+|                            | Note:                                                         |
+|                            |                                                               |
+|                            | Report manager virtual directory name is not required for this|
+|                            | URI which will be used for extraction.                        |
+|                            |                                                               |
++----------------------------+---------------------------------------------------------------+
+| Username                   | Specify the service account username.                         |
++----------------------------+---------------------------------------------------------------+
+| Password                   | Specify the service account password.                         |
++----------------------------+---------------------------------------------------------------+
+| Extract SQL Server         | Specify the SSRS version. The default version supported is    |
+| Reporting Services (SSRS)  | **2019**.                                                     |
+| Version                    |                                                               |
++----------------------------+---------------------------------------------------------------+
+| Report Server Virtual      | Specify the report server virtual directory name. The default |
+| Directory                  | value is **ReportServer**.                                    |
++----------------------------+---------------------------------------------------------------+
+|                     **Additional Settings**                                                |
++----------------------------+---------------------------------------------------------------+
+| Enable SSL Certification   | Enable or disable SSL authentication by selecting or clearing |
+|                            | the **Enable SSL Certification** checkbox.                    |
+|                            |                                                               |
+|                            | If the **Enable SSL Certification** checkbox is enabled,      |
+|                            | upload the SSL certificate using the **upload** link below    |
+|                            | this checkbox.                                                |
++----------------------------+---------------------------------------------------------------+
+| Report Manager Virtual     | Specify the report manager virtual directory name. The default|
+| Directory                  | value is **Reports**.                                         |
++----------------------------+---------------------------------------------------------------+
+| Enable Preview Extraction  | Enable or disable preview extraction by selecting or clearing |
+|                            | the **Enable preview extraction** checkbox.                   |
+|                            |                                                               |
+|                            | Note:                                                         |
+|                            |                                                               |
+|                            | If the preview extraction is enabled it will eventually       |
+|                            | increase the MDE time.                                        |
+|                            |                                                               |
++----------------------------+---------------------------------------------------------------+
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Application Settings
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Not applicable.
+
+Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Obfuscate Literals** — Enable this toggle to hide the details of the queries in the catalog page that are ingested via QLI or executed in Compose. This toggle is disabled by default.
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+Extraction Settings
+^^^^^^^^^^^^^^^^^^^^^^
+
+Selective Extraction
+'''''''''''''''''''''''''''
+
+.. include:: ../../../shared/OCF/OCFSelectiveExtraction_BISource.rst
+
+.. note::
+
+      Once you have extracted, if you notice any mismatch between the folders in the SSRS instance and in Alation, make sure that your connector is updated to version **1.2.0**.
+
+Automated and Manual Extraction
+'''''''''''''''''''''''''''''''''''
+
+.. include:: ../../../shared/OCF/OCFAutomatedExtraction.rst
+
+Troubleshooting
+---------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting`.
+
+Migration from Native to OCF
+---------------------------------
+
+You can migrate your existing SSRS BI source that is cataloged using the built-in (GBMv1) connector for SSRS to the SSRS OCF connector.
+
+Prerequisites
+~~~~~~~~~~~~~~~~
+
+  1. Before you begin the migration, make sure you do the Alation backup to restore back to the last working stage incase of migration failure.
+
+  2. Make sure you have the SSRS migration scripts provided by Alation with the connector zip file. For **Alation version < 2022.4**, contact Alation Support for the migration scripts.
+
+  3. Install the SSRS OCF connector. Do not configure the new BI source as the migration script supplied by Alation will migrate the native (GBMv1) BI source to OCF BI source.
+
+  4. Find out the ID of the BI source you want to migrate. See :doc:`How to Find Data Source ID <../../../admins/How-tos/HowToFindDataSourceID>`.
+
+Migration
+~~~~~~~~~~~~~
+
+Perform the following steps:
+
+  1. Copy the migration scripts provided by alation to the tmp directory. Substitute the placeholder ``<ssh-user>@{alation-instance-ip}`` with the actual value.
+
+  .. code-block:: Bash
+
+        scp copy_ssrs_gbmv1_logical_data_to_ocf.py <ssh-user>@{alation-instance-ip}:/tmp
+        scp taskserver.py <ssh-user>@{alation-instance-ip}:/tmp
+
+  2. Use SSH to connect to the Alation server.
+
+  3. Stage the migration scripts in the ``one_off_scripts`` directory.
+
+  .. code-block:: Bash
+
+        sudo cp /tmp/copy_ssrs_gbmv1_logical_data_to_ocf.py /opt/alation/alation/opt/alation/django/rosemeta/one_off_scripts
+        sudo cp /tmp/taskserver.py /opt/alation/alation/opt/alation/django/bi_metadata/models/bi_server/strategies/v2
+
+  4. Enter the Alation shell and navigate to ``one_off_scripts`` directory.
+
+  .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        sudo su alation
+        cd opt/alation/django/rosemeta/one_off_scripts/
+
+  5. Run the command given below to find out the ID of the OCF connector that will be used for this migration:
+
+      .. code-block:: Bash
+
+            alation_ypireti list --fields id name
+
+    This command returns a list of IDs and names of the OCF connectors that are currently running on the Alation host. Locate the ID of the connector that you need.
+
+    .. image:: ../../../_static/NativetoOCF_03.png
+
+  6. Run the migration scripts using the following command. Substitute the placeholders ``{Native(GBMv1) SSRS Datasource Server Id},  {SSRS OCF Connector Id}`` with actual values.
+
+  .. code-block:: Bash
+
+        python copy_ssrs_gbmv1_logical_data_to_ocf.py --source_id {Native(GBMv1) SSRS Datasource Server Id} --id {SSRS OCF Connector Id} --confirm
+
+  Example:
+
+  .. code-block:: Bash
+
+        [root@df33fe74ea7f one_off_scripts]# python copy_ssrs_gbmv1_logical_data_to_ocf.py --source_id 2 --id 1 --confirm
+
+  7. Run full metadata extraction for folder hierarchies and to view the parent to child relationship of the folders. The full extraction is required as the parent to child relationship of the folders is not supported in the native connector.

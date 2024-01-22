@@ -1,0 +1,126 @@
+Azure Blob Storage OCF Connector: Azure Service Principal Authentication
+===============================================================================
+
+*Available from Alation version 2023.3.1*
+
+Azure service principal authentication method is supported from Azure Blob Storage connector version **2.4.1** and Alation version **2023.3.1**. Use the steps in the following sections to configure service principal authentication in Azure Blob Storage and in Alation.
+
+Setup in Azure Portal
+-------------------------
+
+Perform the following steps to create an application in the Azure portal:
+
+  1. In the Azure portal, go to **Azure Active Directory > App registrations**.
+
+  2. Click **New registration**.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_01.png
+          :width: 500px
+          :class: with-border
+
+  3. Provide a **Name** for the application and click **Register**.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_02.png
+          :width: 500px
+          :class: with-border
+
+  4. Copy the **Client ID** and **OAuth 2.0 token endpoint (v2)** to a secure location on your local machine. You’ll need this information later when configuring authentication in Alation.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_03.png
+          :width: 500px
+          :class: with-border
+
+  5. Go to **API permissions**.
+
+  6. Click **Add a permission** and select **Azure Storage**.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_04.png
+          :width: 500px
+          :class: with-border
+
+  7. Select the **user_impersonation** permission.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_05.png
+          :width: 500px
+          :class: with-border
+
+  8. Go to **Certificates & secrets** and click **New client secret** to generate a new client secret. Save the client secret on your local machine.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_06.png
+          :width: 500px
+          :class: with-border
+
+Assign a Role
+~~~~~~~~~~~~~~~~~~~~~
+
+Once you have the app, perform the following steps to link the app to the storage account from which you want to extract the data and assign a role to the app:
+
+  1. Go to the storage account from which you want to extract the data into Alation.
+
+  2. Click **Access Control (IAM) > + Add >  Add role assignment**.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_07.png
+          :width: 500px
+          :class: with-border
+
+  3. Select the **Storage Blob Data Reader** permission and click **Next**.
+
+  4. Click **+ Select members** and select the app that you have created. Click **Review + assign**.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_08.png
+          :width: 500px
+          :class: with-border
+
+Setup in Alation
+-------------------
+
+Create an Authentication Profile
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perform the following steps in Alation:
+
+  1. Log in to Alation.
+
+  2. Go to **Admin Settings > Server Admin > Authentication**.
+
+  3. Under **Authentication Configuration Methods for External Systems**, click the **Add Configuration** button.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_09.png
+          :width: 500px
+          :class: with-border
+
+  4. In the list that opens, select **OAuth**. The OAuth authentication profile editor will open in a new browser tab.
+
+  5. Add these values:
+
+        - **Config Name**  — Provide a name for the authentication profile you are creating, for example **azure_blob_sp**.
+
+        - **Client ID** — Specify the client ID that you copied in step 3 of `Setup in Azure Portal`_.
+
+        - **Client Secret** — Specify the client secret that you copied in step 8 of `Setup in Azure Portal`_.
+
+        - **Scope** — Provide the scope as ``https://storage.azure.com/.default``.
+
+        - **Subject** — Not applicable.
+
+        - **Token Buffer Time** — Not applicable.
+
+        - **Grant Type** — Select **credentials_flow** from the drop-down.
+
+        - **PKCE Verifier** — Leave the check box selected.
+
+        - **Authorize Endpoint URL** — Provide a placeholder URL, for example, ``www.mock_url.com``.
+
+        - **Redirect URL** — Provide a placeholder URL, for example, ``www.mock_url.com``.
+
+        - **Token Endpoint URL** — Specify the token endpoint URL that you copied in step 3 of `Setup in Azure Portal`_.
+
+        - **User Info Endpoint URL** — Provide a placeholder URL, for example, ``www.mock_url.com``.
+
+      .. image:: ../../../_static/AzureBlobOCFSP_10.png
+          :width: 500px
+          :class: with-border
+
+  6. Click **Save**.
+
+  7. Open the settings page of your Azure Blob Storage source and configure authentication with the Azure service principal. Refer to :doc:`Connector Settings </sources/OpenConnectorFramework/AzureBlobStorage/AzureBlobStorageOCFConnectorInstallandConfigure>`.

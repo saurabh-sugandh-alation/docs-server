@@ -1,0 +1,115 @@
+Qlik Sense Enterprise Connector: Overview
+===============================================
+
+The OCF Connector for Qlik Sense Enterprise was developed by Alation and is available out of the box.
+
+To download the Qlik Sense Enterprise OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**.
+
+This connector should be used to catalog Qlik Sense Enterprise as a BI source in Alation. It extracts Qlik Sense Enterprise objects such as Streams, Applications and Sheets. Users will be able to search and find Qlik Sense Enterprise objects, curate Qlik Sense Enterprise object pages, and explore measures and dimensions from the Alation user interface.
+
+.. note::
+
+    Qlik Cloud is not supported by this OCF connector.
+
+Team
+--------
+
+The following administrators are required to install this connector:
+
+    - Alation Server Admin:
+
+        - Installs the connector
+        - Creates a Qlik Sense BI source
+        - Provisions Alation API tokens
+
+    - Qlik Sense Enterprise administrator with the RootAdmin privilege:
+
+        - Creates and exports the certificates.
+
+Scope
+----------------
+
+The table below shows what features are covered by the connector.
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
++------------------------+--------------------------------------------------+-----------------+
+| Feature                | Scope                                            | Availability    |
++========================+==================================================+=================+
+| Qlik Sense             | Catalog a Qlik Sense instance as a BI source     | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Streams                | Extract streams                                  | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Filter streams         | Ability to include or exclude specific streams   | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Applications           | Catalog applications in a stream                 | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Filter applications    | Ability to include or exclude specific           | Yes             |
+|                        | applications                                     |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Sheets                 | Catalog sheets in an application                 | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Filter sheets          | Ability to include or exclude certain sheets     | No              |
++------------------------+--------------------------------------------------+-----------------+
+| Sheet objects,         | Catalog dimensions, measures and measures        | Yes             |
+| dimensions, measures,  | expressions of a sheet object                    |                 |
+| and expressions        |                                                  |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Auto-generated sheet   | Ability to capture auto generated sheet object   | No              |
+| object titles          | titles in Qlik Sense                             |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Data sources           | Ability to catalog data sources                  | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Master items           | Ability to catalog master items                  | No              |
++------------------------+--------------------------------------------------+-----------------+
+| Image previews         | Ability to preview thumbnail images of sheet     | No              |
+|                        | objects                                          |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Source comments        | Ability to extract source comments for sheets and| Yes             |
+|                        | apps                                             |                 |
++------------------------+--------------------------------------------------+-----------------+
+| Lineage                | Ability to generate linegae for the BI source    | Yes             |
++------------------------+--------------------------------------------------+-----------------+
+| Cross-System lineage   | Ability to generate lineage between the BI source| No              |
+|                        | and a data source                                |                 |
++------------------------+--------------------------------------------------+-----------------+
+
+Qlik Sense Enterprise Object Hierarchy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following diagram shows the hierarchy of Qlik Sense Enterprise objects and how they are cataloged in Alation:
+
+.. image:: ../../../_static/Qliksense_01.png
+    :width: 600px
+
+Qlik Sense Enterprise API Methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The table below lists the Qlik Sense Enterprise API methods used by this connector to extract metadata from the Qlik Sense Enterprise server:
+
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Type               | API Methods                             | Description                                                    |
++====================+=========================================+================================================================+
+| Stream             | GetDocList                              | Gets the list of applications which includes streams from Qlik.|
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Application        | GetDocList                              | Gets the list of applications which includes streams from Qlik.|
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Sheets             | OpenDoc                                 | Every time when the application is opened, a session is created|
+|                    | CreateSessionObject                     | and the information is returned.                               |
+|                    | GetLayout                               |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Sheets Objects     | GetObject                               | GetObject gets basic sheet information.                        |
+|                    | GetFullPropertyTree                     | GetFullPropertyTree produces a JSON object with all            |
+|                    |                                         | information.                                                   |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| Sheet object       | GetFullPropertyTree                     | Gets each sheet object, its dimensions, measures, and          |
+| dimensions,        |                                         | expressions                                                    |
+| measures,          |                                         |                                                                |
+| expressions        |                                         |                                                                |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+| DataSources        | GetConnections                          | GetConnections returns all connections used by the application.|
+|                    | GetLineage                              | GetLineage can be used to tie an application to a set of data  |
+|                    |                                         | sources                                                        |
++--------------------+-----------------------------------------+----------------------------------------------------------------+
+
+Refer to `App API <https://help.qlik.com/en-US/sense-developer/November2021/Subsystems/APIs/Content/Sense_ClientAPIs/CapabilityAPIs/qlik-app-interface.htm>`_ for more information.

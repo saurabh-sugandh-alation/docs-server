@@ -1,0 +1,1131 @@
+
+<!DOCTYPE html>
+<html lang="" >
+<head>
+  <meta charset="utf-8"/>
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="book-version"      content=""/>
+  <meta name="book-release"      content=""/>
+  <meta name="docsearch:name"    content="Alation User Guide" />
+  <meta name="docsearch:version" content="" />
+  <meta name="docsearch:package_type" content="" />
+	<meta name="robots" content="noindex" />
+
+  
+  <title>PostgreSQL On Amazon EC2 and Enterprise: Query Log Ingestion &mdash; Alation User Guide</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+  
+
+  
+
+  
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/css/main.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/sphinx_collapse.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/css/rtd_sphinx_search.min.css" type="text/css" />
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="Alation User Guide" href="#"/>
+        <link rel="up" title="PostgreSQL OCF Connector" href="index.html"/>
+        <link rel="next" title="PostgreSQL Connector RDS: Query Log Ingestion" href="PostgreSQLConnectorRDSQLI.html"/>
+        <link rel="prev" title="PostgreSQL Connector: Install and Configure" href="PostgreSQLConnectorInstallandConfigure.html"/>
+
+	
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-67846571-1"></script>
+	<script>
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+
+	gtag('config', 'UA-67846571-1');
+	</script>
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<!-- Second Google Analytics tag to assist mapping with mattermost.com visits --> 
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120238482-1"></script>
+	<script>
+	  window.dataLayer = window.dataLayer || [];
+	  function gtag(){dataLayer.push(arguments);}
+	  gtag('js', new Date());
+
+	  gtag('config', 'UA-120238482-1');
+	</script>
+
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <header>
+    <div class="header__container wy-max-content-width">
+        <a href="/" class="header__logo">
+            <img width="176" src="../../../_static/img/logo-alation.svg" alt="Alation" />
+        </a>
+        <ul class="header__links">
+            <li><a href="https://help.alation.com/s/">Alation Help Center</a></li>
+        </ul>
+    </div>
+</header>
+
+  <div class="wy-grid-for-nav wy-max-content-width">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-scroll__content">
+          <div class="wy-side-nav-search">
+            
+
+            <ul class="sidebartop">
+              <li class="nolink search"><div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search this project" aria-label="Search this project" id="searchinput" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+</li>
+
+            </ul>
+
+            
+          </div>
+
+          <div class="wy-menu wy-sidebar wy-sidebar--hidden" data-spy="affix" role="navigation" aria-label="main navigation">
+            
+              
+              
+              
+                  <p class="caption" role="heading"><span class="caption-text">Welcome to Alation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome/About/index.html">About Alation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome/CloudAndOnPrem/index.html">Alation Cloud and On-Premise</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome/UserProfileandPreferences/index.html">User Profile and Preferences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome/CatalogBasics/index.html">Catalog Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome/CatalogPages/index.html">Catalog Pages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome/Conversations/index.html">Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome/Domains/index.html">Domains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome/BestPractices/index.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome/Glossary/index.html">Alation Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation Cloud Service</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../cloud/StatusPage/index.html">Status Page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cloud/CloudOverview/index.html">Cloud Service Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cloud/CloudConfiguration/index.html">Configuration for Cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cloud/AlationAgent/index.html">Alation Agent</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation Integration</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../integration/AlationAnywhere/index.html">Alation Anywhere</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../integration/AlationConnectedSheets/index.html">Alation Connected Sheets</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Installation &amp; Configuration</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installconfig/ServerInstallation/index.html">Install Alation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installconfig/HighAvailability/index.html">High Availability</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installconfig/Update/index.html">Update Alation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installconfig/BackupandRestore/index.html">Back Up and Restore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installconfig/LineageV2/index.html">Lineage V2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installconfig/LineageV3/index.html">Lineage V3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installconfig/AlationAnalyticsV2/index.html">Alation Analytics V2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installconfig/AlationContainerService/index.html">Alation Container Service</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Sources</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../CatalogSources/index.html">Catalog Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../VirtualDataSources/index.html">Virtual Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Lineage/index.html">Lineage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../APIResources/index.html">API Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../WorkwithCatalogData/index.html">Working with Catalog Data</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Open Connector Framework</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../ReleaseNotes.html">Open Connector Framework (OCF) Release Notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../OCFOverview.html">Open Connector Framework (OCF) Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../OCFInstallAlationConnectorManager.html">Install Alation Connector Manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../AutoInstallDockerAsDependency.html">Auto-Install Docker as Alation Connector Manager Dependency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../InstallDocker2020_3_To_2021_1.html">Install Docker for Alation Versions 2020.3.x - 2021.1.x</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../OCFInstallBIConnectors.html">Install OCF BI Connectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ManageConnectors.html">Manage Connectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../OCFMaintainConnectors.html">Maintaining OCF Connectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../OCFConnectorCatalogUserExperience.html">OCF Connector Catalog User Experience</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../OCFTroubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../MigrateNativeSourcestoOCF/index.html">Migrate Native Sources to Open Connector Framework</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ConfigureSecretsforOCFConnectors/index.html">Configure Secrets for OCF Connector Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ConfigureAuthWithIAMRole.html">Configure Authentication via AWS STS and an IAM Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ConfigureAccessToOCFDataSources.html">Configure Access to OCF Data Sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ConfigureMDEforOCFDataSources.html">Configure Metadata Extraction for OCF Data Sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ConfigureSamplingforOCFDataSources.html">Configure Sampling and Profiling for OCF Data Sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ConfigureComposeforOCFDataSources.html">Configure Compose for OCF Data Sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SchemaPathPattern.html">Schema Path Pattern</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../BIConnectionInfoField.html">BI Connection Info</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../RecreateDatabricksInitScriptUnderWorkspace.html">Recreate Databricks Logging Script Under Workspace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FileSystemDeletion.html">Delete a File System Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../AthenaOCFConnector/index.html">Amazon Athena OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../AWSGlue/index.html">AWS Glue OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../AWSS3/index.html">Amazon S3 OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../AzureBlobStorage/index.html">Azure Blob Storage OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../AzureDatabricks/index.html">Azure Databricks OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../AzureSQLDBOCFConnector/index.html">Azure SQL DB OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../AzureSynapseOCFConnector/index.html">Azure Synapse Analytics OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../DatabricksonAWS/index.html">Databricks on AWS OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../DatabricksUnityCatalog/index.html">Databricks Unity Catalog OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../DBT/index.html">Add-On OCF Connector for dbt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Denodo/index.html">Denodo OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../EMRPrestoConnector/index.html">Amazon EMR Presto OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FivetranOCFConnector/index.html">Add-on OCF Connector for Fivetran</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../GBQOCFConnector/index.html">Google BigQuery OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Greenplum/index.html">Greenplum OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../HiveOCFConnector/index.html">Hive OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../HDFSOCFConnector/index.html">HDFS OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../IBMDb2/index.html">IBM Db2 Database OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ImpalaOnCDH_OCFConnector/index.html">Impala on CDH OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ImpalaOnCDP_OCFConnector/index.html">Impala on CDP OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../InformaticaPowerCenter/index.html">Informatica PowerCenter OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Kafka/index.html">Kafka OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../MicroStrategy/index.html">MicroStrategy OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../MongoDBOCFConnector/index.html">MongoDB OCF Connector (Public Preview)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../MySQL/index.html">MySQL OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Looker/index.html">Looker OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../OracleOCFConnector/index.html">Oracle OCF Connector</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">PostgreSQL OCF Connector</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="PostgreSQLOCFConnectorReleaseNotes.html">PostgreSQL OCF Connector Release Notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="PostgreSQLConnectorOverview.html">PostgreSQL Connector: Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="PostgreSQLConnectorInstallandConfigure.html">PostgreSQL Connector: Install and Configure</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">PostgreSQL On Amazon EC2 and Enterprise: Query Log Ingestion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="PostgreSQLConnectorRDSQLI.html">PostgreSQL Connector RDS: Query Log Ingestion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ExtractionQueriesforPostgreSQL.html">Extraction Queries for PostgreSQL</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../PowerBIOCFConnector/index.html">Azure Power BI OCF Connector (Legacy)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../PowerBIScannerOCFConnector/index.html">Azure Power BI Scanner OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../QlikSense/index.html">QlikSense OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Redshift/index.html">Amazon Redshift OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SAPASE/index.html">SAP ASE (Sybase ASE) OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SAPBOConnector/index.html">SAP BusinessObjects OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SAPBWConnector/index.html">SAP BW OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SAPECC/index.html">SAP ECC OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SAPHANA/index.html">SAP HANA OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SAPIQ/index.html">SAP IQ OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SingleStore/index.html">SingleStore OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Snowflake/index.html">Snowflake OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SQLServer/index.html">SQL Server OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SSRS/index.html">SSRS OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../StarburstOCFConnector/index.html">Starburst Trino OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../TableauOCFConnector/index.html">Tableau OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Teradata/index.html">Teradata OCF Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Vertica/index.html">Vertica OCF Connector</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Data Sources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasources/DSConfiguration/index.html">Data Source Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasources/AddDataSources/index.html">Adding Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasources/ComposeSSOAWSDataSources/index.html">Compose SSO for Amazon Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasources/ComposeSSOAzureDataSources/index.html">Compose SSO for Azure Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasources/AuthenticationForExtraction/index.html">Authentication for Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasources/CustomDB/index.html">Custom DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasources/GBQ/index.html">Google BigQuery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../datasources/Hive/index.html">Hive</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">BI Sources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../bisources/AddBISources/index.html">Add BI Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../bisources/AddTableauServer/index.html">Add Tableau Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../bisources/WorkwithBISources/index.html">Working with BI Sources</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">File System Sources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../filesystems/FileSystems/index.html">Add File Systems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../filesystems/VirtualFileSystems/index.html">Virtual File Systems</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation for Analysts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../analyst/UserAuthenticationForDataSources/index.html">User Authentication for Data Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../analyst/ShareAndAccessQueries/index.html">Share and Access Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../analyst/WriteQueries/index.html">Write Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../analyst/DevelopQueries/index.html">Develop Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../analyst/WorkwithQueryResults/index.html">Work with Query Results</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation for Data Stewards</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/GovernanceApp/index.html">Governance App</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/PolicyCenter/index.html">Policy Center</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/Workflow/index.html">Workflow Center</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/GovernanceDashboard/index.html">Governance Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/StewardshipWorkbench/index.html">Stewardship Workbench</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/AnalyticsStewardship/index.html">Analytics Stewardship</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/Glossary/index.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/ArticlesAndTags/index.html">Articles and Tags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/ArticleGroups/index.html">Article Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/DataCatalogCustomization/index.html">Customize Your Data Catalog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/DataDocumentation/index.html">Data Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/AutoTitlingandLexicon/index.html">Auto-titling and Lexicon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../steward/SnowflakeTags/index.html">Snowflake Tags</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Alation for Server Administrators</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../admins/CustomizableHomePage/index.html">Customizable Homepage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admins/AdminSettings/index.html">Administrator Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admins/AdditionalConfiguration/index.html">Additional Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admins/RunbookForAdministrators/index.html">Runbook for Administrators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admins/AlationAPIs/index.html">Alation APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admins/How-tos/index.html">How-tos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admins/Troubleshooting/index.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Release Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../releases/releasenotes/index.html">Release Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../releases/supportmatrices/index.html">Support Matrices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../releases/endofsupport/index.html">End Of Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../releases/snowflakeclladdon/index.html">Snowflake Parser Add-On</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../releases/fieldnotices/index.html">Important Notices and Security Alerts</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Archived Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../archive/About/index.html">About the Documentation Archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../archive/AdminConfig/index.html">Administration and Update Archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../archive/ReleaseNotes/index.html">Release Notes Archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../archive/Usage/index.html">Usage and Customization Archive</a></li>
+</ul>
+
+              
+            
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="wy-nav-top-icon"></i>
+        <a href="../../../index.html">Alation User Guide</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+
+          <div role="navigation" aria-label="breadcrumbs" class="breadcrumbs">
+    <a href="../../../index.html">Docs</a>
+    <span class="separator">&gt;</span>
+    <a href="../index.html">Open Connector Framework</a>
+    <span class="separator">&gt;</span>
+    <a href="index.html">PostgreSQL OCF Connector</a>
+    <span class="separator">&gt;</span>
+    <span>PostgreSQL On Amazon EC2 and Enterprise: Query Log Ingestion</span>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody" class="toBeIndexed">
+            
+  <section id="postgresql-on-amazon-ec2-and-enterprise-query-log-ingestion">
+<h1>PostgreSQL On Amazon EC2 and Enterprise: Query Log Ingestion<a class="headerlink" href="#postgresql-on-amazon-ec2-and-enterprise-query-log-ingestion" title="Permalink to this headline">¶</a></h1>
+<p>Before performing query log ingestion (QLI), perform the QLI setup for PostgreSQL on EC2 or EDB Postgres Server (PostgreSQL Enterprise).
+Both the Amazon EC2 and EDB deployments support log rotation. You can choose one of the following ways to perform the QLI setup:</p>
+<blockquote>
+<div><ul>
+<li><p>EC2:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="#csv-logging-without-log-rotation">CSV Logging without Log Rotation</a></p></li>
+<li><p><a class="reference internal" href="#csv-logging-with-log-rotation">CSV Logging with Log Rotation</a></p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>EDB Postgres Server:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="#edb-audit-logs-without-log-rotation">EDB Audit Logs without Log Rotation</a></p></li>
+<li><p><a class="reference internal" href="#edb-postgres-server-with-audit-log-rotation">EDB Postgres Server with Audit Log Rotation</a></p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<section id="csv-logging-without-log-rotation">
+<h2>CSV Logging without Log Rotation<a class="headerlink" href="#csv-logging-without-log-rotation" title="Permalink to this headline">¶</a></h2>
+<p>To configure QLI based on CSV logging with no log rotation:</p>
+<ol class="arabic">
+<li><p>Change the server configuration in <strong>postgresql.conf</strong> and enable CSV logging as described below.</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the logging details for postgresql.conf file and reload the file (changing logging_collector needs a restart).</span>
+
+<span class="nv">log_destination</span><span class="w"> </span><span class="o">=</span><span class="s1">&#39;csvlog&#39;</span>
+
+<span class="nv">log_directory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;pg_log&#39;</span>
+
+<span class="nv">logging_collector</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>on
+
+<span class="nv">log_filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;postgresql&#39;</span>
+
+<span class="nv">log_duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>on<span class="w">             </span><span class="c1"># Should be enabled only if log_min_duration_statement is not set to 0</span>
+
+<span class="nv">log_min_duration_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>
+
+<span class="nv">log_error_verbosity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>verbose<span class="w">      </span><span class="c1"># terse, default, or verbose messages</span>
+
+<span class="nv">log_hostname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>on
+
+<span class="nv">log_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;all&#39;</span><span class="w">      </span><span class="c1"># none, ddl, mod, all</span>
+
+<span class="nv">log_rotation_age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>
+
+<span class="nv">log_rotation_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>
+
+<span class="nv">log_min_error_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>info
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Reload the updated <strong>postgresql.conf</strong>.</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">log_rotation_age</span> <span class="pre">=</span> <span class="pre">0</span></code> and  <code class="docutils literal notranslate"><span class="pre">log_rotation_size</span> <span class="pre">=</span> <span class="pre">0</span></code> properties stop the log rotation and write all logs to the same file (table). Setting the <code class="docutils literal notranslate"><span class="pre">log_min_duration_statement</span></code> property to a value greater than zero forcefully logs the query text; however, the <code class="docutils literal notranslate"><span class="pre">log_duration</span></code> property doesn’t.</p>
+</div>
+</div></blockquote>
+<ol class="arabic" start="3">
+<li><p>Install the <code class="docutils literal notranslate"><span class="pre">file_fdw</span></code> extension (<code class="docutils literal notranslate"><span class="pre">contrib</span></code> package is required), create a foreign file server and a foreign table, and link it to the log file name provided in the <strong>postgresql.conf</strong> file.</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">file_fdw</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="n">SERVER</span><span class="w"> </span><span class="n">pglog</span><span class="w"> </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">DATA</span><span class="w"> </span><span class="n">WRAPPER</span><span class="w"> </span><span class="n">file_fdw</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">log_time</span><span class="w"> </span><span class="k">timestamp</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">database_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">process_id</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">    </span><span class="n">connection_from</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">session_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">session_line_num</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">    </span><span class="n">command_tag</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">    </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">transaction_id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">    </span><span class="n">error_severity</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">sql_state_code</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">detail</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">hint</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">internal_query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">internal_query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">    </span><span class="n">context</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">    </span><span class="k">location</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">application_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">backend_type</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">empty_column</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">column_with_zeroes</span><span class="w"> </span><span class="nb">text</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="n">SERVER</span><span class="w"> </span><span class="n">pglog</span>
+<span class="w">    </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="w"> </span><span class="s1">&#39;pg_log/postgresql.csv&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="s1">&#39;csv&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Create a view for Alation to retrieve query logs from.</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">alation_postgres_logv</span><span class="w"> </span><span class="k">AS</span>
+<span class="w">    </span><span class="k">SELECT</span>
+<span class="w">      </span><span class="n">session_id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sessionID</span><span class="p">,</span>
+<span class="w">      </span><span class="n">user_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">userName</span><span class="p">,</span>
+<span class="w">      </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sessionStartTime</span><span class="p">,</span>
+<span class="w">      </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">startTime</span><span class="p">,</span>
+<span class="w">      </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">transactionid</span><span class="p">,</span>
+<span class="w">      </span><span class="n">message</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">queryString</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;N&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cancelled</span><span class="p">,</span>
+<span class="w">      </span><span class="n">database_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">defaultDatabases</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The above view applies to PostgreSQL OCF connector version 1.1.9. If you upgrade from an earlier version to version 1.1.9, create a new view using the above template or change your view with a <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span></code> query using the above template.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p>Grant the Alation service account access to the QLI view.</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Grant SELECT on public.alation_postgres_logv to {Alation Service Account}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Update the <strong>Query Log Ingestion</strong> tab of the Settings page of your OCF data source. Refer <a class="reference internal" href="#configure-qli-in-alation-user-interface">Configure QLI in Alation User Interface</a>.</p></li>
+</ol>
+<section id="configure-qli-in-alation-user-interface">
+<h3>Configure QLI in Alation User Interface<a class="headerlink" href="#configure-qli-in-alation-user-interface" title="Permalink to this headline">¶</a></h3>
+<p>To configure view-based QLI:</p>
+<ol class="arabic">
+<li><p>Go to the <strong>Query Log Ingestion</strong> tab of the Settings page of your OCF data source.</p></li>
+<li><p>Under <strong>Connector Settings</strong> &gt; <strong>Query Extraction</strong>, enter the view name as <code class="docutils literal notranslate"><span class="pre">public.alation_postgres_logv</span></code> in the <strong>Table Name</strong> field.</p></li>
+<li><p>Click <strong>Save</strong>.</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="../../../_images/PostgresSQL_QLI.png"><img alt="../../../_images/PostgresSQL_QLI.png" class="align-center" src="../../../_images/PostgresSQL_QLI.png" style="width: 5.5in;" /></a>
+</div></blockquote>
+</li>
+</ol>
+</section>
+</section>
+<section id="csv-logging-with-log-rotation">
+<h2>CSV Logging with Log Rotation<a class="headerlink" href="#csv-logging-with-log-rotation" title="Permalink to this headline">¶</a></h2>
+<p>To conveniently retain logs for, for example, seven days only through automatic truncation, you can consider creating seven child tables for a master table. The process would typically use this workflow:</p>
+<ol class="arabic">
+<li><p>Open the <strong>postgresql.conf</strong> file, perform the following way:</p>
+<blockquote>
+<div><div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nv">log_destination</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;csvlog&#39;</span>
+
+<span class="nv">log_filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;postgresql-%a&#39;</span><span class="w">  </span><span class="c1"># Keep 7d of logs in files &#39;postgresql-Mon.csv&#39; etc.</span>
+
+<span class="nv">log_directory</span><span class="w"> </span><span class="o">=</span><span class="s1">&#39;pg_log&#39;</span>
+
+<span class="nv">logging_collector</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>on
+
+<span class="nv">log_duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>on<span class="w">      </span><span class="c1"># Should be enabled only if log_min_duration_statement is not set to 0</span>
+
+<span class="nv">log_min_duration_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>
+
+<span class="nv">log_error_verbosity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>verbose<span class="w">     </span><span class="c1"># terse, default, or verbose messages</span>
+
+<span class="nv">log_hostname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>on
+
+<span class="nv">log_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;all&#39;</span><span class="w">    </span><span class="c1"># none, ddl, mod, all</span>
+
+<span class="nv">log_truncate_on_rotation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>on
+
+<span class="nv">log_rotation_age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1440</span>
+
+<span class="nv">log_rotation_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>
+
+<span class="nv">log_min_error_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>info
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To maintain logs for the seven days, name one log file per day such as <code class="docutils literal notranslate"><span class="pre">postgresql-Mon</span></code> and <code class="docutils literal notranslate"><span class="pre">postgresql-Tue</span></code>. To automatically overwrite last week’s log with the current week, set <code class="docutils literal notranslate"><span class="pre">log_filename</span></code> to <code class="docutils literal notranslate"><span class="pre">postgresql-%a</span></code>, <code class="docutils literal notranslate"><span class="pre">log_truncate_on_rotation</span></code> to <code class="docutils literal notranslate"><span class="pre">on</span></code>, and <code class="docutils literal notranslate"><span class="pre">log_rotation_age</span></code> to <code class="docutils literal notranslate"><span class="pre">1440</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">log_rotation_age</span> <span class="pre">=</span> <span class="pre">0</span></code> and  <code class="docutils literal notranslate"><span class="pre">log_rotation_size</span> <span class="pre">=</span> <span class="pre">0</span></code> properties stop the log rotation and write all logs to the same file (table). Setting the <code class="docutils literal notranslate"><span class="pre">log_min_duration_statement</span></code> property to a value greater than zero forcefully logs the query text; however, the <code class="docutils literal notranslate"><span class="pre">log_duration</span></code> property doesn’t.</p>
+</div>
+</div></blockquote>
+<ol class="arabic" start="2">
+<li><p>Reload the updated <strong>postgresql.conf</strong>.</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Install the <code class="docutils literal notranslate"><span class="pre">file_fdw</span></code> extension (<code class="docutils literal notranslate"><span class="pre">contrib</span></code> package is required), create a foreign file server and a foreign table, and link it to the log file name configured in the previous step.</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">file_fdw</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">SERVER</span><span class="w"> </span><span class="n">pglog</span><span class="w"> </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">DATA</span><span class="w"> </span><span class="n">WRAPPER</span><span class="w"> </span><span class="n">file_fdw</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">log_time</span><span class="w"> </span><span class="k">timestamp</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">  </span><span class="n">user_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">database_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">process_id</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="n">connection_from</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_line_num</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">  </span><span class="n">command_tag</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">  </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">transaction_id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">  </span><span class="n">error_severity</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">sql_state_code</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">detail</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">hint</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">internal_query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">internal_query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="n">context</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="k">location</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">application_name</span><span class="w"> </span><span class="nb">text</span>
+</pre></div>
+</div>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log_mon</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">log_time</span><span class="w"> </span><span class="k">timestamp</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">database_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">process_id</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">    </span><span class="n">connection_from</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">session_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">session_line_num</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">    </span><span class="n">command_tag</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">    </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">transaction_id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">    </span><span class="n">error_severity</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">sql_state_code</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">detail</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">hint</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">internal_query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">internal_query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">    </span><span class="n">context</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">    </span><span class="k">location</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">application_name</span><span class="w"> </span><span class="nb">text</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="n">SERVER</span><span class="w"> </span><span class="n">pglog</span>
+<span class="w">      </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="w"> </span><span class="s1">&#39;pg_log/postgresql-Mon.csv&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="s1">&#39;csv&#39;</span><span class="p">);</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log_mon</span><span class="w"> </span><span class="n">INHERIT</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="p">;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Repeat Step 3 for the remaining days of the week (Tuesday to Sunday).</p></li>
+<li><p>Create a view for Alation to retrieve the query logs.</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">alation_postgres_logv</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">  </span><span class="n">session_id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sessionID</span><span class="p">,</span>
+<span class="w">  </span><span class="n">user_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">userName</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sessionStartTime</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">startTime</span><span class="p">,</span>
+<span class="w">  </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">transactionid</span><span class="p">,</span>
+<span class="w">  </span><span class="n">message</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">queryString</span><span class="p">,</span>
+<span class="w">  </span><span class="s1">&#39;N&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cancelled</span><span class="p">,</span>
+<span class="w">  </span><span class="n">database_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">defaultDatabases</span>
+<span class="k">FROM</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The above view applies to PostgreSQL OCF connector version 1.1.9. If you upgrade from an earlier version to version 1.1.9, create a new view using the above template or change your view with a <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span></code> query using the above template.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p>Grant the Alation service account access to the QLI view.</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">GRANT SELECT ON public.alation_postgres_logv TO {Alation Service Account}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Update the <strong>Query Log Ingestion</strong> tab of the Settings page of your OCF data source. Refer <a class="reference internal" href="#configure-qli-in-alation-user-interface">Configure QLI in Alation User Interface</a>.</p></li>
+</ol>
+</section>
+<section id="edb-audit-logs-without-log-rotation">
+<h2>EDB Audit Logs without Log Rotation<a class="headerlink" href="#edb-audit-logs-without-log-rotation" title="Permalink to this headline">¶</a></h2>
+<p>Perform these steps to configure QLI based on EDB Audit logs without log rotation:</p>
+<ol class="arabic">
+<li><p>Change the server configuration (<strong>postgresql.conf</strong>) and enable CSV logging.</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># set in postgresql.conf + restart/reload server (changing logging_collector needs restart)</span>
+<span class="c1">#------------------------------------------------------------</span>
+<span class="c1"># ERROR REPORTING AND LOGGING</span>
+<span class="c1">#------------------------------------------------------------</span>
+
+<span class="c1"># - Where to Log -</span>
+
+<span class="nv">logging_collector</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>on
+
+<span class="c1">#------------------------------------------------------------</span>
+<span class="c1"># EDB AUDIT</span>
+<span class="c1">#------------------------------------------------------------</span>
+
+<span class="nv">edb_audit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;csv&#39;</span><span class="w">                       </span><span class="c1"># none, csv or xml</span>
+
+<span class="c1"># These are only used if edb_audit is not none:</span>
+<span class="nv">edb_audit_directory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;edb_audit&#39;</span><span class="w">       </span><span class="c1"># Directory where the log files are written</span>
+<span class="w">                                        </span><span class="c1"># Can be absolute or relative to PGDATA</span>
+
+<span class="nv">edb_audit_filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;postgresaudit&#39;</span><span class="w">    </span><span class="c1"># Audit file name pattern.</span>
+<span class="w">                                        </span><span class="c1"># Can include strftime() escapes</span>
+
+<span class="nv">edb_audit_rotation_day</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;none&#39;</span><span class="w">         </span><span class="c1"># Automatic rotation of log files based</span>
+<span class="w">                                        </span><span class="c1"># on day of week. none, every, sun,</span>
+<span class="w">                                        </span><span class="c1"># mon, tue, wed, thu, fri, sat</span>
+
+<span class="nv">edb_audit_rotation_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="w">             </span><span class="c1"># Automatic rotation of log files will</span>
+<span class="w">                                        </span><span class="c1"># happen after this many megabytes (MB)</span>
+<span class="w">                                        </span><span class="c1"># of log output.  0 to disable.</span>
+
+<span class="nv">edb_audit_rotation_seconds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="w">          </span><span class="c1"># Automatic log file rotation will</span>
+<span class="w">                                        </span><span class="c1"># happen after this many seconds.</span>
+
+<span class="nv">edb_audit_connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;all&#39;</span><span class="w">               </span><span class="c1"># none, failed, all</span>
+
+<span class="c1">#edb_audit_disconnect =&#39;none&#39;           # none, all</span>
+
+<span class="nv">edb_audit_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;all&#39;</span><span class="w">             </span><span class="c1"># none, dml, ddl, select, error, rollback, all</span>
+
+<span class="c1">#edb_audit_tag = &#39;&#39;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Reload the updated <strong>postgresql.conf</strong> using the following command:</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The properties <code class="docutils literal notranslate"><span class="pre">edb_audit_rotation_size</span> <span class="pre">=</span> <span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">edb_audit_rotation_day</span> <span class="pre">=</span> <span class="pre">'none'</span></code>,  and <code class="docutils literal notranslate"><span class="pre">edb_audit_rotation_seconds</span> <span class="pre">=</span> <span class="pre">0</span></code> stop the rotation and write all logs to the same file (table).</p>
+</div>
+<ol class="arabic" start="3">
+<li><p>Install the <code class="docutils literal notranslate"><span class="pre">file_fdw</span></code> extension (<code class="docutils literal notranslate"><span class="pre">contrib</span></code> package is required), create a foreign file server and a foreign table, and link it to the log file name configured in the previous step.</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">file_fdw</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">SERVER</span><span class="w"> </span><span class="n">pglog</span><span class="w"> </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">DATA</span><span class="w"> </span><span class="n">WRAPPER</span><span class="w"> </span><span class="n">file_fdw</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">user_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">database_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">process_id</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="n">connection_from</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_line_num</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">  </span><span class="n">command_tag</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">  </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">transaction_id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">  </span><span class="n">error_severity</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">sql_state_code</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">detail</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">hint</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">internal_query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">internal_query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="n">context</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="k">location</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">application_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">extra</span><span class="w"> </span><span class="nb">text</span>
+<span class="p">)</span><span class="w"> </span><span class="n">SERVER</span><span class="w"> </span><span class="n">pglog</span>
+<span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">filename</span><span class="w"> </span><span class="s1">&#39;edb_audit/postgresaudit.csv&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="s1">&#39;csv&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Create a view for Alation to retrieve query logs from.</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">alation_postgres_logv</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">  </span><span class="n">session_id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sessionID</span><span class="p">,</span>
+<span class="w">  </span><span class="n">user_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">userName</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sessionStartTime</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">startTime</span><span class="p">,</span>
+<span class="w">  </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">transactionid</span><span class="p">,</span>
+<span class="w">  </span><span class="n">message</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">queryString</span><span class="p">,</span>
+<span class="w">  </span><span class="s1">&#39;N&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cancelled</span><span class="p">,</span>
+<span class="w">  </span><span class="n">database_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">defaultDatabases</span>
+<span class="k">FROM</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The above view applies to PostgreSQL OCF connector version 1.1.9. If you upgrade from an earlier version to version 1.1.9, create a new view using the above template or change your view with a <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span></code> query using the above template.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p>Grant the Alation service account access to the QLI view.</p>
+<blockquote>
+<div><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Grant SELECT on public.alation_postgres_logv to {Alation Service Account}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Update the <strong>Query Log Ingestion</strong> tab of the Settings page of your OCF data source. Refer <a class="reference internal" href="#configure-qli-in-alation-user-interface">Configure QLI in Alation User Interface</a>.</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This log doesn’t log duration.</p>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</section>
+<section id="edb-postgres-server-with-audit-log-rotation">
+<h2>EDB Postgres Server with Audit Log Rotation<a class="headerlink" href="#edb-postgres-server-with-audit-log-rotation" title="Permalink to this headline">¶</a></h2>
+<p>(Alation version 4.16)</p>
+<p>Perform these steps to configure QLI based on EDB Postgres Server with Audit log rotation:</p>
+<ol class="arabic">
+<li><p>Change the server configuration (<strong>postgresql.conf</strong>) and enable CSV logging.</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># set in postgresql.conf + restart/reload server (changing logging_collector needs restart)</span>
+<span class="c1">#-----------------------------------------------------------------------------------------</span>
+<span class="c1">#ERROR REPORTING AND LOGGING</span>
+<span class="c1">#-----------------------------------------------------------------------------------------</span>
+<span class="c1"># - Where to Log -</span>
+<span class="nv">logging_collector</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>on
+<span class="c1">#-----------------------------------------------------------------------------------------</span>
+<span class="c1"># EDB AUDIT</span>
+<span class="c1">#-----------------------------------------------------------------------------------------</span>
+<span class="nv">edb_audit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;csv&#39;</span><span class="w">                                   </span><span class="c1"># none, csv or xml</span>
+
+<span class="c1"># These are only used if edb_audit is not none:</span>
+
+<span class="nv">edb_audit_directory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;edb_audit&#39;</span><span class="w">                  </span><span class="c1"># Directory where the log files are written</span>
+<span class="w">                                                  </span><span class="c1"># Can be absolute or relative to PGDATA</span>
+
+<span class="nv">edb_audit_filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;audit-%Y-%m-%dT%H:%M:%S&#39;</span><span class="w">      </span><span class="c1"># Audit file name pattern.</span>
+<span class="w">                                                    </span><span class="c1"># Can include strftime() escapes</span>
+
+<span class="nv">edb_audit_rotation_day</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;every&#39;</span><span class="w">                    </span><span class="c1"># Automatic rotation of log files based</span>
+<span class="w">                                                    </span><span class="c1"># on day of week. none, every, sun,</span>
+<span class="w">                                                    </span><span class="c1"># mon, tue, wed, thu, fri, sat</span>
+
+<span class="nv">edb_audit_rotation_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="w">                         </span><span class="c1"># Automatic rotation of log files will</span>
+<span class="w">                                                    </span><span class="c1"># happen after this many megabytes (MB)</span>
+<span class="w">                                                    </span><span class="c1"># of log output.  0 to disable.</span>
+
+<span class="nv">edb_audit_rotation_seconds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="w">                      </span><span class="c1"># Automatic log file rotation will</span>
+<span class="w">                                                    </span><span class="c1"># happen after this many seconds.</span>
+
+<span class="nv">edb_audit_connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;all&#39;</span><span class="w">                           </span><span class="c1"># none, failed, all</span>
+
+<span class="c1">#edb_audit_disconnect =&#39;none&#39;                       # none, all</span>
+
+<span class="nv">edb_audit_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;all&#39;</span><span class="w">                         </span><span class="c1"># none, dml, ddl, select, error, rollback, all</span>
+
+<span class="c1">#edb_audit_tag = &#39;&#39;                                 # Audit log session tracking tag.</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Setting <code class="docutils literal notranslate"><span class="pre">edb_audit_filename</span> <span class="pre">=</span> <span class="pre">'audit-%Y-%m-%dT%H:%M:%S'</span></code> creates a file with name as <code class="docutils literal notranslate"><span class="pre">audit-2017-11-26T11:04:44.csv</span></code>.</p></li>
+<li><p>Every file is rolled off due to the configuration <code class="docutils literal notranslate"><span class="pre">edb_audit_rotation_day</span> <span class="pre">=</span> <span class="pre">'every'</span></code></p></li>
+</ul>
+</div>
+</div></blockquote>
+</li>
+<li><p>Reload the updated <strong>postgresql.conf</strong> using the following command:</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Create a table to copy logs from csv.</p></li>
+</ol>
+<div class="sphinx-tabs docutils container">
+<div aria-label="Tabbed content" role="tablist"><button aria-controls="panel-0-0-0" aria-selected="true" class="sphinx-tabs-tab" id="tab-0-0-0" name="0-0" role="tab" tabindex="0">EnterpriseDB Postgres Version 9.6</button><button aria-controls="panel-0-0-1" aria-selected="false" class="sphinx-tabs-tab" id="tab-0-0-1" name="0-1" role="tab" tabindex="-1">EnterpriseDB Postgres version 10</button></div><div aria-labelledby="tab-0-0-0" class="sphinx-tabs-panel" id="panel-0-0-0" name="0-0" role="tabpanel" tabindex="0"><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">log_time</span><span class="w"> </span><span class="k">timestamp</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">  </span><span class="n">user_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">database_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">process_id</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="n">connection_from</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_line_num</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">  </span><span class="n">command_tag</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">  </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">transaction_id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">  </span><span class="n">error_severity</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">sql_state_code</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">detail</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">hint</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">internal_query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">internal_query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="n">context</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="k">location</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">application_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">extra</span><span class="w"> </span><span class="nb">text</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div><div aria-labelledby="tab-0-0-1" class="sphinx-tabs-panel" hidden="true" id="panel-0-0-1" name="0-1" role="tabpanel" tabindex="0"><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">log_time</span><span class="w"> </span><span class="k">timestamp</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">  </span><span class="n">user_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">database_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">process_id</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="n">connection_from</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_line_num</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">  </span><span class="n">command_tag</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">time</span><span class="w"> </span><span class="k">zone</span><span class="p">,</span>
+<span class="w">  </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">transaction_id</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span>
+<span class="w">  </span><span class="n">error_severity</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">sql_state_code</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">detail</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">hint</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">internal_query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">internal_query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="n">context</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">query</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">query_pos</span><span class="w"> </span><span class="nb">integer</span><span class="p">,</span>
+<span class="w">  </span><span class="k">location</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">application_name</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">statement_type</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">  </span><span class="n">extra</span><span class="w"> </span><span class="nb">text</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div></div>
+<ol class="arabic" start="4">
+<li><p>Create a log rotation config file.</p>
+<blockquote>
+<div><blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li><p>EDB_AUDIT_LOG_DIRECTORY_PATH must have read privileges.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>POSTGRES_HOME/bin/edb-psql must have execute privileges.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
+</div></blockquote>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>vi<span class="w">  </span>postgres_audit_log_rotation_config.txt
+
+<span class="nv">EDB_AUDIT_LOG_DIRECTORY_PATH</span><span class="o">=</span>/opt/edb/as&lt;postgres<span class="w"> </span>version&gt;/data/edb_audit/
+<span class="nv">EDB_AUDIT_LOG_FILENAME_PREFIX</span><span class="o">=</span>audit-
+<span class="nv">HOST</span><span class="o">=</span>&lt;postgres<span class="w"> </span>server_host&gt;
+<span class="nv">PORT</span><span class="o">=</span>&lt;postgres<span class="w"> </span>server_port&gt;
+<span class="nv">USERNAME</span><span class="o">=</span>&lt;username<span class="w"> </span>of<span class="w"> </span>your<span class="w"> </span>service<span class="w"> </span>account&gt;
+<span class="nv">PASSWORD</span><span class="o">=</span>&lt;username<span class="w"> </span>of<span class="w"> </span>your<span class="w"> </span>service<span class="w"> </span>password&gt;
+<span class="nv">DATABASE</span><span class="o">=</span>postgres
+<span class="nv">POSTGRES_HOME</span><span class="o">=</span>/opt/edb/as&lt;postgres_version&gt;/
+</pre></div>
+</div>
+<p><strong>Example</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>vi<span class="w">  </span>postgres_audit_log_rotation_config.txt
+
+<span class="nv">EDB_AUDIT_LOG_DIRECTORY_PATH</span><span class="o">=</span>/opt/edb/as9.6/data/edb_audit/
+<span class="nv">EDB_AUDIT_LOG_FILENAME_PREFIX</span><span class="o">=</span>audit-
+<span class="nv">HOST</span><span class="o">=</span><span class="m">10</span>.11.21.41
+<span class="nv">PORT</span><span class="o">=</span><span class="m">5432</span>
+<span class="nv">USERNAME</span><span class="o">=</span>postgres
+<span class="nv">PASSWORD</span><span class="o">=</span>hyperbad
+<span class="nv">DATABASE</span><span class="o">=</span>postgres
+<span class="nv">POSTGRES_HOME</span><span class="o">=</span>/opt/edb/as9.6/
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Create a log rotation script. The script will look for yesterday’s log and copies yesterday’s csv to the <code class="docutils literal notranslate"><span class="pre">public.postgres_log</span></code> file.</p></li>
+<li><p>Move both the  <code class="docutils literal notranslate"><span class="pre">postgres_audit_log_rotation.sh</span></code> and <code class="docutils literal notranslate"><span class="pre">postgres_audit_log_rotation_config.txt</span></code> files to <strong>{Postgres Installation Directory}/edb/as9.6/bin</strong>.</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mv<span class="w"> </span>postgres_audit_log_rotation.sh<span class="w"> </span>opt/edb/as&lt;postgres_version&gt;/bin/.
+mv<span class="w"> </span>postgres_audit_log_rotation_config.txt<span class="w"> </span>opt/edb/as&lt;postgres_version&gt;/bin/.
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Provide the execute permission on the <code class="docutils literal notranslate"><span class="pre">postgres_audit_log_rotation.sh</span></code> file.</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>chmod<span class="w"> </span>+x<span class="w">  </span><span class="o">{</span>Postgres<span class="w"> </span>Installation<span class="w"> </span>Directory<span class="o">}</span>/edb/as&lt;*postgres_version*&gt;/bin/postgres_audit_log_rotation.sh
+chmod<span class="w"> </span>+x<span class="w">  </span>opt/edb/as9.6/bin/postgres_audit_log_rotation.sh
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Grant the read permission on the <code class="docutils literal notranslate"><span class="pre">postgres_audit_log_rotation_config.txt</span></code> file.</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>chmod<span class="w"> </span><span class="m">444</span><span class="w">  </span>opt/edb/as9.6/bin/postgres_audit_log_rotation_config.txt
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Create a cron job to run the script at 1 am every day.</p>
+<blockquote>
+<div><p>This syncs yesterday’s log to public.postgres_log  at 1.00 AM.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="m">0</span><span class="w"> </span><span class="m">1</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w">   </span>sh<span class="w"> </span><span class="o">{</span>Postgres<span class="w"> </span>Installation<span class="w"> </span>Directory<span class="o">}</span>/edb/as&lt;*postgres_version*&gt;/bin/postres_audit_log_rotation.sh
+<span class="o">{</span>Postgres<span class="w"> </span>Installation<span class="w"> </span>Directory<span class="o">}</span>/edb/as&lt;*postgres_version*&gt;/bin/postres_audit_log_rotation_config.txt
+</pre></div>
+</div>
+<p>For example, crontab -e</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="m">0</span><span class="w"> </span><span class="m">1</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w">   </span>sh<span class="w"> </span>/opt/edb/as9.6/bin/postres_audit_log_rotation.sh
+/opt/edb/as9.6/bin/postres_audit_log_rotation_config.txt
+</pre></div>
+</div>
+<p><strong>For Ubuntu Users</strong></p>
+<p>For example, crontab -e (Use bash instead of sh)</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="m">0</span><span class="w"> </span><span class="m">1</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w">   </span>bash<span class="w"> </span>/opt/edb/as&lt;postgres_version&gt;/bin/postres_audit_log_rotation.sh
+/opt/edb/as&lt;postgres_version&gt;/bin/postres_audit_log_rotation_config.txt
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Create a view for Alation to retrieve the query log from.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">alation_postgres_logv</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">  </span><span class="n">session_id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sessionID</span><span class="p">,</span>
+<span class="w">  </span><span class="n">user_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">userName</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sessionStartTime</span><span class="p">,</span>
+<span class="w">  </span><span class="n">session_start_time</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">startTime</span><span class="p">,</span>
+<span class="w">  </span><span class="n">virtual_transaction_id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">transactionid</span><span class="p">,</span>
+<span class="w">  </span><span class="n">message</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">queryString</span><span class="p">,</span>
+<span class="w">  </span><span class="s1">&#39;N&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cancelled</span><span class="p">,</span>
+<span class="w">  </span><span class="n">database_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">defaultDatabases</span>
+<span class="k">FROM</span>
+<span class="w">  </span><span class="k">public</span><span class="p">.</span><span class="n">postgres_log</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The above view applies to PostgreSQL OCF connector version 1.1.9. If you upgrade from an earlier version to version 1.1.9, create a new view using the above template or change your view with a <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span></code> query using the above template.</p>
+</div>
+</li>
+<li><p>Grant the Alation service account access to the QLI view.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Grant SELECT on public.alation_postgres_logv to {Alation Service Account}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Update the <strong>Query Log Ingestion</strong> tab of the Settings page of your OCF data source. Refer <a class="reference internal" href="#configure-qli-in-alation-user-interface">Configure QLI in Alation User Interface</a>.</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  
+<div class="navigation-bar">
+
+    <div class="navigation navigation--prev">
+        
+        <a class="navigation__link" href="PostgreSQLConnectorInstallandConfigure.html">
+            <button class="navigation__button">
+                <i class="icon icon-left"></i>
+            </button>
+            <div class="navigation__title">
+                <span class="heading">Previous</span> <br />PostgreSQL Connector: Install and Configure
+            </div>
+        </a>
+        
+    </div>
+
+    <div class="navigation navigation--next">
+        
+        <a class="navigation__link" title="Accesskey Alt(+Shift)+p" accesskey="p" href="PostgreSQLConnectorRDSQLI.html">
+            <div class="navigation__title">
+                <span class="heading">Next</span> <br />PostgreSQL Connector RDS: Query Log Ingestion
+            </div>
+            <button class="navigation__button" title="Accesskey Alt(+Shift)+n" accesskey="n">
+                <i class="icon icon-right"></i>
+            </button>
+        </a>
+        
+    </div>
+
+</div>
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+    <div class="wy-nav-side wy-nav-secondary">
+      <div class="wy-side-scroll">
+        <div class="wy-side-scroll__content">
+          <div class="wy-menu-secondary">
+              <div class="comments">
+    <a href="mailto:no-reply-docs-feedback@alation.com?subject=Documentation Feedback on sources/OpenConnectorFramework/PostgreSQLOCFConnector/PostgreSQLConnectorEC2andEnterpriseQLI&body=Alation%20welcomes%20your%20comments%20on%20typos,%20content%20accuracy%20and%20completeness,%20and%20whether%20you%20found%20this%20page%20helpful.%20You%20will%20not%20receive%20a%20reply%20to%20this%20email.">
+        <i class="icon icon-envelope" aria-hidden="true"></i>Request docs changes
+    </a>
+    <a href="#open-modal-pdf">
+        <i class="icon icon-pdf" aria-hidden="true"></i>Download PDF
+    </a>
+</div>
+              
+                <p class="wy-menu-secondary-header">On this page</p>
+                <ul>
+<li><a class="reference internal" href="#">PostgreSQL On Amazon EC2 and Enterprise: Query Log Ingestion</a><ul>
+<li><a class="reference internal" href="#csv-logging-without-log-rotation">CSV Logging without Log Rotation</a><ul>
+<li><a class="reference internal" href="#configure-qli-in-alation-user-interface">Configure QLI in Alation User Interface</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#csv-logging-with-log-rotation">CSV Logging with Log Rotation</a></li>
+<li><a class="reference internal" href="#edb-audit-logs-without-log-rotation">EDB Audit Logs without Log Rotation</a></li>
+<li><a class="reference internal" href="#edb-postgres-server-with-audit-log-rotation">EDB Postgres Server with Audit Log Rotation</a></li>
+</ul>
+</li>
+</ul>
+
+              
+            </div>
+          </div>
+      </div>
+    </div>
+
+  </div>
+
+  
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+  
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../../../_static/copybutton.js"></script>
+      <script type="text/javascript" src="../../../_static/tabs.js"></script>
+      <script type="text/javascript" src="../../../_static/js/rtd_sphinx_search.min.js"></script>
+  
+  <script type="text/javascript" src="../../../_static/searchtools.js"></script> <script type="text/javascript" id="idPiwikScriptPlaceholder"></script><script type="text/javascript" src="../../../_static/js/main.bundle.js"></script>
+  <script type="text/javascript" src="../../../_static/js/runtime.bundle.js"></script>
+
+  
+  
+
+  
+    <div id="open-modal-pdf" class="modal-window">
+<div>
+  <a href="#" title="Close" class="modal-close">Close</a>
+  <h4>Alation Documentation PDF</h4>
+  <p>This PDF contains all our documentation and is more than <b>120 MB</b> in size. We recommend using an ethernet or Wi-Fi connection for downloading.</p>
+  <br>
+  <div class="modal-buttons">
+    <a href="https://pdf-docs.alation.com/AlationUserDocs.pdf" class="btn-cta btn-cta--primary" target="_blank">
+      Download PDF
+    </a>
+    <a href="#" title="Close" class="btn-cta">Cancel</a>
+  </div>
+</div>
+  
+
+</body>
+</html>
+<!--3.6.17-->

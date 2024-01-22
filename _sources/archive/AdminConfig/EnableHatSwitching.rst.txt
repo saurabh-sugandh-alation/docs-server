@@ -1,0 +1,141 @@
+Enable Hat Switching
+========================
+
+*Applies to releases before 2020.3.x*
+
+.. note::
+
+    The Hats feature is no longer available in 2020.3.x and newer releases.
+
+
+Hats switching is enabled through configuration. To enable hats,
+
+In Build 4.13 and Above
+-------------------------
+
+1. Enter the Alation Shell:
+
+   .. code-block:: bash
+
+      sudo /etc/init.d/alation shell
+
+2. Check the value of the flag ``alation.feature_flags.disable_hats`` in Alation configuration. For Hats to be enabled, this flag should be set to "False":
+
+   .. code-block:: bash
+
+      alation_conf alation.feature_flags.disable_hats
+
+   To set this flag to False:
+
+   .. code-block:: bash
+
+      alation_conf alation.feature_flags.disable_hats -s False
+
+3. After changing the flag value, restart Alation Supervisor:
+
+   .. code-block:: bash
+
+      alation_supervisor restart all
+
+After restart, the Hats feature should become available to Alation
+users.
+
+
+.. note::
+
+   To disable Hat switching, in alation_conf, set ``alation.feature_flags.disable_hats`` to "True" and restart Alation Supervisor.
+
+
+Forcing One Hat for All Users
+-------------------------------
+
+If necessary, you can choose to force one hat value for all users. In
+case a specific Hat is forced for all, users will neither need to select
+a hat for themselves after log-in nor will be able to switch hats in the
+process of their work in Alation. One specific arrangement of tabs -
+"Analyst" or "Data Steward" will be enforced for all users.
+
+To force a hat,
+
+1. Enter the Alation Shell:
+
+      .. code-block:: bash
+
+         sudo /etc/init.d/alation shell
+
+2. Go to Alation configuration file, disable switching Hats and set a value for the ``alation.catalog.hats.force_hat`` parameter. It can be one of the values:
+
+      -  'analyst' - to enforce the Analyst Hat for all users
+      -  'steward' - to enforce the Data Steward Hat for all users
+
+      .. code-block:: bash
+
+         alation_conf alation.feature_flags.disable_hats -s True
+         alation.catalog.hats.force_hat = 'analyst'
+
+3. Restart Alation Supervisor:
+
+      .. code-block:: bash
+
+         alation_supervisor restart all
+
+After restart, all users will have one view of the Alation UI that
+corresponds to the enforced Hat.
+
+In Builds Before 4.13
+-----------------------
+
+1. Enter the Alation Shell:
+
+      .. code-block:: bash
+
+         sudo /etc/init.d/alation shell
+
+2. In the file ``/opt/alation/django/main/settings_local.py``
+
+      .. code-block:: bash
+
+         sudo vi /opt/alation/django/main/settings_local.py
+
+      add the following values 
+
+      ::
+
+         ALATION_HIDE_HAT_SWITCHER = False 
+         ALATION_DEFAULT_HAT = None 
+         ALATION_FORCE_HAT = None 
+
+3. Save the file ``/opt/alation/django/main/settings_local.py``
+
+4. Check the value of the flag ``alation.feature_flags.disable_hats`` in the Alation configuration. If it is set to ``True``, set it to ``False``.
+
+   .. code-block:: bash
+
+      alation_conf alation.feature_flags.disable_hats
+
+   .. code-block:: bash
+
+      alation_conf alation.feature_flags.disable_hats -s False
+
+5. Restart Alation Supervisor:
+
+   .. code-block:: bash
+
+      alation_supervisor restart all
+
+
+   .. note::
+
+      If necessary, you can choose to force a hat value in ``/opt/alation/django/main/settings_local.py``.  If one hat is forced for all, users will not be able to switch their hats and will all have the same hat option. Use lowercase letters for the user type value -  'analyst' or 'steward'. Restart Alation Supervisor after making this change.
+
+   ::
+
+       ALATION_FORCE_HAT ='analyst' 
+
+
+Populating the Governance Tracking Dashboard
+------------------------------------------------
+
+If the Hats are enabled, you need to populate the Governance Tracking Dashboard
+for the users wearing the Data Steward Hat. For details on Governance Tracking
+Dashboard, see `Populating the Governance Tracking Dashboard </admins/How-tos/HowtoPopulateTheGovernanceTrackingDashboard.html>`_.

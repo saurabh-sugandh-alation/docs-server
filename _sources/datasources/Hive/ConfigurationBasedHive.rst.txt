@@ -1,0 +1,500 @@
+Configuration-Based Hive
+========================
+
+*Available from V R5 (5.9.x)*
+
+Enabling Configuration-Based Hive
+---------------------------------
+
+Users with the Server Admin role can enable Configuration-Based Hive in **Labs/Feature Configuration**:
+
+#. Sign in to Alation as a Server Admin, and on the upper right, click the Settings icon to open the **Admin Settings** page.
+#. In the **Server Admin** panel, find and click **Labs/Feature Configuration**. The Labs/Feature Configuration tab will open.
+#. Find the switch **Enable Hive Extraction V2** and toggle it on. Note that this is a one-way action. After it is enabled, this feature cannot be disabled.
+
+Prerequisites
+-------------
+
+To add a Hive data source to Alation on the configuration-based
+framework, start with several prerequisites.
+
+Open Ports for Connections
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See :ref:`Ports for Hive <Adding_Hive_Data_Source-Ports_for_Hive>`.
+
+Collect Setup Information
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+General
+^^^^^^^
+
+-  Hive version
+-  Hadoop version
+-  JDBC URI or hostname and port of your Hive database
+-  Hive configuration files for upload. See `Getting Hive Client Configuration Files`_ for details.
+
+Kerberos
+^^^^^^^^
+
+-  Hive Principal
+
+-  Ensure that you have placed the **krb5.conf** file and - if using keytab
+   authentication - the ``.keytab`` file alongside your client
+   configurations. Any files ending in ``krb5.conf`` and ``.keytab`` are automatically extracted from the configurations tarball. See `Getting Hive Client Configuration Files`_ for details on how to collect configuration files.
+
+Apache Knox
+^^^^^^^^^^^^^^
+
+Knox is supported for MDE and QLI, replacing the Hive server URI with
+the Knox Server URI in the data source configuration. If using Apache
+Knox, you will need to provide:
+
+-  Knox WebHDFS URI
+
+Documentation on this URI, as well as on how Knox routes gateways,
+topologies, and clusters using this URI can be found in the `Knox book <https://knox.apache.org/books/knox-0-9-0/user-guide.html>`_.
+
+Knox with SSL
+^^^^^^^^^^^^^^^
+
+If using HTTPS with Knox,
+
+-  You will need to put the **ssl-client.xml** file and  the **.jks** file
+   specified for the ``ssl.client.truststore.location`` in
+   your **ssl-client.xml** alongside your client configurations. See `Getting Hive Client Configuration Files`_ for details.
+
+Service Account Permissions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Make sure the service account has all the required permissions: :ref:`Database Service Account <Adding_Hive_Data_Source-Database-Service-Account>`.
+
+Assembling the Client Configuration Archive
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On configuration-based Hive framework, you will need to create and
+upload to Alation a client configuration files as a **.TAR** archive.
+
+The archive must include:
+
+-  Hive client configuration files for your Hive instance
+-  If using Kerberos authentication, the **krb5.conf** file
+
+   .. note::
+
+      If you use Apache Ambari to download the Hive client configurations, you do not need to add the **krb5.conf** file because it will already be included.
+
+-  If using authentication with keytabs, the **.keytab** file
+-  If using SSL, the **ssl-client.xml** file and  the **.jks** file specified
+   for the ``ssl.client.truststore.location`` property in this **ssl-client.xml** 
+
+To assemble your client configurations archive for Alation,
+
+#. Download your Hive client configurations: `Getting Hive Client Configuration Files`_.
+#. If applicable, add the **krb5.conf**, the **.keytab**, the **ssl-client.xml**, and the **.jks** files to the directory with the configuration files:
+
+   -  `Adding krb5.conf to Client Configurations Archive`_
+   -  `Adding ssl-client.xml and .jks Files to Client Configurations Archive`_
+
+3. Create a tarball archive having all the required files from this directory.
+4. SCP the created archive to your machine. This file can now be uploaded to Alation on your Hive source **Settings** page.
+
+Getting Hive Client Configuration Files
+---------------------------------------
+
+This section describes how to get client configuration files for Hive
+from several popular Hive management systems.
+
+Apache Ambari (HDP, Azure HDInsight)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#. On your Hadoop manager dashboard, in the left-hand menu, click **Actions** and **Download All Client Configs**:
+
+    .. image:: ../../_static/DS_Hive01.png
+        :width: 5.5in
+        :align: center
+
+2. If using Kerberos with keytabs, un-package to a directory and add the keytab file to the archive.
+
+  .. note::
+
+      You do not need to add the **krb5.conf** because it should be already in the archive you download.
+
+3. If using SSL, un-package to a directory (if you haven’t done so) and add the **ssl-client.xml** to the archive: `Adding ssl-client.xml and .jks Files to Client Configurations Archive`_
+4. Create a **.TAR** archive from this directory.
+
+Cloudera Manager (CDH)
+~~~~~~~~~~~~~~~~~~~~~~
+
+To download Hive configurations from Cloudera Manager,
+
+#. After logging in, on the cluster dashboard page, on the left, open the dropdown menu next to the cluster name then click View Client Configuration URLs:
+
+    .. image:: ../../_static/DS_Hive02.png
+        :width: 5.5in
+        :align: center
+
+2. In the dialog that opens, click the links for HIVE, HDFS, and YARN. This will start three separate downloads:
+
+    .. image:: ../../_static/DS_Hive10.png
+        :width: 5.5in
+        :align: center
+
+3. After the downloads have completed, unpack all files and merge the contents into a single directory.
+4. If using Kerberos, add the Kerberos configuration file **/etc/krb5.conf** to this directory. If using keytabs, add the service account keytab file here, too: `Adding krb5.conf to Client Configurations Archive`_
+5. If using SSL, add the **ssl-client.xml** and the **.jks** files to this directory: `Adding ssl-client.xml and .jks Files to Client Configurations Archive`_.
+6. Create a tarball file from this directory. This resulting tarball can now be uploaded to Alation on your Hive source Settings page.
+
+Linux commands Step 3 (no Kerberos, no SSL):
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: ../../_static/DS_Hive03.png
+    :width: 5.5in
+    :align: center
+
+Hive on EMR
+~~~~~~~~~~~
+
+EMR has no management software, so configurations must be gathered manually.
+
+To get configurations for EMR,
+
+1. SSH to your cluster and form the configurations tarball file. If applicable, add:
+
+  -  **krb5.conf** for Kerberos authentication
+  -  the keytab for the service account
+  -  the **ssl-client.xml**
+
+  **Linux commands for EMR**:
+
+  .. image:: ../../_static/DS_Hive04.png
+      :width: 5.5in
+      :align: center
+
+2. After the first step is completed, SCP the configurations tarball (**emr_configs.tgz** in this example) to your machine. This file can now be uploaded to Alation on your Hive source Settings page.
+
+MapR
+~~~~
+
+MapR configurations are spread out, and there is no way to download them using the manager UI.
+
+To get Hive configuration files from MapR,
+
+1. SSH to your manager instance and and form the configurations tarball file. If applicable, add:
+
+  -  **krb5.conf** for Kerberos authentication
+  -  the keytab for the service account
+  -  the **ssl-client.xml**
+
+  **Linux commands for MapR (with krb5.conf)**:
+
+  .. image:: ../../_static/DS_Hive05.png
+      :width: 5.5in
+      :align: center
+
+2. After the first step is completed, SCP the configurations tarball (client_configs.tgz in this example) to your machine. This file can now be uploaded to Alation on your Hive source Settings page.
+
+Adding krb5.conf to Client Configurations Archive
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If using Kerberos, make sure to include the **krb5.conf** file to your Hive
+client configurations archive. If you use Apache Ambari to
+download the client configurations, you do not need to add
+the **krb5.conf** because it will already be included in the download.
+
+.. note::
+
+   Using Kerberos authentication requires pre-configuration.
+   Without this preconfiguration, the **krb5.conf** file will not exist in **/data/site-data/**.
+
+Adding ssl-client.xml and .jks Files to Client Configurations Archive
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If using SSL to connect to your Hive data source, you need to add
+the **ssl-client.xml** file and the **.jks** file specified in
+the ``ssl.client.truststore.location`` property to your client configurations
+archive:
+
+-  ``ssl.client.truststore.location`` often lists an absolute path on the
+   filesystem; however, Alation isolates execution of its Hive engine:
+   we only pay attention to the filename of the truststore.
+
+   Example
+
+   Given a location of **/etc/security/awesomeCorp.jks** for the ``ssl.client.truststore.location`` property, Alation will look for, and use, the first file named **awesomeCorp.jks** that was uploaded with the client configuration archive.
+
+-  Ensure that password specified for the
+   ``ssl.client.truststore.password`` property is the correct password for
+   the file listed in ``ssl.client.truststore.location``.
+
+WebHDFS
+^^^^^^^
+
+The **ssl-client.xml** is usually found in the **/etc/hadoop/conf** directory. The
+location of the **.jks** file is usually specified in the
+property ``ssl.client.truststore.location.``
+
+Sample ``ssl-client.xml`` for WebHDFS
+''''''''''''''''''''''''''''''''''''''
+
+::
+
+   <configuration>
+
+        <property>
+
+           <name>ssl.client.truststore.location</name>
+
+           <value>truststore.jks</value>
+
+           </property>
+
+        <property>
+
+           <name>ssl.client.truststore.password</name>
+
+           <value>changeit</value>
+
+           </property>
+
+        <property>
+
+           <name>ssl.client.truststore.type</name>
+
+           <value>jks</value>
+
+           </property>
+
+    </configuration>
+
+
+SSL Knox
+^^^^^^^^
+
+The **ssl-client.xml** is usually found in the **/etc/hadoop/conf** directory.
+The location of the **.jks** file usually is
+**/var/lib/knox/data-2.6.5.0-292/security/keystores** in the Hadoop
+cluster.
+
+Sample **ssl-client.xml** for SSL Knox
+''''''''''''''''''''''''''''''''''''''''
+
+::
+
+    <configuration>
+
+         <property>
+
+             <name>ssl.client.truststore.location</name>
+
+             <value>gateway.jks</value>
+
+             </property>
+
+          <property>
+
+              <name>ssl.client.truststore.password</name>
+
+              <value>admin</value>
+
+              </property>
+
+          <property>
+
+              <name>ssl.client.truststore.type</name>
+
+              <value>jks</value>
+
+              </property>
+
+    </configuration>
+
+
+Adding Configuration-Based Hive to Alation
+------------------------------------------
+
+To add data sources, you need the *Server Admin* role in Alation.
+
+To add a Hive data source on configuration-based framework,
+
+1. Click the **Sources** icon on the main toolbar in Alation to open the **Sources** page.
+
+2. On the Sources page that opens, in the upper-right corner, click **Add** and select **Data Source**. This brings up the **Add a Data Source** wizard:
+
+  .. image:: ../../_static/DS_Hive06.png
+      :width: 5.5in
+      :align: center
+
+3. In the first screen of the Add a Data Source Wizard, enter the information for your new Data Source:
+
+   -  **Title**
+   -  **Other Data Source Admins** you are automatically assigned as a Data
+      Source Admin for the data source you are adding. However, you can add
+      other users to manage the settings of this data source.
+      Hover over **Assign Data Source Admins** section to reveal the **Add** button,
+      and click it to add other admins.
+   -  **Who is setting this up?** - Select an option.
+
+4. Click **Continue Setup** to continue to the next step of the wizard:
+
+  .. image:: ../../_static/DS_Hive07.png
+      :width: 3.5in
+      :align: center
+
+5. Under **Connection**, select **Hive2** as the **Database Type** from the database list.
+6. Enter the network connection details. There are two options to do that for Hive:
+
+   -  Providing the hostname and port separately
+   -  Providing the host URI in the JDBC format
+
+   You can choose the format by selecting or clearing the **Enter JDBC
+   URI** checkbox on the upper right. By default, this checkbox is clear.
+   Leave this checkbox clear to specify the hostname (or IP address) and
+   the port number separately. Select **Use Default** checkbox for **Port** if you
+   want to use the default port to connect:
+
+   .. image:: ../../_static/DS_Hive08.png
+       :width: 4.5in
+       :align: center
+
+   If you want to use the JDBC format, select the **Enter JDBC
+   URI** checkbox. Selecting it will change the input fields to accept the
+   URI in the JDBC format: **hive2://host:port/**
+
+   You can use either an IP address or hostname for host:
+
+   Example: **hive2://10.11.21.108:1000/**
+
+   .. image:: ../../_static/DS_Hive09.png
+       :width: 4.5in
+       :align: center
+
+7.  From **Hive Version** and **Hadoop Version** lists, select the Hive and Hadoop versions you are using.
+8. If using Knox, in the **Knox URI** field, specify the Knox URI for your Hive database.
+
+   .. note::
+
+        Note the format for the Knox URI:
+
+        **https://{gateway-host}:{gateway-port}/{gateway-path}/{cluster-name}**
+
+        Example:
+
+        **https://ip-10-11-21-221.alationdata.com:8443/gateway/default**
+
+
+9. If using Kerberos, select the **Kerberos** checkbox. This action will reveal the Kerberos-specific fields:
+
+   -  Hive Principal
+
+10. If your Hive metastore is on AWS Glue, select the **Use AWS Glue** checkbox for Metastore. This action will reveal several additional settings. You will need to provide:
+
+   -  **Access Key ID** Enter the access ID of the service account for AWS
+      Glue.
+   -  **Access Key Secret** Enter the secret key of the service account for AWS
+      Glue.
+   -  **AWS Region** The default value is **us-east-1**. If the value of the AWS
+      Region is other than the default, enter values as mentioned
+      under Region column at `aws region documentation <https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html>`_  
+
+11. Under **Catalog**, enter the **Database Name**, **Description**, and select the required **Privacy** setting (Public or Private).
+
+12. Click **Save and Continue** to go to the next step that requires the service account information.
+
+   .. note::
+
+       You can also **Continue with Errors** and troubleshoot later.
+
+13. On the next wizard screen that opens, provide the **Username** and **Password** for your Hive Service Account. For details on the required grants, see :ref:`Database Service Account <Adding_Hive_Data_Source-Database-Service-Account>`.
+
+14. Click **Save and Continue**. This will take you to the next step that sets up QLI. Skip this step. Configuration-based Hive reads the log directories from the uploaded configuration files and you do not have to provide this information unless:
+
+   -  You are planning to use the **data uploader** functionality
+
+   These parameters can be provided later on the QLI tab of the data source **Settings**.
+
+15. Click **Verify and Finish Setup**. Your Hive data source will be added and you will land on its **Settings** page.
+
+16. Upload your Hive client configurations archive: on the **Settings** > **General Settings** page, find the **Configuration Uploader** section then click **Upload Configurations** to add the Hive configurations to Alation:
+
+    .. image:: ../../_static/DS_Hive11.png
+        :width: 4.5in
+        :align: center
+
+17. After configurations are uploaded, you can proceed with specifying other settings on this page:
+
+   -  Keytab for Kerberos
+   -  User impersonation
+   -  Knox URI
+   -  Hive driver
+   -  QLI parameters, if:
+
+      -  You are planning to use the data uploader functionality
+      -  You are using Hive on EMR with Amazon S3 connection type
+
+   .. important::
+
+       If you are connecting to Cloudera, the JDBC driver pre-selected by default  will
+       fail during configuration. To resolve this issue, ensure that you use the following driver:
+       **com.alation.drivers.hive.Hive2Driver.com.alation.drivers.hive.one.kerb_ssl_patched.1.1.1-kerberos-ssl-patched-1.1.1**
+
+Troubleshooting Configuration-Based Hive
+-------------------------------------------
+
+*Available from release V R5 (5.9.x)*
+
+If the Hive by configurations upload is turned on, in case of
+errors during your Hive data source setup, you will see detailed error
+descriptions with error codes in Alation UI. Troubleshoot based
+on these descriptions.
+
+Specific Errors
+~~~~~~~~~~~~~~~~~
+
+Refer to this table for specific errors you may get during QLI:
+
++------------------+---------------------------+-------------------------------+
+| Hive Setup       | Error Message             |  Troubleshooting Steps        |
++==================+===========================+===============================+
+| HDP + Hive +     | error[HVE201]:            |  This error means the         |
+| MapReduce        | Permission denied         |  service account you          |
+|                  |                           |  are using does not           |
+| HDP + Hive + Tez | Permission to             |  have the required            |
+|                  | read the remote file      |  READ_EXECUTE                 |
+| EMR + Hive +     | or directory was          |  permission for the           |
+| MapReduce        | denied. HDFS (and         |  log                          |
+|                  | MapRFS) implement         |  directory **/ats/done**      |
+|                  | traditional               |                               |
+|                  | POSIX                     |  This directory is            |
+|                  | compliant                 |  specified in                 |
+|                  | permission                |  the yarn-site.xml file       |
+|                  | models similar to         |  in the Hive                  |
+|                  | that found on Linux       |  client configurations        |
+|                  | and Mac operating         |  file.                        |
+|                  | systems.                  |  Tez uses this                |
+|                  | Consult your              |  directory for storing        |
+|                  | Hadoop system             |  logs, but it may be          |
+|                  | administrator             |  present in                   |
+|                  | about these               |  the yarn-site.xml even       |
+|                  | access permissions.       |  if you are not using         |
+|                  |                           |  Tez.                         |
+|                  | Additional                |                               |
+|                  | Information               |  To troubleshoot:             |
+|                  |                           |                               |
+|                  | Directory: /ats/done      |  1. Check that this           |
+|                  | Issue:                    |  directory exists on          |
+|                  | Permission denied:        |  your HDP cluster, and        |
+|                  | user=hive,                |  if it does not,              |
+|                  | access=READ_EXECUTE,      |  create it.                   |
+|                  | inode="/ats/done":        |  Alation expects it to        |
+|                  | yarn:hadoop:drwx------    |  exist even if it’s           |
+|                  |                           |  empty.                       |
+|                  |                           |                               |
+|                  |                           |  2. Grant the Hive            |
+|                  |                           |  service account the          |
+|                  |                           |  READ_EXECUTE                 |
+|                  |                           |  permissions                  |
+|                  |                           |  for **/ats/done** directory. |
+|                  |                           |                               |
+|                  |                           |  3. Perform QLI again.        |
++------------------+---------------------------+-------------------------------+

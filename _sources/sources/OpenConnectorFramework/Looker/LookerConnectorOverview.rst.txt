@@ -1,0 +1,129 @@
+Looker Connector: Overview
+==================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from release 2020.4*
+
+To download the Looker OCF connector package, go to the Alation Connector Hub available from the Customer Portal. Go to Customer Portal > Connectors > Alation Connector Hub. **Only Alation users with access to the Customer Portal can access the Alation Connector Hub. If you don't have access to the Customer Portal, contact Alation Support**. 
+
+This connector should be used to catalog Looker as a BI source in Alation. The connector catalogs Looker objects such as folders, dashboards, and reports. It enables end users to search and find Looker objects from the Alation user interface.
+
+Team
+-------
+
+The following administrators are required to install this connector:
+
+    - Alation Server Admin/Linux Administrator:
+
+          - Installs the connector
+          - Creates a Looker BI source
+          - Provisions Alation API tokens
+
+    - Looker Administrator:
+
+          - Provisions Looker API tokens
+          - Provides access to Looker Objects
+
+Scope
+------------
+
+The table below shows what features are covered by this connector:
+
+.. tabularcolumns:: |p{5cm}|p{5cm}|p{5cm}|
+
++------------------------+--------------------------------------------------+-----------------------+
+| **Feature**            | **Scope**                                        | **Availability**      |
++========================+==================================================+=======================+
+| Looker Instance        | Catalog Looker instance as a BI Source.          | Yes                   |
++------------------------+--------------------------------------------------+-----------------------+
+| Folders                | Catalog Folders and Sub-Folders in Looker        | Yes                   |
++------------------------+--------------------------------------------------+-----------------------+
+| Filter Folders         | Ability to include or exclude certain Folders    | Yes                   |
++------------------------+--------------------------------------------------+-----------------------+
+| Reports                | Catalog reports in a Folder                      | Yes                   |
++------------------------+--------------------------------------------------+-----------------------+
+| Report Objects         | Catalog report objects such as charts and tables |  Yes                  |
++------------------------+--------------------------------------------------+-----------------------+
+| Report object          | Catalog dimensions, measures, and measure        |  Yes                  |
+| dimensions, measures,  | expressions of a report objects                  |                       |
+| expressions            |                                                  |                       |
++------------------------+--------------------------------------------------+-----------------------+
+| Report object data     | Catalog data sources used by report objects      |  Yes                  |
+| sources                |                                                  |                       |
++------------------------+--------------------------------------------------+-----------------------+
+| Report object lineage  | Catalog the lineage of a report object.          |  Yes\* \**            |
++------------------------+--------------------------------------------------+-----------------------+
+| Filter Reports         | Ability to include or exclude certain reports    | No                    |
++------------------------+--------------------------------------------------+-----------------------+
+| Report Owner           | Owners or Authors who created a report           | No                    |
++------------------------+--------------------------------------------------+-----------------------+
+| Dashboards             | Catalog dashboards in a Folder                   | Yes                   |
++------------------------+--------------------------------------------------+-----------------------+
+| Dashboard object       | Catalog dimensions and measure of a dashboard    | Yes                   |
+| Measures & Dimensions  | object                                           |                       |
++------------------------+--------------------------------------------------+-----------------------+
+| Data Sources           | Catalog data sources                             | Yes                   |
++------------------------+--------------------------------------------------+-----------------------+
+| Image Preview          | Ability to show a thumbnail image of reports and | Yes                   |
+|                        | dashboards                                       |                       |
++------------------------+--------------------------------------------------+-----------------------+
+| Popularity             | Popularity of Dashboards & Reports               | No                    |
++------------------------+--------------------------------------------------+-----------------------+
+| Security Replication   | Replicate access control to reports and          | No                    |
+|                        | dashboards                                       |                       |
++------------------------+--------------------------------------------------+-----------------------+
+
+\* Report object lineage is available only if the underlying data source is cataloged in Alation and fully qualified SQL and table information is available from the Looker APIs.
+
+\** The dialects selected in the Looker while creating a connection should be a part of the supported datasources mentioned below:
+
+  MySQL, SQL server, Snowflake, Oracle, PostgreSQL, Amazon Redshift, Databricks and Google BigQuery.
+
+Looker Object Hierarchy
+---------------------------
+
+The following image shows the hierarchy of Looker objects and how they are cataloged in Alation:
+
+    .. image:: ../../../_static/Looker_01.png
+        :width: 500px
+        :align: center
+
+Looker APIs
+---------------
+
+The following table lists the Looker APIs used by this connector to extract metadata from Looker. Looker API version 4.0 is supported.
+
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Type           | API Endpoint                                                         | Description                     |
++================+======================================================================+=================================+
+| Authentication | ``<api-url>/api/<api-version>/login``                                | Method is to fetch the access   |
+|                |                                                                      | token                           |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Folders        | ``<api-url>/api/<api-version>/folders``                              | Gets folders from Looker        |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Child folders  | ``<api-url>/api/<api-version>/folders/<folder_id>/children``         | Gets child folders for a        |
+|                |                                                                      | given folder                    |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Data sources   | ``<api-url>/api/<api-version>/connections``                          | Gets data source from a folder  |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Dashboards     | ``<api-url>/api/<api-version>/dashboards``                           | Gets dashboards from Looker     |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Dashboard      | ``<api-url>/api/<api-version>/dashboards/<dashboard_id>``            | Gets a dashboard by ID          |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Reports        | ``<api-url>/api/<api-version>/looks``                                | Gets looks from Looker          |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| LookML models  | ``<api-url>/api/<api-version>/lookml_models/<model>``                | Gets LookML models from Looker. |
+|                |                                                                      | Models are extracted to map     |
+|                |                                                                      | reports and data sources        |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Dimension and  | ``<api-url>/api/<api-version>/lookml_models/<model>/explores/<view>``| Gets BI dimensions and measures |
+| Measures       |                                                                      | from Looker                     |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Merge queries  | ``<api-url>/api/<api-version>/merge_queries/<merge_result_id>``      | Gets a query with the given     |
+|                |                                                                      | result id from looker           |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Query          | ``<api-url>/api/<api-version>/queries/<query_id>``                   | Gets the query from query ID    |
++----------------+----------------------------------------------------------------------+---------------------------------+
+| Query SQL      | ``<api-url>/api/<api-version>/queries/<query_id>/run/sql``           | Gets a raw query from Looker    |
++----------------+----------------------------------------------------------------------+---------------------------------+

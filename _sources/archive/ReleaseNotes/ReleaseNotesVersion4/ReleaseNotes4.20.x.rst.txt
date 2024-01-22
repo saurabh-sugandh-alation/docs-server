@@ -1,0 +1,344 @@
+Release Notes 4.20.x
+====================
+
+Release 4.20.0
+-----------------------
+
+New Features
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Alation now provides a public API to interact with articles. The API
+   provides an interface for all CRUD operations, allowing for
+   programmatic management of articles. For further details and code
+   samples, refer to the API documentation.
+-  Users can now perform searches based on the contents of Rich Text
+   fields, allowing users for data sources that match broader criteria.
+   This is enabled for both quick and advanced search. Note that
+   after upgrading, it will likely take several hours to re-index
+   objects and see this change come into effect.
+-  On Table Catalog Pages for Hive Data Sources, Alation now shows a
+   link in Properties to the Catalog page for the Amazon S3 or HDFS file or
+   directory that backs the Hive Table. The HDFS or S3 File System must
+   also be cataloged in Alation for this feature to work. On HDFS and S3
+   File System catalog pages, Alation now shows a link in Properties to
+   the Catalog page to the Hive Table if this file backs the Hive
+   Table. To enable this, the alation.feature_flags.enable_hive_links
+   feature flag must be set to True.
+-  Customize Catalog now includes a new Custom Field type: Multi-Select
+   Picker. Similar to Picker, it provides a dropdown menu to select from
+   predefined values, but with a checklist for multiple value
+   selection. Advanced Search allows faceting by values in these fields.
+-  For users of Compose, Trust Check is now available in conjunction
+   with Compose Previews to trust the data they're querying. With Trust
+   Check, flags added to the catalog are shown to the right users at the
+   right time, so they have more impact with less effort. The data
+   objects documented in the catalog are now brought forward in Compose
+   through color coded highlights or underlines in the query text as you
+   type. Users have control over the indicators in Compose. They can
+   choose whether to get indicators for deprecations, warnings, and
+   endorsements, or for objects without any quality flags.  In 4.20.0,
+   this feature is behind a feature flag and can be enabled with
+   \`alation_conf alation.feature_flags.enable_semantics_check -s True\`
+-  Catalog sets now allow users to pick and choose specific objects
+   (Datasource, Database Catalog, Schema, Table, Column) through the
+   "Manual" set tab (accessible through Admin -> Catalog Sets). This is
+   helpful when simple conditional rules can't express the group. In
+   addition, users now have the ability to sync fields
+   (title/description, custom fields, flags and tags) across the
+   children of the manual set members. Once the manual set is created,
+   the fields that have to be synced can fully be customized through the
+   "Sync Children" tab on the catalog set page. This is useful when
+   there are duplicate items (with the same name) across different
+   schemas or datasources and fields would normally have to be copied
+   manually to the duplicates. When syncing is enabled for the first
+   time or the sync settings are modified, the metadata is copied from
+   the children in the order of how their parents were added in the set.
+   Metadata is synced across the children when one of the children is
+   modified (through catalog UI / API / data dictionary upload). More
+   details on how syncing works is present on the "Sync Children" tab.
+   With Manual Catalog Sets enabled, Object Equivalence feature is
+   deprecated, as Manual Catalog Sets support synchronization of tags,
+   flags, and custom fields, in addition to title and description.
+   Existing Schema Equivalences defined on the Object Equivalence tab in
+   Admin Settings have been migrated to Schema Manual Catalog Sets with
+   children syncing (for tables and columns) on title and description.
+   Object Equivalence can still be used when Manual Catalog Sets is
+   disables. As Object Equivalence is a deprecated feature, it will be
+   removed from Alation in the near future. The new catalog set features
+   can be enabled by \`alation_conf
+   alation.feature_flags.enable_cognates -s True`. Any user can
+   create/view manual sets but field synchronization settings can be
+   enabled/modified only by admins.
+
+Improvements
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  For users using the "governance officer hat", the Governance Tracking
+   Dashboard is now populated by default. This was previously behind a
+   configuration flag, obscuring the feature. Every 6 hours a new data
+   point will be added.
+-  There is now an option on the Notification tab of the User accounts
+   page to opt out of all notifications at once. In addition, an option
+   has been added to opt out of License warnings. These reduce the
+   amount of noise a user will have to filter through in a given day.
+-  For users of the Report Sources API, the API now allows filtering of
+   datatables and report objects by ID. For example, GET
+   /catalog/reportobject?id=1 will return the report object with an ID
+   of 1, where previously a user could only get All objects. This should
+   simplify any scripts that use this API, as well as reduce network
+   load from the Alation server.
+-  After Data Profiling, empty tables are no longer reported as
+   permission errors, instead saying "No rows at time of last sample".
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Fixed a bug introduced in 4.18 which made the "Open With" menu appear
+   on schema, table, and column pages even if there were no applications
+   available in the menu. Now the "Open With" menu only appears if there
+   are available applications.
+-  A bug has been fixed where arbitrary users could attempt to edit the
+   title of a query on the Query Catalog page. For any user that did not
+   author the query, the edit button is now disabled and a tooltip is
+   displayed explaining why.
+-  Fixed a bug where using keyboard navigation to select object types in
+   LHN Search Box, @-mentions, and Object Set Fields selected the wrong
+   object type
+-  Fixed a bug where flags weren't loading correctly for
+   ExpressionTemplate and Predicate catalog pages.
+-  Resolved an issue that would occur when a data source had Obfuscate
+   Literals enabled. A user viewing an obfuscated Compose query would
+   see the query as a single line with most whitespace removed and
+   literals were replaced with "<var1>". Whitespace is no longer trimmed
+   and running the resulting query now prompts the user with a query
+   form instead of failing.
+-  Fixed a bug on Schema, Table, and Column Catalog pages in IE10 where
+   it was not possible to click the edit button for the title if there
+   was also a title added by a Catalog Set. Now it is possible to click
+   the edit button and edit the title.
+-  Untitled items would occasionally display incorrect titles in the
+   Catalog Browser. Now items correctly display their Untitled status.
+-  The notification setting for mentions in an article or conversation
+   (on the user account settings page) now correctly prevents
+   notifications from being sent when the option is turned off.
+-  Fixed a bug for Curator Users where the 'Track' dropdown would not
+   properly display menu options until the user hovered over the
+   dropdown.
+-  On the Data Source settings page, clicking the white space
+   surrounding a checkbox will no longer activate that checkbox.
+-  Fixed an issue where Compose was attempting to extract metadata for
+   Teradata Temp tables. This was causing frequent error warnings to
+   show up for Teradata users. Now Compose avoids attempting to extract
+   metadata for newly created temp tables in Teradata using the keyword
+   "set" or "multiset", whether "volatile" or "global temporary".
+-  For MicroStrategy users, previews of Microstrategy dashboards are no
+   longer cropped, and the aspect ratio is now the same as the actual
+   dashboard, allowing for more accurate visual identification of a
+   dashboard without needing to click in and confirm.
+-  Fixed a bug introduced in 4.18 where the Catalog page for a Tableau
+   Server would sometimes fail to render.
+-  Fixed a bug where changes to column headings on the Glossary page
+   would revert after reloading the page. Changes will now persist as
+   they should.
+-  The public API to upload a preview image to a BI report will now
+   return an error message if the report doesn't exist. Previously it
+   would just appear to be "running" forever and not complete.
+-  Fixed a bug where Alation would display an incorrect table count for
+   a schema with a single quote in the name.
+-  Fixed a bug on the Execution Result and Article pages where a user
+   who requested access might see a loading indicator that would never
+   finish. This occurred if there was an error sending the email. The UI
+   now informs the user of any errors.
+-  In Custom Templates, "Attribute custom templates" has been renamed to
+   "Column custom templates" to match with the vernacular of the rest of
+   the product.
+
+Admin Release Notes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+New Features
+^^^^^^^^^^^^^
+
+-  Admin can now toggle feature flags on/off via a new feature flag
+   admin page, reducing the need to use the alation shell. Changing
+   flags will cause all users' pages to reload
+-  Alation can now collect query logs for PostgreSQL data sources.
+   Admins can configure Query Log Ingestion through CSV Logs (by
+   default) or Audit Logs in the Data Source Settings page. Features
+   such as Popularity, Top Users, Joins, Filters, and Lineage are driven
+   by this data. For PostgreSQL data sources, Alation previously took
+   into account only queries run in Compose. Now Alation can take
+   advantage of query logs for a more comprehensive picture of usage.
+-  Alation now supports Metadata Extraction from Salesforce Einstein
+   Analytics. This can be configured by following the steps in the Add
+   New BI Server page in Admin Settings. Due to limitations of the
+   Salesforce APIs, Lineage is only available to datasets, and is
+   unavailable between datasource and datatable. This feature is enabled
+   by alation_conf Set the generic bi flag (if not already set)
+   alation_conf alation.feature_flags.enable_generic_bi -s True Set the
+   salesforce flag alation_conf
+   alation.feature_flags.enable_salesforce_bi -s True
+-  Alation now supports Metadata Extraction from Salesforce DB as a
+   datasource, further expanding the array of datasources accessible
+   through Alation. SObjects are extracted as tables, using Fields as
+   columns. These are all extracted under one schema, "sobjects," and
+   schema filtering has been disabled as a result. Also note that
+   Compose, Sampling, and Usage data are disabled. Admin users can
+   enable this feature through the UI by going to Settings > Admin
+   Settings > Labs -> and toggling "Enable SFDC Database Type"
+-  Alation now supports Metadata Extraction from IBM Cognos as a BI
+   Server. In Admin Setting, Add New Bi Server, register a Business
+   Intelligence Server IBM cognos Limitation: Usage stats are currently
+   only supported when Cognos is configured to use Oracle or SQL Server
+   database types to store usage This feature is enabled by alation_conf
+   Set the generic bi flag alation_conf
+   alation.feature_flags.enable_generic_bi -s True Set the cognos flag
+   alation_conf alation.feature_flags.enable_cognos -s True
+-  Alation now supports Azure SQL Datawarehouse as a data source In
+   Settings, Add a new data source and choose Azure SQL DW as the
+   Dbtype. This feature is enabled by toggling the following Labs
+   Setting: Settings -> Admin Settings -> Labs -> Enable Azure SQL Data
+   Warehouse Database Type
+-  Support for Execution Engines has been improved. The Add Datasource
+   wizard now allows adding "Presto" as a multi-catalog datasource. The
+   previous support as a single Hive Catalog is supported through the
+   datasource type "Presto on Hive". Existing Presto datasources will
+   continue to work as a Presto on Hive single catalog data sources.
+   This feature is enabled through a Labs Setting Settings -> Admin
+   Settings -> Labs -> Enable Presto Database Type with multiple
+   catalogs
+
+Improvements
+^^^^^^^^^^^^^^^
+
+-  NTP configuration is no longer a required part of the installation
+   process for Alation.
+-  Adding an initial Data Source is no longer a required part of the
+   installation process for Alation.
+-  Administrators can no longer configure Alation to authenticate with
+   LDAP or SAML from the install wizard. This needs special setup and
+   should be completed from the Authentication panel under Admin
+   Settings after initial install completes.
+-  The Deployment Command Center has been reorganized. There are now
+   tabs for Datasources, Filesystems and BI Servers, which allow for
+   quicker navigation to specific sources.
+-  For Microstrategy users, with BI sources from before 4.16: There is
+   now a process to copy Logical Metadata (titles, descriptions, etc.)
+   into a new BI Server object, bringing these objects in line with any
+   future BI servers. For details, see [zendesk link]
+-  When cataloging a Microstrategy Server, Alation specifically looks
+   for the "Public Folders" and "Reports" folders. These names can be
+   customized on the settings page to match the names on the
+   microstrategy server.
+   This feature is available only when feature flag enable_generic_bi is
+   set to True.
+-  In Metadata Extraction settings for MicroStrategy and Cognos (speak
+   to your Alation contact about enabling these features), admins will
+   now find a "Selective Extraction" field where they may either include
+   or exclude certain projects.
+-  The File Systems Extraction Job History table is now paginated,
+   reducing page load times for devices that see hundreds of Extraction
+   Jobs.
+-  For Hive + Kerberos users,
+   When adding a Hive datasource, checking the "Use Kerberos" box now
+   displays a text field to add your Hive Principal. This streamlines
+   setup, as users previously had to either edit the URI after setup, or
+   provide the entire JDBC URI at setup.
+
+Bug Fixes
+^^^^^^^^^^^
+
+-  Fixed a bug where Hive QLI did not support root HDFS path "/" to be
+   set as the Log path from the QLI Settings page. Now, "/" value for
+   HDFS path value will be correctly processed. 
+-  HDFS Extraction is now more robust to Errors encountered during
+   Extraction.
+-  Fixed a bug introduced in 4.18.1 where Oracle Query Log Ingestion
+   failed with error: "ORA-01843: not a valid month". Now Oracle Query
+   Log Ingestion succeeds.
+-  Addressed behavior introduced in 4.6.0 where Metadata Extraction for
+   Greenplum and Postgres databases would omit tables which had a
+   comment (in the source database) on one of their columns but no
+   comment on the table itself. These tables are no longer skipped.
+-  Fixed a bug where MicroStrategy extraction would fail if "Public
+   Folders" and "Reports" objects are hidden (usually because shortcuts
+   are exposed for them instead). Now Alation successfully extracts
+   metadata for reports in those folders even when they're hidden.
+-  For Tableau users, a bug was fixed where Tableau lineage could not
+   always be established for dashboards with custom SQL. If the SQL
+   contained '<' or '>' characters, they were escaped by Tableau in a
+   way that could interfere with the Alation parsing, and prevent Alation
+   from establishing a lineage connection to the tables mentioned in the
+   query. Alation can now properly parse those queries and establish
+   lineage.
+-  Fixed a bug where Hive QLI did not support root HDFS path "/" to be
+   set as the MR Folder HDFS Path from the QLI Settings page.
+-  For SQL Server users with that choose to use XEvents for Query Log
+   ingestion, there is no longer a prompt to define a table for query
+   logs. This was a source of confusion and irrelevant work, as a user
+   would have to define a table that the service account has access to.
+-  Fixed a bug where Metadata Extraction would not complete if it
+   received certain exceptions from Hive while requesting metadata about
+   a schema. Now Metadata Extraction skips the schema and continues.
+-  Fixed a bug where system schemas were being included in the catalog
+   by default for the Sybase data source. Now system schemas in Sybase
+   are excluded from metadata extraction by default. If system schemas
+   are showing in your catalog from a previous extraction, you can clear
+   them out by re-running metadata extraction after checking the
+   checkbox for "Remove schemas from the catalog that are not captured
+   by the lists below."
+-  For users of Virtual Data Sources, the error reporting of the
+   Metadata API has been improved. When a parsing failure occurs, the
+   line number that caused the error is now reported.
+-  Fixed a bug where Query Log Ingestion for Presto would fail if all
+   the tables in a query were fully qualified (in this case, the log
+   would omit the "schema" field). Now Query Log Ingestion should
+   successfully parse those queries.
+-  Fixed a bug where metadata extraction was slow and sometimes failed
+   on Oracle schemas using certain features such as Packages or Types.
+   Now Alation metadata extraction for those schemas is faster and more
+   robust.
+-  Fixed a bug during Metadata Extraction on Hive where a certain kind
+   of failure to connect to the Thrift service would show an
+   unintelligible error message. Now the error message clearly indicates
+   that the thrift service could not be reached.
+-  Fixed a bug where a Conversations sidebar would be nonsensically
+   displayed on the Tableau Server Settings page. The sidebar is no
+   longer displayed.
+
+ 
+
+Release 4.20.1
+-----------------------
+
+Bug Fixes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Resolved an issue introduced in 4.20.0 where Compose scheduled
+   queries at monthly, weekly, or daily intervals would fail to execute
+   with an error about being outside the delay tolerance (could be
+   addressed by lengthening the delay tolerance).  These schedules now
+   work with the standard delay tolerance.
+-  Resolved an issue where Compose results would sometimes not render
+   until the user switched tabs and switched back.
+-  Resolved an issue where Compose SmartSuggest would not return a full
+   list of matching objects when the data source has objects with
+   uppercase characters in the name.  SmartSuggest should now show up to
+   10 matching items, regardless of case.
+-  Resolved an issue where Compose SmartSuggest did not suggest tables
+   in order of popularity.  Now SmartSuggest should suggest the most
+   popular tables first.
+
+Admin Release Notes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Improvements
+^^^^^^^^^^^^^^
+
+-  Further improvements to Snowflake support.  Alation now supports
+   metadata extraction, sampling, and Compose access for Snowflake Data
+   Warehouse.  Query Log Ingestion is not yet supported.
+-  Alation now supports nonstandard system home directory and shell for
+   UNIX accounts used by Alation on the server.
+
+ 

@@ -1,0 +1,546 @@
+MongoDB OCF Connector (Public Preview): Install and Configure
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Network Connectivity
+-----------------------
+
+Open outbound TCP port **27017** to the MongoDB server.
+
+Service Account
+-----------------------
+
+For more information about built-in roles and permissions, refer to the official MongoDB documentation about `Built-In Roles <https://www.mongodb.com/docs/manual/reference/built-in-roles/>`_ and `Create Users <https://www.mongodb.com/docs/manual/tutorial/create-users/>`_.
+
+
+Authentication
+-----------------
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~
+
+You'll need the following credentials for basic authentication:
+
+    - Username of the service account
+    - Password of the service account
+
+Kerberos Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Select **GSSAPI** in the **Auth Scheme** on the **General Settings** page to enable this.
+
+You'll need the following credentials and resources for kerberos authentication:
+
+    - Username of the service account
+    - Password of the service account
+    - The Kerberos Key Distribution Center (KDC) service
+    - The Kerberos realm
+    - The Kerberos service realm
+    - The service principal name (SPN) for Kerberos Domain Controller
+    - The Kerberos service KDC
+
+
+LDAP Authentication
+~~~~~~~~~~~~~~~~~~~~~
+
+Select **PLAIN** in the **Auth Scheme** on the **General Settings** page to enable this.
+
+You'll need the following credentials and resources for authentication:
+
+    - Username of the service account
+    - Password of the service account
+
+JDBC URI
+------------
+
+Use the following format to build the JDBC URI:
+
+.. code-block:: Bash
+
+    MongoDB://Server=<server>;Port=<port>;Database=<database>;User=<user>;Password=<password>
+
+Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_ConnectorInstallation.rst
+
+
+Create and Configure a New Data Source
+----------------------------------------
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **Alation OCF Connector for MongoDB**.
+
+
+Configuration
+--------------------
+
+Access
+~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    The automatic lineage is not supported in this release.
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettings_ApplicationSettings.rst
+
+Connector Settings
+^^^^^^^^^^^^^^^^^^^^^
+
+Populate the data source connection information and **Save** the values.
+
+Data Source Connection
+'''''''''''''''''''''''''
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++---------------------------------+---------------------------------------------------+
+| Parameter                       | Description                                       |
++=================================+===================================================+
+| JDBC URI                        | Specify the JDBC URI in the required format.      |
++---------------------------------+---------------------------------------------------+
+
+
+Authentication
+'''''''''''''''''''''''''
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter                       | Description                                                                                                                          |
++=================================+======================================================================================================================================+
+| Auth Scheme                     | Specify an authentication scheme that MongoDB uses to authenticate the connection.                                                   |
+|                                 |                                                                                                                                      |
+|                                 | Available Options:                                                                                                                   |
+|                                 |                                                                                                                                      |
+|                                 |     - MONGODB-CR: Use this to authenticate in MongoDB 2.x to MongoDB 3.5.                                                            |
+|                                 |     - X509: Use this for SSL authentication with a x.509 certificate file.                                                           |
+|                                 |     - SCRAM-SHA-1: Use this to authenticate if new users are created in MongoDB 3.x and MongoDB 4.x and are using the SHA-1 hashing  |
+|                                 |       function.                                                                                                                      |
+|                                 |     - SCRAM-SHA-256: Use this to authenticate if new users are created in MongoDB 3.x and MongoDB 4.x and are using the SHA-256      |
+|                                 |       hashing function.                                                                                                              |
+|                                 |     - GSSAPI: Use this for Kerberos authentication.                                                                                  |
+|                                 |     - PLAIN: Use this for LDAP authentication                                                                                        |
+|                                 |     - NONE: Default.                                                                                                                 |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Server                          | Specify the server that hosts the MongoDB database.                                                                                  |
+|                                 |                                                                                                                                      |
+|                                 | If you choose to connect using DNS seed lists, use format: <”mongodb+srv://” + the name of the server running the MongoDB instance>. |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Port                            | Specify the MongoDB database port number.                                                                                            |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| User                            | Specify the username of the service account.                                                                                         |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Password                        | Specify the password of the service account.                                                                                         |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Database                        | Specify the name of the MongoDB database.                                                                                            |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Use SSL                         | Select this to enable SSL connection.                                                                                                |
+|                                 |                                                                                                                                      |
+|                                 | This is used to notify the OCF MongoDB driver to use an SSL handshake to complete the authentication process. By default,            |
+|                                 | MongoDB Compass and MongoDB Atlas instances do not need SSL to be enabled.                                                           |
+|                                 | This is required only when a cluster on MongoDB is using the SSL.                                                                    |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Replica Set                     | Specify a list of primary servers that the provider queries from in addition to the specified server and port.                       |
+|                                 |                                                                                                                                      |
+|                                 | Use the format: <Server=localhost;Port=27017;ReplicaSet=localhost:27018,localhost:27019;..>                                          |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+| DNS Server                      | Specify the DNS server for a MongoDB database using a DNS-constructed seed list. For example, specify 8.8.8.8 for Google DNS server. |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------+
+
+Kerberos
+''''''''''''
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter                       | Description                                                                                                                                      |
++=================================+==================================================================================================================================================+
+| Kerberos KDC                    | Specify the Kerberos Key Distribution Center (KDC) service name. You can locate it with the domain controller.                                   |
+|                                 |                                                                                                                                                  |
+|                                 | If unspecified, the KRB5_CONFIG environment variable uses the default MIT location to fetch the KRB5 config file to get the Kerberos properties. |
+|                                 |                                                                                                                                                  |
+|                                 |  - For Windows, C:\ProgramData\MIT\Kerberos5\krb5.ini                                                                                            |
+|                                 |  - For Linux, /etc/krb5.conf                                                                                                                     |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+
+| Kerberos Realm                  | Specify the Kerberos realm as defined by the administrator or domain name.                                                                       |
+|                                 |                                                                                                                                                  |
+|                                 | If unspecified, the KRB5_CONFIG environment variable uses the default MIT location to fetch the KRB5 config file to get the Kerberos properties. |
+|                                 |                                                                                                                                                  |
+|                                 |  - For Windows, C:\ProgramData\MIT\Kerberos5\krb5.ini                                                                                            |
+|                                 |  - For Linux, /etc/krb5.conf                                                                                                                     |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+
+| Kerberos SPN                    | Specify the service principal name (SPN) for the Kerberos Domain Controller.                                                                     |
+|                                 |                                                                                                                                                  |
+|                                 | Set this if the URL that you are authenticating to is different.                                                                                 |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+
+| Kerberos Keytab File            | Specify the Keytab file name that contains the pairs of Kerberos principals and encrypted keys.                                                  |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+
+| Kerberos Service Realm          | Specify the service that Kerberos realm uses if you're using cross-realm Kerberos authentication.                                                |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+
+| Kerberos Service KDC            | Specify the service that Kerberos KDC if you're using cross-realm Kerberos authentication.                                                       |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+
+| Kerberos Ticket Cache           | Specify the file path to an MIT Kerberos credential cache file.                                                                                  |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------+
+
+SSL
+''''''''
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
+.. note::
+
+    The SSL authentication is not supported in this release. However, you can specify the SSL certificate content for an SSL handshake if the cluster on MongoDB is using SSL.
+
++---------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter                       | Description                                                                                                                                                                       |
++=================================+===================================================================================================================================================================================+
+| SSL Client Cert                 | Specify the name of the certificate store for the client certificate. Add the content of the certificate file and select the appropriate file type from the options under         |
+|                                 | **SSL Client Cert Type**.                                                                                                                                                         |
++---------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSL Client Cert Type            | Specify the type of key store that contains the SSL client certificate.                                                                                                           |
+|                                 |                                                                                                                                                                                   |
+|                                 | Available Options:                                                                                                                                                                |
+|                                 |                                                                                                                                                                                   |
+|                                 |    - USER: (Default) For Windows, this specifies that the certificate store is a certificate store owned by the current user. Note that this store type is not available in Java. |
+|                                 |    - MACHINE: For Windows, this specifies that the certificate store is a machine store. Note that this store type is not available in Java.                                      |
+|                                 |    - PFXFILE: The certificate store is the name of a PFX (PKCS12) file containing certificates.                                                                                   |
+|                                 |    - PFXBLOB: The certificate store is a string (base64 encoded) representing a certificate store in PFX (PKCS12) format.                                                         |
+|                                 |    - JKSFILE: The certificate store is the name of a Java key store (JKS) file containing certificates. Note that this store type is only available in Java.                      |
+|                                 |    - JKSBLOB: The certificate store is a string (base64 encoded) representing a certificate store in JKS format. Note that this store type is only available in Java.             |
+|                                 |    - PEMKEY_FILE: The certificate store is the name of a PEM-encoded file that contains a private key and an optional certificate.                                                |
+|                                 |    - PEMKEY_BLOB: The certificate store is a string (base64 encoded) that contains a private key and an optional certificate.                                                     |
+|                                 |    - PUBLIC_KEY_FILE: The certificate store is the name of a file that contains a PEM- or DER-encoded public key certificate.                                                     |
+|                                 |    - PUBLIC_KEY_BLOB: The certificate store is a string (base64 encoded) that contains a PEM- or DER-encoded public key certificate.                                              |
+|                                 |    - SSHPUBLIC_KEY_FILE: The certificate store is the name of a file that contains an SSH-style public key.                                                                       |
+|                                 |    - SSHPUBLIC_KEY_BLOB: The certificate store is a string (base64 encoded) that contains an SSH-style public key.                                                                |
+|                                 |    - P7BFILE: The certificate store is the name of a PKCS7 file containing certificates.                                                                                          |
++---------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+SSH
+''''''''
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter                       | Description                                                                                                                                                                                                    |
++=================================+================================================================================================================================================================================================================+
+| Use SSH                         | Select this to enable SSH authentication.                                                                                                                                                                      |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH Auth Mode                   | Specify the authentication method to establish an SSH Tunnel to the service.                                                                                                                                   |
+|                                 |                                                                                                                                                                                                                | 
+|                                 | Available Options:                                                                                                                                                                                             |
+|                                 |                                                                                                                                                                                                                |
+|                                 |    - None: Requires no authentication and is used for anonymous logging.                                                                                                                                       |
+|                                 |    - Password: Requires password of the current user.                                                                                                                                                          |
+|                                 |    - Public_Key: Requires the values of the current user and **SSH Client Cert** for authentication. **SSH Client Cert** must have a private key.                                                              |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH Client Cert                 | Specify the client certificate that contains a valid private key. If a public key is unavailable for authentication, it is autogenerated from the private key.                                                 |
+|                                 |                                                                                                                                                                                                                |
+|                                 | The **SSH Client Cert Type** field specifies the type of the key store specified by **SSH Client Cert**. If the store is password protected, specify the password in **SSH Client Cert Password**.             |
+|                                 |                                                                                                                                                                                                                |
+|                                 | Some types of key stores are containers which may include multiple keys. By default the provider will select the first key in the store, but you can specify a specific key using **SSH Client Cert Subject**. |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH Client Cert Password        | Specify the password of the **SSH Client Cert**.                                                                                                                                                               |
+|                                 |                                                                                                                                                                                                                |
+|                                 | Required only when authenticating to SFTP servers with SSH Auth Mode set to Public Key and SSH Client Cert set to a private key.                                                                               |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH Client Cert Subject         | Specify the subject of the SSH client certificate to locate the certificate in the store in comma-separated values. For example, CN=www.server.com, OU=test, C=US, E=support@alation.com.                      |
+|                                 |                                                                                                                                                                                                                |
+|                                 | If you specify '*', the first certificate in the certificate store is picked.                                                                                                                                  |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH Client Cert Type            | Specify the type of SSH Client Cert private key.                                                                                                                                                               |
+|                                 |                                                                                                                                                                                                                |
+|                                 | Default: PEMKEY_FILE                                                                                                                                                                                           |
+|                                 |                                                                                                                                                                                                                |
+|                                 | Available Options:                                                                                                                                                                                             |
+|                                 |                                                                                                                                                                                                                |
+|                                 |    - MACHINE/USER: Unsupported and unavailable.                                                                                                                                                                |
+|                                 |    - JKSFILE/JKSBLOB: A Java keystore file in base64 containing both a certificate and a private key. Only available in Java.                                                                                  |
+|                                 |    - PFXFILE/PFXBLOB: A PKCS12-format (.pfx) file base64 containing both a certificate and a private key.                                                                                                      |
+|                                 |    - PEMKEY_FILE/PEMKEY_BLOB: A PEM-format file either in base64 or plain text containing RSA, DSA, or OPENSSH private key. Optionally, it contains a certificate matching the private key.                    |
+|                                 |    - PPKFILE/PPKBLOB: A PuTTY-format private key in base64 created using the puttygen tool.                                                                                                                    |
+|                                 |    - XMLFILE/XMLBLOB: An XML key either in base64 or plain text generated by the .NET RSA class: RSA.ToXmlString(true).                                                                                        |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH Server                      | Specify the SSH Server.                                                                                                                                                                                        |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH Port                        | Specify the SSH Port.                                                                                                                                                                                          |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH User                        | Specify the SSH username.                                                                                                                                                                                      |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH Password                    | Specify the SSH password for the user.                                                                                                                                                                         |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SSH Server Fingerprint          | Specify the SSH server fingerprint.                                                                                                                                                                            |
++---------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+Firewall
+''''''''''
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++---------------------------------+-----------------------------------------------------------------------------------------------------+
+| Parameter                       | Description                                                                                         |
++=================================+=====================================================================================================+
+| Firewall Type                   | Specify the protocol used by the proxy-based firewall for traffic tunneling.                        |
+|                                 |                                                                                                     |
+|                                 | Available Options:                                                                                  |                  
+|                                 |                                                                                                     |
+|                                 |   - TUNNEL: Opens a connection to MongoDB and traffic flows back and forth through the proxy.       |
+|                                 |   - SOCKS4: Sends data through the SOCKSv4 proxy as specified in Firewall Server and Firewall Port. |
+|                                 |   - SOCKS5: Sends data through the SOCKSv5 proxy as specified in Firewall Server and Firewall Port. |
++---------------------------------+-----------------------------------------------------------------------------------------------------+
+| Firewall Server                 | Specify the host name, DNS name, or IP address of the proxy-based firewall.                         |
++---------------------------------+-----------------------------------------------------------------------------------------------------+
+| Firewall Port                   | Specify the TCP port of the proxy-based firewall.                                                   |
++---------------------------------+-----------------------------------------------------------------------------------------------------+
+| Firewall User                   | Specify the user name to authenticate with the proxy-based firewall.                                |
++---------------------------------+-----------------------------------------------------------------------------------------------------+
+| Firewall Password               | Specify the password to authenticate with the proxy-based firewall.                                 |
++---------------------------------+-----------------------------------------------------------------------------------------------------+
+
+Logging
+''''''''''
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++---------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Parameter                       | Description                                                                                                               |
++=================================+===========================================================================================================================+
+| Verbosity                       | Specify the verbosity level between 1 to 5 to include details in the log file.                                            |
++---------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Log Modules                     | Includes the core modules in the log files. Add module names separated by a semi-colon.                                   |
+|                                 |                                                                                                                           |
+|                                 | By default, all modules are included.                                                                                     |
++---------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Max Log File Count              | Specify the maximum file count for log files.                                                                             |
+|                                 |                                                                                                                           |
+|                                 | After the limit, the log file is rolled over and time is appended at the end of the file. The oldest log file is deleted. |
+|                                 |                                                                                                                           |
+|                                 | Maximum Value: 2                                                                                                          |
+|                                 |                                                                                                                           |
+|                                 | Default: -1. A negative or zero value indicates unlimited files.                                                          |
++---------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+
+Schema
+''''''''
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++---------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter                       | Description                                                                                                                                                                                                                           |
++=================================+=======================================================================================================================================================================================================================================+
+| Browsable Tables                | Specify the schemas as subset of the available schemas in a comma separated list. For example, BrowsableSchemas=SchemaA,SchemaB,SchemaC                                                                                               |
++---------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Tables                          | Specify the fully qualified name of the table as a subset of the available tables in a comma separated list.  For example, Tables=TableA,TableB,TableC                                                                                |
+|                                 |                                                                                                                                                                                                                                       |
+|                                 | Each table must be a valid SQL identifier that might contain special characters escaped using square brackets, double-quotes, or backticks. For example, Tables=TableA,[TableB/WithSlash],WithCatalog.WithSchema.`TableC With Space`. |
++---------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Views                           | Specify the fully qualified name of the Views as a subset of the available tables in a comma separated list. For example, Views=ViewA,ViewB,ViewC.                                                                                    |
+|                                 |                                                                                                                                                                                                                                       |
+|                                 | Each table must be a valid SQL identifier that might contain special characters escaped using square brackets, double-quotes, or backticks. For example, Views=ViewA,[ViewB/WithSlash],WithCatalog.WithSchema.`ViewC With Space`.     |
++---------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+Misc
+''''''''
+
+.. tabularcolumns:: |p{7.5cm}|p{7.5cm}|
+
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter                       | Description                                                                                                                                                                                                                                                                    |
++=================================+================================================================================================================================================================================================================================================================================+
+| Batch Size                      | Specify the maximum size of each batch operation.                                                                                                                                                                                                                              |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: 0                                                                                                                                                                                                                                                                     |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Built In Column Mapping         | Specify a list of MongoDB built-in column names separated by comma to map them to new names. For example, _index=BuiltInIndex,P_id=Parent_Id                                                                                                                                   |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Connection Life Time            | Specify the maximum limit for a connection to stay connected in seconds.                                                                                                                                                                                                       |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: 0 indicates unlimited lifetime for a connection.                                                                                                                                                                                                                      |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Data Model                      | Specify the data model to RELATIONAL to discover the metadata for a child table that extends to the root level.                                                                                                                                                                |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: DOCUMENT.                                                                                                                                                                                                                                                             |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Flatten Arrays                  | Specify an arbitrary number to flatten the elements in a nested array into columns. By default, the nested arrays are returned as JSON strings.                                                                                                                                |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Set it to “-1” to flatten all the elements.                                                                                                                                                                                                                                    |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Flatten Objects                 | Select this to flatten the object properties in a nested array into columns. By default, the nested arrays are returned as JSON strings.                                                                                                                                       |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Generate Schema Files           | Specify the preference when to generate and save the schemas.                                                                                                                                                                                                                  |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Available Options:                                                                                                                                                                                                                                                             |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |     - Never: Doesn't generate a schema file.                                                                                                                                                                                                                                   |
+|                                 |     - OnUse: A schema file is generated the first time a table is referenced, provided the schema file for the table does not already exist. In SQL, the schemas are generated as you execute SELECT queries.                                                                  |
+|                                 |     - OnStart: A schema file is generated at connection time for any tables that do not currently have a schema file.                                                                                                                                                          |
+|                                 |     - OnCreate: A schema file is generated when running a CREATE TABLE SQL query.                                                                                                                                                                                              |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Max Rows                        | Specify the limit for the number of rows returned if no aggregation or GROUP BY is used in the query. This takes precedence over LIMIT clauses.                                                                                                                                |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No Cursor Timeout               | Select this to prevent the timeout for an idle cursor that is inactive for more than 10 minutes.                                                                                                                                                                               |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Other                           | Specify the caching, integration, or formatting properties in a list format separated by a semicolon.                                                                                                                                                                          |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Available Options:                                                                                                                                                                                                                                                             |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |     - Caching Configuration:                                                                                                                                                                                                                                                   |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |         - CachePartial=True: Caches only a subset of columns specified in the query.                                                                                                                                                                                           |
+|                                 |         - QueryPassthrough=True: Passes the specified query to the cache database instead of using the SQL parser of the provider.                                                                                                                                             |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |     - Integration and Formatting:                                                                                                                                                                                                                                              |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |         - DefaultColumnSize: Sets the default length of string fields when the data source does not provide column length in the metadata. The default value is 2000.                                                                                                          |
+|                                 |         - ConvertDateTimeToGMT: Converts date-time values to GMT instead of the local time of the machine.                                                                                                                                                                     |
+|                                 |         - RecordToFile=filename: Records the underlying socket data transfer to a specified file.                                                                                                                                                                              |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Pagesize                        | Specify the maximum number of results to return per page from MongoDB. A higher value results in better performance but uses more memory.                                                                                                                                      |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Pool Idle Timeout               | Specify the idle time for a connection in a pool.                                                                                                                                                                                                                              |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: 60 seconds                                                                                                                                                                                                                                                            |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Pool Max Size                   | Specify the maximum number for connections in a pool.                                                                                                                                                                                                                          |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | To disable, set the value to 0 or less.                                                                                                                                                                                                                                        |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: 100                                                                                                                                                                                                                                                                   |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Pool Min Size                   | Specify the minimum number for connections in a pool.                                                                                                                                                                                                                          |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: 1                                                                                                                                                                                                                                                                     |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Pool Wait Time                  | Specify the maximum wait duration for a connection to become available. If a new connection request is in wait for an available connection but exceeds the time, an error is thrown. By default, new connection requests have a forever wait time for an available connection. |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: 60 seconds                                                                                                                                                                                                                                                            |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Pseudo Columns                  | Specify the pseudo columns in the comma-separated list to be added as columns to the table. For example, "Table1=Column1, Table1=Column2, Table2=Column3".                                                                                                                     |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Use the '*' character to include all tables and columns in this format: "*=*"                                                                                                                                                                                                  |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Query Passthrough               | Select this to pass a query to MongoDB without any change.                                                                                                                                                                                                                     |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Readonly                        | Select this to enforce only SELECT queries to work on MongoDB.                                                                                                                                                                                                                 |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Read Preference                 | Specify to execute queries to a member in a replica set other than the primary member.                                                                                                                                                                                         |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Available Options:                                                                                                                                                                                                                                                             |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |     - primary: (Default) Executes all SELECT queries against the primary server.                                                                                                                                                                                               |
+|                                 |     - primaryPreferred: Executes SELECT queries against the primary server but uses the secondary server when the primary server is unavailable.                                                                                                                               |
+|                                 |     - secondary: Executes all SELECT queries against the secondary servers.                                                                                                                                                                                                    |
+|                                 |     - secondaryPreferred: Executes SELECT queries against the secondary server but uses the primary server when the secondary server is unavailable.                                                                                                                           |
+|                                 |     - nearest: Executes SELECT queries to the server with least latency.                                                                                                                                                                                                       |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Read Preference Tags            | Specify this to target a replica set member or members that are associated with tags.                                                                                                                                                                                          |
+|                                 | Use this when Read Preference is set to a value other than the default value.                                                                                                                                                                                                  |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Available Options:                                                                                                                                                                                                                                                             | 
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |     - tag1:val1,tag2:val2;: Targets members with both tag values. If not found, targets any eligible member.                                                                                                                                                                   |
+|                                 |     - tag1:val1;tag2:val2;: Targets members with the specified tag1, otherwise targets members with the specified tag2. If not found, targets any eligible member.                                                                                                             |
+|                                 |     - tag1:val1: Targets members only with the specified tag.                                                                                                                                                                                                                  |
+|                                 |     - ";" (semicolon only): Targets any eligible member. If unspecified, targets any eligible member.                                                                                                                                                                          |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Row Scan Depth                  | Specify the maximum number of rows to scan for the available columns in a table.                                                                                                                                                                                               |
+|                                 | Set it to “-1” to scan an arbitrary number of rows.                                                                                                                                                                                                                            |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Slave OK                        | Select this to read from the secondary (slave) servers in a replica set.                                                                                                                                                                                                       |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Timeout                         | Specify the time limit in seconds after which the operation is canceled and an error is thrown.                                                                                                                                                                                |
+|                                 | A value of 0 specifies that the operation never times out until completion or failure.                                                                                                                                                                                         |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: 60 seconds                                                                                                                                                                                                                                                            |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Type Detection Scheme           | Specify how to scan data to determine the fields and datatypes in a document collection.                                                                                                                                                                                       |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Available Options:                                                                                                                                                                                                                                                             | 
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |     - None: Returns all columns as strings.                                                                                                                                                                                                                                    |
+|                                 |     - Rowscan: Scans rows to heuristically determine the data type.                                                                                                                                                                                                            |
+|                                 |     - Recent: Scans the rows to heuristically determine the data type for the recent documents in a collection.                                                                                                                                                                |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Update Scheme                   | Specify how to modify the target document with the original when you use UPDATE query.                                                                                                                                                                                         |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Available Options:                                                                                                                                                                                                                                                             |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |     - Default: Replaces the original document with the target document.                                                                                                                                                                                                        |
+|                                 |     - Merge: Merges the original document with the target document.                                                                                                                                                                                                            |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Use Connection Pooling          | Select this to enable connection pooling.                                                                                                                                                                                                                                      |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Use Find API                    | Select this to execute MongoDB queries using **db.collection.find()**.                                                                                                                                                                                                         |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| User Defined Views              | Specify the file path pointing to the JSON configuration file that contains custom views.                                                                                                                                                                                      |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Write Concern                   | Specify the level of acknowledgment requests that denote the write operation has propagated to the specified number of MongoDB instances.                                                                                                                                      |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | For more information, see the MongoDB documentation about `Write Concern <https://www.mongodb.com/docs/manual/reference/write-concern/>`_.                                                                                                                                     |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: 0                                                                                                                                                                                                                                                                     |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Write Concern Journaled         | Select this to make Write Concern acknowledgement requests mandatory for MongoDB instances written on to the on-disk journal.                                                                                                                                                  |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Write Concern Timeout           | Specify a time limit in milliseconds for Write Concern.                                                                                                                                                                                                                        |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Default: 0                                                                                                                                                                                                                                                                     |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Write Scheme                    | Specify how to determine object type for the inserted or updated objects.                                                                                                                                                                                                      |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 | Available Options:                                                                                                                                                                                                                                                             |
+|                                 |                                                                                                                                                                                                                                                                                |
+|                                 |     - RawValue: The type of the object in the INSERT query determines the object type for MongoDB.                                                                                                                                                                             |
+|                                 |     - Metadata: Uses value from Type Detection Scheme to determine the object type for MongoDB.                                                                                                                                                                                |
++---------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+
+Obfuscate Literals
+^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_ObfuscateLiterals.rst
+
+Test Connection
+^^^^^^^^^^^^^^^^^^^^
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+If the connection test fails, make sure the JDBC URI and service account credentials are correct.
+
+Logging Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Metadata Extraction
+---------------------------
+
+You can configure metadata extraction (MDE) for an OCF data source on the **Metadata Extraction** tab of the Settings page. Refer to :doc:`/sources/OpenConnectorFramework/ConfigureMDEforOCFDataSources` for information about the available configuration options.
+
+This connector supports default query-based MDE. Custom query-based extraction is not supported.
+
+
+Compose
+-------------------
+
+For details about configuring the **Compose** tab of the Settings page, refer to :doc:`/sources/OpenConnectorFramework/ConfigureComposeforOCFDataSources`.
+
+
+Sampling and Profiling
+---------------------------
+
+Sampling and profiling is supported. For details, see :doc:`/sources/OpenConnectorFramework/ConfigureSamplingforOCFDataSources`.
+
+
+Troubleshooting
+------------------------
+
+Refer to :doc:`/sources/OpenConnectorFramework/OCFTroubleshooting` for information about logs.

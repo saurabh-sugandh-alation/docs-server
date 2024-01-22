@@ -1,0 +1,51 @@
+Configure Service Cloud Access for Designated Admins
+=======================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies to 5.9.13, 5.10.9, 5.12.7 and later releases*
+
+You can additionally configure access from your Alation instance to Alation Technical Support.
+
+From July 3, 2020 only a limited number of designated Alation admins are permitted to create tickets for the Alation Technical Support on behalf of your organization. Alation Support uses the **Service Cloud** platform to manage support requests from users. Your organization should have appointed **4 Alation users with the Server Admin role** as designated Service Cloud admins. These users have accounts in the Service Cloud with permissions to create Support tickets. Additionally, these same admins can be provided direct access from Alation to the Service Cloud Help Center.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+For the designated admins to navigate to the Service Cloud Help Center directly from Alation, perform the following configuration using the **alation_conf**:
+
+1. SSH to your Alation instance and enter the Alation shell:
+
+    .. code-block:: Bash
+
+         sudo /etc/init.d/alation shell
+
+2. Add the emails of the designated admins as values for the parameter ``alation.help.alation_helpdesk_users`` in the **alation_conf**. This parameter expects a comma-separated list of user email addresses. The emails should be the same emails which are added to the users' Alation accounts and their Service Cloud accounts. These users must have the **Server Admin** role in Alation.
+
+    .. important::
+
+        The ``alation.help.alation_helpdesk_users`` parameter is case-sensitive. Please specify the emails using their exact case.
+
+        There should be no space after the commas in the email list.
+
+
+    .. code-block:: Bash
+
+        alation_conf alation.help.alation_helpdesk_users -s <email1>,<email2>
+
+3. No restart is required. Refresh the Alation page to see the changes.
+
+This configuration adds the link **Contact Alation Support**, visible to the **Server Admins** who have been added to the ``alation.help.alation_helpdesk_users`` parameter. The link will appear in:
+
+- the **Information** menu on the main toolbar in the Alation Catalog;
+
+- the **Help** menu in Compose.
+
+The **Contact Alation Support** link target is preconfigured to navigate to the landing page of the Service Cloud Help Center at `<https://alation.force.com>`_.
+
+*Alation Catalog*
+
+    .. image:: ../../_static/R7_contact_alation_support1.png
+
+*Compose*
+
+    .. image:: ../../_static/R7_contact_alation_support2.png

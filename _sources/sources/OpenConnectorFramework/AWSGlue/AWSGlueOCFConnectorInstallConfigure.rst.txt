@@ -1,0 +1,255 @@
+AWS Glue OCF Connector: Install and Configure
+================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+Authentication
+--------------------
+
+The OCF connector for AWS Glue supports several authentication methods:
+
+    - :ref:`Basic Authentication <glue-basic-auth>`
+    - :ref:`STS Authentication with an IAM User <glue-sts-auth-user>`
+    - :ref:`STS Authentication with an IAM Role <glue-sts-auth-role>`
+
+.. _glue-basic-auth:
+
+Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Basic authentication requires an AWS IAM user and the access key ID and secret access key for this user.
+
+To use basic authentication, create an AWS IAM user account for Alation and save the values of the access key ID, secret access key, AWS region, and user ARN.
+
+Grant the IAM user the required permissions (see `Permissions for IAM User Account`_ below).
+
+Permissions for IAM User Account
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Grant the user account you created for Alation the required permissions by creating and attaching these policies:
+
+    - Policy for the Glue service
+
+          - ``"glue:GetDatabase"``
+          - ``"glue:GetDatabases"``
+          - ``"glue:GetTable"``
+          - ``"glue:GetTableVersions"``
+          - ``"glue:GetTables"``
+          - ``"glue:GetConnection"``
+          - ``"glue:GetConnections"``
+          - ``"glue:GetJob"``
+          - ``"glue:GetJobs"``
+
+    - Policy for the S3 service
+
+          - ``"s3:ListBucket"``
+          - ``"s3:ListAllMyBuckets"``
+          - ``"s3:GetBucketAcl"``
+
+.. _glue-sts-auth-user:
+
+STS Authentication with an AWS IAM User
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+STS Authentication with an IAM user requires an IAM user account and an AWS role.
+
+To use this type of authentication:
+
+1. Create an IAM user and assign it the required permissions as it's described in `Basic Authentication`_.
+
+2. Perform the configuration described in `Create an IAM Role for STS Authentication`_ below.
+
+Create an IAM Role for STS Authentication
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To set up STS authentication with an IAM user:
+
+1. In the AWS IAM service, create IAM policies for the S3 and Glue services as described in `Basic Authentication`_.
+
+2. Create an IAM role selecting the **Type of Trusted Entity** to be **AWS Service** and **Use Case** to be **EC2**. To this role, attach the policies that grant the required permissions. This role will be assumed by the service account when performing MDE from your AWS Glue data source.
+
+3. Edit the Trust Relationship of this role and add the ARN of the IAM user account that you  created for Alation as ``Principal``.
+
+    .. image:: ../../../_static/OCF_AWSGlue_InstallConfig_STS.png
+        :width: 500px
+        :class: with-border
+
+4. Save the ARN of this role. It is required for the next configuration steps in Alation.
+
+5. See `Using Region-Specific Endpoint`_ next.
+
+Using Region-Specific Endpoint
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+From connector version **1.0.4**, you can use the region-specific STS endpoint or the global endpoint.
+
+Using the global STS endpoint does not require any specific configuration.
+
+To use the region-specific endpoint, make sure it is active under your AWS account. To check this:
+
+1. Under AWS IAM, go to **Access Management** > **Account settings**.
+
+2. Under the **Security Token Service (STS)** section, in the **Endpoints** table, make sure that the STS endpoint for your AWS region is active or activate it.
+
+.. _glue-sts-auth-role:
+
+STS Authentication with an AWS IAM Role
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+STS authentication with an AWS IAM role does not require an IAM user. This authentication method uses an instance profile that assumes a role allowing access to Amazon resources. This authentication method works for authenticating across AWS accounts.
+
+    .. note::
+
+        This authentication method is available with connector version **1.1.1.6409** or newer.
+
+.. include:: ../../../shared/OCF/OCF_STS_Auth_with_Amazon_sources.rst
+    :start-after: .. start-reference-main-doc
+    :end-before: .. end-reference-main-doc
+
+Configuration in Alation
+--------------------------------------
+
+STEP 1: Install the Connector
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_Install_NoAgent.rst
+
+STEP 2: Create and Configure a New Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_AddNewDataSource.rst
+
+The name of this connector is **AWS Glue OCF Connector**.
+
+Access
+--------------------
+
+.. include:: ../../../shared/OCF/OCFAccessMenu.rst
+
+General Settings
+--------------------
+
+.. include:: ../../../shared/OCF/OCF_GeneralSettingsWithVaultConfigured.rst
+
+Application Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Skip this section as it's not applicable to AWS Glue data sources.
+
+Connector Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under the **Connector Settings** section of the **General Settings** tab, populate the data source connection information and save the values by clicking **Save**.
+
++---------------------------+----------------------------------------------------------------+
+| Parameter                 | Description                                                    |
++===========================+================================================================+
+| AWS Region                | Specify your AWS region of the account                         |
+|                           | under which your AWS Glue resource is                          |
+|                           | located.                                                       |
++---------------------------+----------------------------------------------------------------+
+| Basic Authentication      | Default. Leave this radio button selected if you are going     |
+|                           | to configure basic authentication.                             |
++---------------------------+----------------------------------------------------------------+
+| STS Authentication        | Select this radio button to configure STS                      |
+|                           | authentication with an IAM user.                               |
++---------------------------+----------------------------------------------------------------+
+
+.. include:: ../../../shared/OCF/OCF_STS_Auth_with_Amazon_sources.rst
+    :start-after: .. start-important-note
+    :end-before: .. end-important-note
+
+Configure Basic Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you selected the **Basic Authentication** radio button, specify the information in the **Basic Authentication** section of **General Settings**. Save the values by clicking **Save**.
+
+Refer to :ref:`Basic Authentication <glue-basic-auth>` for more information about this authentication method.
+
++--------------------------------------------+--------------------------------------------+
+| Parameter                                  | Description                                |
++============================================+============================================+
+| AWS Access Key ID                          | Specify the access key ID of the service   |
+|                                            | account.                                   |
++--------------------------------------------+--------------------------------------------+
+| AWS Access Key Secret                      | Specify the access key secret of the       |
+|                                            | service account.                           |
++--------------------------------------------+--------------------------------------------+
+
+Configure STS Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you selected the **STS Authentication** radio button, specify the information in the **STS Authentication** section of **General Settings**. Save the values by clicking **Save**.
+
+Refer to :ref:`STS Authentication with an IAM User <glue-sts-auth-user>` for more information about this authentication method.
+
++-----------------------------------------+-----------------------------------------------+
+| Parameter                               | Description                                   |
++=========================================+===============================================+
+| Region-Specific Endpoint                | Select this checkbox if you prefer to use     |
+|                                         | the STS endpoint specific to your AWS         |
+|                                         | region. The regional endpoint has to be       |
+|                                         | active under your AWS account.                |
+|                                         |                                               |
+|                                         | Leave this checkbox clear to use the global   |
+|                                         | endpoint.                                     |
++-----------------------------------------+-----------------------------------------------+
+| STS: AWS Access Key ID                  | Specify the access key ID of the service      |
+|                                         | account.                                      |
++-----------------------------------------+-----------------------------------------------+
+| STS: AWS Access Key Secret              | Specify the access key secret of the          |
+|                                         | service account.                              |
++-----------------------------------------+-----------------------------------------------+
+| Role ARN                                | Specify the ARN of the role you created       |
+|                                         | following the steps in                        |
+|                                         | `Create an IAM Role for STS Authentication`_. |
++-----------------------------------------+-----------------------------------------------+
+| STS Duration                            | Specify the STS duration value, in seconds.   |
+|                                         | The default value is 3600 seconds.            |
++-----------------------------------------+-----------------------------------------------+
+
+.. _glue-configure-sts-with-role:
+
+Configure STS Authentication with an AWS IAM Role
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_STS_Auth_with_Amazon_sources.rst
+    :start-after: .. start-configure-sts-with-role
+    :end-before: .. end-configure-sts-with-role
+
+Logging Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../../shared/OCF/OCF_LoggingConfiguration.rst
+
+Obfuscate Literals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Skip this section as it's not applicable to AWS Glue data sources.
+
+Test Connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under **Test Connection**, click **Test** to validate network connectivity.
+
+Metadata Extraction
+---------------------------------
+
+You can configure metadata extraction (MDE) for an OCF data source on the Metadata Extraction tab of the Settings page. For AWS Glue data sources, Alation supports **full and selective default MDE**. Custom query-based MDE is not supported.
+
+Refer to :doc:`/sources/OpenConnectorFramework/ConfigureMDEforOCFDataSources` for information about the available configuration options.
+
+Sampling and Profiling
+---------------------------------
+
+Not supported.
+
+Query Log Ingestion
+---------------------------------
+
+Not supported.
+
+Compose
+---------------------------------
+
+Not supported.

@@ -1,0 +1,60 @@
+Enable or Disable Query Scheduling
+=====================================================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+A Server Admin can enable or disable the ability to schedule queries in one of two ways:
+
+-  Using the Admin Settings in Alation.
+
+-  Using the command line on the Alation server (for on-premise installations).
+
+If query scheduling is enabled, Server Admins can disable individual query schedules in a convenient way using the :doc:`Scheduled Queries Dashboard</admins/AdminSettings/ManageScheduledQueries>`.
+
+Admin Settings
+--------------
+
+To enable or disable query scheduling in Alation:
+
+1. Click the Settings gear icon in the top right corner of Alation. The Admin Settings page opens.
+
+2. In the **Server Admin** section, select **Miscellaneous**.
+
+3. Click the **Query Scheduling** toggle enable or disable query scheduling.
+
+Alation Server
+--------------
+
+If you have an on-premise installation of Alation, you can use the command line to enable or disable scheduled queries:
+
+#. Get your user ID. You will need it to run the command that disables scheduled queries.
+
+   a. Enter the Alation shell
+
+      .. code-block:: bash
+
+         sudo /etc/init.d/alation shell
+
+   b. Get the ID of the user substituting the sample values with actual values
+
+      .. code-block:: bash
+
+         alation_psql
+         select id, username, email from auth_user where email like 'example%';
+
+   c. Note the ID and exit psql:
+
+      .. code-block:: bash
+
+         \q
+
+#. On the Alation host, run the following commands to disable query scheduling. Substitute the ``#`` in ``id=#`` with your user ID. Substitute ``'{yes/no}'`` with ``'yes'`` or ``'no'`` depending on whether you want to enable or disable query scheduling.
+
+   .. code-block:: bash
+
+      sudo /etc/init.d/alation shell
+      alation_django_shell
+      from rosemeta.models import SiteSettings
+      setting = SiteSettings.get('misc_settings')
+      setting['enable_query_scheduling'] = '{yes/no}'
+      SiteSettings.set('misc_settings', setting, User.objects.get(id=#))

@@ -1,0 +1,339 @@
+Alation Actions
+===============
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+Server Admins and IT administrators can configure, operate, and diagnose an Alation instance using Alation actions. For example, you can use actions to deploy configurations, set up high availability (HA), and restart Alation :doc:`components <../../admins/RunbookForAdministrators/AlationArchitecture>`.
+
+This page will introduce you to actions and explain how to use them.
+
+Safe and Unsafe Actions
+-----------------------
+
+There are two categories of actions: safe and unsafe.
+
+* **Safe** actions won't interrupt Alation services or cause downtime.
+* **Unsafe** actions require a restart of certain Alation components or Alation as a whole to take effect, which will cause downtime for users.
+
+.. important::
+
+   Unsafe actions will cause a short service interruption for your users. Normally, Alation support or documentation will warn you when an action will cause downtime. Please follow your company's change procedures when using unsafe actions.
+
+Unsafe actions are often used during configuration, upgrades, enabling of new features, and debugging activities. Unsafe actions won't harm your Alation instance, as long as you use them as directed. Be aware that Alation will be unusable until the unsafe action is complete. Sometimes you need to take additional steps to restore Alation to working order, such as restarting Alation components.
+
+Using Actions
+-------------
+
+First you’ll use SSH to connect to the Alation host server and enter the shell. Then you can use the **alation_action** utility to run actions.
+
+Accessing the Alation Shell
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: ../../shared/AccessingAlationShell.rst
+
+Running Actions in the Alation Shell
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can run Alation actions from any location in the Alation shell using the **alation_action** utility. The general form is:
+
+.. code-block:: Bash
+
+   alation_action <action_name>
+
+For example, to use the **backup_all** action, enter the following in the Alation shell:
+
+.. code-block:: Bash
+
+   alation_action backup_all
+
+.. note::
+
+   Some actions require you to be acting as the **alation** user on the server. You can switch to the **alation** user by entering ``sudo su alation`` on the command line.
+
+List of Common Actions
+----------------------
+
+The following table shows the most common and most useful actions you may need to run. It doesn't include every action.
+
+.. important::
+
+   "Unsafe" actions will cause a short service interruption for your users. Normally, Alation support or documentation will warn you when an action will cause downtime. Please follow your company's change procedures when using unsafe actions.
+
+..
+   Comment: Some of the links in this table use two underscores. This avoids an odd warning about duplicate explicit target names, which is caused by having multiple links with the same link text.
+
+.. list-table::
+   :widths: 35 55 10
+   :header-rows: 1
+
+   * - Action Name
+     - Description
+     - Safe?
+   * - apply_license
+     - Looks for a license file in the location specified by the ``alation.install.license.path`` parameter in **alation_conf** and updates your Alation instance with your license's expiration date and number of user seats. You can also update your license using the **Upload License File** button on the **License** page in Alation's **Admin Settings**. You might use this action when installing Alation or when renewing your Alation license. You must restart Alation after running this action.
+     - Unsafe
+   * - backup_all
+     - Performs a backup of Alation. You must be acting as the alation user to perform this  action. See :doc:`Backup and Restore How-tos <../../installconfig/BackupandRestore/index>` for more information.
+     - Safe
+   * - cluster_add_slaves
+     - Connects the Secondary as a slave to the Primary. Used when :doc:`setting up <../../installconfig/HighAvailability/SetupHA>` HA and rejoining the cluster after :doc:`updating <../../installconfig/Update/UpdateHAPairwithClusterSplitting>` Alation.
+     - Unsafe
+   * - cluster_enter_master_mode
+     - Puts the server in the master mode. The master server will be the Primary instance in the cluster. Used when :doc:`setting up <../../installconfig/HighAvailability/SetupHA>` HA and rejoining the cluster after :doc:`updating <../../installconfig/Update/UpdateHAPairwithClusterSplitting>` Alation.
+     - Unsafe
+   * - cluster_enter_standalone_mode
+     - Puts the server in standalone mode and separates it from the cluster. This will disable replication. Used with an existing HA cluster to :doc:`reinitialize </admins/How-tos/HowtoReinitializeAlation>` or :doc:`update <../../installconfig/Update/UpdateHAPairwithClusterSplitting>` Alation or to :doc:`disable <../../installconfig/HighAvailability/RevertHAPairtoStandaloneMode>` HA. To update Alation without splitting the cluster, see :doc:`Update HA Pair Configuration <../../installconfig/Update/updateHAPair>`.
+     - Unsafe
+   * - cluster_failover
+     - When run on Secondary, puts the server in standalone mode and separates it from the cluster. Restarts all Alation services and rebuilds the Elasticsearch index. See :doc:`Failover to Secondary <../../installconfig/HighAvailability/FailovertoSecondary>` for more information.
+     - Unsafe
+   * - cluster_generate_keys
+     - Generates keys that will enable replication between two Alation servers. Used when :doc:`setting up <../../installconfig/HighAvailability/SetupHA>` HA or updating a :doc:`legacy <../../installconfig/HighAvailability/MigratefromLegacytoSupportedHA>` HA setup.
+     - Unsafe
+   * - cluster_kvstore_copy
+     - Copies the Primary server’s KVStore to the Secondary server. Used when :ref:`setting up <Setup_HA_Step_9>` HA and `updating <../../installconfig/Update/UpdateHAPairwithClusterSplitting>` Alation.
+     - Unsafe
+   * - cluster_replicate_files
+     - Syncs files and configurations between Primary and Secondary one time. Used to verify replication after :doc:`setting up <../../installconfig/HighAvailability/SetupHA>` HA, updating a :doc:`legacy <../../installconfig/HighAvailability/MigratefromLegacytoSupportedHA>` HA setup, or :doc:`updating <../../installconfig/Update/UpdateHAPairwithClusterSplitting>` Alation.
+     - Safe
+   * - cluster_replicate_postgres
+     - This will shut down Postgres on Secondary, delete it, and create a replica of the Primary’s database. Used when :doc:`setting up <../../installconfig/HighAvailability/SetupHA>` HA, :doc:`updating <../../installconfig/Update/updateHAPair>` Alation without splitting the cluster, and rejoining the cluster after :doc:`updating <../../installconfig/Update/UpdateHAPairwithClusterSplitting>` Alation.
+     - Unsafe
+   * - get_cluster_public_key
+     - Prints the public ssh key which all computers in the cluster should use.
+     - Safe
+   * - create_dump
+     - Creates a snapshot of the system and gathers all logs together. Helpful when working with support to troubleshoot an issue.
+     - Safe
+   * - create_saml_keys
+     - Generates public and private certificates for setting up Alation to use SAML for authentication. See :doc:`/installconfig/ServerInstallation/UserAuthenticationSetup/UserAuthenticationSAML` for more information.
+     - Safe
+   * - deploy_conf_all
+     - Writes settings from **alation_conf** to all other configuration files in the Alation chroot. There are other Alation actions that deploy specific settings to configuration files. See :doc:`Using alation_conf <../../admins/AdditionalConfiguration/Usingalation_conf>` for more information.
+     - Safe
+   * - destructive_restore_all
+     - Restores Alation from a backup. This action only works on a newly installed instance. This process can't be undone. See :doc:`Backup and Restore How-tos <../../installconfig/BackupandRestore/index>` for more information.
+     - Unsafe
+   * - disable_datadog
+     - Disables the system health monitoring service (:ref:`Datadog <Monitor_Component_Health-Enabling-Health-Checks>`) and removes the **Health Checks** tab on the Alation **Admin Settings** page.
+     - Safe
+   * - enable_datadog
+     - Enables system health monitoring via :ref:`Datadog <Monitor_Component_Health-Enabling-Health-Checks>` at `<https://datadoghq.com>`_ and makes the Health Checks tab available on the Alation Admin Settings page.
+     - Safe
+   * - rebuild_es_index
+     - This will rebuild the Elasticsearch index immediately. Useful when Alation’s search capability isn't functioning correctly. Use only when directed. The completion time depends on the Rosemeta size and may take hours or even days on large instances. You can check the **rebuild_index** task status in **Admin Settings** > **Monitor** > **Active Tasks**.
+     - Safe
+   * - repair
+     - Repairs some common Alation issues, which includes fixing some file permissions and forcing the Alation server’s time to sync with the Network Time Protocol server. See :doc:`Alation Repair Tool <../../admins/Troubleshooting/AlationRepairTool>`.
+     - Safe
+   * - restart_alation
+     - Stops all Alation components needed to serve users, then starts them again.
+     - Unsafe
+   * - scan_postgres
+     - Scans the internal Alation database (Postgres) to identify corrupted indexes. Alation recommends running this scan once a week and reviewing the results. See :doc:`How to Scan Postgres For Corrupted Indexes <../../admins/How-tos/HowToScanPostgresForCorruptedIndexes>` for more information.
+     - Safe
+   * - start_alation
+     - Starts all Alation components needed to serve users.
+     - Unsafe
+   * - start_alation_analytics_postgres
+     - Starts the Alation Analytics Postgres service (if Alation Analytics is enabled).
+     - Unsafe
+   * - start_datadog_agent
+     - Starts the Datadog service (if :ref:`Datadog <Monitor_Component_Health-Enabling-Health-Checks>` is enabled).
+     - Unsafe
+   * - start_kvstore
+     - Starts the KVStore service.
+     - Unsafe
+   * - start_lineage
+     - Starts the Lineage V3 service.
+     - Unsafe
+   * - start_nginx
+     - Starts the Nginx web server.
+     - Unsafe
+   * - start_postgres
+     - Starts the Alation Postgres service.
+     - Unsafe
+   * - start_taskserver
+     - Starts the Taskserver service.
+     - Unsafe
+   * - start_uwsgi
+     - Starts the uWSGI service.
+     - Unsafe
+   * - status_alation
+     - Shows the current status of all Alation components.
+     - Safe
+   * - stop_alation
+     - Stops all Alation components needed to serve users.
+     - Unsafe
+   * - stop_alation_analytics_postgres
+     - Stops the Alation Analytics Postgres service (if Alation Analytics is enabled).
+     - Unsafe
+   * - stop_datadog_agent
+     - Stops the Datadog service (if :ref:`Datadog <Monitor_Component_Health-Enabling-Health-Checks>` is enabled).
+     - Unsafe
+   * - stop_kvstore
+     - Stops the KVStore service.
+     - Unsafe
+   * - stop_lineage
+     - Stops the Lineage V3 service.
+     - Unsafe
+   * - stop_nginx
+     - Stops the Nginx web server.
+     - Unsafe
+   * - stop_postgres
+     - Stops the Alation Postgres service.
+     - Unsafe
+   * - stop_taskserver
+     - Stops the Taskserver service.
+     - Unsafe
+   * - stop_uwsgi
+     - Stops the uWSGI service.
+     - Unsafe
+
+Actions with Supervisor
+-----------------------------
+
+:ref:`Supervisor <Alation_Architecture-Supervisor>` is a component of Alation that can run actions to start, stop, and check the status of specific components in the Alation application stack. Supervisor controls the following components:
+
+* :ref:`uWSGI <uwsgi>`
+* :ref:`KVStore <Alation_Architecture-KVStore>`
+* :ref:`Elasticsearch <Alation_Architecture-Elasticsearch>`
+* :ref:`Event Bus <Alation_Architecture-Event_Bus>`
+* :ref:`Lineage <Alation_Architecture-Lineage>`
+* :ref:`Celery <Alation_Architecture-Celery>`
+* :ref:`Taskserver <Alation_Architecture-Taskserver>`
+* :ref:`Connector <Alation_Architecture-Connector>`
+
+Running Actions with Supervisor
+-------------------------------
+
+Reuse component for accessing the Alation shell.
+Once in the Alation shell, use the **alation_supervisor** utility to run Supervisor actions. The general form is:
+
+.. code-block:: Bash
+
+   alation_supervisor <action_name> <component_name>
+
+For example, to stop uWSGI, enter the following in the Alation shell:
+
+.. code-block:: Bash
+
+   alation_supervisor stop web:uwsgi
+
+List of Supervisor Actions
+--------------------------
+
+The following table shows the four actions you can run with Supervisor.
+
++-------------+-------------------------------------------------+--------+
+| Action Name | Description                                     | Safe?  |
++=============+=================================================+========+
+| restart     | Stops then starts the specified component(s).   | Unsafe |
++-------------+-------------------------------------------------+--------+
+| start       | Starts the specified component(s).              | Unsafe |
++-------------+-------------------------------------------------+--------+
+| status      | Gives the status of the specified component(s). | Safe   |
++-------------+-------------------------------------------------+--------+
+| stop        | Stops the specified component(s).               | Unsafe |
++-------------+-------------------------------------------------+--------+
+
+Component Names
+~~~~~~~~~~~~~~~
+
+The following table shows the component names that Supervisor recognizes. Some components are made up of several processes or sub-components. See below for information on controlling all sub-components at once.
+
+.. table::
+   :widths: auto
+   :class: longtable
+
+   +---------------+-----------------------------------------------+
+   | Component     | Component Names for Supervisor                |
+   +===============+===============================================+
+   | Celery        | * celery:celery-alationanalytics_0            |
+   |               | * celery:celery-beat                          |
+   |               | * celery:celery-cognates_0                    |
+   |               | * celery:celery-cognates_1                    |
+   |               | * celery:celery-cognates_2                    |
+   |               | * celery:celery-curation_0                    |
+   |               | * celery:celery-default_0                     |
+   |               | * celery:celery-default_1                     |
+   |               | * celery:celery-default_2                     |
+   |               | * celery:celery-domains_0                     |
+   |               | * celery:celery-domains_small_0               |
+   |               | * celery:celery-downloads_0                   |
+   |               | * celery:celery-downloads_1                   |
+   |               | * celery:celery-fastqueue_0                   |
+   |               | * celery:celery-fastqueue_1                   |
+   |               | * celery:celery-fastqueue_2                   |
+   |               | * celery:celery-flag-propagation_0            |
+   |               | * celery:celery-ingestion_0                   |
+   |               | * celery:celery-lexicon_0                     |
+   |               | * celery:celery-metrics_0                     |
+   |               | * celery:celery-parsing_0                     |
+   |               | * celery:celery-parsing_1                     |
+   |               | * celery:celery-parsing_2                     |
+   |               | * celery:celery-scheduling_0                  |
+   |               | * celery:celery-search_0                      |
+   |               | * celery:celery-search_bulk_0                 |
+   |               | * celery:celery-stewardship_0                 |
+   |               | * celery:celery-stewardship_1                 |
+   |               | * celery:celery-thinqueue_0                   |
+   +---------------+-----------------------------------------------+
+   | Connector     | * java:connector                              |
+   +---------------+-----------------------------------------------+
+   | Elasticsearch | * java:elasticsearch-<version>                |
+   |               |                                               |
+   |               | When using this command, substitute           |
+   |               | ``<version>`` with the specific Elasticsearch |
+   |               | version of your Alation release. To find out  |
+   |               | the Elasticsearch version, check the value    |
+   |               | of the **alation_conf** parameter             |
+   |               | ``elasticsearch.version``.                    |
+   +---------------+-----------------------------------------------+
+   | Event Bus     | * event-bus:kafka-server                      |
+   |               | * event-bus:zookeeper-server                  |
+   |               | * event-bus-backup:kafka-mm2                  |
+   |               | * event-bus-backup:kafka-secondary-server     |
+   |               | * event-bus-backup:zookeeper-secondary-server |
+   +---------------+-----------------------------------------------+
+   | KVStore       | * kvstore                                     |
+   +---------------+-----------------------------------------------+
+   | Lineage       | * lineage                                     |
+   +---------------+-----------------------------------------------+
+   | Taskserver    | * java:taskserver                             |
+   +---------------+-----------------------------------------------+
+   | uWSGI         | * web:uwsgi                                   |
+   +---------------+-----------------------------------------------+
+
+Referring to More Than One Component
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Supervisor can control several components at once. You can list more than one component separated by a space. For example, to restart uWSGI and Elasticsearch, enter:
+
+.. code-block:: Bash
+
+   alation_supervisor restart web:uwsgi java:elasticsearch
+
+For components that have sub-components, such as Celery, you can refer to all sub-components by putting an asterisk after the colon. For example:
+
+.. code-block:: Bash
+
+   alation_supervisor restart celery:*
+
+To run the action on all components controlled by Supervisor, you can use the keyword “all” as the component name. For example:
+
+.. code-block:: Bash
+
+   alation_supervisor status all
+
+Controlling Components without Actions
+--------------------------------------
+
+:ref:`Redis <Alation_Architecture-Redis>` is a component of Alation that can’t be controlled using Supervisor or the **alation_action** utility. To start or stop Redis individually, use the following commands.
+
+.. code-block:: Bash
+
+   sudo /etc/init.d/redis-server start
+   sudo /etc/init.d/redis-server stop
+
+Redis can also be restarted along with all other components using the **restart_alation** action.

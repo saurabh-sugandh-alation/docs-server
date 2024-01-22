@@ -1,0 +1,49 @@
+All Tableau Objects
+=====================================================================
+
+.. note::
+
+    This query is for **Alation Analytics Version 1 (V1)**.
+
+This query retrieves all Tableau objects in the catalog.
+
+.. code-block:: sql
+
+ -- The following query produces a list of all Tableau objects
+ SELECT DISTINCT
+       AO.object_uuid,
+       AOT.object_type_name,
+       AO.object_url
+ FROM
+       public.alation_object AS AO
+ -- Get deletion information
+ -- First grab the object UUID (uuid + type_id) and get the value_fp (value pointer)
+ JOIN
+       public.object_field_value AS OFVD
+       ON
+             AO.object_uuid = OFVD.object_uuid
+       AND
+             AO.object_type_id = OFVD.object_type_id
+ -- Get field value
+ JOIN
+       public.field_value AS FVD
+       ON
+             OFVD.value_fp = FVD.value_fp
+ -- Match on field id to get deletion flag
+ JOIN
+       public.object_field AS OBF
+       ON
+             OFVD.field_id = OBF.field_id
+ JOIN
+       public.alation_object_type AS AOT
+ ON
+       AOT.object_type_id = AO.object_type_id
+ WHERE
+       AO.object_type_id IN (SELECT object_type_id FROM public.alation_object_type WHERE object_type_name LIKE '%tableau%')
+ AND
+       -- ensure only field_name = 'deleted' field values are
+ extracted
+       OBF.field_name = 'deleted'
+ AND
+       -- Get only objects which are not deleted
+       FVD.boolean_value IS False;

@@ -1,0 +1,163 @@
+Install Docker Using Alation Container Service
+=================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from version 2021.2*
+
+Alation Container Service gives admin users the ability to quickly install or update Docker on their Alation servers. The Alation Container Service is available for RedHat Enterprise Linux and Debian Linux based systems.
+
+If you are freshly installing Docker, see `Initial Installation of Docker`_.
+
+If you are replacing an existing Docker installation, see `Replace Existing Docker Installations with the Alation Container Service`_
+
+Initial Installation of Docker
+----------------------------------
+
+Perform the following steps if Docker needs to be installed on an Alation Server but has not been installed yet. The **alation_container_service** package is available in the **addons** directory of the Alation Server. All steps are performed outside of the Alation Chroot.
+
+1. Open a terminal window and SSH into the Alation server where you wish to install the Alation Container Service.
+
+2. Determine the currently available version from the /addons directory:
+
+    .. code-block:: Bash
+
+        ls /opt/alation/alation/opt/addons/alation_container_service
+
+    There are 2 packages:
+
+       - **alation-container-service-1.0.0-1.x86_64.rpm** for RHEL-based systems
+
+       - **alation-container-service_1.0.0_amd64.deb** for Debian-based systems
+
+    .. note::
+
+        If you are installing Docker on a remote host, copy the corresponding package to the remote host and install there.
+
+3. Install the Alation Container Service using one of the commands given below. Substitute **<current_version_number>** with the container service version number you are installing.
+
+    - **RHEL systems**
+
+        .. code-block:: Bash
+
+            sudo yum install -y /opt/alation/alation/opt/addons/alation_container_service/alation-container-service-<current_version_number>-1.x86_64.rpm
+
+    - **Debian systems**
+
+        .. code-block:: Bash
+
+            sudo apt update
+            sudo apt install -y /opt/alation/alation/opt/addons/alation_container_service/alation-container-service_<current_version_number>_amd64.deb
+
+    .. image:: ../../_static/ContainerService_01.png
+        :width: 500px
+
+Replace Existing Docker Installations with the Alation Container Service
+----------------------------------------------------------------------------
+
+Perform the following steps if Docker has already been installed on an Alation Server and you wish to replace it with the Alation Container Service. All steps are performed outside of the Alation Chroot.
+
+The ``alation_container_service`` will automatically uninstall and replace pre-existing Docker installations and their transitive dependencies so long as the package name of Docker currently installed matches any of the following:
+
++----------------------------------+----------------------------------+
+| RHEL Systems                     | Debian Systems                   |
++==================================+==================================+
+| docker                           | docker                           |
+|                                  |                                  |
+| docker.io                        | docker-ce                        |
+|                                  |                                  |
+| docker-engine-cs                 | docker-engine                    |
+|                                  |                                  |
+| docker-engine                    | docker-engine-cs                 |
+|                                  |                                  |
+| docker-ee                        | docker.io                        |
+|                                  |                                  |
+| docker-ce                        | docker-ce-rootless-extras        |
+|                                  |                                  |
+| docker-ce-rootless-extras        |                                  |
+|                                  |                                  |
+| moby-engine                      |                                  |
++----------------------------------+----------------------------------+
+
+To replace Docker,
+
+1. Open a terminal window and SSH into the Alation server where you wish to install the Alation Container Service.
+2. Discover the name of the currently installed Docker package:
+
+    - **RHEL systems**
+
+        .. code-block:: Bash
+
+            sudo yum list installed | grep -i docker
+
+    - **Debian systems**
+
+        .. code-block:: Bash
+
+            sudo apt list --installed | grep -i docker
+
+3. Determine the currently available container service version from the /addons directory:
+
+    .. code-block:: Bash
+
+        ls /opt/alation/alation/opt/addons/alation_container_service
+
+4. Update Docker with the Alation Container Service. Substitute **<current_version_number>** with the container service version number you are installing:
+
+    - **RHEL systems**
+
+        .. code-block:: Bash
+
+            sudo yum install -y /opt/alation/alation/opt/addons/alation_container_service/alation-container-service-<current version number>-1.x86_64.rpm
+
+    - **Debian systems**
+
+        .. code-block:: Bash
+
+            sudo apt update
+            sudo apt install -y /opt/alation/alation/opt/addons/alation_container_service/alation-container-service_<current version number>_amd64.deb
+
+.. note::
+
+    If the naming of the installed Docker installation does not match any of the names listed in step 2 you will need to manually remove Docker and perform a fresh install of the Alation Container Service.
+
+Update the Alation Container Service
+-------------------------------------------
+
+Perform the following steps to upgrade the currently installed Alation Container Service with a newer version.  All steps are performed outside of the Alation Chroot.
+
+1. Open a terminal window and SSH into the Alation server where you wish to upgrade the Alation Container Service.
+2. Determine the version of the currently installed Alation Container Service:
+
+    - **RHEL systems**
+
+        .. code-block:: Bash
+
+            sudo yum list installed | grep alation-container-service
+
+    - **Debian systems**
+
+        .. code-block:: Bash
+
+            sudo apt list --installed | grep alation-container-service
+
+3. Determine the currently available version from the /addons directory:
+
+    .. code-block:: Bash
+
+        ls /opt/alation/alation/opt/addons/alation_container_service
+
+4. If the currently available package is a higher version that what is currently installed, upgrade the Alation Container Service:
+
+    - **RHEL systems**
+
+        .. code-block:: Bash
+
+            sudo yum upgrade -y /opt/alation/alation/opt/addons/alation_container_service/alation-container-service-<current version number>-1.x86_64.rpm
+
+    - **Debian systems**
+
+        .. code-block:: Bash
+
+            sudo apt update
+            sudo apt install -y /opt/alation/alation/opt/addons/alation_container_service/alation-container-service_<current version number>_amd64.deb

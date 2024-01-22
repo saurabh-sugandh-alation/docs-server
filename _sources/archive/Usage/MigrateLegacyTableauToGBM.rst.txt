@@ -1,0 +1,164 @@
+Migrate Catalog Data to a New Tableau Source on Generic Model
+---------------------------------------------------------------
+
+Applies to V R5 (5.9.x)
+
+You can choose to migrate your existing Tableau source data to a new
+Tableau source on GBM V2. This will move all the
+catalog data to a new source. You can later deprecate the old
+source. Note:
+
+#. It is preferable that you run this script only once. Before you run it in the **confirm** mode, do a dry run and troubleshoot any object mismatches that may be revealed.
+
+#. After you execute the migration script, both the old and the new Tableau sources will have the same title. You can rename one of them after the migration to avoid any potential confusion.
+
+#. After the migration, the catalog data about the old Tableau source will be incomplete as the references that previously pointed to this source will be updated to point to the new source, and some other data will be migrated too (such as, for example, tags and conversations). Consider deprecating the old Tableau source after you have tested out the new source after the migration.
+
+To migrate your existing Tableau sources to GBM V2:
+
+1. Make sure the required feature flag is set to ``True`` in ``alation_conf``: ``alation.feature_flags.enable_gbm_v2 = True`` and ``alation.feature_flags.enable_bi_catalog_browser_redesign = True``.
+
+2. Sign in to Alation as a *Server Admin*, and on the **Sources** page, add a copy of the Tableau Server connection that already exists on the default Legacy framework. This time, you will be adding it on the new generic BI framework as the feature is enabled through the flag (step 1).
+
+  .. note::
+
+      The URL structure of the new Tableau source on the global model will be ``<alation_home>/bi/v2/server/<id>``. This is different from the default Tableau framework where the URL structure of the Tableau source is ``<alation_home>/tableau/server/<id>``.
+
+3. Go to the existing Tableau source you want to migrate. Rerun metadata extraction to make sure the source is up-to-date.
+
+4. Go to the "copy" of this source you added at step 2. Run metadata extraction on this new Tableau source. Extract the same projects you have extracted for your existing Tableau source so that both the sources have the same metadata.
+
+  .. note::
+
+      The metadata extraction on GBM V2 does not extract Tableau stories, and the new Tableau source will not include story metadata.
+
+5. After the extraction is complete, you can migrate the catalog data to the new Tableau source. To migrate, enter the Alation shell on your instance and change user to ``alation``:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        sudo su alation
+
+6. Do a dry run of the migration script to check that the output does not return warnings. Dry run will not make any changes but will allow you to catch any potential issues. Substitute the placeholder values with real values:
+
+    - ``<tableau_id>`` - the ID of the Tableau source that uses the default framework that you are migrating from
+
+    - ``<GBM_tableau_id>`` - the ID of the new Tableau source on global model that you created in step 2
+
+   .. code-block:: Bash
+
+      $ python opt/alation/django/rosemeta/one_off_scripts/copy_tableau_logical_data_to_gbmv2.pyc -s <tableau_id> -t <GBM_tableau_id>
+
+   **Example**:
+
+   Assume the Tableau source you are migrating from has the URL: ``<alation_home>/tableau/server/8``
+
+   The new Tableau source "copy" you added on GBM V2 has the URL: ``<alation_home>/bi/2/server/50``
+
+   In these URLs, the number you find at the end of the address is the ID of the source in Alation. In the migration script, you will need to supply:
+
+   -  **8** as ``<tableau_id>``
+   -  **50** as ``<GBM_tableau_id>``
+
+   .. code-block:: Bash
+
+        $ python opt/alation/django/rosemeta/one_off_scripts/copy_tableau_logical_data_to_gbmv2.pyc -s8 -t50
+
+7. After you have validated with the dry run that migration is going to be successful, run the script with the confirm function to perform migration:
+
+   .. code-block:: Bash
+
+      $ python opt/alation/django/rosemeta/one_off_scripts/copy_tableau_logical_data_to_gbmv2.pyc -s<tableau_id> -t<GBM_tableau_id> --confirm
+
+The migration will:
+
+- copy a part of the catalog data
+- migrate the references for the other part from the default Tableau source to the new Tableau source.
+
+The script will make the following changes:
+
+#. **Articles and Conversations**
+
+      -  **Posts** - in the content of Alation articles, if there are mentions of the old Tableau server and/or its objects, they will be migrated to point to the matching objects in the new Tableau source.
+      -  **Post Mentions** - if post mentions point to the object type and object ID for the default  Tableau, we will update them to use the matching new Tableau source objects. A post mention is part of the internal data model and does not appear in the UI.
+      -  **Post Revisions** - If in article version history any versions mentioned the old Tableau objects, this reference will be changed to point to the new Tableau source objects.
+
+2. **Description field**
+
+   The Description field and Description field history on Alation objects which reference the default Tableau source and/or its objects will be migrated to point to the new Tableau source and /or its objects.
+
+3. **Custom fields**
+
+   Custom field values on Alation objects which reference the default Tableau source and/or its objects will be migrated to point to the new Tableau source/objects.
+
+   Rich text fields on data objects that mention the old Tableau source objects, will be migrated to point to new Tableau source/objects.
+
+4. **Logical Data**
+
+   Alation will copy the following logical data to the new Tableau source (this data will be identical for both old and new Tableau sources):
+
+      -  Tableau Server: title, description, star
+      -  Tableau Data Source: description, star
+      -  Tableau Workbook: description, star
+      -  Tableau Sheet: description, star
+
+    .. note::
+
+        After migration is completed, both the old and the new Tableau source will have the same Title. You can rename the sources after migration to avoid any potential confusion. The sources can be differentiated using URL structure:
+
+        -  The URL structure of the new Tableau source on the global model will be ``<alation_home>/bi/v2/server/<id>``.
+        -  The URL of the default (old) Tableau source is ``<alation_home>/tableau/server/<id>``.
+
+    Alation will migrate the following logical data to the new Tableau source (the references will be updated to point to the new Tableau source/objects and the data will be moved from the old to new Tableau source. This migrated data will no longer be associated with or appear on the pages of the old Tableau source):
+
+   -  Tableau Server: flags, tags, and conversations
+   -  Tableau Data Source: flags, tags, and conversations
+   -  Tableau Workbook: flags, tags, and conversations
+   -  Tableau Sheet: flags, tags, and conversations
+
+    .. note::
+
+        If permission mirroring is ON, the objects for which the user does not have permission on the Tableau server will be displayed as ``Untitled Object``. In the Generic model, permission mirroring is ON by default.
+
+Script Output Analysis
+~~~~~~~~~~~~~~~~~~~~~~
+
+The details on migration will be available in the script output. Note
+that there is also a dedicated **migration.log** log file for this script
+at **/opt/alation/site/logs**.
+
+If an old Tableau object was not matched with the new Tableau object,
+then it will not be migrated. See the table below for a
+description of possible causes of objects mismatch.
+
++----------------------+-------------------------+-------------------------+
+| \*\*\*\* build       | N objects did not match | If there are some       |
+| TableauWorkbook to   |                         | objects which do not    |
+| BIFolder             |                         | match, this may         |
+|                      |                         | be an issue. Ideally,   |
+|                      |                         | all objects on both     |
+|                      |                         | sources should match.   |
+|                      |                         | If some of them do      |
+|                      |                         | not match,              |
+|                      |                         | make sure both          |
+|                      |                         | sources have the same   |
+|                      |                         | metadata and are        |
+|                      |                         | up-to-date.             |
++----------------------+-------------------------+-------------------------+
+| \*\*\*\* build       | N objects did not match | Make sure both          |
+| TableauDataSource to |                         | Tableau sources have    |
+| BIDataSource         |                         | the same metadata and   |
+|                      |                         | are up-to-date.         |
++----------------------+-------------------------+-------------------------+
+| \*\*\*\* build       | N objects did not match | If there are some       |
+| TableauSheet to      |                         | mismatches here, the    |
+| BIReport             |                         | cause may be that       |
+|                      |                         | these objects are       |
+|                      |                         | Tableau stories. The    |
+|                      |                         | default model does      |
+|                      |                         | extract stories,        |
+|                      |                         | while the new global    |
+|                      |                         | model does not. Make    |
+|                      |                         | sure these objects      |
+|                      |                         | are stories.            |
++----------------------+-------------------------+-------------------------+

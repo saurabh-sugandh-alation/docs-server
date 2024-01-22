@@ -1,0 +1,277 @@
+Transition from Alation Analytics V1 to Alation Analytics V2
+==============================================================
+
+.. include:: /shared/ProductLabels/CustomerManaged_Label.rst
+
+*Applies from release 2020.3*
+
+These guidelines are for the current Alation customers who are actively using the first version of Alation Analytics and would like to transition to Alation Analytics Version 2 (V2).
+
+    .. note::
+
+        The first version of Alation Analytics - or Alation Analytics V1 - was released in *V R3 (5.6.x)*. The second version - Alation Analytics V2 - was released in 2020.3 to eventually supersede V1. Customers who have never enabled Alation Analytics in their Alation Catalog only have the **V2** option from 2020.3. Alation Analytics V1 is not available on new or upgraded 2020.3 instances by default.
+
+The recommended approach for transitioning from V1 to V2 is to first disable V1 and after that, enable and install V2. However, you can choose to enable and maintain both versions at the same time on condition that your Alation instance meets the average 30-day Alation Analytics ETL criterion.
+
+Before you enable Alation Analytics V2 in parallel with Alation Analytics V1, please consider the recommendations given below. Creating a transition plan and laying out all the steps may be a good starting point. The plan can include the following items:
+
+    - Availability of a Test/Dev environment
+
+    - Decision on the type of transition:
+
+          - First, disable Alation Analytics V1 and then enable Alation Analytics V2 as a consecutive step;
+
+          - Both Alation Analytics V1 and V2 will co-exist in your Alation Catalog.
+
+    - ETL considerations for Alation Analytics V1
+
+    - Review of system requirements and installation recommendations for Alation Analytics V2
+
+    - Preparing a host based on the system requirements for Alation Analytics V2
+
+    - Enabling the Alation Analytics V2 feature on the Alation instance
+
+    - Installing Alation Analytics V2
+
+    - Configuring the ETL process for V2 and V1
+
+    - Decision on the next stage of the Alation Analytics V1 lifecycle
+
+    - Moving to Alation Analytics V2 in Production
+
+Use of Dev/Test Environment
+------------------------------
+
+Alation **strongly recommends** to begin the transition using a Dev/Test environment. For high confidence results, ensure that the Dev/Test environment is as close to Production as possible in terms of size of the Rosemeta database and the type and count of Catalog objects. Consider using a Production backup in this test environment.
+
+Alation does not recommend installing on Production instances before you have tried the process out on a Dev/Test environment. High-volume, large Production instances may be at serious performance risk when both versions of the Alation Analytics database co-exist. If you choose to maintain both versions of Alation Analytics on the Production environment, it is recommended to keep this coexistence as short as possible.
+
+Type of Transition
+---------------------
+
+There are two possible scenarios for transitioning from Alation Analytics V1 to V2:
+
+    1. Replace V1 with V2;
+
+    2. Deploy and maintain both V1 and V2.
+
+**REPLACE**
+
+When your choice is scenario 1, then plan to first disable Alation Analytics V1 and after that, enable and install Alation Analytics V2.
+
+    .. note::
+
+        There is no data migration from Alation Analytics V1 to V2 because the V2 schema is different. The ETL for Alation Analytics V2 will load the data from the internal application database (Rosemeta), starting with earliest available data.
+
+**CO-EXISTENCE OF V1 AND V2**
+
+If you wish to enable and maintain both Alation Analytics versions for the same Alation instance, please consider your current Alation Analytics 30-day ETL average to establish the possibility of both versions coexisting. See `Alation Analytics V1 ETL Considerations`_.
+
+    .. note::
+
+        If you have never enabled Alation Analytics on your instance before release 2020.3, Alation Analytics V2 is the only available option. Please use the installation instructions to enable and install V2: :doc:`Enable and Install Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/EnableAlationAnalyticsV2>`.
+
+Alation Analytics V1 ETL Considerations
+-----------------------------------------
+
+When Alation Analytics V1 and V2 co-exist, they both run the ETL process against Rosemeta. For the sake of stable Rosemeta performance, you need to make sure that these ETL processes do not overlap. Concurrent ETL processes originating from Alation Analytics V1 and V2 may cause noticeable Rosemeta performance degradation when both run in parallel.
+
+Consider the Alation Analytics V1 30-day ETL average value in order to establish the possibility of V1 and V2 co-existence for your Alation instance. The ETL average is the average duration of the Alation Analytics V1 ETL for 30 consecutive days.
+
+If your current Alation Analytics V1 30-day ETL average is more than 4 hours - which is the default threshold, - Alation does not recommend enabling and maintaining V1 and V2 at the same time. The default ETL threshold should be the deciding factor for co-existence of Alation Analytics V1 and V2.
+
+Determine Your Alation Analytics V1 30-day ETL Average
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Requires access to the Alation Postgres shell*
+
+From the Alation Postgres shell, run the query given below against Rosemeta to find out your 30-day ETL average value.
+
+.. note::
+
+    Rosemeta is the underlying Alation PostgreSQL database. The Alation application depends on the health of Rosemeta. Please use caution when querying this database and always follow specific guidelines.
+
+1. Access the Alation shell:
+
+    .. code-block:: Bash
+
+          sudo /etc/init.d/alation shell
+
+2. Enter the Alation Postgres shell:
+
+    .. code-block:: Bash
+
+          alation_psql
+
+3. Run the following query:
+
+    .. code-block:: Bash
+
+        SELECT avg(extract(epoch FROM (ts_finished - ts_started)))
+          FROM jobs_job
+            WHERE job_type=8 AND status=1 AND state=3 AND ts_started::date >= CURRENT_DATE - INTERVAL '30 DAYS';
+
+4. To exit: ``\q``.
+
+The query result is **in seconds**. If as the result of this query you find that the 30-day average ETL for Alation Analytics V1 exceeds 4 hours (14400 seconds), please consider a staged approach when you first disable Alation Analytics V1 and after that, enable and install Alation Analytics V2. **Alation does not recommend to maintain both Alation Analytics versions at the same time if the 30-day ETL average exceeds 4 hours**.
+
+However, the 4-hour threshold allows for a certain margin to exist. If your 30-day average ETL value is **not greater than 6 hours** (21600 seconds), you can still choose to proceed to enable both V1 and V2 for your Alation instance. Note that in this case you will need to manually modify the average ETL threshold in **alation_conf** (see `Display Alation Analytics V2 Feature Switch`_ below).
+
+If your 30-day ETL average exceeds 6 hours, Alation does not recommend attempting to maintain both Alation Analytics versions at the same time as this may cause serious Rosemeta performance issues. Please use a staged approach when you first disable Alation Analytics V1 and then enable and install V2.
+
+Types of Installation
+----------------------
+
+Unlike the first version of Alation Analytics, Alation Analytics V2 requires a separate installation and can be installed in either way:
+
+    - On a separate host (**recommended**)
+    - On the same host with the Alation application (not applicable when V1 and V2 co-exist)
+
+.. important::
+
+    Alation **strongly recommends** to install Alation Analytics V2 on a separate host if you plan for both Alation Analytics versions to co-exist.
+
+Get Started with Alation Analytics V2
+---------------------------------------
+
+Prepare a Host
+~~~~~~~~~~~~~~~
+
+Follow the recommendations :ref:`to prepare the host <Prepare the Host>`.
+
+Display Alation Analytics V2 Feature Switch
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When Alation Analytics V1 is still enabled on an instance, the Alation Analytics V2 feature is not available in **Admin Settings > Labs/Feature Configuration**. In this case, the Alation Analytics V2 feature switch can be revealed using the dedicated **alation_conf** command.
+
+    .. note::
+
+        The **Labs** page was renamed to **Feature Configuration** in 2021.1
+
+At this point, you need to decide if you would also like to modify the ETL threshold value for your instance.
+
+You do NOT need to change the ETL threshold value if:
+
+  - you would like to maintain both V1 and V2 at the same time, and you have established that the average 30-day ETL value is below 4 hours.
+
+You need to modify this threshold if:
+
+  - you would like to maintain both V1 and V2 at the same time, and you have established that the average 30-day ETL value is **between 4 and 6 hours**.
+
+.. note::
+
+    If the average 30-day ETL value on your instance is more than 6 hours, Alation does not recommend enabling V2 while V1 remains active.
+
+To enable Alation Analytics V2 simultaneously with V1:
+
+1. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+
+2. Set the following **alation_conf** value to ``True``:
+
+    .. code-block:: Bash
+
+        alation_conf alation_analytics-v2.enable_simulataneous_v1_and_v2.enabled -s True
+
+3. Review, and if necessary, modify the ETL threshold value:
+
+    .. code-block:: Bash
+
+        alation_conf alation_analytics-v2.enable_simulataneous_v1_and_v2.aav1_etl_threshold -s <hours>
+
+    .. important::
+
+        The ETL threshold parameter is used to ensure that when both V1 and V2 are enabled, the two ETL processes do not overlap resulting in Rosemeta performance issues. The threshold value may be changed on a case by case basis. Use your best judgment considering such factors as the current Alation Analytics V1 average ETL time, available server resources (memory, CPU, disk space) when changing this value.
+
+4. Restart Supervisor:
+
+    .. code-block:: Bash
+
+        alation_supervisor restart all
+
+5. In the Alation UI, go to **Admin Settings > Labs/Feature Configuration** and turn on the toggle **Alation Analytics V2 - Understand the Alation usage patterns at your organization**. Save the changes.
+
+    .. note::
+
+        There may be a situation when after performing these steps, the feature toggle for Alation Analytics V2 does not appear in **Admin Settings > Labs/Feature Configuration** in the Alation UI. This happens when the average 30-days ETL value calculated on the Rosemeta exceeds the value of the parameter ``alation_analytics-v2.enable_simulataneous_v1_and_v2.aav1_etl_threshold``. Alation calculates the average 30-day ETL value for Alation Analytics V1 automatically after the parameter ``alation_analytics-v2.enable_simulataneous_v1_and_v2.enabled`` is set to ``True``. In such a case, verify the threshold value you have set.
+
+Install Alation Analytics V2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After the Alation Analytics V2 feature has been enabled on the instance, install the Alation Analytics V2 database following the installation instructions: :doc:`Enable and Install Alation Analytics V2 <../../installconfig/AlationAnalyticsV2/EnableAlationAnalyticsV2>`.
+
+After installation, configure the ETL parameters to best suit your organization’s needs.
+
+ETL Recommendations
+---------------------
+
+There are a number of parameters in **alation_conf** that control the ETL process for Alation Analytics V2: :doc:`Alation Analytics V2 ETL <../../installconfig/AlationAnalyticsV2/AlationAnalyticsV2ETL>`.
+
+Please consider the following:
+
+1. The initial ETL is likely to run more than once until your data is up to date in the Alation Analytics V2. By default, every ETL run extracts 180 days of data. Every incremental run will extract 180 days of data from the previous run. This time period is set with the Alation configuration parameter ``alation_analytics-v2.extract.time_period = 180`` in **alation_conf**. If you have a lot of data, Alation recommends reducing this to 90, 60 or even 30 days for better performance.
+
+2. By default, ETL for V2 is scheduled to run daily. If possible, schedule it so that it does not run at the same time with the V1 ETL. To display the current ETL schedules, from the Alation shell, run:
+
+    - ``alation_conf alation_analytics.etl`` - to print the schedule parameters for V 1;
+
+    - ``alation_conf alation_analytics-v2.etl`` - to print the schedule parameters for V 2.
+
+You can set these schedules to be on different days to ensure they do not overlap.
+
+Alation Analytics V1: Next Steps
+--------------------------------------------
+
+Disable the Alation Analytics V1 Feature
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Applies to release 2020.3*
+
+.. note::
+
+    If you are on release 2020.4, please refer to the next section `Remove the Alation Analytics V1 Data Source`_. The steps to disable and remove the Alation Analytics V1 data source are different for 2020.4.
+
+Alation Analytics V1 can be disabled in either of the following cases:
+
+  - You are NOT going to maintain both versions of Alation Analytics at the same time and wish to replace V1 with V2;
+
+  - You have maintained both versions for a while and now wish to fully transition to V2 and remove V1.
+
+In 2020.3, the Alation Analytics V1 feature can be disabled in **Labs**. This disables the ETL, but the Alation Analytics V1 **data source** will not be deleted from the Alation application. Please consider flagging the remaining data source as "Deprecated" after you turn off the feature flag. Note that the ability to remove the Alation Analytics V1 data source from the Catalog is added in release 2020.4.
+
+To disable Alation Analytics V1:
+
+In **Admin Settings > Labs**, turn off the flag **Alation Analytics - Understand the Alation usage patterns at your organization**. This disables Alation Analytics V1 ETL and reveals the toggle to enable Alation Analytics V2 if it has not been force-enabled previously using the **alation_conf** command.
+
+Disabling the Alation Analytics V1 feature flag does not remove the Alation Analytics V1 **database** from the Alation application. See `Clean Up the Alation Analytics V1 Database`_.
+
+Remove the Alation Analytics V1 Data Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Applies from release 2020.4*
+
+From 2020.4, you can remove the Alation Analytics V1 data source from Alation completely. This can be done when you have fully transitioned to Alation Analytics V2 and no longer use the old source. Please refer to :doc:`Remove Alation Analytics V1 Data Source From the Catalog <../../installconfig/AlationAnalyticsV2/RemoveAlationAnalyticsV1Source>` for details.
+
+Clean Up the Alation Analytics V1 Database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After you have disabled Alation Analytics V1 feature in Alation, decide on the next steps for the Alation Analytics V1 database.
+
+Keep As Is
+^^^^^^^^^^^^^
+
+You can choose to leave the V1 database on the Alation host as is. The existing Alation Analytics V1 reports and queries will continue to work. However, there will be no new ETL and no new usage data will be added after the Alation Analytics V1 feature is disabled.
+
+Archive and/or Drop
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+In deciding on the next stage in the lifecycle of the Alation Analytics V1 **database**, refer to your company’s policy concerning data archiving. This PostgreSQL database can be backed up, archived, and restored on a separate server on demand. Alternatively, it can be dropped based on your company's policy concerning the cleanup of redundant data.
+
+To delete the Alation Analytics V1 **database** from the host, please create a ticket for Alation Support with the following subject: **Assist in removing Alation Analytics V1 database**.
+
+    .. note::
+
+        **Release 2020.3 Only**: The Alation Analytics V1 **data source** cannot be removed from the Alation Catalog. This means that when the underlying Alation Analytics V1 **database** is dropped, the corresponding data source will still remain in Alation, although it will not be functional. When the Alation Analytics V1 **database** is dropped, please also disable the Alation Analytics V1 feature in **Labs** and consider flagging the leftover source as **Deprecated**.

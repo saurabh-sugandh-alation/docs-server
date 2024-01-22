@@ -1,0 +1,151 @@
+SSO Authentication for Amazon DynamoDB Data Source
+==============================================================
+
+*Applies from release 2021.1*
+
+Perform this configuration for the Amazon DynamoDB Data Source after completing the configuration of the IdP and the AuthService:
+
+    - :doc:`Compose SSO for Amazon Data Sources: Create an Authentication Application <../../datasources/ComposeSSOAWSDataSources/CreateAuthenticationAppForAlationInIdP>`
+
+    - :doc:`Compose SSO with Amazon Sources: Configure AWS IAM Plug-in <../../datasources/ComposeSSOAWSDataSources/ConfigureAWS_IAM_Plugin>`
+
+.. important::
+
+    SSO authentication should be configured for each specific data source. Multiple data sources can use one and the same AuthService configuration object if authentication goes through the same authentication application in the same IdP.
+
+STEP 1: Configure Compose to Use AuthService IAM Plug-in for Amazon DynamoDB
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alation recommends using a JDBC driver for Amazon DynamoDB developed by CData: :doc:`Amazon DynamoDB <../../datasources/CustomDB/AWSDynamoDB>`. The steps below apply if you are using the driver recommended by Alation.
+
+You need to know the ID of your Amazon DynamoDB data source. It can be obtained from the URL of the Data Source Catalog page: :doc:`How to Find Data Source ID <../../admins/How-tos/HowToFindDataSourceID>`.
+
+To perform the configuration:
+
+1. Use SSH to connect to the Alation host.
+
+2. Enter the Alation shell:
+
+    .. code-block:: Bash
+
+        sudo /etc/init.d/alation shell
+        alation_django_shell
+
+3. Enter the Django shell:
+
+    .. code-block:: Bash
+
+        alation_django_shell
+
+4. From the Django shell, run the code given below, substituting the placeholder values ``<ds_id>`` and ``<config_name>`` with the real values. This will create a Compose configuration object for the data source with the given ID.
+
+    - ``<ds_id>`` - Data source ID
+    - ``<config_name>`` - The ``config_name`` value of the configuration object in the AWS IAM plug-in of AuthService that has been created for your IdP.
+
+    .. code-block:: Bash
+
+        AuthServiceConfiguration.objects.create(ds=DataSource.objects.get(id=<ds_id>),method_name='aws_iam',config_name='<config_name>')
+
+5. Still in the Django shell, run the following code, substituting the placeholder value ``<ds_id>`` with your data source ID value. Note that this configuration is for the CData JDBC driver for DynamoDB recommended by Alation:
+
+    .. code-block:: Bash
+
+        confs = AuthServiceConfiguration.objects.filter(ds_id=<ds_id>).all()
+        c = confs[0]
+        ## Now change the above default jdbc_config to the following:
+        c.jdbc_config['auth_obj_to_jdbc_param_map'] =
+            {'AWSAccessKey':'{AWSAccessKey}','AWSSecretKey':'{AWSSecretKey}','AWSSessionToken':'{AWSSessionToken}'}
+        c.jdbc_config['jdbc_uri_enabler_patterns']=['AuthScheme\\=TemporaryCredentials']
+        c.save()
+
+6. Exit the Django shell: ``exit``.
+
+7. Exit the Alation shell: ``exit``.
+
+Step 2: Configure Amazon DynamoDB Data Source Settings in Alation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Next, configure the SSO login to Amazon DynamoDB from the catalog and Compose:
+
+1. Log in to the Alation user interface as a Server Admin or a Data Source Admin for your DynamoDB data source.
+2. Open the **Settings > General Settings** page of your DynamoDB data source.
+3. Scroll down to the **Compose Connections** section.
+4. Click **+Add** on the right and add a new Compose connection:
+
+    - Give the Connection a meaningful name so that it is recognizable in Compose
+    - Add a new Compose connection URI with the following parameters required to enable redirection flow within Compose:
+
+        - **AuthScheme=TemporaryCredentials**
+
+    **Format**:
+
+    .. code-block:: Bash
+
+          amazondynamodb:URL=<your_AWS_URL>;SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;AuthScheme=TemporaryCredentials
+
+    **Example**:
+
+    .. code-block:: Bash
+
+        amazondynamodb:URL=https://dynamodb.us-east-1.amazonaws.com;SupportsCatalogsInTableDefinitions=True;SupportsSchemasInTableDefinitions=True;AuthScheme=TemporaryCredentials
+
+    .. note::
+
+        Specifying a role in the connection URI is not supported. Users will be connected with the first role returned in the assertion response from the IdP.
+
+4. Test the configuration.
+
+Step 3: Test Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can test with a user account that exists in IdP and has access to the Amazon DynamoDB data source.
+
+Test Connection in Compose
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Log in to Alation as a user who should be able to access Amazon DynamoDB.
+2. Go to Compose.
+3. Select the SSO-enabled connection URI that was configured in data source **Settings > General Settings > Compose Connections**.
+
+    .. image:: ../../_static/DS_AthenaSSO_06.png
+
+4. Click the Reconnect button. The **Data Source Authorization** dialog should pop up.
+
+5. Click the link **Click here to authorize access before connecting...**. A new browser tab should open where you should be redirected to the IdP login page.
+
+6. Enter the IdP credentials to authenticate.
+
+7. Upon confirmation, the tab will close and the user will be authenticated in Compose.
+
+9. If authenticated successfully, run a query against the data source. Subsequent queries in this session should not require any authentication activity until the STS token expires.
+
+If the token request fails, the UI will display an error and connection will not be established.
+See :doc:`Troubleshoot SSO Authentication with Amazon Data Sources <../../datasources/ComposeSSOAWSDataSources/TroubleshootSSOAuthWithAWSDataSources>`.
+
+Test Profiling
+^^^^^^^^^^^^^^^^^^
+
+If Dynamic Profiling is enabled for the Amazon DynamoDB data source, you can test it in the following way:
+
+1. Go to the Alation Catalog and open the Catalog page of a column.
+
+2. Click **Run Profile**. The Connect dialog should pop up.
+
+3. Select the SSO-enabled connection from the list of saved connections.
+
+4. Click **Test Authorization**.
+
+5. A new browser tab should open where you will be redirected to the IdP login page.
+
+6. Enter your IdP credentials to authenticate.
+
+7. Upon authentication, the tab will close and the user will be able to profile the column.
+
+Test Data Upload
+^^^^^^^^^^^^^^^^^^^^^
+
+Similarly, you can test the Data Upload to your Amazon DynamoDB data source.
+
+1. Go the the DynamoDB data source page in the catalog.
+2. On the upper right, click **More**, and then click **Upload Data**.
+3. Try to test-upload a table: the authentication flow should be the same as described above in `Test Profiling`_.

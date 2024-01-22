@@ -1,0 +1,149 @@
+Manage Token Authentication for SCIM Sync
+=============================================
+
+.. include:: /shared/ProductLabels/CloudAndCustomerManaged_Label.rst
+
+*Applies from version 2021.4*
+
+Alation supports token authentication when syncing user and group information over SCIM. Token authentication can be configured during SCIM setup for an Alation instance. See :ref:`Configure SCIM Integration <Enable_SCIM_Integration-Configure_SCIM_Integration>` about the end-to-end configuration of SCIM sync.
+
+Token Lifespan
+--------------
+
+In 2023.3.2 and later, SCIM the token’s expiration can be anywhere from one to six months. You can create a new token at any time, which will immediately revoke the old token.
+
+In 2023.3.1 and earlier, SCIM authentication tokens have a lifespan of 6 months. The expiration period cannot be customized: a token lasts for 6 months and expires. After 6 months, a new token needs to be created.
+
+You do not have to wait for the token to expire to renew it. If you require a shorter expiration period for authentication tokens, you can create a new token after the desired period of time.
+
+    .. important::
+
+        After renewing the token on the Alation server, update the token value in the properties of the SCIM application in your IdP.
+
+Token Expiration Notifications
+------------------------------
+
+In 2023.3.2 and later, all Server Admins will be notified when the SCIM token has expired or is about to expire.
+
+Email Notifications
+~~~~~~~~~~~~~~~~~~~
+
+Server Admins will get an email at the following times:
+
+-  15 days before the token expires
+-  1 day before the token expires
+-  The day the token expires
+-  The day after the token expires
+
+Banner Notification
+~~~~~~~~~~~~~~~~~~~
+
+Fifteen days before the token expires, a banner notification will appear at the top of the Alation catalog. The banner will keep appearing until the token is regenerated or the SCIM feature is disabled. Only Server Admins will see the banner.
+
+Retrieve the Expiration Date of the Current Token
+----------------------------------------------------
+
+2023.3.2 and Later
+~~~~~~~~~~~~~~~~~~
+
+Starting in 2023.3.2, the expiration date of the current token can be viewed in the Alation UI.
+
+#. In Alation, go to **Admin Settings**, then **Authentication**.
+
+#. Find the **SCIM Token** section. If there’s already a token, you’ll see its expiration date.
+
+   .. image:: /_static/ScimToken_ExpirationDate.png
+      :class: with-border
+
+2023.3.1 and Earlier
+~~~~~~~~~~~~~~~~~~~~
+
+In 2023.3.1 and earlier, you must have access to the Alation server to get the token’s expiration date.
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+To get the expiration date for the current token:
+
+.. include:: /shared/AccessingAlationShell.rst
+
+#. .. include:: /shared/EnterDjangoShell.rst
+
+4. In the Django shell, run:
+
+    .. code-block:: Bash
+
+        from rosemeta.utils.users_and_groups.configuration_utils import get_scim_bearer_token_expiry_date
+
+    .. code-block:: Bash
+
+        get_scim_bearer_token_expiry_date()
+
+This will output the expiration date of the current token in UTC.
+
+Replace an Existing Token
+-------------------------
+
+You can create a new token at any time, which will immediately revoke the old token.
+
+2023.3.2 and Later
+~~~~~~~~~~~~~~~~~~
+
+Starting in 2023.3.2, you can create a SCIM token using the Alation UI.
+
+#. In Alation, go to **Admin Settings**, then **Authentication**.
+
+#. Find the **SCIM Token** section. If there’s already a token, you’ll see its expiration date.
+
+#. To create a new token, click the dropdown to select how long the token will be valid.
+
+#. Click **Generate Token**. A popup window appears with the new token.
+
+#. Click **Copy** and save the token in a secure location. It will be required later when you configure SCIM integration on the IdP side.
+
+   .. include:: /shared/TokenNeverShownAgain.rst
+
+#. Once you’ve saved the token, click **Close**.
+
+2023.3.1 and Earlier
+~~~~~~~~~~~~~~~~~~~~
+
+In 2023.3.1 and earlier, you must have access to the Alation server to create a new token. 
+
+.. include:: /shared/CloudMessages/CloudSupportRequest.rst
+
+To create a new token:
+
+.. include:: /shared/AccessingAlationShell.rst
+
+#. .. include:: /shared/EnterDjangoShell.rst
+
+#. Run the following code from the Django shell:
+
+   .. code-block:: Bash
+
+      from rosemeta.utils.users_and_groups.configuration_utils import set_scim_bearer_token
+
+   .. code-block:: Bash
+
+      set_scim_bearer_token()
+
+   This sets a new SCIM authentication token on the Alation server.
+
+Retrieve the Current Token Value
+-----------------------------------------
+
+To retrieve the current token value, you must have access to the Alation server.
+
+.. include:: /shared/AccessingAlationShell.rst
+
+#. .. include:: /shared/EnterDjangoShell.rst
+
+#. Run the following code from the Django shell:
+
+   .. code-block:: Bash
+
+      from rosemeta.utils.users_and_groups.configuration_utils import get_scim_bearer_token
+
+   .. code-block:: Bash
+
+      get_scim_bearer_token()
